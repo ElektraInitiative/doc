@@ -1,0 +1,445 @@
+\hypertarget{group__plugin}{\section{Plugins}
+\label{group__plugin}\index{Plugins@{Plugins}}
+}
+
+
+Elektra plugin framework.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{group__plugin_ga1a72ac76b618943677e00ed7ab50b372}{doc\-Open} (Plugin $\ast$handle, Key $\ast$error\-Key)
+\item 
+int \hyperlink{group__plugin_gaed8aeda2b2beab1b8052f8a64c601754}{doc\-Close} (Plugin $\ast$handle, Key $\ast$error\-Key)
+\item 
+int \hyperlink{group__plugin_ga2f14a12b205687a31e6fd0645470ec69}{doc\-Get} (Plugin $\ast$handle, Key\-Set $\ast$returned, Key $\ast$parent\-Key)
+\item 
+int \hyperlink{group__plugin_ga01dd4018e48c3a091cb03940a7a8341f}{doc\-Set} (Plugin $\ast$handle, Key\-Set $\ast$returned, Key $\ast$parent\-Key)
+\item 
+int \hyperlink{group__plugin_gab0f8a88ee9868fb698b4e3040a70e000}{doc\-Error} (Plugin $\ast$handle, Key\-Set $\ast$returned, Key $\ast$parent\-Key)
+\item 
+Plugin $\ast$ \hyperlink{group__plugin_gabe78724d2d477eef39997fd9b85bff16}{E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T} (doc)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Elektra plugin framework. \begin{DoxySince}{Since}
+version 0.\-4.\-9, Elektra can dynamically load different key storage plugins.
+
+version 0.\-7.\-0 Elektra can have multiple backends, mounted at any place in the key database.
+
+version 0.\-8.\-0 Elektra backends are composed out of multiple plugins.
+\end{DoxySince}
+\begin{DoxyParagraph}{Overview}
+There are different types of plugins for different concerns. The types of plugins handled in this document\-:
+\begin{DoxyItemize}
+\item file storage plugins (also called just storage plugins here)
+\item filter plugins \par
+ See \href{http://www.libelektra.org/ftp/elektra/thesis.pdf}{\tt http\-://www.\-libelektra.\-org/ftp/elektra/thesis.\-pdf} for an detailed explanation and description of other types of plugins. \par
+ A plugin can implement anything related to configuration. There are 5 possible entry points, as described in this document\-:
+\item elektra\-Doc\-Open()
+\item elektra\-Doc\-Close()
+\item elektra\-Doc\-Get()
+\item elektra\-Doc\-Set()
+\item elektra\-Doc\-Error() (not needed by storage or filter plugins) \par
+ Depending of the type of plugin you need not to implement all of them. \par
+ 
+\end{DoxyItemize}
+\end{DoxyParagraph}
+\begin{DoxyNote}{Note}
+that the Doc within the name is just because the plugin described here is called doc (see src/plugins/doc/doc.\-c). Always replace Doc with the name of the plugin you are going to implement.
+\end{DoxyNote}
+See the descriptions below what each of them is supposed to do.
+
+\begin{DoxyParagraph}{Storage Plugins}
+A filter plugin is a plugin which already receives some keys. It may process or change the keyset. Or it may reject specific keysets which do not meet some criteria.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Filter Plugins}
+A storage plugin gets an empty keyset and constructs the information out from a file. \par
+ Other persistent storage then a file is not handled within this document because it involves many other issues. For files the resolver plugin already takes care for transactions and rollback.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Error and Warnings}
+In any case of trouble, use E\-L\-E\-K\-T\-R\-A\-\_\-\-S\-E\-T\-\_\-\-E\-R\-R\-O\-R and return with -\/1. You might add warnings with E\-L\-E\-K\-T\-R\-A\-\_\-\-A\-D\-D\-\_\-\-W\-A\-R\-N\-I\-N\-G if you think it is appropriate.
+\end{DoxyParagraph}
+\begin{DoxyNote}{Note}
+some docu in this section might be confusing or not updated, please refer to \href{http://www.libelektra.org/ftp/elektra/thesis.pdf}{\tt http\-://www.\-libelektra.\-org/ftp/elektra/thesis.\-pdf} or ask at the mailinglist if something is unclear. 
+\end{DoxyNote}
+
+
+\subsection{Function Documentation}
+\hypertarget{group__plugin_gaed8aeda2b2beab1b8052f8a64c601754}{\index{Plugins@{Plugins}!doc\-Close@{doc\-Close}}
+\index{doc\-Close@{doc\-Close}!Plugins@{Plugins}}
+\subsubsection[{doc\-Close}]{\setlength{\rightskip}{0pt plus 5cm}int doc\-Close (
+\begin{DoxyParamCaption}
+\item[{Plugin $\ast$}]{handle, }
+\item[{Key $\ast$}]{error\-Key}
+\end{DoxyParamCaption}
+)}}\label{group__plugin_gaed8aeda2b2beab1b8052f8a64c601754}
+Finalize the plugin.
+
+Called prior to unloading the plugin dynamic module. Should ensure that no functions or static/global variables from the module will ever be accessed again.
+
+Make sure to free all memory that your plugin requested at runtime.
+
+After this call, libelektra.\-so will unload the plugin library, so this is the point to shutdown any affairs with the storage.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of the plugin \\
+\hline
+{\em error\-Key} & is needed to add warnings using E\-L\-E\-K\-T\-R\-A\-\_\-\-A\-D\-D\-\_\-\-W\-A\-R\-N\-I\-N\-G\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & on success \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See Also}
+\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\-Close()} 
+
+elektra\-Plugin\-Get\-Data(), elektra\-Plugin\-Set\-Data() and elektra\-Plugin\-Get\-Config() 
+\end{DoxySeeAlso}
+\hypertarget{group__plugin_gab0f8a88ee9868fb698b4e3040a70e000}{\index{Plugins@{Plugins}!doc\-Error@{doc\-Error}}
+\index{doc\-Error@{doc\-Error}!Plugins@{Plugins}}
+\subsubsection[{doc\-Error}]{\setlength{\rightskip}{0pt plus 5cm}int doc\-Error (
+\begin{DoxyParamCaption}
+\item[{Plugin $\ast$}]{handle, }
+\item[{Key\-Set $\ast$}]{returned, }
+\item[{Key $\ast$}]{parent\-Key}
+\end{DoxyParamCaption}
+)}}\label{group__plugin_gab0f8a88ee9868fb698b4e3040a70e000}
+Rollback in case of errors.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of the plugin \\
+\hline
+{\em returned} & contains a keyset with relevant keys \\
+\hline
+{\em parent\-Key} & contains the information where to set the keys\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+{\em 0} & on success with no action \\
+\hline
+{\em -\/1} & on failure \\
+\hline
+\end{DoxyRetVals}
+\hypertarget{group__plugin_ga2f14a12b205687a31e6fd0645470ec69}{\index{Plugins@{Plugins}!doc\-Get@{doc\-Get}}
+\index{doc\-Get@{doc\-Get}!Plugins@{Plugins}}
+\subsubsection[{doc\-Get}]{\setlength{\rightskip}{0pt plus 5cm}int doc\-Get (
+\begin{DoxyParamCaption}
+\item[{Plugin $\ast$}]{handle, }
+\item[{Key\-Set $\ast$}]{returned, }
+\item[{Key $\ast$}]{parent\-Key}
+\end{DoxyParamCaption}
+)}}\label{group__plugin_ga2f14a12b205687a31e6fd0645470ec69}
+Retrieve information from a permanent storage to construct a keyset.\hypertarget{group__plugin_intro}{}\subsection{Introduction}\label{group__plugin_intro}
+The elektra\-Doc\-Get() function handle everything related to receiving keys.\hypertarget{group__plugin_storage}{}\subsubsection{Storage Plugins}\label{group__plugin_storage}
+For storage plugins the filename is written in the value of the parent\-Key. So the first task of the plugin is to open that file. Then it should parse its content and construct a keyset with all information of that file.
+
+You need to be able to reconstruct the same file with the information of the keyset. So be sure to copy all comments, whitespaces and so on into some metadata of the keys. Otherwise the information is lost after writing the file the next time.
+
+Now lets look at an example how the typical elektra\-Doc\-Get() might be implemented. To explain we introduce some pseudo functions which do all the work with the storage (which is of course 90\% of the work for a real plugin)\-:
+\begin{DoxyItemize}
+\item parse\-\_\-key will parse a key and a value from an open file handle
+\end{DoxyItemize}
+
+The typical loop for a storage plugin will be like\-: 
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraDocGet(Plugin *handle, KeySet *returned, \textcolor{keyword}{const} Key *parentKey)
+\{
+        \textcolor{comment}{// contract handling, see below}
+
+        FILE *fp = fopen (\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}(parentKey), \textcolor{stringliteral}{"r"});
+        \textcolor{keywordtype}{char} *key;
+        \textcolor{keywordtype}{char} *value;
+
+        \textcolor{keywordflow}{while} ((n = parse\_key(fp, &key, &value)) >= 1)
+        \{
+                Key *read = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}(0);
+                \textcolor{keywordflow}{if} (\hyperlink{group__keyname_ga7699091610e7f3f43d2949514a4b35d9}{keySetName}(read, key) == -1)
+                \{
+                        fclose (fp);
+                        \hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel} (read);
+                        ELEKTRA\_SET\_ERROR(59, parentKey, key);
+                        \textcolor{keywordflow}{return} -1;
+                \}
+                \hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}(read, value);
+
+                \hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey} (returned, read);
+                free (key);
+                free (value);
+        \}
+
+        \textcolor{keywordflow}{if} (feof(fp) == 0)
+        \{
+                fclose (fp);
+                ELEKTRA\_SET\_ERROR(60, parentKey, \textcolor{stringliteral}{"not at the end of file"});
+                \textcolor{keywordflow}{return} -1;
+        \}
+
+        fclose (fp);
+
+        \textcolor{keywordflow}{return} 1; \textcolor{comment}{// success}
+\}
+\end{DoxyCode}
+\hypertarget{group__plugin_filter}{}\subsubsection{Filter Plugins}\label{group__plugin_filter}
+For filter plugins the actual task is rather unspecified. You basically can do anything with the keyset. To get roundtrip properties you might want to undo any changes you did in elektra\-Doc\-Set().
+
+The pseudo functions (which do the real work) are\-:
+\begin{DoxyItemize}
+\item do\-\_\-action() which processes every key in this filter
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraDocGet(Plugin *handle, KeySet *returned, Key *parentKey)
+\{
+        \textcolor{comment}{// contract handling}
+
+        Key *k;
+        \hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind} (returned);
+        \textcolor{keywordflow}{while} ((k = \hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ksNext} (returned)) != 0)
+        \{
+                do\_action(k);
+        \}
+
+        \textcolor{keywordflow}{return} 1; \textcolor{comment}{// success}
+\}
+\end{DoxyCode}
+\hypertarget{group__plugin_conditions}{}\subsection{Conditions}\label{group__plugin_conditions}
+\begin{DoxyPrecond}{Precondition}
+The caller \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} will make sure before you are called that the parent\-Key\-:
+\begin{DoxyItemize}
+\item is a valid key (means that it is a system or user key).
+\item is below (see \hyperlink{group__keytest_ga03332b5d97c76a4fd2640aca4762b8df}{key\-Is\-Below()}) your mountpoint and that your plugin is responsible for it. and that the returned\-:
+\item is a valid keyset.
+\item has {\ttfamily all} keys with the flag K\-E\-Y\-\_\-\-F\-L\-A\-G\-\_\-\-S\-Y\-N\-C set.
+\item contains only valid keys direct below (see \hyperlink{group__keytest_ga4f175aafd98948ce6c774f3bd92b72ca}{key\-Is\-Direct\-Below()}) your parent\-Key. That also means, that the parent\-Key will not be in that keyset.
+\item is in a sorted order (given implicit by semantics of Key\-Set) and that the handle\-:
+\begin{DoxyItemize}
+\item is a valid K\-D\-B for your plugin.
+\item that elektra\-Pluginh\-Get\-Backend\-Handle() contains the same handle for lifetime \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdb\-Open()} until elektra\-Plugin\-Close() was called.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+The caller \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} will make sure that afterwards you were called, whenever the user requested it with the options, that\-:
+\begin{DoxyItemize}
+\item hidden keys they will be thrown away.
+\item dirs or only dirs \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} will remove the other.
+\item you will be called again recursively with all subdirectories.
+\item the keyset will be sorted when needed.
+\item the keys in returned having K\-E\-Y\-\_\-\-F\-L\-A\-G\-\_\-\-S\-Y\-N\-C will be sorted out.
+\end{DoxyItemize}
+\end{DoxyPrecond}
+\begin{DoxyInvariant}{Invariant}
+There are no global variables and elektra\-Plugin\-Set\-Data() stores all information. The handle is to be guaranteed to be the same if it is the same plugin.
+\end{DoxyInvariant}
+\begin{DoxyPostcond}{Postcondition}
+The keyset {\ttfamily returned} has the {\ttfamily parent\-Key} and all keys direct below (\hyperlink{group__keytest_ga4f175aafd98948ce6c774f3bd92b72ca}{key\-Is\-Direct\-Below()}) with all information from the storage. Make sure to return all keys, all directories and also all hidden keys. If some of them are not wished, the caller \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} will drop these keys, see above.
+\end{DoxyPostcond}
+\hypertarget{group__plugin_updating}{}\subsection{Updating}\label{group__plugin_updating}
+To get all keys out of the storage over and over again can be very inefficient. You might know a more efficient method to know if the key needs update or not, e.\-g. by stating it or by an external time stamp info. For file storage plugins this is automatically done for you. For other types (e.\-g. databases) you need to implement your own resolver doing this.
+
+\begin{DoxyNote}{Note}
+If any calls you use change errno, make sure to restore the old errno.
+\end{DoxyNote}
+\begin{DoxySeeAlso}{See Also}
+\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} for caller.
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{opened } key database \\
+\hline
+{\em returned} & contains a keyset where the function need to append the keys got from the storage. There might be also some keys inside it, see conditions. You may use them to support efficient updating of keys, see \hyperlink{group__plugin_updating}{Updating}. \\
+\hline
+{\em parent\-Key} & contains the information below which key the keys should be gotten.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 on success 
+
+0 when nothing was to do 
+
+-\/1 on failure, the current key in returned shows the position. use E\-L\-E\-K\-T\-R\-A\-\_\-\-S\-E\-T\-\_\-\-E\-R\-R\-O\-R of kdberrors.\-h to define the error code 
+\end{DoxyReturn}
+\hypertarget{group__plugin_ga1a72ac76b618943677e00ed7ab50b372}{\index{Plugins@{Plugins}!doc\-Open@{doc\-Open}}
+\index{doc\-Open@{doc\-Open}!Plugins@{Plugins}}
+\subsubsection[{doc\-Open}]{\setlength{\rightskip}{0pt plus 5cm}int doc\-Open (
+\begin{DoxyParamCaption}
+\item[{Plugin $\ast$}]{handle, }
+\item[{Key $\ast$}]{error\-Key}
+\end{DoxyParamCaption}
+)}}\label{group__plugin_ga1a72ac76b618943677e00ed7ab50b372}
+Initialize the plugin.
+
+This is the first method called after dynamically loading this plugin.
+
+This method is responsible for\-:
+\begin{DoxyItemize}
+\item plugin's specific configuration gathering
+\item all plugin's internal structs initialization
+\item if unavoidable initial setup of all I/\-O details such as opening a file, connecting to a database, setup connection to a server, etc.
+\end{DoxyItemize}
+
+You may also read the configuration you can get with elektra\-Plugin\-Get\-Config() and transform it into other structures used by your plugin.
+
+\begin{DoxyNote}{Note}
+The plugin must not have any global variables. If you do Elektra will not be threadsafe. It is not a good assumption that your plugin will be opened only once.
+\end{DoxyNote}
+Instead you can use elektra\-Plugin\-Get\-Data() and elektra\-Plugin\-Set\-Data() to store and get any information related to your plugin.
+
+The correct substitute for global variables will be\-: 
+\begin{DoxyCode}
+\textcolor{keyword}{struct }\_GlobalData\{ \textcolor{keywordtype}{int} global; \};
+\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_GlobalData GlobalData;
+\textcolor{keywordtype}{int} elektraDocOpen(Plugin *handle, Key *errorKey)
+\{
+        GlobalData *data;
+        data=malloc(\textcolor{keyword}{sizeof}(GlobalData));
+        data.global = 20;
+        elektraPluginSetData(handle,data);
+\}
+\end{DoxyCode}
+
+
+If your plugin has no useful way to startup without config, the module loader would not be able to load the module, too. To solve that problem the module loader adds the configuration key /module. Even if your plugin is basically not able to startup successfully, it should still provide a fallback when /module is present, so that \hyperlink{group__plugin_ga2f14a12b205687a31e6fd0645470ec69}{doc\-Get()} on system/elektra/modules can be called successfully later on.
+
+\begin{DoxyNote}{Note}
+Make sure to free everything you allocate here within elektra\-Doc\-Close().
+\end{DoxyNote}
+\begin{DoxyReturn}{Returns}
+0 on success 
+\end{DoxyReturn}
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of the plugin \\
+\hline
+{\em error\-Key} & defines an error\-Key \\
+\hline
+\end{DoxyParams}
+\begin{DoxySeeAlso}{See Also}
+\hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdb\-Open()} which will call elektra\-Doc\-Open() 
+
+elektra\-Plugin\-Get\-Data(), elektra\-Plugin\-Set\-Data() and elektra\-Plugin\-Get\-Config() 
+\end{DoxySeeAlso}
+\hypertarget{group__plugin_ga01dd4018e48c3a091cb03940a7a8341f}{\index{Plugins@{Plugins}!doc\-Set@{doc\-Set}}
+\index{doc\-Set@{doc\-Set}!Plugins@{Plugins}}
+\subsubsection[{doc\-Set}]{\setlength{\rightskip}{0pt plus 5cm}int doc\-Set (
+\begin{DoxyParamCaption}
+\item[{Plugin $\ast$}]{handle, }
+\item[{Key\-Set $\ast$}]{returned, }
+\item[{Key $\ast$}]{parent\-Key}
+\end{DoxyParamCaption}
+)}}\label{group__plugin_ga01dd4018e48c3a091cb03940a7a8341f}
+Store a keyset permanently.
+
+This function does everything related to set and remove keys in a plugin. There is only one function for that purpose to make implementation and locking much easier.
+
+The keyset {\ttfamily returned} was filled in with information from the application using elektra and the task of this function is to store it in a permanent way so that a subsequent call of elektra\-Plugin\-Get() can rebuild the keyset as it was before. See the live cycle of a comment to understand\-: 
+\begin{DoxyCode}
+\textcolor{keywordtype}{void} usercode (Key *key)
+\{
+        \hyperlink{group__keyvalue_ga8863a877a84fa46e6017fe72e49b89c1}{keySetComment} (key, \textcolor{stringliteral}{"mycomment"}); \textcolor{comment}{// the usercode stores a
+       comment for the key}
+        \hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}(keyset, key); \textcolor{comment}{// append the key to the keyset}
+        \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet} (handle, keyset, 0, 0);
+\}
+
+\textcolor{comment}{// so now kdbSet is called}
+\textcolor{keywordtype}{int} \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}(KDB *handle, KeySet *keyset, Key *parentKey, options)
+\{
+        \textcolor{comment}{// find appropriate plugin}
+        elektraPluginSet (handle, keyset, 0); \textcolor{comment}{// the keyset with the key will
+       be passed to this function}
+\}
+
+\textcolor{comment}{// so now elektraPluginSet(), which is the function described here, is called}
+elektraPluginSet(KDB *handle, KeySet *keyset, Key *parentKey)
+\{
+        \textcolor{comment}{// the task of elektraPluginSet is now to store the comment}
+        Key *key = \hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ksCurrent} (keyset); \textcolor{comment}{// get out the key where the
+       user set the comment before}
+        \textcolor{keywordtype}{char} *comment = allocate(size);
+        \hyperlink{group__keyvalue_gafb89735689929ff717cc9f2d0d0b46a2}{keyGetComment} (key, comment, size);
+        savetodisc (comment);
+\}
+\end{DoxyCode}
+ Of course not only the comment, but all information of every key in the keyset {\ttfamily returned} need to be stored permanetly. So this specification needs to give an exhaustive list of information present in a key.
+
+\begin{DoxyPrecond}{Precondition}
+The keyset {\ttfamily returned} holds all keys which must be saved permanently for this keyset. The keyset is sorted and rewinded. All keys having children must be true for \hyperlink{group__keytest_gac0a10c602d52a35f81347e8a32312017}{key\-Is\-Dir()}.
+
+The {\ttfamily parent\-Key} is the key which is the ancestor for all other keys in the keyset. The first key of the keyset {\ttfamily returned} has the same keyname. The parent\-Key is below the mountpoint, see kdbh\-Get\-Mountpoint().
+
+The caller kdb\-Set will fulfill following parts\-:
+\begin{DoxyItemize}
+\item If the user does not want hidden keys they will be thrown away. All keys in {\ttfamily returned} need to be stored permanently.
+\item If the user does not want dirs or only dirs \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} will remove the other.
+\item Sorting of the keyset. It is not important in which order the keys are appended. So make sure to set all keys, all directories and also all hidden keys. If some of them are not wished, the caller \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\-Set()} will sort them out.
+\end{DoxyItemize}
+\end{DoxyPrecond}
+\begin{DoxyInvariant}{Invariant}
+There are no global variables and kdbh\-Get\-Backend\-Data() only stores information which can be regenerated any time. The handle is the same when it is the same plugin.
+\end{DoxyInvariant}
+\begin{DoxyPostcond}{Postcondition}
+The information of the keyset {\ttfamily returned} is stored permanently.
+\end{DoxyPostcond}
+Lock your permanent storage in an exclusive way, no access of a concurrent elektra\-Plugin\-Set\-\_\-plugin() or \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\-Get()} is possible and these methods block until the function has finished. Otherwise declare kdbc\-Getno\-Lock().
+
+\begin{DoxySeeAlso}{See Also}
+\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\-Set()} for caller.
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of the plugin \\
+\hline
+{\em returned} & contains a keyset with relevant keys \\
+\hline
+{\em parent\-Key} & contains the information where to set the keys\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+When everything works gracefully return the number of keys you set. The cursor position and the keys remaining in the keyset are not important.
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+If any calls you use change errno, make sure to restore the old errno.
+\end{DoxyNote}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+{\em 0} & on success with no changed key in database \\
+\hline
+{\em -\/1} & on failure. The cause of the error needs to beadded in parent\-Key\\
+\hline
+\end{DoxyRetVals}
+You also have to make sure that \hyperlink{group__keyset_gaffe507ab9281c322eb16c3e992075d29}{ks\-Get\-Cursor()} shows to the position where the error appeared. \hypertarget{group__plugin_gabe78724d2d477eef39997fd9b85bff16}{\index{Plugins@{Plugins}!E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T@{E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T}}
+\index{E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T@{E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T}!Plugins@{Plugins}}
+\subsubsection[{E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T}]{\setlength{\rightskip}{0pt plus 5cm}Plugin$\ast$ E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T (
+\begin{DoxyParamCaption}
+\item[{doc}]{}
+\end{DoxyParamCaption}
+)}}\label{group__plugin_gabe78724d2d477eef39997fd9b85bff16}
+All K\-D\-B methods implemented by the plugin can have random names, except E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-X\-P\-O\-R\-T. This is the single symbol that will be looked up when loading the plugin, and the first method of the backend implementation that will be called.
+
+You need to use a macro so that both dynamic and static loading of the plugin works.
+
+The first parameter is the name of the plugin. Then every plugin should have\-: {\ttfamily E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-O\-P\-E\-N}, {\ttfamily E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-C\-L\-O\-S\-E}, {\ttfamily E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-G\-E\-T}, {\ttfamily E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-S\-E\-T} and optionally {\ttfamily E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-R\-R\-O\-R}.
+
+The list is terminated with {\ttfamily E\-L\-E\-K\-T\-R\-A\-\_\-\-P\-L\-U\-G\-I\-N\-\_\-\-E\-N\-D}.
+
+You must use static \char`\"{}char arrays\char`\"{} in a read only segment. Don't allocate storage, it won't be freed.
+
+\begin{DoxyReturn}{Returns}
+Plugin 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See Also}
+elektra\-Plugin\-Export() 
+\end{DoxySeeAlso}
