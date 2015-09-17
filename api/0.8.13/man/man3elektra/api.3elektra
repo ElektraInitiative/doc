@@ -1,0 +1,434 @@
+.TH "API Proposals for Elektra" 3elektra "Thu Sep 17 2015" "Version 0.8.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+API Proposals for Elektra \- 
+.PP
+for kdb\&.h\&.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "ssize_t \fBkeySetStringF\fP (Key *key, const char *format,\&.\&.\&.)"
+.br
+.RI "\fISet a formatted string\&. \fP"
+.ti -1c
+.RI "int \fBelektraArrayIncName\fP (Key *key)"
+.br
+.RI "\fIIncrement the name of the key by one\&. \fP"
+.ti -1c
+.RI "int \fBelektraKsToMemArray\fP (KeySet *ks, Key **buffer)"
+.br
+.RI "\fIBuilds an array of pointers to the keys in the supplied keyset\&. \fP"
+.ti -1c
+.RI "int \fBelektraKsFilter\fP (KeySet *result, KeySet *input, int(*filter)(const Key *k, void *argument), void *argument)"
+.br
+.RI "\fIreturn only those keys from the given keyset that pass the supplied filter function with the supplied argument \fP"
+.ti -1c
+.RI "KeySet * \fBelektraRenameKeys\fP (KeySet *config, const char *name)"
+.br
+.RI "\fITakes the first key and cuts off this common part for all other keys, instead name will be prepended\&. \fP"
+.ti -1c
+.RI "\fBelektraNamespace\fP \fBkeyGetNamespace\fP (const Key *key)"
+.br
+.RI "\fIFor currently valid namespaces see \fBelektraNamespace\fP\&. \fP"
+.ti -1c
+.RI "int \fBkeyLock\fP (Key *key, enum \fBelektraLockOptions\fP what)"
+.br
+.RI "\fIPermanently locks a part of the key\&. \fP"
+.ti -1c
+.RI "KeySet * \fBelektraArrayGet\fP (const Key *arrayParent, KeySet *keys)"
+.br
+.RI "\fIReturn all the array keys below the given arrayparent The arrayparent itself is not returned\&. \fP"
+.ti -1c
+.RI "Key * \fBelektraArrayGetNextKey\fP (KeySet *arrayKeys)"
+.br
+.RI "\fIReturn the next key in the given array\&. \fP"
+.ti -1c
+.RI "KeySet * \fBelektraKeyGetMetaKeySet\fP (const Key *key)"
+.br
+.RI "\fIReturn meta data as keyset\&. \fP"
+.ti -1c
+.RI "Key * \fBksPrev\fP (KeySet *ks)"
+.br
+.RI "\fIReturns the previous Key in a KeySet\&. \fP"
+.ti -1c
+.RI "Key * \fBksPopAtCursor\fP (KeySet *ks, cursor_t pos)"
+.br
+.RI "\fIPop key at given cursor position\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+for kdb\&.h\&. 
+
+
+.PP
+\fBWarning:\fP
+.RS 4
+Do not use these methods if you do not want to depend on exactly the Elektra version your binary was built for\&.
+.RE
+.PP
+These methods are a technical preview of what might be added in future Elektra releases\&. It is a requirement that methods are first added here, before they are added to the public API\&.
+.PP
+Usually, names in proposal stage should be prefixed with elektra to clearly mark that the signature is likely to be changed and not yet ABI compatible\&. 
+.SH "Function Documentation"
+.PP 
+.SS "KeySet* elektraArrayGet (const Key *arrayParent, KeySet *keys)"
+
+.PP
+Return all the array keys below the given arrayparent The arrayparent itself is not returned\&. For example, if user/config/# is an array, user/config is the array parent\&. Only the direct array keys will be returned\&. This means that for example user/config/#1/key will not be included, but only user/config/#1\&.
+.PP
+A new keyset will be allocated for the resulting keys\&. This means that the caller must ksDel the resulting keyset\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIarrayParent\fP the parent of the array to be returned 
+.br
+\fIkeys\fP the keyset containing the array keys\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a keyset containing the arraykeys (if any) 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP on NULL pointers 
+.RE
+.PP
+
+.SS "Key* elektraArrayGetNextKey (KeySet *arrayKeys)"
+
+.PP
+Return the next key in the given array\&. The function will automatically allocate memory for a new key and name it accordingly\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+The supplied keyset must contain only valid array keys\&.
+.RE
+.PP
+The caller has to keyDel the resulting key\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIarraykeys\fP the array where the new key will belong to
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the new array key on success 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP if the passed array is empty 
+.br
+\fINULL\fP on NULL pointers or if an error occurs 
+.RE
+.PP
+
+.SS "int elektraArrayIncName (Key *key)"
+
+.PP
+Increment the name of the key by one\&. Alphabetical order will remain
+.PP
+e\&.g\&. user/abc/#9 will be changed to user/abc/#_10
+.PP
+For the start: user/abc/# will be changed to user/abc/#0
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP which base name will be incremented
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on error (e\&.g\&. too large array, not validated array) 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "KeySet* elektraKeyGetMetaKeySet (const Key *key)"
+
+.PP
+Return meta data as keyset\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a duplication of the keyset representing the meta data 
+.RE
+.PP
+
+.SS "int elektraKsFilter (KeySet *result, KeySet *input, int(*)(const Key *k, void *argument)filter, void *argument)"
+
+.PP
+return only those keys from the given keyset that pass the supplied filter function with the supplied argument 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIresult\fP the keyset that should contain the filtered keys 
+.br
+\fIinput\fP the keyset whose keys should be filtered 
+.br
+\fIfilter\fP a function pointer to a function that will be used to filter the keyset\&. A key will be taken if the function returns a value greater than 0\&. 
+.br
+\fIargument\fP an argument that will be passed to the filter function each time it is called 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the number of filtered keys if the filter function always returned a positive value, -1 otherwise 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP on NULL pointer 
+.RE
+.PP
+
+.SS "int elektraKsToMemArray (KeySet *ks, Key **buffer)"
+
+.PP
+Builds an array of pointers to the keys in the supplied keyset\&. The keys are not copied, calling keyDel may remove them from the keyset\&.
+.PP
+The size of the buffer can be easily allocated via ksGetSize\&. Example: 
+.PP
+.nf
+1 KeySet *ks = somekeyset;
+2 Key **keyArray = calloc (ksGetSize(ks), sizeof (Key *));
+3 elektraKsToMemArray (ks, keyArray);
+4 \&.\&.\&. work with the array \&.\&.\&.
+5 free (keyArray);
+
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.br
+\fIbuffer\fP the buffer to put the result into 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the number of elements in the array if successful 
+.PP
+a negative number on null pointers or if an error occurred 
+.RE
+.PP
+
+.SS "KeySet* elektraRenameKeys (KeySet *config, const char *name)"
+
+.PP
+Takes the first key and cuts off this common part for all other keys, instead name will be prepended\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+a new allocated keyset with keys in user namespace\&.
+.RE
+.PP
+The first key is removed in the resulting keyset\&. 
+.SS "\fBelektraNamespace\fP keyGetNamespace (const Key *key)"
+
+.PP
+For currently valid namespaces see \fBelektraNamespace\fP\&. 
+.PP
+\fBSince:\fP
+.RS 4
+0\&.8\&.10 Added method to kdbproposal\&.h
+.RE
+.PP
+To handle every possible cases (including namespaces) a key can have: 
+.PP
+.nf
+switch (keyGetNamespace(k))
+{
+case KEY_NS_SPEC:
+        printf ("spec namespace\n");
+        break;
+case KEY_NS_PROC:
+        printf ("proc namespace\n");
+        break;
+case KEY_NS_DIR:
+        printf ("dir namespace\n");
+        break;
+case KEY_NS_USER:
+        printf ("user namespace\n");
+        break;
+case KEY_NS_SYSTEM:
+        printf ("system namespace\n");
+        break;
+case KEY_NS_EMPTY:
+        printf ("empty name\n");
+        break;
+case KEY_NS_NONE:
+        printf ("no key\n");
+        break;
+case KEY_NS_META:
+        printf ("meta key\n");
+        break;
+case KEY_NS_CASCADING:
+        printf ("cascading key\n");
+        break;
+}
+
+.fi
+.PP
+ To loop over all valid namespaces use: 
+.PP
+.nf
+for (elektraNamespace ns=KEY_NS_FIRST; ns<=KEY_NS_LAST; ++ns)
+{
+        // work with namespace
+        printf ("%d\n", ns);
+}
+
+.fi
+.PP
+ 
+.PP
+\fBNote:\fP
+.RS 4
+This method might be enhanced\&. You do not have any guarantee that, when for a specific name \fBKEY_NS_META\fP is returned today, that it still will be returned after the next recompilation\&. So make sure that your compiler gives you a warning for unhandled switches (gcc: -Wswitch or -Wswitch-enum if you want to handle default) and look out for those warnings\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the namespace of a key\&. 
+.RE
+.PP
+
+.SS "int keyLock (Key *key, enum \fBelektraLockOptions\fPwhat)"
+
+.PP
+Permanently locks a part of the key\&. This can be:
+.IP "\(bu" 2
+KEY_FLAG_LOCK_NAME to lock the name
+.IP "\(bu" 2
+KEY_FLAG_LOCK_VALUE to lock the value
+.IP "\(bu" 2
+KEY_FLAG_LOCK_META to lock the meta data
+.PP
+.PP
+To unlock the key, duplicate it\&.
+.PP
+It is also possible to lock when the key is created with \fBkeyNew()\fP\&.
+.PP
+Some data structures need to lock the key (most likely its name), so that the ordering does not get confused\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP which name should be locked
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyNew()\fP, \fBkeyDup()\fP, \fBksAppendKey()\fP 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI>0\fP the bits that were successfully locked 
+.br
+\fI0\fP if everything was locked before 
+.br
+\fI-1\fP if it could not be locked (nullpointer) 
+.RE
+.PP
+
+.SS "ssize_t keySetStringF (Key *key, const char *format, \&.\&.\&.)"
+
+.PP
+Set a formatted string\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key to set the string value 
+.br
+\fIformat\fP NULL-terminated text format string 
+.br
+\fI\&.\&.\&.\fP more arguments
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the size of the string as set (with including 0) 
+.RE
+.PP
+
+.SS "Key* ksPopAtCursor (KeySet *ks, cursor_tpos)"
+
+.PP
+Pop key at given cursor position\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset to pop key from 
+.br
+\fIc\fP where to pop
+.RE
+.PP
+The internal cursor will be rewinded using \fBksRewind()\fP\&. You can use \fBksGetCursor()\fP and \fBksSetCursor()\fP jump back to the previous position\&. e\&.g\&. to pop at current position within \fBksNext()\fP loop: 
+.PP
+.nf
+1 cursor_t c = ksGetCursor(ks);
+2 keyDel (ksPopAtCursor(ks, c));
+3 ksSetCursor(ks, c);
+4 ksPrev(ks); // to have correct key after next ksNext()
+
+.fi
+.PP
+.PP
+\fBWarning:\fP
+.RS 4
+do not use, will be superseded by external iterator API
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the popped key 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if ks is 0 
+.RE
+.PP
+
+.SS "Key* ksPrev (KeySet *ks)"
+
+.PP
+Returns the previous Key in a KeySet\&. KeySets have an internal cursor that can be reset with \fBksRewind()\fP\&. Every time \fBksPrev()\fP is called the cursor is decremented and the new current Key is returned\&.
+.PP
+You'll get a NULL pointer if the key before begin of the KeySet was reached\&.
+.PP
+Don't delete the key, use \fBksPop()\fP if you want to delete it\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the new current Key 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksRewind()\fP, \fBksCurrent()\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

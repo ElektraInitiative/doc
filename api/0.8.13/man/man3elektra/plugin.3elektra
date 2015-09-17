@@ -1,0 +1,807 @@
+.TH "Plugins" 3elektra "Thu Sep 17 2015" "Version 0.8.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Plugins \- 
+.PP
+Elektra plugin framework\&.  
+
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBELEKTRA_PLUGIN_FUNCTION\fP(module, function)   libelektra_##module##_LTX_elektraPlugin##function"
+.br
+.RI "\fIDeclare a plugin's function name suitable for compilation variants (see doc/tutorials)\&. \fP"
+.ti -1c
+.RI "#define \fBELEKTRA_README\fP(module)   ELEKTRA_README2(module)"
+.br
+.RI "\fIThe filename for inclusion of the readme for compilation variants (see doc/tutorials)\&. \fP"
+.ti -1c
+.RI "#define \fBELEKTRA_SET_ERROR\fP(number, key, text)"
+.br
+.RI "\fISets the error in the keys metadata\&. \fP"
+.ti -1c
+.RI "#define \fBELEKTRA_SET_ERRORF\fP(number, key, formatstring,\&.\&.\&.)"
+.br
+.RI "\fISets the error in the keys metadata\&. \fP"
+.ti -1c
+.RI "#define \fBELEKTRA_ADD_WARNINGF\fP(number, key, formatstring,\&.\&.\&.)"
+.br
+.RI "\fIAdds an warning in the keys metadata\&. \fP"
+.ti -1c
+.RI "#define \fBELEKTRA_ADD_WARNING\fP(number, key, text)"
+.br
+.RI "\fIAdds an warning in the keys metadata\&. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Plugin * \fBelektraPluginExport\fP (const char *pluginName,\&.\&.\&.)"
+.br
+.RI "\fIAllows one to Export Methods for a Plugin\&. \fP"
+.ti -1c
+.RI "KeySet * \fBelektraPluginGetConfig\fP (Plugin *handle)"
+.br
+.RI "\fIReturns the configuration of that plugin\&. \fP"
+.ti -1c
+.RI "void \fBelektraPluginSetData\fP (Plugin *plugin, void *data)"
+.br
+.RI "\fIStore a pointer to any plugin related data\&. \fP"
+.ti -1c
+.RI "void * \fBelektraPluginGetData\fP (Plugin *plugin)"
+.br
+.RI "\fIGet a pointer to any plugin related data stored before\&. \fP"
+.ti -1c
+.RI "int \fBelektraDocOpen\fP (Plugin *handle, Key *warningsKey)"
+.br
+.RI "\fIInitialize data for the plugin\&. \fP"
+.ti -1c
+.RI "int \fBelektraDocClose\fP (Plugin *handle, Key *warningsKey)"
+.br
+.RI "\fIFinalize the plugin\&. \fP"
+.ti -1c
+.RI "int \fBelektraDocGet\fP (Plugin *handle, KeySet *returned, Key *parentKey)"
+.br
+.RI "\fIGet data from storage to application\&. \fP"
+.ti -1c
+.RI "int \fBelektraDocSet\fP (Plugin *handle, KeySet *returned, Key *parentKey)"
+.br
+.RI "\fISet data from application to storage\&. \fP"
+.ti -1c
+.RI "int \fBelektraDocError\fP (Plugin *handle, KeySet *returned, Key *parentKey)"
+.br
+.RI "\fIRollback in case of errors\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Elektra plugin framework\&. 
+
+
+.PP
+\fBSince:\fP
+.RS 4
+version 0\&.4\&.9, Elektra can dynamically load different key storage plugins\&.
+.PP
+version 0\&.7\&.0 Elektra can have multiple backends, mounted at any place in the key database\&.
+.PP
+version 0\&.8\&.0 Elektra backends are composed out of multiple plugins\&.
+.RE
+.PP
+To get started with writing plugins, first read our plugin tutorial in doc/tutorials!
+.PP
+A plugin can implement any functionality related to configuration\&. There are 6 possible entry points for a plugin\&.
+.IP "\(bu" 2
+\fBelektraDocGet()\fP will be called when configuration or the plugin's contract is retrieved from the key database
+.IP "\(bu" 2
+\fBelektraDocSet()\fP will be called when configuration is written to the key database
+.IP "\(bu" 2
+\fBelektraDocOpen()\fP will be called before any other method of the plugin is called
+.IP "\(bu" 2
+\fBelektraDocClose()\fP will be called as last method
+.IP "\(bu" 2
+\fBelektraDocError()\fP will be called when \fBkdbSet()\fP failed (to give the plugin a chance to recover/undo its actions)
+.IP "\(bu" 2
+\fBelektraPluginExport()\fP exports all methods for the plugin\&.
+.PP
+.PP
+The names described here contain 'Doc' within the method's name just because the plugin described in this document is called doc (the doxygen source was generated from src/plugins/doc/doc\&.h)\&. Always replace Doc with the name of the plugin you are going to implement or use \fBELEKTRA_PLUGIN_FUNCTION\fP\&.
+.PP
+\fBOverview\fP
+.RS 4
+There are different types of plugins for different concerns\&. They all only have the entry points as defined above\&. The types of plugins handled in this document:
+.IP "\(bu" 2
+A storage plugin gets an empty keyset in \fBelektraDocGet()\fP and constructs the information out from a file\&. In \fBelektraDocSet()\fP the keyset is written to a file\&. 
+.br
+ Other persistent storage then a file is not handled within this document because it involves many other issues\&. For files the resolver plugin already takes care for transactions and rollback\&. So the storage plugin is the source and dump as known from pipes and filters\&.
+.IP "\(bu" 2
+A filter plugin is a plugin which operates on existing keys\&. It may process or change the keyset\&. Or it may reject specific keysets which do not meet some criteria\&.
+.PP
+.RE
+.PP
+Use following include to have the functions that are not implement by you available:
+.PP
+.PP
+.nf
+#include <kdbplugin\&.h>
+.fi
+.PP
+ 
+.PP
+\fBError and Warnings\fP
+.RS 4
+In case of trouble, in some methods you can use the macro \fBELEKTRA_SET_ERROR\fP (in other methods it is not allowed)\&. You might add warnings with the macro \fBELEKTRA_ADD_WARNING\fP\&. Read the documentation of the individual methods to decide what you should do\&.
+.RE
+.PP
+Use following include to have the macros for setting the error and adding the warnings available:
+.PP
+.PP
+.nf
+#include <kdberrors\&.h>
+.fi
+.PP
+ 
+.PP
+\fBSee also:\fP
+.RS 4
+http://www.libelektra.org/ftp/elektra/thesis.pdf for an detailed explanation and description of other types of plugins\&. Do not hesitate to ask at the mailinglist if anything is unclear\&. 
+.RE
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define ELEKTRA_ADD_WARNING(number, key, text)"
+
+.PP
+Adds an warning in the keys metadata\&. Include kdberrors\&.h to make it work:
+.PP
+.PP
+.nf
+#include <kdberrors\&.h>
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fInumber\fP the warning number from src/liberror/specification 
+.br
+\fIkey\fP to write the error to 
+.br
+\fItext\fP additional text for the user 
+.RE
+.PP
+
+.SS "#define ELEKTRA_ADD_WARNINGF(number, key, formatstring, \&.\&.\&.)"
+
+.PP
+Adds an warning in the keys metadata\&. Include kdberrors\&.h to make it work:
+.PP
+.PP
+.nf
+#include <kdberrors\&.h>
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fInumber\fP the warning number from src/liberror/specification 
+.br
+\fIkey\fP to write the error to 
+.br
+\fIformatstring\fP a format string as in printf 
+.br
+\fI\&.\&.\&.\fP further arguments as in printf 
+.RE
+.PP
+
+.SS "#define ELEKTRA_PLUGIN_FUNCTION(module, function)   libelektra_##module##_LTX_elektraPlugin##function"
+
+.PP
+Declare a plugin's function name suitable for compilation variants (see doc/tutorials)\&. It can be used in the same way as \fBelektraPluginExport()\fP\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+ELEKTRA_PLUGIN_EXPORT
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIplugin\fP the name of the plugin 
+.br
+\fIwhich\fP which function it is (open, close, get, set, error) 
+.RE
+.PP
+
+.SS "#define ELEKTRA_README(module)   ELEKTRA_README2(module)"
+
+.PP
+The filename for inclusion of the readme for compilation variants (see doc/tutorials)\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIplugin\fP the name of the plugin 
+.RE
+.PP
+
+.SS "#define ELEKTRA_SET_ERROR(number, key, text)"
+
+.PP
+Sets the error in the keys metadata\&. Include kdberrors\&.h to make it work:
+.PP
+.PP
+.nf
+#include <kdberrors\&.h>
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fInumber\fP the error number from src/liberror/specification 
+.br
+\fIkey\fP to write the error to 
+.br
+\fItext\fP additional text for the user 
+.RE
+.PP
+
+.SS "#define ELEKTRA_SET_ERRORF(number, key, formatstring, \&.\&.\&.)"
+
+.PP
+Sets the error in the keys metadata\&. Include kdberrors\&.h to make it work:
+.PP
+.PP
+.nf
+#include <kdberrors\&.h>
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fInumber\fP the error number from src/liberror/specification 
+.br
+\fIkey\fP to write the error to 
+.br
+\fIformatstring\fP a format string as in printf 
+.br
+\fI\&.\&.\&.\fP further arguments as in printf 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraDocClose (Plugin *handle, Key *warningsKey)"
+
+.PP
+Finalize the plugin\&. Called prior to unloading the plugin dynamic module\&. After this function is called, it is ensured that no functions from your plugin will ever be accessed again\&.
+.PP
+Make sure to free all memory that your plugin requested at runtime\&. Also make sure to free what you stored by \fBelektraPluginSetData()\fP before\&.
+.PP
+So for the Doc plugin we need to:
+.PP
+.PP
+.nf
+int elektraDocClose(Plugin *handle, Key *warningsKey ELEKTRA_UNUSED)
+{
+        free (elektraPluginGetData(handle));
+
+        return 0; /* success */
+}
+.fi
+.PP
+ After this call, libelektra\&.so will unload the plugin library, so this is the point to shutdown any affairs with the storage\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of the plugin 
+.br
+\fIwarningsKey\fP can be used to to add warnings using \fBELEKTRA_ADD_WARNING\fP (Do not add errors!)
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success (no other return value currently allowed)
+.br
+\fI-1\fP on problems (only use ELEKTRA_ADD_WARNING, but never set an error)\&.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbClose()\fP 
+.PP
+\fBelektraPluginGetData()\fP, \fBelektraPluginSetData()\fP and \fBelektraPluginGetConfig()\fP 
+.RE
+.PP
+
+.SS "int elektraDocError (Plugin *handle, KeySet *returned, Key *parentKey)"
+
+.PP
+Rollback in case of errors\&. First for all plugins \fBelektraDocSet()\fP will be called\&. If any plugin had problems before the commit (done by the resolver plugin), we can safely rollback our changes\&.
+.PP
+This method is rarely used by plugins, it is mainly used for resolvers (to implement rollback) or by logging plugins\&. It is not needed for storage plugins, because they only operate on temporary files created by the resolver\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of the plugin 
+.br
+\fIreturned\fP contains a keyset with relevant keys 
+.br
+\fIparentKey\fP contains the information where to set the keys\&. can be used to add warnings with the macro \fBELEKTRA_ADD_WARNING\fP, but do not add errors!
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP on success with no action 
+.br
+\fI-1\fP on failure (you can add warnings, but we are already in an error state, so do not set the error)\&. 
+.RE
+.PP
+
+.SS "int elektraDocGet (Plugin *handle, KeySet *returned, Key *parentKey)"
+
+.PP
+Get data from storage to application\&. Retrieve information from a permanent storage to construct a keyset\&.
+.SH "\&."
+.PP
+The \fBelektraDocGet()\fP function handle everything related to receiving keys\&.
+.SS "Contract Handling"
+The contract is a keyset that needs to be returned if the parentKey is system/elektra/modules/yourpluginname\&.
+.PP
+Which keys and their meaning is specified in doc/CONTRACT\&.ini
+.PP
+Here is an example for our doc plugin:
+.PP
+.PP
+.nf
+int elektraDocGet(Plugin *plugin ELEKTRA_UNUSED, KeySet *returned, Key *parentKey)
+{
+        if (!strcmp(keyName(parentKey), "system/elektra/modules/doc"))
+        {
+                KeySet *contract = ksNew (30,
+                keyNew ("system/elektra/modules/doc",
+                        KEY_VALUE, "doc plugin waits for your orders", KEY_END),
+                keyNew ("system/elektra/modules/doc/exports", KEY_END),
+                keyNew ("system/elektra/modules/doc/exports/open",
+                        KEY_FUNC, elektraDocOpen, KEY_END),
+                keyNew ("system/elektra/modules/doc/exports/close",
+                        KEY_FUNC, elektraDocClose, KEY_END),
+                keyNew ("system/elektra/modules/doc/exports/get",
+                        KEY_FUNC, elektraDocGet, KEY_END),
+                keyNew ("system/elektra/modules/doc/exports/set",
+                        KEY_FUNC, elektraDocSet, KEY_END),
+                keyNew ("system/elektra/modules/doc/exports/error",
+                        KEY_FUNC, elektraDocError, KEY_END),
+#include ELEKTRA_README(doc)
+                keyNew ("system/elektra/modules/doc/infos/version",
+                        KEY_VALUE, PLUGINVERSION, KEY_END),
+                KS_END);
+                ksAppend (returned, contract);
+                ksDel (contract);
+
+                return 1; /* success */
+        }
+.fi
+.PP
+ Some clauses of the contract, especially the description of the plugin can be done more conveniently directly in a README\&.md that is included by \fBELEKTRA_README\fP\&.
+.SS "Storage Plugins"
+For storage plugins the filename is written in the value of the parentKey\&. So the first task of the plugin is to open that file\&. Then it should parse its content and construct a keyset with all information of that file\&.
+.PP
+You need to be able to reconstruct the same file with the information of the keyset\&. So be sure to copy all comments, whitespaces and so on into some metadata of the keys\&. Otherwise the information is lost after writing the file the next time\&.
+.PP
+Now lets look at an example how the typical \fBelektraDocGet()\fP might be implemented\&. To explain we introduce some pseudo functions which do all the work with the storage (which is of course 90% of the work for a real plugin):
+.IP "\(bu" 2
+parse_key will parse a key and a value from an open file handle
+.PP
+.PP
+The typical loop for a storage plugin will be like:
+.PP
+.PP
+.nf
+        FILE *fp = fopen (keyString(parentKey), "r");
+        char *key;
+        char *value;
+
+        while (parseKey(fp, &key, &value) >= 1)
+        {
+                Key *read = keyNew(0);
+                if (keySetName(read, key) == -1)
+                {
+                        fclose (fp);
+                        keyDel (read);
+                        ELEKTRA_SET_ERROR(59, parentKey, key);
+                        return -1;
+                }
+                keySetString(read, value);
+
+                ksAppendKey (returned, read);
+                free (key);
+                free (value);
+        }
+
+        if (feof(fp) == 0)
+        {
+                fclose (fp);
+                ELEKTRA_SET_ERROR(60, parentKey, "not at the end of file");
+                return -1;
+        }
+
+        fclose (fp);
+.fi
+.PP
+ 
+.SS "Filter Plugins"
+For filter plugins the actual task is rather unspecified\&. You basically can do anything with the keyset\&. To get roundtrip properties you might want to undo any changes you did in \fBelektraDocSet()\fP\&.
+.PP
+The pseudo functions (which do the real work) are:
+.IP "\(bu" 2
+do_action() which processes every key in this filter
+.PP
+.PP
+.PP
+.nf
+        Key *k;
+        ksRewind (returned);
+        while ((k = ksNext (returned)) != 0)
+        {
+                doAction(k);
+        }
+
+        return 1; // success
+}
+.fi
+.PP
+.PP
+\fBPrecondition:\fP
+.RS 4
+The caller \fBkdbGet()\fP will make sure before you are called that the parentKey:
+.IP "\(bu" 2
+is a valid key (means that it is a system or user key)\&.
+.IP "\(bu" 2
+is your mountpoint and that your plugin is responsible for it\&. 
+.PP
+.PP
+and that the returned:
+.IP "\(bu" 2
+is a valid keyset\&.
+.IP "\(bu" 2
+your plugin is only called when needed (e\&.g\&. only if file was modified)
+.IP "\(bu" 2
+has \fCall\fP keys related to your plugin\&.
+.IP "\(bu" 2
+contains only valid keys below (see \fBkeyIsBelow()\fP) your parentKey\&.
+.IP "\(bu" 2
+is in a sorted order (given implicit by KeySet) 
+.PP
+.PP
+and that the handle:
+.IP "\(bu" 2
+is valid for your plugin\&.
+.IP "\(bu" 2
+that \fBelektraPluginGetData()\fP contains the same handle for lifetime of your plugin\&.
+.PP
+.PP
+The caller \fBkdbGet()\fP will make sure that afterwards you were called, that:
+.IP "\(bu" 2
+other plugins below your plugin will be called again recursively\&.
+.IP "\(bu" 2
+that all keys are merged to one keyset the user gets
+.IP "\(bu" 2
+that all keys (that should not be removed) are passed to \fBkdbSet()\fP if writing to disc is needed\&.
+.PP
+.RE
+.PP
+\fBInvariant:\fP
+.RS 4
+There are no global variables and \fBelektraPluginSetData()\fP stores all information\&. The handle is to be guaranteed to be the same if it is the same plugin\&.
+.RE
+.PP
+\fBPostcondition:\fP
+.RS 4
+The keyset \fCreturned\fP has the \fCparentKey\fP and all keys below (\fBkeyIsBelow()\fP) with all information from the storage\&. Make sure to return all keys, all directories and also all hidden keys\&. If some of them are not wished, the caller \fBkdbGet()\fP will drop these keys with additional plugins\&.
+.RE
+.PP
+\fBUpdating\fP
+.RS 4
+To get all keys out of the storage over and over again can be very inefficient\&. You might know a more efficient method to know if the key needs update or not, e\&.g\&. by stating it or by an external time stamp info\&. For file storage plugins this is automatically done for you by the resolver\&. For other types (e\&.g\&. databases) you need to implement your own resolver doing this\&.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP for caller\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIreturned\fP contains a keyset where the function need to append the keys got from the storage\&. There might be also some keys inside it, see conditions\&. You may use them to support efficient updating of keys, see \fBupdating\fP\&. 
+.br
+\fIparentKey\fP contains the information below which key the keys should be gotten\&.
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP when nothing was to do 
+.br
+\fI-1\fP on failure, the current key in returned shows the position\&. use \fBELEKTRA_SET_ERROR\fP of kdberrors\&.h to define the error code\&. You additionally can add as many warnings as you would like to add\&. 
+.RE
+.PP
+
+.SS "int elektraDocOpen (Plugin *handle, Key *warningsKey)"
+
+.PP
+Initialize data for the plugin\&. This is the first method called after dynamically loading this plugin\&. It is guaranteed, that this method will be called before any other method\&.
+.PP
+This method is responsible for:
+.IP "\(bu" 2
+plugin's specific configuration gathering
+.IP "\(bu" 2
+initialization of all plugin's internal structs
+.IP "\(bu" 2
+initial setup of all I/O details such as opening a file, connecting to a database, setup connection to a server, iff this cannot be done per invocation in \fBelektraDocGet()\fP and \fBelektraDocSet()\fP\&.
+.PP
+.PP
+You may also read the configuration you can get with \fBelektraPluginGetConfig()\fP and transform it into other structures used by your plugin\&.
+.PP
+\fBNote:\fP
+.RS 4
+The plugin must not have any global variables\&. If you have one Elektra will not be threadsafe\&. Do not assume that your plugin will be opened only once or will not be reopened at a later time\&.
+.RE
+.PP
+Instead of global variables the methods \fBelektraPluginGetData()\fP and \fBelektraPluginSetData()\fP exist to store and get any information related to your plugin\&.
+.PP
+The correct substitute for global variables will be:
+.PP
+.PP
+.nf
+typedef struct { int global; } GlobalData;
+.fi
+.PP
+ and then initialize it using:
+.PP
+.PP
+.nf
+int elektraDocOpen(Plugin *handle, Key *warningsKey ELEKTRA_UNUSED)
+{
+        GlobalData *data;
+        KeySet *config = elektraPluginGetConfig(handle);
+        Key * kg = ksLookupByName(config, "/global", 0);
+
+        data=malloc(sizeof(GlobalData));
+        data->global = 0;
+        if (kg) data->global = atoi(keyString(kg));
+        elektraPluginSetData(handle,data);
+.fi
+.PP
+ Make sure to free everything you allocate within \fBelektraDocClose()\fP\&.
+.PP
+If your plugin has no useful way to startup without config, the module loader would not be able to load the module\&. To solve that problem the module loader adds the configuration key /module\&. Even if your plugin is basically not able to startup successfully, it should still provide a fallback when /module is present, so that \fBelektraDocGet()\fP on system/elektra/modules can be called successfully later on\&.
+.PP
+.PP
+.nf
+        if (ksLookupByName(config, "/module", 0))
+        {
+                return 0;
+        }
+        // do some setup that will fail without configuration
+.fi
+.PP
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on error, your plugin will be removed then and the missing plugin added instead\&. Use \fBELEKTRA_ADD_WARNING\fP to indicate the problem\&. The system will automatically add the information that the plugin was removed, so you do not need the user give that information\&.
+.br
+\fI0\fP on success
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of the plugin 
+.br
+\fIwarningsKey\fP can be used to add warnings with the macro \fBELEKTRA_ADD_WARNING\fP (Do not add errors!) 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraPluginGetData()\fP, \fBelektraPluginSetData()\fP and \fBelektraPluginGetConfig()\fP 
+.PP
+\fBelektraDocClose()\fP 
+.RE
+.PP
+
+.SS "int elektraDocSet (Plugin *handle, KeySet *returned, Key *parentKey)"
+
+.PP
+Set data from application to storage\&. This function does everything related to set and remove keys in a plugin\&. There is only one function for that purpose to make implementation of file based plugins much easier\&.
+.PP
+The keyset \fCreturned\fP was filled in with information from the application using elektra and the task of this function is to store it in a permanent way so that a subsequent call of elektraPluginGet() can rebuild the keyset as it was before\&. See the live cycle to understand:
+.PP
+.PP
+.nf
+static void usercode (KDB *handle, KeySet *keyset, Key *key)
+{
+        // some more user code
+        keySetString (key, "mycomment"); // the user changes the key
+        ksAppendKey(keyset, key); // append the key to the keyset
+        kdbSet (handle, keyset, 0); // and syncs it to disc
+}
+
+// so now kdbSet is called
+int elektraKdbSet(KDB *handle, KeySet *keyset, Key *parentKey)
+{
+        int ret = 0;
+        // find appropriate plugin and then call it:
+        Plugin *plugin = findPlugin(handle);
+        ret = elektraDocSet (plugin, keyset, parentKey);
+        // the keyset with the key (and others for this plugin)
+        // will be passed to this function
+        return ret;
+}
+
+// so now elektraPluginSet(), which is the function described here,
+// is called:
+int elektraPluginSet(Plugin *plugin ELEKTRA_UNUSED, KeySet *returned, Key *parentKey ELEKTRA_UNUSED)
+{
+        // the task of elektraPluginSet is now to store the keys
+        Key *k;
+        ksRewind (returned);
+        while ((k = ksNext (returned)) != 0)
+        {
+                saveToDisc (k);
+        }
+
+        return 1; /* success */
+}
+.fi
+.PP
+ Of course all information of every key in the keyset \fCreturned\fP need to be stored permanently\&. So this specification needs to give an exhaustive list of information present in a key\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+The keyset \fCreturned\fP holds all keys which must be saved permanently for this keyset\&. The keyset is sorted and rewinded\&.
+.PP
+The \fCparentKey\fP is the key which is the ancestor for all other keys in the keyset\&. The first key of the keyset \fCreturned\fP has the same keyname\&. The name of the parentKey marks the mountpoint\&. The string of the parentKey is the filename to write to\&.
+.RE
+.PP
+Make sure to set all keys, all directories and also all hidden keys\&. If some of them are not wished, the caller \fBkdbSet()\fP and plugins will sort them out\&.
+.PP
+\fBInvariant:\fP
+.RS 4
+There are no global variables, but instead \fBelektraPluginGetData()\fP will be used\&. The handle is the same when it is the same plugin\&.
+.RE
+.PP
+\fBPostcondition:\fP
+.RS 4
+The information of the keyset \fCreturned\fP is stored permanently\&.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbSet()\fP for caller\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of the plugin 
+.br
+\fIreturned\fP contains a keyset with relevant keys 
+.br
+\fIparentKey\fP contains the information where to set the keys (name is mountpoint your plugin is mounted, string is the file to write to)
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+When everything works gracefully return the number of keys you set\&. The cursor position and the keys remaining in the keyset are not important\&.
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP on success with no changed key in database 
+.br
+\fI-1\fP on failure\&. The cause of the error needs to be added in parentKey You also have to make sure that \fBksGetCursor()\fP shows to the position where the error appeared\&. Set an error using \fBELEKTRA_SET_ERROR\fP to inform the user what went wrong\&. Additionally you can add any number of warnings with \fBELEKTRA_ADD_WARNING\fP\&. 
+.RE
+.PP
+
+.SS "Plugin* elektraPluginExport (const char *pluginName, \&.\&.\&.)"
+
+.PP
+Allows one to Export Methods for a Plugin\&. This function must be called within ELEKTRA_PLUGIN_EXPORT\&. It define the plugin's methods that will be exported\&.
+.PP
+All KDB methods implemented by the plugin basically could have random names (convention is elektraName*), except ELEKTRA_PLUGIN_EXPORT\&.
+.PP
+This is the single symbol that will be looked up when loading the plugin, and the first method of the backend implementation that will be called\&.
+.PP
+You need to use a macro so that both dynamic and static loading of the plugin works\&. For example for the doc plugin: 
+.PP
+.nf
+Plugin *ELEKTRA_PLUGIN_EXPORT(doc)
+{
+        return elektraPluginExport(DOC_PLUGIN_NAME,
+                ELEKTRA_PLUGIN_OPEN,    &elektraDocOpen,
+                ELEKTRA_PLUGIN_CLOSE,   &elektraDocClose,
+                ELEKTRA_PLUGIN_GET,     &elektraDocGet,
+                ELEKTRA_PLUGIN_SET,     &elektraDocSet,
+                ELEKTRA_PLUGIN_ERROR,   &elektraDocError,
+                ELEKTRA_PLUGIN_END);
+}
+
+.fi
+.PP
+ The first parameter is the name of the plugin\&. Then every plugin should have: \fCELEKTRA_PLUGIN_OPEN\fP, \fCELEKTRA_PLUGIN_CLOSE\fP, \fCELEKTRA_PLUGIN_GET\fP, \fCELEKTRA_PLUGIN_SET\fP and optionally \fCELEKTRA_PLUGIN_ERROR\fP\&.
+.PP
+The list is terminated with \fCELEKTRA_PLUGIN_END\fP\&.
+.PP
+You must use static 'char arrays' in a read only segment\&. Don't allocate storage, it won't be freed\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIpluginName\fP the name of this plugin 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+an object that contains all plugin information needed by libelektra\&.so 
+.RE
+.PP
+
+.SS "KeySet* elektraPluginGetConfig (Plugin *handle)"
+
+.PP
+Returns the configuration of that plugin\&. 
+.IP "\(bu" 2
+The user/ config holds plugin specific configuration
+.IP "\(bu" 2
+The system/ config holds backend specific configuration
+.PP
+.PP
+So prefer cascading lookups to honor both\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP a pointer to the plugin
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+keyset to the configuration for that plugin 
+.RE
+.PP
+
+.SS "void* elektraPluginGetData (Plugin *plugin)"
+
+.PP
+Get a pointer to any plugin related data stored before\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIplugin\fP a pointer to the plugin 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to the data 
+.RE
+.PP
+
+.SS "void elektraPluginSetData (Plugin *plugin, void *data)"
+
+.PP
+Store a pointer to any plugin related data\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIplugin\fP a pointer to the plugin 
+.br
+\fIdata\fP the pointer to the data 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.
