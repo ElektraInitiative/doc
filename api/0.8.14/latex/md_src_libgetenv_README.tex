@@ -1,0 +1,176 @@
+
+\begin{DoxyItemize}
+\item infos = Information about elektrify getenv below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/description =
+\end{DoxyItemize}
+
+\section*{kdb-\/elektrify-\/getenv(1) -- elektrify the environment of applications }
+
+{\ttfamily kdb elektrify-\/getenv} $<$application$>$ $<$options$>$
+
+\subsection*{D\+E\+S\+C\+R\+I\+P\+T\+I\+O\+N}
+
+When an application is elektrified using libelektragetenv, it does not only request {\ttfamily environ}, but also Elektra for every getenv(3) and secure\+\_\+getenv(3) library call.
+
+Its main purpose is to\+:
+
+
+\begin{DoxyItemize}
+\item have standard ways to modify the environment
+\item make relogin (or even restart!) of applications unnecessary
+\item allow a hierarchical structure for environment
+\item allow settings to only apply for individual applications or only in special context
+\item still preserve the advantages (inheriting of environment to subprocesses)
+\item Availability in at, cron and similar scripts.
+\end{DoxyItemize}
+
+It is implemented using a L\+D\+\_\+\+P\+R\+E\+L\+O\+A\+D technique, see U\+S\+A\+G\+E below for global activation.
+
+\subsection*{L\+O\+O\+K\+U\+P\+S}
+
+The main purpose of this approach is to finally have a well-\/defined way to set and get environment variables. Elektra's variables will be in use immediately for every newly started application (no relogin necessary).
+
+To do so, getenv(3) will lookup multiple sources next to searching in the environment (environ). As running example will use {\ttfamily getenv(\char`\"{}\+H\+O\+M\+E\char`\"{}) -\/$>$ /path/to/home}\+:
+
+
+\begin{DoxyEnumerate}
+\item Given commandline parameters will always be preferred (see O\+P\+T\+I\+O\+N\+S below).
+
+E.\+g. {\ttfamily kdb elektrify-\/getenv $<$app$>$ -\/-\/elektra\+:H\+O\+M\+E=/path/to/home}
+\item Then {\ttfamily /env/override/$<$key$>$} will be looked up, where $<$key$>$ is the parameter to {\ttfamily getenv}. If found, the key will be returned, if it is a null keys, {\ttfamily getenv} will return {\ttfamily N\+U\+L\+L}.
+
+E.\+g. {\ttfamily kdb set user/env/override/\+H\+O\+M\+E /path/to/home}
+\item Then environment will be requested.
+
+E.\+g. {\ttfamily H\+O\+M\+E=/path/to/home kdb elektrify-\/getenv $<$application$>$}
+\end{DoxyEnumerate}
+\begin{DoxyEnumerate}
+\item Then {\ttfamily /env/fallback/$<$key$>$} will be looked up. If found, the key will be returned, if it is a null keys, {\ttfamily getenv} will return {\ttfamily N\+U\+L\+L}.
+
+E.\+g. {\ttfamily kdb set user/env/fallback/\+H\+O\+M\+E /path/to/home}
+\end{DoxyEnumerate}
+
+\subsection*{O\+P\+T\+I\+O\+N\+S}
+
+When {\ttfamily elektrify-\/getenv} is active, every application additionally accepts Elektra's getenv options. Interleaving Elektra's and the application's options is allowed. Elektra will parse its options (starting with --elektra) first and discard them before the other application is started. Therefore the application will not see that they even existed, e.\+g.\+: given {\ttfamily kdb elektrify-\/getenv $<$application$>$ -\/\+V -\/-\/elektra-\/debug -\/\+L} the application will be called with {\ttfamily $<$application$>$ -\/\+V -\/\+L}.
+
+\subsubsection*{Internal Options}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/elektra-\/help}\+: Outputs this help.
+\item {\ttfamily -\/-\/elektra-\/version}\+: Gives version information.
+\item {\ttfamily -\/-\/elektra-\/debug=file}, {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+D\+E\+B\+U\+G} or {\ttfamily /env/option/debug}\+: Trace all getenv(3) calls to a file. stderr if no file is given, e.\+g. {\ttfamily kdb set user/env/option/debug \char`\"{}\char`\"{}}. Note that null values (no forth argument), will disable debug messages. See examples below.
+\item {\ttfamily -\/-\/elektra-\/clearenv}, {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+C\+L\+E\+A\+R\+E\+N\+V} or {\ttfamily /env/option/clearenv}\+: Call clearenv(3) before entering main. This is a recommended security feature. Elektra itself, if configured that way, will still be able to use the environment.
+\item {\ttfamily -\/-\/elektra-\/reload-\/timeout=time\+\_\+in\+\_\+ms}, {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+R\+E\+L\+O\+A\+D\+\_\+\+T\+I\+M\+E\+O\+U\+T} or {\ttfamily /env/option/reload\+\_\+timeout}\+: Activate a timeout based feature when a time is given in ms (and is not 0).
+\end{DoxyItemize}
+
+Internal Options are available in three different variants\+:
+
+
+\begin{DoxyEnumerate}
+\item as commandline parameter\+: {\ttfamily -\/-\/elektra-\/$<$option$>$}, which are {\itshape not} passed through exec(3) calls.
+\end{DoxyEnumerate}
+\begin{DoxyEnumerate}
+\item as environment variable\+: {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+$<$O\+P\+T\+I\+O\+N$>$}. which might be passed through exec(3) calls, but are removed by clearenv(3) calls.
+\end{DoxyEnumerate}
+\begin{DoxyEnumerate}
+\item as Elektra K\+D\+B entry\+: {\ttfamily /env/option/$<$option$>$}, which are the way to achieve an option to be enabled for every application.
+
+E.\+g. {\ttfamily kdb set user/env/option/clearenv \char`\"{}\char`\"{}} to clear the environment for all applications started by that user (note that at least {\ttfamily P\+A\+T\+H} should to be set using {\ttfamily kdb set user/env/fallback/\+P\+A\+T\+H \char`\"{}/bin\+:/usr/bin\char`\"{}} then).
+
+Note, that null keys are equal to non-\/set options. E.\+g. {\ttfamily kdb set system/env/option/debug \char`\"{}/tmp/elektra.\+log\char`\"{}} and {\ttfamily kdb set user/env/option/debug} will activate logging for the system, except for the current user.
+\end{DoxyEnumerate}
+
+\subsubsection*{Contextual Options}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/elektra\%$<$name$>$\%=$<$value$>$} or {\ttfamily /env/layer/$<$name$>$}\+: Add the contextual information (=layer) {\ttfamily \%$<$name$>$\%} with it's value {\ttfamily $<$value$>$}. Note that {\ttfamily name\%} is predefined with {\ttfamily argv\mbox{[}0\mbox{]}} and {\ttfamily basename\%} with {\ttfamily basename(argv\mbox{[}0\mbox{]})}.
+\end{DoxyItemize}
+
+Values can contain / to form hierarchies, e.\+g. {\ttfamily -\/-\/elektraname\%=app/profile}
+
+\subsubsection*{Options for Applications}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/elektra\+:key=value}, {\ttfamily /env/override/$<$key$>$} or {\ttfamily /env/fallback/$<$key$>$}\+: set a key/value to be preferred, i.\+e. the first to considered as explained in L\+O\+O\+K\+U\+P.
+\end{DoxyItemize}
+
+Keys can contain / to form hierarchies, e.\+g. {\ttfamily -\/-\/elektra\+:my/\+H\+O\+M\+E=/path/to/home}.
+
+\subsection*{U\+S\+A\+G\+E}
+
+To always use Elektra's getenv environment, simply add the output to the file\+: \begin{DoxyVerb}kdb elektrify-getenv | tail -1 | sudo tee -a /etc/ld.so.preload
+\end{DoxyVerb}
+
+
+this also can be done using Elektra\+: \begin{DoxyVerb}sudo kdb mount /etc/ld.so.preload system/ld/preload line null
+sudo kdb set "system/ld/preload/new"  `kdb elektrify-getenv | tail -1`
+\end{DoxyVerb}
+
+
+\subsection*{C\+O\+N\+T\+E\+X\+T}
+
+The metadata {\ttfamily context} in the specification can be used to facilitate a context-\/dependent lookup. In its metavalue all replacements of {\ttfamily \%$<$name$>$\%} will be replaced by the given contextual options {\ttfamily -\/-\/elektra\%$<$name$>$\%=$<$value$>$} and {\ttfamily /env/layer/$<$name$>$} keys.
+
+E.\+g. to have a different home directory for any user and application\+: \begin{DoxyVerb}kdb set user/env/layer/user markus
+kdb set user/users/markus/konqueror/HOME /home/download
+kdb setmeta spec/env/override/HOME context  /users/%user%/%name%/HOME
+\end{DoxyVerb}
+
+
+\subsection*{B\+U\+G\+S}
+
+Some applications do not use {\ttfamily getenv(3)} or {\ttfamily secure\+\_\+getenv(3)} for requesting the environment, e.\+g. shells. This approach cannot work for them.
+
+In the startup-\/phase (before main is even entered), {\ttfamily getenv(3)} will not consider {\ttfamily /env/override/} or {\ttfamily /env/fallback}.
+
+Elektra internally tries to avoid using the environment. Some resolvers, however, use it to be conform to some specifications, e.\+g. X\+D\+G. Depending on the setup you use, these parameters might be used. For more information see\+: \begin{DoxyVerb}kdb info resolver
+\end{DoxyVerb}
+
+
+For these parameters, {\ttfamily /env/override/} or {\ttfamily /env/fallback} will {\itshape not} be used internally, but will be used if applications request them, too.
+
+If you use the standard resolvers, the bug won't have any effect.
+
+Also note that {\ttfamily -\/-\/elektra-\/debug} or {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+D\+E\+B\+U\+G} does {\itshape not} log {\ttfamily getenv(3)} used by plugins during the startup-\/phase.
+
+Commandline Arguments are always to the outmost command, e.\+g. {\ttfamily nice ls -\/-\/elektra\+:C\+O\+L\+U\+M\+N\+S=20} won't have any effect because only for {\ttfamily nice} {\ttfamily C\+O\+L\+U\+M\+N\+S} will be set.
+
+\subsection*{E\+X\+A\+M\+P\+L\+E\+S}
+
+For illustration this section gives some more examples. \begin{DoxyVerb}kdb elektrify-getenv man man --elektra:MANWIDTH=40
+\end{DoxyVerb}
+
+
+Will use M\+A\+N\+W\+I\+D\+T\+H 40 for this invocation of man man. This feature is handy, if an option is only available by environment, but not by command-\/line arguments, because sometimes environment variables are not trivial to set (e.\+g. in Makefiles).
+
+Debugging\+: \begin{DoxyVerb}# system wide to stderr (not recommended!):
+sudo kdb set system/env/option/debug ""
+# system wide to /var/log/elektra.log:
+sudo kdb set system/env/option/debug "/var/log/error.log"
+# but for my user to ~/.elektra.log:
+kdb set user/env/option/debug "$HOME/.elektra.log"
+# or disable it for my user:
+kdb set user/env/option/debug
+\end{DoxyVerb}
+
+
+Some more examples\+: \begin{DoxyVerb}kdb set user/env/override/MANOPT -- "--regex -LC"
+kdb elektrify-getenv getenv MANOPT   # to check if it is set as expected
+kdb getenv MANOPT   # if /etc/ld.so.preload is active
+\end{DoxyVerb}
+
+
+Will permanently and user-\/wide change M\+A\+N\+O\+P\+T to include --regex, and -\/\+L\+C so that regular expressions will be used (note {\ttfamily man echo} will return many man pages then) and that they will be shown in English. This feature is handy to change the default behaviour of applications (either system, user or directory-\/wide).
+
+\begin{DoxyVerb}kdb set system/env/override/HTTP_PROXY http://proxy.hogege.com:8000/
+\end{DoxyVerb}
+
+
+Will permanently and system-\/wide change the proxy for all applications that honor H\+T\+T\+P\+\_\+\+P\+R\+O\+X\+Y, e.\+g. w3m. We can also link {\ttfamily http\+\_\+proxy} to the value of {\ttfamily H\+T\+T\+P\+\_\+\+P\+R\+O\+X\+Y}\+: \begin{DoxyVerb}kdb setmeta spec/env/override/http_proxy "override/#0" /env/override/HTTP_PROXY
+kdb get /env/override/http_proxy\end{DoxyVerb}
+ 

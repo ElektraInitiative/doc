@@ -1,0 +1,172 @@
+.TH "md_src_plugins_ini_README" 3elektra "Thu Nov 19 2015" "Version 0.8.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_ini_README \- README 
+
+.IP "\(bu" 2
+infos = Information about ini plugin is in keys below
+.IP "\(bu" 2
+infos/author = Felix Berlakovich elektra@berlakovich.net
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/description = ini file backend
+.PP
+.PP
+This plugin allows read/write of INI files\&. INI files consist of simple key value pairs of the form 'key = value'\&. Additionally keys can be categorised into different sections\&. Sections must be enclosed in '[]', for example '[section]'\&. Each section is converted into a directory key (without value) and keys below the section are located below the section key\&. If the same section appears multiple times, the keys of all sections with the same name are merged together under the section key\&.
+.PP
+.SS "USAGE"
+.PP
+If you want to add a ini file to the global key database, simply use mount: 
+.PP
+.nf
+kdb mount file.ini /example ini
+
+.fi
+.PP
+.PP
+Then you can modify the contents of the ini file using set: 
+.PP
+.nf
+kdb set user/example/key value
+kdb set user/example/section
+kdb set user/example/section/key value
+
+.fi
+.PP
+.PP
+Find out which file you modified: 
+.PP
+.nf
+kdb file user/example
+
+.fi
+.PP
+.PP
+.SS "SECTIONS"
+.PP
+When converting a KeySet to an INI file it is important to differentiate between regular keys and section keys\&. The ini plugin treats all keys with a binary NULL value as section key\&. Note that binary NULL is not the same as an empty value (i\&.e\&. '')\&.
+.PP
+For example consider the following ini file: 
+.PP
+.nf
+                            [section1]
+                            key1 =
+                            key2 = value2
+
+.fi
+.PP
+.PP
+This would result in a KeySet containing three keys\&. The section key \fCsection1\fP would be a binary key with value NULL (i\&.e\&. 0)\&. \fCsection1/key1\fP would be a regular key with value ''\&. \fCsection1/key2\fP would be a regular key with value 'value2'\&. In the other direction this requires section keys to be manually created with a binary NULL value\&.
+.PP
+For example consider the following KeySet: 
+.PP
+.nf
+                            section1 = ""
+                            section1/subkey = "value1"
+
+.fi
+.PP
+.PP
+Although section1 might look like a section, it would result in the following ini file: 
+.PP
+.nf
+                            section1 =
+                            section1\/subkey = value1
+
+.fi
+.PP
+.PP
+.SS "AUTOSECTIONS"
+.PP
+Creating the section keys manually can be cumbersome\&. This is especially true because KeySets resulting in INI files usually do not contain keys with a depth greater than 1 relative to the parent key\&. For that reason a good guess can be made what should be sections and what not\&. This is done by activanting the autosections option\&.
+.PP
+The autosections feature can be enabled by creating a key named \fCautosections\fP in the configuration of the plugin\&. Note that only the existence of the key is relevant, not its value\&.
+.PP
+As soon as this key exists, the plugin will automatically create section keys for keys with a depth greater than 1 relative to the parent key\&.
+.PP
+For example consider the following ini file: 
+.PP
+.nf
+                            [section1]
+                            key1 =
+                            key2 = value2
+                            [section2]
+                            key3 = value3
+
+.fi
+.PP
+.PP
+Without the autosections option the following KeySet is required to create this ini file: 
+.PP
+.nf
+                            parent/section1 = NULL
+                            parent/section1/key1 = ""
+                            parent/section1/key2 = "value2"
+                            parent/section2 = NULL
+                            parent/section2/key3 = "value3"
+
+.fi
+.PP
+.PP
+The section keys have to be inserted manually\&. With the autosections option the KeySet can be reduced to the following: 
+.PP
+.nf
+                            parent/section1/key1 = ""
+                            parent/section1/key2 = "value2"
+                            parent/section2/key3 = "value3"
+
+.fi
+.PP
+.PP
+All three keys have a depth greater than 1 relative to the parent key \fCparent\fP\&. Therefore the key name part directly below the parent key is considered to be the section name\&. For example, for the keys \fCparent/section1/key1\fP and \fCparent/section1/key2\fP \fCsection1\fP is considered to be the section and is automatically created in the INI file\&.
+.PP
+.SS "COMMENTS"
+.PP
+The ini plugin supports the use of comments\&. Comment lines start with a ';' or a '#'\&. Adjacent comments are merged together (separated by '\\n') and are put into the comment metadata of the key following the comment\&. This can be either a section key or a normal key\&.
+.PP
+.SS "MULTILINE SUPPORT"
+.PP
+The ini plugin supports multiline ini values\&. Continuations of previous values have to start with whitespace characters\&.
+.PP
+For example consider the following ini file: 
+.PP
+.nf
+                            key1 = value1
+                            key2 = value2
+                                    with continuation
+                                    lines
+
+.fi
+.PP
+.PP
+This would result in a KeySet containing two keys\&. One key named \fCkey1\fP with the value \fCvalue1\fP and another key named \fCkey2\fP with the value \fCvalue2\\nwith continuation\\nlines\fP\&.
+.PP
+By default the support for multiline values is disabled because formatting (whitespaces before keynames) may be accidentially mixed with value continuations\&. The multiline support can be enabled by creating a key named \fCmultiline\fP in the configuration of the plugin\&. Note that only the existence of the key is relevant, not its value\&. As soon as this key exists, the plugin treats lines starting with whitespaces as continuations of the previous key value\&. Keep in mind, that writing multiline values is also only supported if the multiline support is turned on\&. Otherwise the plugin will refuse to write key values with newlines\&.
+.PP
+.SS "METAKEY SUPPORT"
+.PP
+The ini plugin supports turning keys into \fBmetakeys\fP by adding the config key \fCmeta\fP\&.
+.PP
+.SS "PRESERVE ORDER"
+.PP
+If the \fCpreserveorder\fP config key is set, the ini plugin preserves the original order of the file\&. Only use this option for editing existing key values\&.
+.PP
+.SS "RESTRICTIONS"
+.PP
+Currently the plugin has the following shortcomings:
+.PP
+.IP "\(bu" 2
+formatting newlines are not restored on write
+.IP "\(bu" 2
+regardless of which comment was used originally, it is always written back as ';'
+.PP
+.PP
+The plugin is still work in progress\&. 
