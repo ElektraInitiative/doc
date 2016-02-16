@@ -1,0 +1,177 @@
+.TH "md_src_plugins_jni_README" 3elektra "Tue Feb 16 2016" "Version 0.8.15" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_jni_README \- Plugin: jni 
+
+.IP "\(bu" 2
+infos = Information about the jni plugin is in keys below
+.IP "\(bu" 2
+infos/author = Name name@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements =
+.IP "\(bu" 2
+infos/status = maintained configurable experimental -500 memleak
+.IP "\(bu" 2
+infos/description =
+.PP
+.SH "Generic Java plugin"
+.PP
+.SS "Introduction"
+.PP
+Allows you to write plugins in java\&.
+.PP
+Needs Java 8 or later\&. While the plugin internally uses JNI, the Java binding for your java-plugin may use something different, e\&.g\&. JNA\&. The requirements for the java bindings are:
+.PP
+.IP "\(bu" 2
+needs to have the classes elektra/Key and elektra/KeySet with
+.IP "  \(bu" 4
+a constructor that takes a C-Pointer as long (J)
+.IP "  \(bu" 4
+a method 'release' that gives up ownership (set internal pointer to NULL)
+.PP
+
+.PP
+.PP
+The java plugin itself needs to have the following methods:
+.PP
+.IP "\(bu" 2
+constructor without arguments (i\&.e\&. default constructor)
+.IP "\(bu" 2
+open with argument elektra/KeySet (the plugin's conf) and elektra/Key
+.IP "\(bu" 2
+close with argument elektra/Key
+.IP "\(bu" 2
+get with arguments elektra/KeySet and elektra/Key
+.IP "\(bu" 2
+set with arguments elektra/KeySet and elektra/Key
+.IP "\(bu" 2
+error with arguments elektra/KeySet and elektra/Key
+.PP
+.PP
+.SS "Installation"
+.PP
+Please install java8 as package, e\&.g\&. \fCfor debian\fP and then let cmake actually find jdk8: 
+.PP
+.nf
+cd /usr/lib/jvm/ && sudo rm -f default-java && sudo ln -s java-8-oracle default-java
+
+.fi
+.PP
+.PP
+and for the runtime, create the file \fC/etc/ld\&.so\&.conf\&.d/java-8-oracle\&.conf\fP with the content (for amd64): 
+.PP
+.nf
+/usr/lib/jvm/default-java/jre/lib/amd64
+/usr/lib/jvm/default-java/lib/amd64
+/usr/lib/jvm/default-java/jre/lib/amd64/server
+
+.fi
+.PP
+.PP
+and run: 
+.PP
+.nf
+sudo ldconfig
+
+.fi
+.PP
+.PP
+Then enable the plugin using: 
+.PP
+.nf
+cmake -DPLUGINS="...;jni" /path/to/libelektra
+
+.fi
+.PP
+.PP
+Running 
+.PP
+.nf
+kdb-full
+
+.fi
+.PP
+.PP
+should work then, if you get one of these: 
+.PP
+.nf
+kdb-full: error while loading shared libraries: libmawt.so: cannot open shared object file: No such file or directory
+kdb-full: error while loading shared libraries: libjawt.so: cannot open shared object file: No such file or directory
+
+.fi
+.PP
+.PP
+You missed one of the ldconfig steps\&.
+.PP
+.SS "Plugin Config"
+.PP
+You need to pass :
+.IP "\(bu" 2
+classname the classname to use as plugin, e\&.g\&. elektra/plugin/Echo
+.IP "\(bu" 2
+classpath the classpath where to find JNA, the package elektra and other classes needed
+.PP
+.PP
+Additionally, you can set:
+.PP
+.IP "\(bu" 2
+option allows you to pass a option to the jvm, default: -verbose:gc,class,jni
+.IP "\(bu" 2
+ignore allows you to ignore broken options, default: false
+.IP "\(bu" 2
+print allows you to print java exceptions for debugging purposes
+.PP
+.PP
+E\&.g\&. 
+.PP
+.nf
+kdb info -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print= jni
+kdb check -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print= jni
+kdb mount -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/src/bindings/jna,print= file.properties /jni jni classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print=
+
+.fi
+.PP
+.PP
+Or if \&.jar is already installed: 
+.PP
+.nf
+bin/kdb mount -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/elektra.jar,print= file.properties /jni jni classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/elektra.jar,print=
+
+.fi
+.PP
+.PP
+Additionally, the java implementation can request any other additional configuration, read about it below in the section (specific java plugin)\&. If you are reading this page on github, you won't see it, because the plugins dynamically append text after the end of this page\&.
+.PP
+.SS "Development"
+.PP
+To know how the methods of your class are called, use: 
+.PP
+.nf
+javap -s YourClass
+
+.fi
+.PP
+.PP
+Also explained \fChere\fP
+.PP
+\fCJNI Functions\fP \fCInvocation\fP
+.PP
+.SS "Issues"
+.PP
+(Argumentation for -500 in status)
+.PP
+.IP "\(bu" 2
+In Debian Wheezy you cannot use openjdk: you get a linker error because of some missing private SUN symbols\&. Maybe just the cmake mechanism to find java is broken\&.
+.IP "\(bu" 2
+Only a single java plugin can be loaded
+.IP "\(bu" 2
+when this plugin is enabled, valgrind detects memory problems even if the plugin is not mounted\&. 
+.PP
+

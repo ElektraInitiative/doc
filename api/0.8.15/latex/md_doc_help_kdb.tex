@@ -1,0 +1,94 @@
+Elektra provides a universal and secure framework to store configuration parameters in a global, hierarchical key database.
+
+The core is a small library implemented in C. The plugin-\/based framework fulfills many configuration-\/related tasks to avoid any unnecessary code duplication across applications while it still allows the core to stay without any external dependency. Elektra abstracts from cross-\/platform-\/related issues with an consistent A\+P\+I, and allows applications to be aware of other applications' configurations, leveraging easy application integration.
+
+The man pages can also be viewed online at\+: \href{http://doc.libelektra.org/api/current/html/pages.html}{\tt http\+://doc.\+libelektra.\+org/api/current/html/pages.\+html}
+
+And the page you are currently reading at\+: \href{http://doc.libelektra.org/api/current/html/md_doc_help_kdb.html}{\tt http\+://doc.\+libelektra.\+org/api/current/html/md\+\_\+doc\+\_\+help\+\_\+kdb.\+html}
+
+Concepts are in man page section 7 and are prefixed with {\ttfamily elektra-\/}. You should start reading \hyperlink{md_doc_help_elektra-introduction_doc_help_elektra-introduction_md}{elektra-\/introduction(7)}.
+
+Tools are in man page section 1 and are prefixed with {\ttfamily kdb-\/}. You should start reading \hyperlink{doc_help_kdb-introduction_md}{kdb-\/introduction(1)}.
+
+Documentation of plugins is available using the \hyperlink{md_doc_help_kdb-info_doc_help_kdb-info_md}{kdb-\/info(1)} tool. Run {\ttfamily kdb list} for a list of plugins.
+
+\subsection*{C\+O\+M\+M\+O\+N O\+P\+T\+I\+O\+N\+S}
+
+Every core-\/tool has following options\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/\+H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/\+V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile}=$<$profile$>$\+: Use a different kdb profile, see below.
+\end{DoxyItemize}
+
+\subsection*{K\+D\+B}
+
+The {\ttfamily kdb} utility reads its own configuration from three sources within the K\+D\+B (key database)\+:
+
+
+\begin{DoxyEnumerate}
+\item /sw/kdb/$\ast$$\ast$profile$\ast$$\ast$/ (for legacy configuration)
+\item /sw/elektra/kdb/\#0/\%/ (for empty profile)
+\item /sw/elektra/kdb/\#0/$\ast$$\ast$profile$\ast$$\ast$/ (for current profile)
+\end{DoxyEnumerate}
+
+The last source where a configuration value is found, wins.
+
+\subsection*{P\+R\+O\+F\+I\+L\+E\+S}
+
+Profiles allow users to change many/all configuration options of a tool at once. It influences from where the K\+D\+B entries are read. For example if you use\+: {\ttfamily kdb export -\/p admin system}
+
+It will read its format configuration from {\ttfamily /sw/elektra/kdb/\#0/admin/format}.
+
+If you want different configuration per user or directories, you should prefer to use the {\ttfamily user} and {\ttfamily dir} namespaces. Then the correct configuration will be chosen automatically and you do not have to specify the correct {\ttfamily -\/p}.
+
+\subsection*{B\+O\+O\+K\+M\+A\+R\+K\+S}
+
+Elektra recommends \hyperlink{doc_tutorials_application-integration_md}{to use rather long paths} because it ensures flexibility in the future (e.\+g. to use profiles and have a compatible path for new major versions of configuration).
+
+Long paths are, however, cumbersome to enter in the C\+L\+I. Thus one can define bookmarks. Bookmarks are key-\/names that start with {\ttfamily +}. They are only recognized by the {\ttfamily kdb} tool or tools that explicit have support for it. Your applications should not depend on the presence of a bookmark.
+
+Bookmarks are stored below\+: {\ttfamily /sw/elektra/kdb/\#0/current/bookmarks}
+
+For every key found there, a new bookmark will be introduced.
+
+Bookmarks can be used to start key-\/names by using {\ttfamily +} (plus) as first character. The string until the first {\ttfamily /} will be considered as bookmark.
+
+For example, if you set the bookmark kdb\+: {\ttfamily kdb set user/sw/elektra/kdb/\#0/current/bookmarks} {\ttfamily kdb set user/sw/elektra/kdb/\#0/current/bookmarks/kdb user/sw/elektra/kdb/\#0/current}
+
+You are able to use\+: {\ttfamily kdb ls +kdb/bookmarks} {\ttfamily kdb get +kdb/format}
+
+\subsection*{R\+E\+T\+U\+R\+N V\+A\+L\+U\+E\+S}
+
+
+\begin{DoxyItemize}
+\item 0\+: successful.
+\item 1\+: Invalid options passed.
+\item 2\+: Invalid arguments passed.
+\item 3\+: Command terminated unsuccessfully.
+\item 4\+: Unknown command.
+\item 5\+: K\+D\+B Error, could not read/write from/to K\+D\+B.
+\item 7-\/8\+: Unkown errors, wrong exceptions thrown.
+\item 9-\/10\+: Reserved error codes.
+\end{DoxyItemize}
+
+\subsection*{O\+P\+T\+I\+O\+N\+S}
+
+Commonly used options for all programs\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/\+H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/\+V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p $<$profile$>$}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different profile instead of current.
+\end{DoxyItemize}
+
+\subsection*{S\+E\+E A\+L\+S\+O}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{md_doc_help_elektra-introduction_doc_help_elektra-introduction_md}{elektra-\/introduction(7)}
+\item \hyperlink{doc_help_kdb-introduction_md}{kdb-\/introduction(1)} 
+\end{DoxyItemize}

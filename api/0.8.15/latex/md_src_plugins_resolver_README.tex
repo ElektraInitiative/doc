@@ -1,0 +1,110 @@
+
+\begin{DoxyItemize}
+\item infos = All information you want to know are in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides = resolver
+\item infos/needs =
+\item infos/placements = rollback getresolver setresolver commit
+\item infos/status = productive maintained specific unittest tested libc configurable
+\item infos/description = 
+\end{DoxyItemize}
+
+The @ handles operating system dependent tasks. One task is the resolving of the filenames for user and system (hence its name)
+
+We have an optimistic approach. Locking is only used to detect concurrent cooperative processes in the short moment between prepare and commit. A conflict will be raised in that situation. When processes do not lock the file it might be overwritten. This is unavoidable because such problems can only be detected in the commit phase when it is too late for rollbacks.
+
+\subsection*{Resolving Files}
+
+Use following command to see to which file is resolved to\+: \begin{DoxyVerb}kdb file <Elektra path you are interested in>
+\end{DoxyVerb}
+
+
+See the constants of this plugin for further information, that are\+: \begin{DoxyVerb}system/elektra/modules/resolver/constants
+system/elektra/modules/resolver/constants/ELEKTRA_VARIANT_SYSTEM
+system/elektra/modules/resolver/constants/ELEKTRA_VARIANT_USER
+system/elektra/modules/resolver/constants/KDB_DB_HOME
+system/elektra/modules/resolver/constants/KDB_DB_SYSTEM
+system/elektra/modules/resolver/constants/KDB_DB_USER
+system/elektra/modules/resolver/constants/KDB_DB_SPEC
+system/elektra/modules/resolver/constants/KDB_DB_DIR
+\end{DoxyVerb}
+
+
+The build-\/in resolving works like (with $\sim$ and {\ttfamily pwd} resolved from system)\+:
+
+
+\begin{DoxyItemize}
+\item for spec with absolute path\+: path
+\item for spec with relative path\+: K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+E\+C + path
+\item for dir with absolute path\+: {\ttfamily pwd} + path (or above when path is found)
+\item for dir with relative path\+: {\ttfamily pwd} + K\+D\+B\+\_\+\+D\+B\+\_\+\+D\+I\+R + path (or above when path is found)
+\item for user with absolute path\+: $\sim$ + path
+\item for user with relative path\+: $\sim$ + K\+D\+B\+\_\+\+D\+B\+\_\+\+U\+S\+E\+R + path
+\item for system with absolute path\+: path
+\item for system with relative path\+: K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+E\+M + path
+\end{DoxyItemize}
+
+\subsection*{Example}
+
+For an absolute path /example.ini, you might get following values\+:
+
+
+\begin{DoxyItemize}
+\item for spec\+: /example.ini
+\item for dir\+: {\ttfamily pwd}/example.ini
+\item for user\+: $\sim$/example.ini
+\item for system\+: /example.ini
+\end{DoxyItemize}
+
+For an relative path example.\+ini, you might get following values\+:
+
+
+\begin{DoxyItemize}
+\item for spec\+: /usr/share/elektra/specification/example.ini
+\item for dir\+: {\ttfamily pwd}/.dir/example.\+ini
+\item for user\+: $\sim$/.config/example.\+ini
+\item for system\+: /etc/kdb/example.ini
+\end{DoxyItemize}
+
+\subsection*{Variants}
+
+Many variants exist that additionally influence the lookup process, typically by using environment variables.
+
+Environment variables are very simple for one-\/time usage but their maintenance in start-\/up scripts is problematic. Additionally, they are controlled by the user, so they cannot be trusted. So it is not recommended to use environment variables.
+
+Note that the file permissions apply, so it might be possible for non-\/root to modify keys in system.
+
+See \hyperlink{doc_COMPILE_md}{C\+O\+M\+P\+I\+L\+E.md} for a documentation of possible variants.
+
+\subsubsection*{X\+D\+G Compatibility}
+
+The resolver is fully \href{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html}{\tt X\+D\+G compatible} if configured with the variant\+:
+
+
+\begin{DoxyItemize}
+\item xp, xh or xu for user (either using passwd, H\+O\+M\+E or U\+S\+E\+R as fallback or any combination of these fallbacks)
+\item x for system, no fallback necessary
+\end{DoxyItemize}
+
+Additionally K\+D\+B\+\_\+\+D\+B\+\_\+\+U\+S\+E\+R needs to be left unchanged as {\ttfamily .config}.
+
+X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+R\+S will be used to resolve system paths the following way\+:
+
+
+\begin{DoxyItemize}
+\item if unset or empty /etc/xdg will be used instead
+\item all elements are searched in order of importance
+\begin{DoxyItemize}
+\item if a file was found, the search process is stopped
+\item if no file was found, the least important element will be used for potential write attempts.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\subsection*{Reading Configuration}
+
+1.) If no update needed (unchanged modification time)\+: A\+B\+O\+R\+T 2.) remember the last stat time (last update)
+
+\subsection*{Writing Configuration}
+
+0.) On empty configuration\+: remove the configuration file and A\+B\+O\+R\+T 1.) Open the configuration file If not available recursively create directories and retry. \#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+C\+K\+\_\+\+M\+U\+T\+E\+X 1.) Try to lock a global mutex, if not possible -\/$>$ conflict \#endif \#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+C\+K\+\_\+\+F\+I\+L\+E 1.) Try to lock the configuration file, if not possible -\/$>$ conflict \#endif 2.) Check the update time -\/$>$ conflict 3.) Update the update time (in order to not self-\/conflict) 
