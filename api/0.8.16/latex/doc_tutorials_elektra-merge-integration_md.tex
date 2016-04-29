@@ -1,0 +1,52 @@
+This guide explains how to use ucf's new {\ttfamily -\/-\/three-\/way-\/merge-\/command} functionality in conjunction with Elektra in order to ultilize Elektra's powerful tools in order to allow automatic three-\/way merges of your package's configuration during upgrades in a way that is more reliable than a diff3 merge. This guide assumes that you are familiar with ucf already and are just trying to implement the {\ttfamily -\/-\/three-\/way-\/merge-\/command} option using Elektra.
+
+\subsection*{The New Option}
+
+The addition of the {\ttfamily -\/-\/three-\/way-\/merge-\/command} option was a part of my Google Summer of Code Project. This option takes the form\+: --three-\/way-\/merge-\/command command $<$\+New file$>$=\char`\"{}\char`\"{}$>$ $<$\+Destination$>$
+
+Where {\ttfamily command} is the command you would like to use for the merge. {\ttfamily New File} and {\ttfamily Destination} are the same as always.
+
+\subsection*{elektra-\/merge}
+
+We added a new script to Elektra called elektra-\/merge for use with this new option in ucf. This script acts as a liaison between ucf and Elektra, allowing a regular ucf command to run a {\ttfamily kdb merge} even though ucf commands only pass {\ttfamily New File} and {\ttfamily Destination} whereas kdb merge requires {\ttfamily ourpath}, {\ttfamily theirpath}, {\ttfamily basepath}, and {\ttfamily resultpath}. Since ucf already performs a three-\/way merge, it keeps track of all the necessary files to do so, even though it only takes in {\ttfamily New File} and {\ttfamily Destination}.
+
+In order to use {\ttfamily elektra-\/merge}, the current configuration file must be mounted to K\+D\+B to serve as {\ttfamily ours} in the merge. The script automatically mounts {\ttfamily theirs}, {\ttfamily base}, and {\ttfamily result} using the {\ttfamily kdb remount} command in order to use the same backend as {\ttfamily ours} (since all versions of the same file should use the same backend anyway) and this way users don't need to worry about specifying the backend for each version of the file. Then the script attempts a merge on the newly mounted Key\+Sets. Once this is finished, either on success or not, the script finishes by unmouting all but {\ttfamily our} copy of the file to cleanup K\+D\+B. Then, if the merge was successful ucf will replace {\ttfamily ours} with the result providing the package with an automatically merged configuration which will also be updated in K\+D\+B itself.
+
+Additionally, we added two other scripts, {\ttfamily elektra-\/mount} and {\ttfamily elektra-\/umount} which act as simple wrappers for {\ttfamily kdb mount} and {\ttfamily kdb umount}. They work identically but are more script friendly.
+
+\subsection*{The Full Command}
+
+The full command to use {\ttfamily elektra-\/merge} to perform a three-\/way merge on a file managed by ucf is\+: ucf --three-\/way --threeway-\/merge-\/command elektra-\/merge $<$\+New file$>$=\char`\"{}\char`\"{}$>$ $<$\+Destination$>$
+
+That's it! As described above, {\ttfamily elektra-\/merge} is smart enough to run the whole merge off of the information from that command and utilizes the new {\ttfamily kdb remount} command to do so.
+
+\subsection*{How-\/\+To Integrate}
+
+Integrating {\ttfamily elektra-\/merge} into a package that already uses ucf is very easy! In {\ttfamily postinst} you should have a line similar to\+: ucf $<$\+New file$>$=\char`\"{}\char`\"{}$>$ $<$\+Destination$>$
+
+or perhaps\+: ucf --three-\/way $<$\+New file$>$=\char`\"{}\char`\"{}$>$ $<$\+Destination$>$
+
+All you must do is in {\ttfamily postinst}, when run with the {\ttfamily configure} option you must mount the config file to Elektra\+: kdb elektra-\/mount $<$\+New file$>$=\char`\"{}\char`\"{}$>$ $<$\+Mouting destination$>$=\char`\"{}\char`\"{}$>$ $<$\+Backend$>$
+
+Next, you must update the line containing {\ttfamily ucf} with the options {\ttfamily -\/-\/three-\/way} and {\ttfamily -\/-\/threeway-\/merge-\/command} like so\+: ucf --three-\/way --threeway-\/merge-\/command elektra-\/merge $<$\+New file$>$=\char`\"{}\char`\"{}$>$ $<$\+Destination$>$
+
+Then, in your {\ttfamily postrm} script, during a purge, you must umount the config file before deleting it\+: kdb elektra-\/umount $<$name$>$
+
+That's it! With those small changes you can use Elektra to perform automatic three-\/way merges on any files that your package uses ucf to handle!
+
+\subsection*{Example}
+
+Below is a diff representing the changes we made to the samba-\/common package in order to allow automatic configuration merging for {\ttfamily smb.\+conf} using Elektra. We chose this package because it already uses ucf to handle {\ttfamily smb.\+conf} but it frequently requires users to manually merge changes across versions. Here is the patch showing what we changed\+: \begin{DoxyVerb}    diff samba_orig/samba-3.6.6/debian/samba-common.postinst samba/samba-3.6.6/debian/samba-common.postinst
+    92c92,93
+    < ucf --three-way --debconf-ok "$NEWFILE" "$CONFIG"
+    ---
+    > kdb elektra-mount "$CONFIG" system/samba/smb ini
+    > ucf --three-way --threeway-merge-command elektra-merge --debconf-ok "$NEWFILE" "$CONFIG"
+    Only in samba/samba-3.6.6/debian/: samba-common.postinst~
+    diff samba_orig/samba-3.6.6/debian/samba-common.postrm samba/samba-3.6.6/debian/samba-common.postrm
+    4a5
+    >       kdb elektra-umount system/samba/smb
+\end{DoxyVerb}
+
+
+As you can see, all we had to do was add the line to mount {\ttfamily smb.\+conf} during install, update the ucf command to include the new {\ttfamily -\/-\/threeway-\/merge-\/command} option, and unmount {\ttfamily system/samba/smb} during a purge. It really is that easy! 

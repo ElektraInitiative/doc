@@ -1,0 +1,89 @@
+
+\begin{DoxyItemize}
+\item infos = Information about ini plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org} Felix Berlakovich \href{mailto:elektra@berlakovich.net}{\tt elektra@berlakovich.\+net}
+\item infos/licence = B\+S\+D
+\item infos/provides = storage
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest nodep libc 1000 configurable
+\item infos/description =
+\end{DoxyItemize}
+
+This plugin allows read/write of I\+N\+I files. I\+N\+I files consist of simple key value pairs of the form \char`\"{}key = value\char`\"{}. Additionally keys can be categorised into different sections. Sections must be enclosed in \char`\"{}\mbox{[}$\,$\mbox{]}\char`\"{}, for example \char`\"{}\mbox{[}section\mbox{]}\char`\"{}. Each section is converted into a directory key (without value) and keys below the section are located below the section key. If the same section appears multiple times, the keys of all sections with the same name are merged together under the section key.
+
+The plugin is feature rich and customizable (+1000 in status)
+
+\subsection*{U\+S\+A\+G\+E}
+
+If you want to add an ini file to the global key database, simply use mount\+: \begin{DoxyVerb}kdb mount file.ini /example ini
+\end{DoxyVerb}
+
+
+Then you can modify the contents of the ini file using set\+: \begin{DoxyVerb}kdb set user/example/key value
+kdb set user/example/section
+kdb set user/example/section/key value
+\end{DoxyVerb}
+
+
+Find out which file you modified\+: \begin{DoxyVerb}kdb file user/example
+\end{DoxyVerb}
+
+
+\subsection*{C\+O\+M\+M\+E\+N\+T\+S}
+
+The ini plugin supports the use of comments. Comment lines start with a ';' or a '\#'. Adjacent comments are merged together (separated by \char`\"{}\textbackslash{}n\char`\"{}) and are put into the comment metadata of the key following the comment. This can be either a section key or a normal key.
+
+\subsection*{M\+U\+L\+T\+I\+L\+I\+N\+E S\+U\+P\+P\+O\+R\+T}
+
+The ini plugin supports multiline ini values. Continuations of previous values have to start with whitespace characters.
+
+For example consider the following ini file\+: \begin{DoxyVerb}            key1 = value1
+            key2 = value2
+                with continuation
+                lines
+\end{DoxyVerb}
+
+
+This would result in a Key\+Set containing two keys. One key named {\ttfamily key1} with the value {\ttfamily value1} and another key named {\ttfamily key2} with the value {\ttfamily value2\textbackslash{}nwith continuation\textbackslash{}nlines}.
+
+By default this feature is enabled.
+
+\subsection*{A\+R\+R\+A\+Y}
+
+The ini plugin handles repeating keys by turning them into an elektra array when the {\ttfamily array} config is set.
+
+For example a ini file looking like\+: ``` \mbox{[}sec\mbox{]} a = 1 a = 2 a = 3 a = 4 ``` will be interpreted as ``` /sec /sec/a /sec/a/\#0 /sec/a/\#1 /sec/a/\#2 /sec/a/\#3
+
+```
+
+\subsection*{S\+E\+C\+T\+I\+O\+N}
+
+The ini plugin supports 3 different sectioning modes\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily N\+O\+N\+E} sections wont be printed as {\ttfamily \mbox{[}Section\mbox{]}} but as part of the key name {\ttfamily section/key}
+\item {\ttfamily N\+U\+L\+L} only binary keys will be printed as {\ttfamily \mbox{[}Section\mbox{]}}
+\item {\ttfamily A\+L\+W\+A\+Y\+S} sections will be created automatically. This is the default setting.
+\end{DoxyItemize}
+
+\subsection*{M\+E\+R\+G\+E S\+E\+C\+T\+I\+O\+N\+S}
+
+The ini plugin supports merging duplicated section entries when the {\ttfamily mergesections} config is set. The keys will be appended to the first occurrence of the section key.
+
+\subsection*{O\+R\+D\+E\+R\+I\+N\+G}
+
+The ini plugin preserves the order. Inserted subsections get appended to the corresponding parent section and new sections by name.
+
+Example\+:
+
+``` \% cat test.\+ini
+
+\mbox{[}Section1\mbox{]} key1 = val1 \mbox{[}Section3\mbox{]} key3 = val3
+
+\% kdb set system/test/\+Section1/\+Subsection1/subkey1 subval1 \% kdb set system/test/\+Section2/key2 val2 \% cat test.\+ini
+
+\mbox{[}Section1\mbox{]} key1 = val1 \mbox{[}Section1/\+Subsection1\mbox{]} subkey1 = subval1 \mbox{[}Section2\mbox{]} key2 = val2 \mbox{[}Section3\mbox{]} key3 = val3
+
+``` 

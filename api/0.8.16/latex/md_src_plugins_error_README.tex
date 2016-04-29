@@ -1,0 +1,69 @@
+
+\begin{DoxyItemize}
+\item infos = Information about error plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides = error
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = presetstorage
+\item infos/status = productive maintained conformant shelltest unittest tested nodep libc discouraged
+\item infos/metadata = trigger/warnings trigger/error
+\item infos/description = Provokes errors for testing the plugin framework
+\end{DoxyItemize}
+
+Plugins (should) rarely return an error or warnings, e.\+g. writing the configuration basically only fails on filesystem problems. Such behaviour is difficult to produce for tests.
+
+This plugin tackles this issue by yielding error/warnings on request.
+
+\subsection*{Usage}
+
+\subsubsection*{by meta data}
+
+Mount this plugin additionally with a working resolver and a storage e.\+g.\+: \begin{DoxyVerb}    kdb mount error.dump /error error dump
+\end{DoxyVerb}
+
+
+When following meta key is present during storing (\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}) the keyset\+: \begin{DoxyVerb}    trigger/warnings
+\end{DoxyVerb}
+
+
+a warning will be added. The plugin will still return success, but when the following meta key is present\+: \begin{DoxyVerb}    trigger/error
+\end{DoxyVerb}
+
+
+the plugin will return with an error.
+
+The value of the meta data needs to contain the number of the requested error or warning.
+
+So an error and warnings can be injected directly with the kdb tool. E.\+g. the warning number 3\+: \begin{DoxyVerb}    kdb setmeta system/error/key trigger/warnings 3
+\end{DoxyVerb}
+
+
+or the error number 10 (will not modify the K\+D\+B because \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()} will fail for the error plugin then)\+: \begin{DoxyVerb}    kdb setmeta user/error/key trigger/error 10
+\end{DoxyVerb}
+
+
+\subsubsection*{by config}
+
+To yield an error in \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdb\+Open()} the meta data approach does not work. So the plugin also can yield warning/errors using configuration.
+
+To do that, configure the plugin using\+: \begin{DoxyVerb}    on_open/warnings
+    on_open/error
+\end{DoxyVerb}
+
+
+E.\+g. you can use\+: \begin{DoxyVerb}    kdb mount error.dump /error error on_open/error=10 dump
+\end{DoxyVerb}
+
+
+Then you get an error on any access, e.\+g.\+: \begin{DoxyVerb}    kdb ls system/error
+\end{DoxyVerb}
+
+
+Will yield error \#63\+: \begin{DoxyVerb}    Description: Tried to get a key from a missing backend
+    Mountpoint: system/error
+\end{DoxyVerb}
+
+
+because the opening of the plugin failed (resulting to a missing backend). 

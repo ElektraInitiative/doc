@@ -1,0 +1,156 @@
+.TH "md_src_plugins_yajl_README" 3elektra "Fri Apr 29 2016" "Version 0.8.16" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_yajl_README \- Plugin: yajl 
+
+.IP "\(bu" 2
+infos = Information about YAIL plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends = rebase directoryvalue comment type
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained coverage unittest
+.IP "\(bu" 2
+infos/description = JSON using YAIL
+.PP
+.PP
+This is a plugin reading and writing json files using the library \fCyail\fP
+.PP
+The plugin was tested with yajl version 1\&.0\&.8-1 from Debian 6 and yajl version 2\&.0\&.4-2 from Debian 7\&.
+.PP
+Examples of files which are used for testing can be found below the folder in 'src/plugins/yajl/examples'\&.
+.PP
+The json grammar can be found \fChere\fP\&.
+.PP
+A validator can be found \fChere\fP\&.
+.PP
+Supports every KeySet except when arrays are intermixed with other keys\&. Has only limited support for metadata\&.
+.PP
+.SS "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibyajl-dev\fP (version 1 and 2 should work)
+.PP
+.PP
+.SS "Types"
+.PP
+My metadata \fCtype\fP the used types can be chosen:
+.PP
+.IP "\(bu" 2
+\fCstring\fP: The JSON string type\&.
+.IP "\(bu" 2
+\fCboolean\fP: The JSON boolean type (true or false)
+.IP "\(bu" 2
+\fCdouble\fP: For JSON numbers\&.
+.PP
+.PP
+If no metadata \fCtype\fP is given, the type is either:
+.PP
+.IP "\(bu" 2
+\fCnull\fP on binary null-key
+.IP "\(bu" 2
+\fCstring\fP otherwise
+.PP
+.PP
+Any other type/value will still be treated as string, but the warning \fC#78\fP will be added because of the potential data loss\&.
+.PP
+.SS "Special values"
+.PP
+In json it is possible to have empty arrays and objects\&. In Elektra this is mapped using the special names 
+.PP
+.nf
+    ###empty_array
+
+.fi
+.PP
+.PP
+and 
+.PP
+.nf
+    ___empty_map
+
+.fi
+.PP
+.PP
+Arrays are mapped to Elektra's array convention #0, #1,\&.\&.
+.PP
+.SS "Restrictions"
+.PP
+.IP "\(bu" 2
+Everything is string if not tagged by meta key 'type' Only valid json types can be used in type, otherwise there are some fall backs to string but warnings are produced\&.
+.IP "\(bu" 2
+Values in non-leaves are discarded\&.
+.IP "\(bu" 2
+Arrays will be normalized (to #0, #1, \&.\&.)
+.IP "\(bu" 2
+Comments of various json-dialects are discarded\&.
+.PP
+.PP
+Because of these potential problems a type checker, comments filter and directory value filter are highly recommended\&.
+.PP
+.SS "OpenICC Device Config"
+.PP
+This plugin was specifically designed and tested for the \fCOpenICC_device_config_DB\fP although it is of course not limited to it\&.
+.PP
+Mount the plugin: 
+.PP
+.nf
+    kdb mount --resolver=resolver_fm_xhp_x color/settings/openicc-devices.json /org/freedesktop/openicc yajl rename cut=org/freedesktop/openicc
+
+.fi
+.PP
+.PP
+or: 
+.PP
+.nf
+    kdb mount-openicc
+
+.fi
+.PP
+.PP
+Then you can copy the OpenICC_device_config_DB\&.json to systemwide or user config, e\&.g\&. 
+.PP
+.nf
+    cp src/plugins/yajl/examples/OpenICC_device_config_DB.json /etc/xdg
+    cp src/plugins/yajl/examples/OpenICC_device_config_DB.json ~/.config
+
+    kdb ls system/org/freedesktop/openicc
+
+.fi
+.PP
+.PP
+prints out then all device entries available in the config 
+.PP
+.nf
+    kdb get system/org/freedesktop/openicc/device/camera/0/EXIF_manufacturer
+
+.fi
+.PP
+.PP
+prints out 'Glasshuette' with the example config in souce
+.PP
+You can export the whole system openicc config to ini with: 
+.PP
+.nf
+    kdb export system/org/freedesktop/openicc simpleini > dump.ini
+
+.fi
+.PP
+.PP
+or import it: 
+.PP
+.nf
+    kdb import system/org/freedesktop/openicc ini < dump.ini
+.fi
+.PP
+ 
