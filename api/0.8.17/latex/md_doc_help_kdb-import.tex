@@ -1,0 +1,53 @@
+{\ttfamily kdb import $<$destination$>$ \mbox{[}$<$format$>$\mbox{]}}
+
+Where {\ttfamily destination} is the destination where the user wants the keys to be imported into. {\ttfamily format} is the format of the keys that are imported.
+
+\subsection*{D\+E\+S\+C\+R\+I\+P\+T\+I\+O\+N}
+
+If the {\ttfamily format} argument is not passed, then the default format will be used as determined by the value of the {\ttfamily sw/kdb/current/format} key. By default, that key is set to the {\ttfamily storage} format. The {\ttfamily format} attribute relies on Elektra's plugin system to properly import the configuration. The user can view all plugins available for use by running the kdb-\/list(1) command. To learn about any plugin, the user can simply use the kdb-\/info(1) command.
+
+This command allows a user to import an existing configuration into the key database. The configuration that the user wants to import is read from {\ttfamily stdin}. The user should specify the format that the current configuration or keys are in, otherwise the default format will be used. The default format is {\ttfamily storage} but can be changed by editing the value of the {\ttfamily sw/kdb/current/format} key. The {\ttfamily storage} plugin can be configured at compile-\/time or changed by the link {\ttfamily libelektra-\/storage.\+so}.
+
+\subsection*{C\+O\+N\+F\+L\+I\+C\+T\+S}
+
+Conflicts can occur when importing a configuration to a part of the database where keys already exist. Conflicts when importing can be resolved using a \href{#STRATEGIES}{\tt strategy} with the {\ttfamily -\/s} argument.
+
+\subsection*{S\+T\+R\+A\+T\+E\+G\+I\+E\+S}
+
+Currently the following strategies exist for importing configurations\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily cut}\+: Removes existing keys below {\ttfamily destination} and replaces them with the keys resulting from the import. This is the default strategy.
+\item {\ttfamily import}\+: Preserves existing keys below {\ttfamily destination} only if they do not exist in the keys being imported. If the key does exist in the imported keys, the current version will be overwritten.
+\end{DoxyItemize}
+
+\subsection*{O\+P\+T\+I\+O\+N\+S}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/\+H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/\+V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile}=$<$profile$>$\+: Use a different kdb profile.
+\item {\ttfamily s}, {\ttfamily -\/-\/strategy $<$name$>$}\+: Specify which strategy should be used to resolve conflicts.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening.
+\item {\ttfamily -\/c}, {\ttfamily -\/-\/plugins-\/config}\+: Add a configuration to the format plugin.
+\item {\ttfamily -\/\+C}, {\ttfamily -\/-\/color}=\mbox{[}when\mbox{]}\+: Print never/auto(default)/always colored output.
+\end{DoxyItemize}
+
+\subsection*{E\+X\+A\+M\+P\+L\+E\+S}
+
+To import a configuration stored in the X\+M\+L format in a file called {\ttfamily example.\+xml} below {\ttfamily user/keyset}\+: {\ttfamily kdb import user/keyset xmltool $<$ example.\+xml}
+
+To import a configuration stored in the {\ttfamily ini} format in a file called {\ttfamily example.\+ini} below {\ttfamily user/keyset} replacing any previous keys stored there\+: {\ttfamily cat example.\+ini $\vert$ kdb import -\/s cut user/keyset ini}
+
+To import a configuration stored in the {\ttfamily ini} format in a file called {\ttfamily example.\+ini} below {\ttfamily user/keyset} keeping any previous keys stored there that aren't present in the newly imported configuration\+: {\ttfamily cat example.\+ini $\vert$ kdb import -\/s import user/keyset ini}
+
+To restore a backup (stored as {\ttfamily sw.\+ecf}) of a user's configuration below {\ttfamily system/sw}\+: {\ttfamily cat sw.\+ecf $\vert$ kdb import system/sw}
+
+\subsection*{S\+E\+E A\+L\+S\+O}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{md_doc_help_elektra-merge-strategy_doc_help_elektra-merge-strategy_md}{elektra-\/merge-\/strategy(7)} 
+\end{DoxyItemize}

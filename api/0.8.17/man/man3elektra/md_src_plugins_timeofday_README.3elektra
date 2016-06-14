@@ -1,0 +1,72 @@
+.TH "md_src_plugins_timeofday_README" 3elektra "Tue Jun 14 2016" "Version 0.8.17" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_timeofday_README \- Plugin: timeofday 
+
+.IP "\(bu" 2
+infos = Information about the timeofday plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = tracing
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = pregetstorage postgetstorage presetstorage precommit postcommit prerollback postrollback
+.IP "\(bu" 2
+infos/status = maintained tested
+.IP "\(bu" 2
+infos/description = Prints timestamps during execution of backend
+.PP
+.PP
+This plugin is a logging plugin which prints a timestamp during all placements of backend\&.
+.PP
+.SS "Usage"
+.PP
+If you want to measure how long your storage plugin needs to do the read and write you mount the plugin using: 
+.PP
+.nf
+kdb mount file.ysp user/trace_point your_storage_plugin timeofday
+
+.fi
+.PP
+.PP
+Then you can benchmark your storage plugin in the get path: 
+.PP
+.nf
+kdb get user/benchmark
+get     0000000356      di      0000000356      pos     pregetstorage
+get     0000000530      di      0000000174      pos     postgetstorage
+hello
+
+.fi
+.PP
+.PP
+and in the set path: 
+.PP
+.nf
+kdb set user/benchmark
+get     0000000342      di      0000000342      pos     pregetstorage
+get     0000000532      di      0000000190      pos     postgetstorage
+Set null value
+set     0000000766      di      0000000234      pos     presetstorage
+set     0000001002      di      0000000236      pos     precommit
+set     0000008944      di      0000007942      pos     postcommit
+
+.fi
+.PP
+.PP
+The first digit column shows the complete time passed, the second column shows the time from invocation to invocation\&.
+.PP
+.SS "Module Loading"
+.PP
+Will not log when loaded as module (config \fC/module\fP present), unless \fC/logmodule\fP is set: 
+.PP
+.nf
+kdb check -c "logmodule=" timeofday
+.fi
+.PP
+ 
