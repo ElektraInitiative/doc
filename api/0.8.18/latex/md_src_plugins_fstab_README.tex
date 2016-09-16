@@ -1,0 +1,86 @@
+
+\begin{DoxyItemize}
+\item infos = Information about F\+S\+T\+A\+B plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides = storage
+\item infos/needs =
+\item infos/recommends = struct type path
+\item infos/placements = getstorage setstorage
+\item infos/status = unittest difficult unfinished old nodep
+\item infos/description = Parses files in a syntax like /etc/fstab file
+\end{DoxyItemize}
+
+This plugin is an implementation of a parser and generator of the /etc/fstab file.
+
+\subsection*{old fstab Entries}
+
+(Deprecated, remove this section after it is reimplemented in the new way)
+
+For each device in fstab elektra will store the following keys\+: pseudoname/device pseudoname/mpoint pseudoname/type pseudoname/options pseudoname/dumpfreq pseudoname/passno
+
+Each represents a column in fstab.
+
+The pseudoname can be any name for setting keys, the will be generated when getting keys, so don't expect the same name.
+
+the directory / will be called rootfs
+
+all swap devices will be called swap\+X\+X with a number from 00 on for X\+X
+
+otherwise the mountpoint without the '/' character will be used.
+
+At the other point there is the issue with the pseudonames, you can't rely on the pseudoname you have set.
+
+The biggest issue is that you can't change or delete existing entries. All entries you set will be appended to the other filesystems.
+
+So if you get the filesystems and change the type of the filesystem of the rootfs and set it again the resulting fstab will be like\+: /dev/sda6 / ext3$>$-\/--- $>$-\/---defaults,errors=remount-\/ro 0 1 /dev/sda6 / jfs$>$-\/--- $>$-\/---defaults,errors=remount-\/ro 0 1
+
+which will be not like you desired!
+
+setmntent is used, so it is only conforming to B\+S\+D 4.\+3 and linux and you can't use any comments.
+
+\subsection*{new fstab Entries}
+
+Specification\+: \begin{DoxyVerb}[/_]
+type = array
+explanation = the name of the key is the mountpoint (so the former
+  mpoint is not needed); the value is the number of entries in the
+  array
+[/_/#]
+explanation = an entry in the array
+[/_/#/device]
+[/_/#/type]
+[/_/#/options]
+[/_/#/dumpfreq]
+[/_/#/passno]
+\end{DoxyVerb}
+
+
+Example\+: A fstab that looks like\+: \begin{DoxyVerb}/dev/sr0        /media/cdrom   udf,iso9660 user,noauto     0       0
+\end{DoxyVerb}
+
+
+would have a key name that is an array (so the value is the number of children, in this case 1)\+: \begin{DoxyVerb}system/filesystems/\/media\/cdrom
+\end{DoxyVerb}
+
+
+with the array entry\+: \begin{DoxyVerb}system/filesystems/\/media\/cdrom0/#0/
+\end{DoxyVerb}
+
+
+So when following line is added \begin{DoxyVerb}/dev/sr0        /media/cdrom   ramfs user,noauto     0       0
+\end{DoxyVerb}
+
+
+Implementation hint\+: use \hyperlink{group__keyname_gaa942091fc4bd5c2699e49ddc50829524}{key\+Add\+Base\+Name()} to get escaping of /, then add array items below it
+
+If a mount point exists more than once (that could be proc, swap or overlay mountpoints) the array below gets incremented (otherwise \#0 is used for every unique entry).
+
+The order of the array must, of course, be preserved. Other lines may be reordered for now, a proper \char`\"{}order\char`\"{} could be done later.
+
+Spaces in the names are replaced by \textbackslash{}040 in the fstab.
+
+\subsection*{Example}
+
+Mount the plugin\+: \begin{DoxyVerb}    kdb mount /etc/fstab system/filesystems fstab struct type path\end{DoxyVerb}
+ 

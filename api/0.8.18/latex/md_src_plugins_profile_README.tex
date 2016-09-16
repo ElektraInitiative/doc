@@ -1,0 +1,58 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the profile plugin is in keys below
+\item infos/author = Name \href{mailto:name@libelektra.org}{\tt name@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained libc preview unfinished nodoc global nodep
+\item infos/metadata =
+\item infos/description =
+\end{DoxyItemize}
+
+Following the elektra keyname convention application configurations are stored under {\ttfamily /sw/org/myapp/\#} and {\ttfamily /sw/org/myapp/\#0/current}is the profile to be used. The {\ttfamily profile} plugin provides an easy way to switch configuration profiles.
+
+The key {\ttfamily /sw/org/myapp/\#0/profile} defines what profile should be used as {\ttfamily current}, e.\+g. {\ttfamily /sw/org/myapp/\#0/profile = myprofile}. If a key {\ttfamily /sw/org/myapp/\#0/myprofile/key} is found and no key {\ttfamily /sw/org/myapp/\#0/current/key} exists an override key will be created linking {\ttfamily /sw/org/myapp/\#0/currrent/key} to {\ttfamily /sw/org/myapp/\#0/myapp/key} If neither {\ttfamily /sw/org/myapp/\#0/current/key} nor {\ttfamily /sw/org/myapp/\#0/myprofile/key} is found, but {\ttfamily /sw/org/myapp/\#0/\%/key}, {\ttfamily /sw/org/myapp/\#0/current/key} will be linked to {\ttfamily /sw/org/myapp/\#0/\%/key}.
+
+So a cascading lookup will automatically implement following preferences (next to the namespace preferences)\+:
+
+
+\begin{DoxyEnumerate}
+\item Usage of key in {\ttfamily current}
+\item Usage of key in the profile set with {\ttfamily profile}
+\item Usage of key in the {\ttfamily \%} fallback profile
+\end{DoxyEnumerate}
+
+\subsubsection*{E\+X\+A\+M\+P\+L\+E}
+
+Suppose we have the configuration file profile.\+ini in $\sim$/.config\+:
+
+\% cat profile.\+ini ``` \mbox{[}\mbox{]} profile = myprofile
+
+\mbox{[}current\mbox{]} key2 = will win
+
+\mbox{[}myprofile\mbox{]} key1 = test1 key2 = test2
+
+\mbox{[}\%\mbox{]} key2 = failed? key3 = test3 ```
+
+Then we simply mount it {\itshape without} the profile plugin\+:
+
+\% kdb mount profile.\+ini /sw/org/myapp/\#0 ini
+
+But we have to make sure that the profile plugin is mounted globally\+:
+
+\% kdb global-\/mount profile
+
+Then we can access /sw/org/myapp/\#0 in a profile-\/aware way\+:
+
+\% kdb ls /sw ``` spec/sw/org/myapp/\#0/current/key1 spec/sw/org/myapp/\#0/current/key3 user/sw/org/myapp/\#0 user/sw/org/myapp/\#0/\% user/sw/org/myapp/\#0/\%/key2 user/sw/org/myapp/\#0/\%/key3 user/sw/org/myapp/\#0/current user/sw/org/myapp/\#0/current/key2 user/sw/org/myapp/\#0/profile user/sw/org/myapp/\#0/myprofile user/sw/org/myapp/\#0/myprofile/key1 user/sw/org/myapp/\#0/myprofile/key2 ```
+
+As we can see with the {\ttfamily -\/v} option, we will fetch keys from our {\ttfamily myprofile} even though we request {\ttfamily current}\+:
+
+\% kdb get -\/v /sw/org/myapp/\#0/current/key1 ``` got 25 keys searching spec/sw/org/myapp/\#0/current/key1, found\+: spec/sw/org/myapp/\#0/current/key1, options\+: K\+D\+B\+\_\+\+O\+\_\+\+C\+A\+L\+L\+B\+A\+C\+K The resulting keyname is user/sw/org/myapp/\#0/myprofile/key1 test1 ```
+
+To switch profile we simply have to set one key\+: ``` kdb set user/sw/org/myapp/\#0/profile newprofile ```
+
+Usually, this will be done via commandline by setting {\ttfamily proc/sw/org/myapp/\#0/profile}. 
