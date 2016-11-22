@@ -1,0 +1,499 @@
+\hypertarget{group__keytest}{\section{Methods for Making Tests}
+\label{group__keytest}\index{Methods for Making Tests@{Methods for Making Tests}}
+}
+
+
+Methods to do various tests on Keys.  
+
+
+Collaboration diagram for Methods for Making Tests\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=262pt]{group__keytest}
+\end{center}
+\end{figure}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{key\+Cmp} (const Key $\ast$k1, const Key $\ast$k2)
+\begin{DoxyCompactList}\small\item\em Compare the name of two keys. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_gaf247df0de7aca04b32ef80e39ef12950}{key\+Need\+Sync} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Test if a key needs to be synced to backend storage. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_ga03332b5d97c76a4fd2640aca4762b8df}{key\+Is\+Below} (const Key $\ast$key, const Key $\ast$check)
+\begin{DoxyCompactList}\small\item\em Check if the key check is below the key key or not. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_ga4f175aafd98948ce6c774f3bd92b72ca}{key\+Is\+Direct\+Below} (const Key $\ast$key, const Key $\ast$check)
+\begin{DoxyCompactList}\small\item\em Check if the key check is direct below the key key or not. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_ga6bb0f95ac34ce9c42d61bb35a76139d0}{key\+Rel} (const Key $\ast$key, const Key $\ast$check)
+\begin{DoxyCompactList}\small\item\em Information about the relation in the hierarchy between two keys. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_gaa25f699f592031c1a0abc1504d14e13e}{key\+Is\+Inactive} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Check whether a key is inactive. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_ga9526b371087564e43e3dff8ad0dac949}{key\+Is\+Binary} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Check if a key is binary type. \end{DoxyCompactList}\item 
+int \hyperlink{group__keytest_gaea7670778abd07fee0fe8ac12a149190}{key\+Is\+String} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Check if a key is string type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Methods to do various tests on Keys. 
+
+To use them\+: 
+\begin{DoxyCode}
+\textcolor{preprocessor}{#include <kdb.h>}
+\end{DoxyCode}
+ 
+
+\subsection{Function Documentation}
+\hypertarget{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Cmp@{key\+Cmp}}
+\index{key\+Cmp@{key\+Cmp}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Cmp}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Cmp (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{k1, }
+\item[{const Key $\ast$}]{k2}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}
+
+
+Compare the name of two keys. 
+
+\begin{DoxyReturn}{Returns}
+a number less than, equal to or greater than zero if k1 is found, respectively, to be less than, to match, or be greater than k2.
+\end{DoxyReturn}
+The comparison is based on a strcmp of the keynames, and iff they match a strcmp of the owner will be used to distuingish. If even this matches the keys are found to be exactly the same and 0 is returned. These two keys can't be used in the same Key\+Set.
+
+\hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{key\+Cmp()} defines the sorting order for a Key\+Set.
+
+The following 3 points are the rules for null values\+:
+
+
+\begin{DoxyItemize}
+\item A null pointer will be found to be smaller than every other key. If both are null pointers, 0 is returned.
+\item A null name will be found to be smaller than every other name. If both are null names, 0 is returned.
+\end{DoxyItemize}
+
+If the name is equal then\+:
+
+
+\begin{DoxyItemize}
+\item No owner will be found to be smaller then every other owner. If both don't have a owner, 0 is returned.
+\end{DoxyItemize}
+
+\begin{DoxyNote}{Note}
+the owner will only be used if the names are equal.
+\end{DoxyNote}
+Often is enough to know if the other key is less then or greater then the other one. But Sometimes you need more precise information, see \hyperlink{group__keytest_ga6bb0f95ac34ce9c42d61bb35a76139d0}{key\+Rel()}.
+
+Given any Keys k1 and k2 constructed with \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}, following equation hold true\+:
+
+
+\begin{DoxyCodeInclude}
+        succeed\_if (\hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{keyCmp} (0, 0) == 0, \textcolor{stringliteral}{"all null pointers same"});
+        succeed\_if (\hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{keyCmp} (k1, 0) == 1, \textcolor{stringliteral}{"null pointer is smaller"});
+        succeed\_if (\hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{keyCmp} (0, k2) == -1, \textcolor{stringliteral}{"null pointer is smaller"});
+\end{DoxyCodeInclude}
+ Here are some more examples\+: 
+\begin{DoxyCode}
+1 Key *k1 = keyNew("user/a", KEY\_END);
+2 Key *k2 = keyNew("user/b", KEY\_END);
+3 
+4 // keyCmp(k1,k2) < 0
+5 // keyCmp(k2,k1) > 0
+\end{DoxyCode}
+
+
+And even more\+: 
+\begin{DoxyCode}
+1 Key *k1 = keyNew("user/a", KEY\_OWNER, "markus", KEY\_END);
+2 Key *k2 = keyNew("user/a", KEY\_OWNER, "max", KEY\_END);
+3 
+4 // keyCmp(k1,k2) < 0
+5 // keyCmp(k2,k1) > 0
+\end{DoxyCode}
+
+
+Do not strcmp the \hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{key\+Name()} yourself because the result differs from simple ascii comparison.
+
+
+\begin{DoxyParams}{Parameters}
+{\em k1} & the first key object to compare with \\
+\hline
+{\em k2} & the second key object to compare with\\
+\hline
+\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ks\+Append\+Key()}, \hyperlink{group__keyset_ga21eb9c3a14a604ee3a8bdc779232e7b7}{ks\+Append()} will compare keys when appending 
+
+\hyperlink{group__keyset_gaa34fc43a081e6b01e4120daa6c112004}{ks\+Lookup()} will compare keys during searching 
+\end{DoxySeeAlso}
+\hypertarget{group__keytest_ga03332b5d97c76a4fd2640aca4762b8df}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Is\+Below@{key\+Is\+Below}}
+\index{key\+Is\+Below@{key\+Is\+Below}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Is\+Below}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Is\+Below (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key, }
+\item[{const Key $\ast$}]{check}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_ga03332b5d97c76a4fd2640aca4762b8df}
+
+
+Check if the key check is below the key key or not. 
+
+Example\+: \begin{DoxyVerb}key user/sw/app
+check user/sw/app/key
+\end{DoxyVerb}
+
+
+returns true because check is below key
+
+Example\+: \begin{DoxyVerb}key user/sw/app
+check user/sw/app/folder/key
+\end{DoxyVerb}
+
+
+returns also true because check is indirect below key
+
+Obviously, there is no key above a namespace (e.\+g. user, system, /)\+:
+
+\begin{DoxyVerb}key *
+check user
+\end{DoxyVerb}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+{\em check} & the key to find the relative position of \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if check is below key \\
+\hline
+{\em 0} & if it is not below or if it is the same key \\
+\hline
+{\em -\/1} & if key or check is null \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keyname_ga7699091610e7f3f43d2949514a4b35d9}{key\+Set\+Name()}, \hyperlink{group__keyname_gab29a850168d9b31c9529e90cf9ab68be}{key\+Get\+Name()}, \hyperlink{group__keytest_ga4f175aafd98948ce6c774f3bd92b72ca}{key\+Is\+Direct\+Below()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keytest_ga9526b371087564e43e3dff8ad0dac949}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Is\+Binary@{key\+Is\+Binary}}
+\index{key\+Is\+Binary@{key\+Is\+Binary}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Is\+Binary}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Is\+Binary (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_ga9526b371087564e43e3dff8ad0dac949}
+
+
+Check if a key is binary type. 
+
+The function checks if the key is a binary. Opposed to string values binary values can have '\textbackslash{}0' inside the value and may not be terminated by a null character. Their disadvantage is that you need to pass their size.
+
+Make sure to use this function and don't test the binary type another way to ensure compatibility and to write less error prone programs.
+
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if it is binary \\
+\hline
+{\em 0} & if it is not \\
+\hline
+{\em -\/1} & on N\+U\+L\+L pointer \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}, \hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{key\+Set\+Binary()} 
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key to check \\
+\hline
+\end{DoxyParams}
+\hypertarget{group__keytest_ga4f175aafd98948ce6c774f3bd92b72ca}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Is\+Direct\+Below@{key\+Is\+Direct\+Below}}
+\index{key\+Is\+Direct\+Below@{key\+Is\+Direct\+Below}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Is\+Direct\+Below}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Is\+Direct\+Below (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key, }
+\item[{const Key $\ast$}]{check}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_ga4f175aafd98948ce6c774f3bd92b72ca}
+
+
+Check if the key check is direct below the key key or not. 
+
+\begin{DoxyVerb}Example:
+key user/sw/app
+check user/sw/app/key
+
+returns true because check is below key
+
+Example:
+key user/sw/app
+check user/sw/app/folder/key
+
+does not return true, because there is only a indirect relation
+\end{DoxyVerb}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+{\em check} & the key to find the relative position of \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if check is below key \\
+\hline
+{\em 0} & if it is not below or if it is the same key \\
+\hline
+{\em -\/1} & on null pointer \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keytest_ga03332b5d97c76a4fd2640aca4762b8df}{key\+Is\+Below()}, \hyperlink{group__keyname_ga7699091610e7f3f43d2949514a4b35d9}{key\+Set\+Name()}, \hyperlink{group__keyname_gab29a850168d9b31c9529e90cf9ab68be}{key\+Get\+Name()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keytest_gaa25f699f592031c1a0abc1504d14e13e}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Is\+Inactive@{key\+Is\+Inactive}}
+\index{key\+Is\+Inactive@{key\+Is\+Inactive}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Is\+Inactive}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Is\+Inactive (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_gaa25f699f592031c1a0abc1504d14e13e}
+
+
+Check whether a key is inactive. 
+
+In Elektra terminology a hierarchy of keys is inactive if the rootkey's basename starts with '.'. So a key is also inactive if it is below an inactive key. For example, user/key/.hidden is inactive and so is user/.hidden/below.
+
+Inactive keys should not have any meaning to applications, they are only a convention reserved for users and administrators. To automatically remove all inactive keys for an application, consider to use the hidden plugin.
+
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if the key is inactive \\
+\hline
+{\em 0} & if the key is active \\
+\hline
+{\em -\/1} & on N\+U\+L\+L pointer or when key has no name \\
+\hline
+\end{DoxyRetVals}
+\hypertarget{group__keytest_gaea7670778abd07fee0fe8ac12a149190}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Is\+String@{key\+Is\+String}}
+\index{key\+Is\+String@{key\+Is\+String}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Is\+String}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Is\+String (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_gaea7670778abd07fee0fe8ac12a149190}
+
+
+Check if a key is string type. 
+
+String values are null terminated and are not allowed to have any '\textbackslash{}0' characters inside the string.
+
+Make sure to use this function and don't test the string type another way to ensure compatibility and to write less error prone programs.
+
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if it is string \\
+\hline
+{\em 0} & if it is not \\
+\hline
+{\em -\/1} & on N\+U\+L\+L pointer \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}, \hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{key\+Set\+String()} 
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key to check \\
+\hline
+\end{DoxyParams}
+\hypertarget{group__keytest_gaf247df0de7aca04b32ef80e39ef12950}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Need\+Sync@{key\+Need\+Sync}}
+\index{key\+Need\+Sync@{key\+Need\+Sync}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Need\+Sync}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Need\+Sync (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_gaf247df0de7aca04b32ef80e39ef12950}
+
+
+Test if a key needs to be synced to backend storage. 
+
+If any key modification took place the key will be flagged so that \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()} knows which keys were modified and which not.
+
+After \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()} the flag will normally be set, but after \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()} and \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()} the flag will be removed. When you modify the key the flag will be set again.
+
+In your application you can make use of that flag to know if you changed something in a key after a \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()} or \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}.
+
+\begin{DoxyNote}{Note}
+Note that the sync status will be updated on any change, including metadata.
+\end{DoxyNote}
+\begin{DoxyRefDesc}{Deprecated}
+\item[\hyperlink{deprecated__deprecated000012}{Deprecated}]The handling of synchronization is done internally and does not need to be checked by neither application nor plugins.\end{DoxyRefDesc}
+
+
+\begin{DoxySeeAlso}{See also}
+after \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}, \hyperlink{group__key_gae6ec6a60cc4b8c1463fa08623d056ce3}{key\+Dup()} keys need sync
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if {\ttfamily key} was changed in memory, 0 otherwise \\
+\hline
+{\em -\/1} & on N\+U\+L\+L pointer \\
+\hline
+\end{DoxyRetVals}
+\hypertarget{group__keytest_ga6bb0f95ac34ce9c42d61bb35a76139d0}{\index{Methods for Making Tests@{Methods for Making Tests}!key\+Rel@{key\+Rel}}
+\index{key\+Rel@{key\+Rel}!Methods for Making Tests@{Methods for Making Tests}}
+\subsubsection[{key\+Rel}]{\setlength{\rightskip}{0pt plus 5cm}int key\+Rel (
+\begin{DoxyParamCaption}
+\item[{const Key $\ast$}]{key, }
+\item[{const Key $\ast$}]{check}
+\end{DoxyParamCaption}
+)}}\label{group__keytest_ga6bb0f95ac34ce9c42d61bb35a76139d0}
+
+
+Information about the relation in the hierarchy between two keys. 
+
+Unlike \hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{key\+Cmp()} the number gives information about hierarchical information.
+
+
+\begin{DoxyItemize}
+\item If the keys are the same 0 is returned. So it is the key itself. \begin{DoxyVerb}user/key
+user/key
+\end{DoxyVerb}
+
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+1 keySetName (key, "user/key/folder");
+2 keySetName (check, "user/key/folder");
+3 succeed\_if (keyRel (key, check) == 0, "should be same");
+\end{DoxyCode}
+
+
+\begin{DoxyNote}{Note}
+this relation can be checked with \hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{key\+Cmp()} too.
+\end{DoxyNote}
+
+\begin{DoxyItemize}
+\item If the key is direct below the other one 1 is returned. That means that, in terms of hierarchy, no other key is between them -\/ it is a direct child. \begin{DoxyVerb}user/key/folder
+user/key/folder/child
+\end{DoxyVerb}
+
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+1 keySetName (key, "user/key/folder");
+2 keySetName (check, "user/key/folder/child");
+3 succeed\_if (keyRel (key, check) == 1, "should be direct below");
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item If the key is below the other one, but not directly 2 is returned. This is also called grand-\/child. \begin{DoxyVerb}user/key/folder
+user/key/folder/any/depth/deeper/grand-child
+\end{DoxyVerb}
+
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+1 keySetName (key, "user/key/folder");
+2 keySetName (check, "user/key/folder/any/depth/deeper/grand-child");
+3 succeed\_if (keyRel (key, check) >= 2, "should be below (but not direct)");
+4 succeed\_if (keyRel (key, check) > 0, "should be below");
+5 succeed\_if (keyRel (key, check) >= 0, "should be the same or below");
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item If a invalid or null ptr key is passed, -\/1 is returned
+\item If the keys have no relations, but are not invalid, -\/2 is returned.
+\item If the keys are in the same hierarchy, a value smaller then -\/2 is returned. It means that the key is not below. \begin{DoxyVerb}user/key/myself
+user/key/sibling
+\end{DoxyVerb}
+
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+1 keySetName (key, "user/key/folder");
+2 keySetName (check, "user/notsame/folder");
+3 succeed\_if (keyRel (key, check) < -2, "key is not below, but same namespace");
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}
+\end{DoxyCode}
+
+
+T\+O\+D\+O Below is an idea how it could be extended\+: It could continue the search into the other direction if any (grand-\/)parents are equal.
+
+
+\begin{DoxyItemize}
+\item If the keys are direct below a key which is next to the key, -\/2 is returned. This is also called nephew. (T\+O\+D\+O not implemented) \begin{DoxyVerb}user/key/myself
+user/key/sibling
+\end{DoxyVerb}
+
+\item If the keys are direct below a key which is next to the key, -\/2 is returned. This is also called nephew. (T\+O\+D\+O not implemented) \begin{DoxyVerb}user/key/myself
+user/key/sibling/nephew
+\end{DoxyVerb}
+
+\item If the keys are below a key which is next to the key, -\/3 is returned. This is also called grand-\/nephew. (T\+O\+D\+O not implemented) \begin{DoxyVerb}user/key/myself
+user/key/sibling/any/depth/deeper/grand-nephew
+\end{DoxyVerb}
+
+\end{DoxyItemize}
+
+The same holds true for the other direction, but with negative values. For no relation I\+N\+T\+\_\+\+M\+I\+N is returned.
+
+\begin{DoxyNote}{Note}
+to check if the keys are the same, you must use \hyperlink{group__keytest_gaf6e66e12fe04d535a5d1c8218ced803e}{key\+Cmp()} == 0! \hyperlink{group__keytest_ga6bb0f95ac34ce9c42d61bb35a76139d0}{key\+Rel()} does not give you the information if it did not find a relation or if it is the same key.
+\end{DoxyNote}
+\begin{DoxyReturn}{Returns}
+depending on the relation 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 2} & if below \\
+\hline
+{\em 1} & if direct below \\
+\hline
+{\em 0} & if the same \\
+\hline
+{\em -\/1} & on null or invalid keys \\
+\hline
+{\em -\/2} & if none of any other relation \\
+\hline
+{\em -\/3} & if same hierarchy (none of those below) \\
+\hline
+{\em -\/4} & if sibling (in same hierarchy) \\
+\hline
+{\em -\/5} & if nephew (in same hierarchy)\\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+{\em check} & the second key object to check the relation with \\
+\hline
+\end{DoxyParams}

@@ -1,0 +1,117 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the conditionals plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides =
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep libc global preview
+\item infos/metadata = check/condition assign/condition condition/validsuffix
+\item infos/description = ensures key values through conditions
+\end{DoxyItemize}
+
+This plugin uses if-\/then-\/else like conditions. It also works as global plugin.
+
+\subsection*{Check Syntax}
+
+Stored in the metakey {\ttfamily check/condition} to validate data is\+:
+
+{\ttfamily (I\+F-\/condition) ? (T\+H\+E\+N-\/condition) \+: (E\+L\+S\+E-\/condition)} where the E\+L\+S\+E-\/condition is optional
+
+Condition\+: {\ttfamily Key} {\itshape Operation} `('String' $\vert$ '1234.\+56' $\vert$ Key $\vert$ '')`
+
+Operations\+: {\ttfamily !=, ==, $<$, $<$=, =$>$, $>$, \+:=}, where\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \+:=} is used to set a key value
+\item others are for comparison as in C
+\end{DoxyItemize}
+
+\subsubsection*{Testing if Key exists}
+
+{\ttfamily (! a/key)} evaluates to true if the key {\ttfamily a/key} doesn't exist, to false if it exists.
+
+\subsubsection*{Assign Syntax}
+
+\begin{DoxyVerb}(IF-condition) ? ('ThenValue') : ('ElseValue')
+\end{DoxyVerb}
+
+
+Depending on if the condition is met, either 'Then\+Value' or 'Else\+Value' will be assigned as key value if the metakey {\ttfamily assign/condition} is used.
+
+\subsubsection*{Experimental\+: Nested Conditions}
+
+Multiple conditions can be nested and combined using parentheses and {\ttfamily \&\&} (logical A\+N\+D) or {\ttfamily $\vert$$\vert$} (logical O\+R). Additional parentheses must be used to form valid conditions again. {\ttfamily (} {\ttfamily (condition 1) \&\& (condition 2)} {\ttfamily )}
+
+\subsubsection*{Valid Suffix}
+
+The {\ttfamily condition/validsuffix} can be used to define a list of valid suffixes to numeric values. If two operants have the same valid suffix or one of them no suffix they will be treated by their numeric value ignoring their suffix. `condition/validsuffix = 'm', 'cm', 'km'{\ttfamily would treat}2.\+3m{\ttfamily just as the numeric value}2.\+3` when comparing to another value having the same or no suffix.
+
+\subsubsection*{Keynames}
+
+Keynames are all either relative to to-\/be-\/tested key (starting with {\ttfamily ./} or {\ttfamily ../}), relative to the parentkey (starting with {\ttfamily @/}) or absolute (e.\+g. {\ttfamily system/key}).
+
+\subsection*{Example}
+
+\begin{DoxyVerb}(this/key  != 'value') ? (then/key == some/other/key) : (or/key <= '125')
+\end{DoxyVerb}
+
+
+Meaning\+: I\+F {\ttfamily this/key} N\+O\+T E\+Q\+U\+A\+L T\+O {\ttfamily 'value'} T\+H\+E\+N {\ttfamily then/key} M\+U\+S\+T E\+Q\+U\+A\+L {\ttfamily some/other/key} E\+L\+S\+E {\ttfamily or/key} M\+U\+S\+T B\+E L\+E\+S\+S T\+H\+A\+N {\ttfamily 125}
+
+Another full example\+:
+
+``` \#\+Backup-\/and-\/\+Restore\+:/examples/conditionals sudo kdb mount conditionals.\+dump /examples/conditionals conditionals dump kdb set user/examples/conditionals/fkey 3.\+0 kdb set user/examples/conditionals/hkey hello \section*{will succeed}
+
+kdb setmeta user/examples/conditionals/key check/condition \char`\"{}(../hkey == 'hello') ? (../fkey == '3.\+0')\char`\"{} \section*{will fail}
+
+kdb setmeta user/examples/conditionals/key check/condition \char`\"{}(../hkey == 'hello') ? (../fkey == '5.\+0')\char`\"{} \section*{R\+E\+T\+:5}
+
+\section*{E\+R\+R\+O\+R\+S\+:135}
+
+\# \section*{cleanup}
+
+\# kdb rm -\/r /examples/conditionals sudo kdb umount /examples/conditionals ```
+
+Assignment example\+:
+
+``` \#\+Backup-\/and-\/\+Restore\+:/examples/conditionals sudo kdb mount conditionals.\+dump /examples/conditionals conditionals dump kdb set user/examples/conditionals/hkey Hello kdb setmeta user/examples/conditionals/hkey assign/condition \char`\"{}(./ == '\+Hello') ? ('\+World')\char`\"{} \section*{alternative syntax\+: "(../hkey == 'Hello') ? ('World')}
+
+kdb get user/examples/conditionals/hkey World \# \section*{cleanup}
+
+\# kdb rm -\/r /examples/conditionals sudo kdb umount /examples/conditionals ```
+
+Global plugin example\+:
+
+``` \#\+Backup-\/and-\/\+Restore\+:/examples/conditionals sudo kdb mount main.\+ini /examples/conditionals ni sudo kdb mount sub.\+ini /examples/conditionals/sub ini \# \section*{mount conditionals as global plugin}
+
+\# sudo kdb global-\/mount conditionals \# \section*{create testfiles}
+
+\# \$ echo \char`\"{}key1 = val1\char`\"{} $>$ {\ttfamily kdb file /examples/conditionals} \$ echo \char`\"{}\mbox{[}key1\mbox{]}\char`\"{} $>$$>$ {\ttfamily kdb file /examples/conditionals} \$ echo \char`\"{}check/condition = (./ == 'val1') ? (../sub/key == 'true')\char`\"{} $>$$>$ {\ttfamily kdb file /examples/conditionals} \$ echo \char`\"{}key = false\char`\"{} $>$ {\ttfamily kdb file /examples/conditionals/sub} \# \section*{should fail and yield an error}
+
+\# kdb export /examples/conditionals ini sub/key = false key1 = val1 \section*{E\+R\+R\+O\+R\+S\+:135}
+
+\section*{Error (\#135) occurred!}
+
+\section*{Description\+: Validation failed}
+
+\section*{Ingroup\+: plugin}
+
+\section*{Module\+: conditionals}
+
+\section*{At\+: /home/thomas/\+Dev/\+Elektra/libelektra/src/plugins/conditionals/conditionals.c\+:696}
+
+\section*{Reason\+: Validation of Key key1\+: (./ == 'val1') ? (../sub/key == 'true') failed. ((../sub/key == 'true') failed)}
+
+\section*{Mountpoint\+: system/test}
+
+\section*{Configfile\+: /home/thomas/.config/main.\+ini}
+
+kdb set /examples/conditionals/sub/key true \# \section*{should succeed}
+
+\# kdb export /examples/conditionals ini sub/key = true key1 = val1 \# \section*{cleanup}
+
+\# kdb rm -\/r /examples/conditionals sudo kdb umount /examples/conditionals/sub sudo kdb umount /examples/conditionals ``` 

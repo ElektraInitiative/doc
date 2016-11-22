@@ -1,0 +1,219 @@
+.TH "doc_CODING_md" 3elektra "Tue Nov 22 2016" "Version 0.8.19" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_CODING_md \- CODING 
+intensively (except for file headers)\&.
+.PP
+This document provides an introduction in how the source code of libelektra is organized and how and where to add functionality\&.
+.PP
+Make sure to read \fBDESIGN\fP together with this document\&.
+.PP
+.SS "Folder structure"
+.PP
+After you downloaded and unpacked Elektra you should see some folders\&. The most important are:
+.PP
+.IP "\(bu" 2
+\fBsrc:\fP This directory contains the source of the libraries, tools and plugins\&.
+.IP "\(bu" 2
+\fBdoc:\fP General documentation for the project and the core library\&.
+.IP "\(bu" 2
+\fBexamples:\fP Examples on how to use the core library\&.
+.IP "\(bu" 2
+\fBtests:\fP Contains the testing framework for the source (\fBsrc\fP)\&.
+.PP
+.PP
+.SS "Source Code"
+.PP
+libelektra is the ANSI/ISO C99-Core which coordinates the interactions between the user and the plugins\&.
+.PP
+The plugins have all kinds of dependencies\&. It is the responsibility of the plugins to find and check them using CMake\&. The same guidelines apply to all code in the repository including the plugins\&.
+.PP
+\fClibloader\fP is responsible for loading the backend modules\&. It works on various operating systems by using \fClibltdl\fP\&. This code is optimized for static linking and win32\&.
+.PP
+kdb is the commandline-tool to access and initialize the Elektra database\&.
+.PP
+.SS "General Guidelines"
+.PP
+You are only allowed to break a guideline if there is a good reason to do so\&. When you do, document the fact as comment next to the code\&.
+.PP
+Of course, all rules of good software engineering apply: Use meaningful names and keep the software both testable and reusable\&.
+.PP
+The purpose of the guidelines is to have a consistent style, not to teach programming\&.
+.PP
+If you see code that breaks guidelines do not hesitate to fix them\&. At least put a TODO marker to make the places visible\&.
+.PP
+If you see inconsistency within the rules do not hesitate to talk about it with the intent to add a new rule here\&.
+.PP
+See \fBDESIGN\fP document too, they complement each other\&.
+.PP
+.SS "Code Comments"
+.PP
+Code is not only for the computer, but it should be readable for humans, too\&. Up-to-date code comments are essential to make code understandable for others\&. Thus please use following techniques (in order of preference):
+.PP
+.IP "1." 4
+Comment functions with \fC/**/\fP and Doxygen, see below\&.
+.IP "2." 4
+You should use also add assertions to state what should be true at a specific position in the code\&. Their syntax is checked and they are automatically verified at run-time\&. So they are not only useful for people reading the code but also for tools\&. Assertions in Elektra are used by:
+.PP
+\fC#include <\fBkdbassert\&.h\fP>\fP
+.PP
+\fCELEKTRA_ASSERT (condition, 'formatted text to be printed when assert fails', \&.\&.\&.)\fP
+.PP
+Note: Do not use assert for user-APIs, always handle arguments of user-APIs like untrusted input\&.
+.IP "3." 4
+If the 'comment' might be useful to be printed during execution, use logging:
+.PP
+\fC#include <\fBkdblogger\&.h\fP>\fP
+.PP
+\fCELEKTRA_LOG ('formatted text to be printed according log filters', \&.\&.\&.)\fP
+.PP
+There are four log levels:
+.IP "  \(bu" 4
+ELEKTRA_LOG_WARNING, something critical that should be shown the user (e\&.g\&. API misuse), see \fBELEKTRA_LOG_LEVEL_WARNING\fP
+.IP "  \(bu" 4
+ELEKTRA_LOG_NOTICE, something important developers are likely interested in, see \fBELEKTRA_LOG_LEVEL_NOTICE\fP
+.IP "  \(bu" 4
+ELEKTRA_LOG, standard level gives information what the code is doing without flooding the log, see \fBELEKTRA_LOG_LEVEL_INFO\fP
+.IP "  \(bu" 4
+ELEKTRA_LOG_DEBUG, for less important logs, see \fBELEKTRA_LOG_LEVEL_DEBUG\fP
+.PP
+
+.IP "4." 4
+Otherwise comment within source with \fC//\fP or with \fC/**/\fP for multi-line comments\&.
+.PP
+.PP
+.SS "Coding Style"
+.PP
+.IP "\(bu" 2
+Limits
+.IP "  \(bu" 4
+Functions should not exceed 100 lines\&.
+.IP "  \(bu" 4
+Files should not exceed 1000 lines\&.
+.IP "  \(bu" 4
+A line should not be longer than 140 characters\&.
+.PP
+
+.PP
+.PP
+Split up when those limits are reached\&. Rationale: Readability with split windows\&.
+.PP
+.IP "\(bu" 2
+Indentation
+.IP "  \(bu" 4
+Use tabs for indentation\&.
+.IP "  \(bu" 4
+One tab equals 8 spaces\&.
+.PP
+
+.IP "\(bu" 2
+Blocks
+.IP "  \(bu" 4
+Use blocks even for single line statements\&.
+.IP "  \(bu" 4
+Curly braces go on a line on their own on the previous indentation level\&.
+.IP "  \(bu" 4
+Avoid multiple variable declarations at one place\&.
+.IP "  \(bu" 4
+Declare Variables as late as possible, preferable within blocks\&.
+.PP
+
+.IP "\(bu" 2
+Naming
+.IP "  \(bu" 4
+Use camelCase for functions and variables\&.
+.IP "  \(bu" 4
+Start types with upper-case, everything else with lower-case\&.
+.IP "  \(bu" 4
+Prefix names with \fCelektra\fP for internal usage\&. External API either starts with \fCks\fP, \fCkey\fP or \fCkdb\fP\&.
+.PP
+
+.IP "\(bu" 2
+Whitespaces
+.IP "  \(bu" 4
+Use space before and after equal when assigning a value\&.
+.IP "  \(bu" 4
+Use space before round parenthesis ( \fC(\fP )\&.
+.IP "  \(bu" 4
+Use space before and after \fC*\fP from Pointers\&.
+.IP "  \(bu" 4
+Use space after \fC,\fP of every function argument\&.
+.PP
+
+.PP
+.PP
+The \fBreformat script\fP can ensure most code style rules, but it is obviouly not capable of ensuring everything (e\&.g\&. naming conventions)\&. So do not give this responsibility out of hands entirely\&.
+.PP
+.SS "C Guidelines"
+.PP
+.IP "\(bu" 2
+The compiler shall not emit any warning (or error)\&.
+.IP "\(bu" 2
+Use goto only for error situations\&.
+.IP "\(bu" 2
+Use \fCconst\fP as much as possible\&.
+.IP "\(bu" 2
+Use \fCstatic\fP methods if they should not be externally visible\&.
+.IP "\(bu" 2
+C-Files have extension \fC\&.c\fP, Header files \fC\&.h\fP\&.
+.PP
+.PP
+\fBExample:\fP \fCsrc/libs/elektra/kdb\&.c\fP
+.PP
+.SS "C++ Guidelines"
+.PP
+.IP "\(bu" 2
+Everything as in C if not noted otherwise\&.
+.IP "\(bu" 2
+Do not use goto at all, use RAII instead\&.
+.IP "\(bu" 2
+Do not use raw pointers, use smart pointers instead\&.
+.IP "\(bu" 2
+C++-Files have extension \fC\&.cpp\fP, Header files \fC\&.hpp\fP\&.
+.IP "\(bu" 2
+Do not use \fCstatic\fP, but anonymous namespaces\&.
+.IP "\(bu" 2
+Write everything within namespaces and do not prefix names\&.
+.IP "\(bu" 2
+Oriented towards \fBhttps:\fP//github\&.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines\&.md 'more safe and modern usage'\&.
+.PP
+.PP
+\fBExample:\fP \fCsrc/bindings/cpp/include/kdb\&.hpp\fP
+.PP
+.SS "Doxygen Guidelines"
+.PP
+\fCdoxygen\fP is used to document the API and to build the html and pdf output\&. We also support the import of Markdown pages\&. Doxygen 1\&.8\&.8 or later is required for this feature (Anyways you can find the \fCAPI Doc\fP online)\&. Links between Markdown files will be converted with the \fBMarkdown Link Converter\fP\&. \fBMarkdown pages are used in the pdf, therefore watch which characters you use and provide a proper encoding!\fP
+.PP
+.IP "\(bu" 2
+use \fC@\fP to start Doxygen tags
+.IP "\(bu" 2
+Do not duplicate information available in git in Doxygen comments\&.
+.IP "\(bu" 2
+Use \fC\\copydetails\fP, \fC@copybrief\fP and \fC@copydetails\fP intensively (except for file headers)\&.
+.PP
+.PP
+.SS "File Headers"
+.PP
+Files should start with:
+.PP
+.PP
+.nf
+        /**
+         * @file
+         *
+         * @brief <short statement about the content of the file>
+         *
+         * @copyright BSD License (see doc/LICENSE.md or http://www.libelektra.org)
+         */.fi
+.PP
+.PP
+Note:
+.PP
+.IP "\(bu" 2
+\fC@\fP \fCfile\fP has \fIno\fP parameters\&.
+.IP "\(bu" 2
+\fC@\fP \fCbrief\fP should contain a short statement about the content of the file and is needed so that your file gets listed at http://doc.libelektra.org/api/latest/html/files.html
+.PP
+.PP
+The duplication of the filename, author and date is not needed, because this information is tracked using git and doc/AUTHORS already\&. 
