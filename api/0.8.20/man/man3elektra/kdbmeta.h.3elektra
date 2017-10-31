@@ -1,0 +1,306 @@
+.TH "kdbmeta.h" 3elektra "Tue Oct 31 2017" "Version 0.8.20" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbmeta.h \- metadata functions  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'kdb\&.h'\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBkeyOwner\fP (const Key *key)"
+.br
+.RI "Return a pointer to the real internal \fCkey\fP owner\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetOwnerSize\fP (const Key *key)"
+.br
+.RI "Return the size of the owner of the Key with concluding 0\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetOwner\fP (const Key *key, char *returned, size_t maxSize)"
+.br
+.RI "Return the owner of the key\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetOwner\fP (Key *key, const char *owner)"
+.br
+.RI "Set the owner of a key\&. "
+.ti -1c
+.RI "const char * \fBkeyComment\fP (const Key *key)"
+.br
+.RI "Return a pointer to the real internal \fCkey\fP comment\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetCommentSize\fP (const Key *key)"
+.br
+.RI "Calculates number of bytes needed to store a key comment, including final NULL\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetComment\fP (const Key *key, char *returnedDesc, size_t maxSize)"
+.br
+.RI "Get the key comment\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetComment\fP (Key *key, const char *newDesc)"
+.br
+.RI "Set a comment for a key\&. "
+.ti -1c
+.RI "uid_t \fBkeyGetUID\fP (const Key *key)"
+.br
+.RI "Get the user ID of a key\&. "
+.ti -1c
+.RI "int \fBkeySetUID\fP (Key *key, uid_t uid)"
+.br
+.RI "Set the user ID of a key\&. "
+.ti -1c
+.RI "gid_t \fBkeyGetGID\fP (const Key *key)"
+.br
+.RI "Get the group ID of a key\&. "
+.ti -1c
+.RI "int \fBkeySetGID\fP (Key *key, gid_t gid)"
+.br
+.RI "Set the group ID of a key\&. "
+.ti -1c
+.RI "int \fBkeySetDir\fP (Key *key)"
+.br
+.RI "Set mode so that key will be recognized as directory\&. "
+.ti -1c
+.RI "mode_t \fBkeyGetMode\fP (const Key *key)"
+.br
+.RI "Return the key mode permissions\&. "
+.ti -1c
+.RI "int \fBkeySetMode\fP (Key *key, mode_t mode)"
+.br
+.RI "Set the key mode permissions\&. "
+.ti -1c
+.RI "time_t \fBkeyGetATime\fP (const Key *key)"
+.br
+.RI "Get last time the key data was read from disk\&. "
+.ti -1c
+.RI "int \fBkeySetATime\fP (Key *key, time_t atime)"
+.br
+.RI "Update the atime information for a key\&. "
+.ti -1c
+.RI "time_t \fBkeyGetMTime\fP (const Key *key)"
+.br
+.RI "Get last modification time of the key on disk\&. "
+.ti -1c
+.RI "int \fBkeySetMTime\fP (Key *key, time_t mtime)"
+.br
+.RI "Update the mtime information for a key\&. "
+.ti -1c
+.RI "time_t \fBkeyGetCTime\fP (const Key *key)"
+.br
+.RI "Get last time the key metadata was changed from disk\&. "
+.ti -1c
+.RI "int \fBkeySetCTime\fP (Key *key, time_t ctime)"
+.br
+.RI "Update the ctime information for a key\&. "
+.ti -1c
+.RI "int \fBelektraKeyCmpOrder\fP (const Key *a, const Key *b)"
+.br
+.RI "Compare the order metadata of two keys\&. "
+.ti -1c
+.RI "KeySet * \fBelektraMetaArrayToKS\fP (Key *, const char *)"
+.br
+.RI "Create a \fCKeySet\fP from a metakey array\&. "
+.ti -1c
+.RI "void \fBelektraMetaArrayAdd\fP (Key *, const char *, const char *)"
+.br
+.RI "creates an metadata array or appends another element to an existing metadata array e\&.g\&. "
+.ti -1c
+.RI "char * \fBelektraMetaArrayToString\fP (Key *, const char *, const char *)"
+.br
+.RI "returns the metakey array as a string separated by delim "
+.ti -1c
+.RI "int \fBelektraSortTopology\fP (KeySet *, Key **)"
+.br
+.RI "topological sorting "
+.in -1c
+.SH "Detailed Description"
+.PP 
+metadata functions 
+
+These functions might be removed in a later version\&.
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "ssize_t keyGetOwner (const Key * key, char * returnedOwner, size_t maxSize)"
+
+.PP
+Return the owner of the key\&. 
+.IP "\(bu" 2
+Given \fCuser:someuser/\fP\&.\&.\&.\&.\&. return \fCsomeuser\fP 
+.IP "\(bu" 2
+Given \fCuser:some\&.user/\fP\&.\&.\&.\&. return \fCsome\&.user\fP 
+.IP "\(bu" 2
+Given \fCuser/\fP\&.\&.\&.\&. return the current user
+.PP
+.PP
+Only \fCuser/\fP\&.\&.\&. keys have a owner\&. For \fCsystem/\fP\&.\&.\&. keys (that doesn't have a key owner) an empty string ('') is returned\&.
+.PP
+Although usually the same, the owner of a key is not related to its UID\&. Owner are related to WHERE the key is stored on disk, while UIDs are related to mode controls of a key\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the object to work with 
+.br
+\fIreturnedOwner\fP a pre-allocated space to store the owner 
+.br
+\fImaxSize\fP maximum number of bytes that fit returned 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes written to buffer 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if there is no owner 
+.br
+\fI-1\fP on NULL pointers 
+.br
+\fI-1\fP when maxSize is 0, larger than SSIZE_MAX or too small for ownername 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeySetName()\fP, \fBkeySetOwner()\fP, \fBkeyOwner()\fP, \fBkeyGetFullName()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetOwnerSize (const Key * key)"
+
+.PP
+Return the size of the owner of the Key with concluding 0\&. The returned number can be used to allocate a string\&. 1 will returned on an empty owner to store the concluding 0 on using \fBkeyGetOwner()\fP\&.
+.PP
+.PP
+.nf
+char * buffer;
+buffer = elektraMalloc (keyGetOwnerSize (key));
+// use buffer and keyGetOwnerSize (key) for maxSize
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+that -1 might be returned on null pointer, so when you directly allocate afterwards its best to check if you will pass a null pointer before\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if there is no owner 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetOwner()\fP 
+.RE
+.PP
+
+.SS "const char* keyOwner (const Key * key)"
+
+.PP
+Return a pointer to the real internal \fCkey\fP owner\&. This is a much more efficient version of \fBkeyGetOwner()\fP and you should use it if you are responsible enough to not mess up things\&. You are not allowed to modify the returned string in any way\&. If you need a copy of the string, consider to use \fBkeyGetOwner()\fP instead\&.
+.PP
+\fBkeyOwner()\fP returns '' when there is no keyOwner\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetOwner(key,"");
+keyOwner(key); // you would expect "" here
+keySetOwner(key,"system");
+keyOwner(key); // you would expect "" here
+
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyOwner()\fP method to set a new value\&. Use \fBkeySetOwner()\fP instead\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to internal owner 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI''\fP when there is no (a empty) owner 
+.br
+\fI0\fP iff key is a NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetOwnerSize()\fP for the size of the string with concluding 0 
+.PP
+\fBkeyGetOwner()\fP, \fBkeySetOwner()\fP 
+.PP
+\fBkeyName()\fP for name without owner 
+.PP
+\fBkeyGetFullName()\fP for name with owner 
+.RE
+.PP
+
+.SS "ssize_t keySetOwner (Key * key, const char * newOwner)"
+
+.PP
+Set the owner of a key\&. A owner is a name of a system user related to a UID\&. The owner decides on which location on the disc the key goes\&.
+.PP
+A private copy is stored, so the passed parameter can be freed after the call\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fInewOwner\fP the string which describes the owner of the key 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the number of bytes actually saved including final NULL 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP when owner is freed (by setting 0 or '') 
+.br
+\fI-1\fP on null pointer or memory problems 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeySetName()\fP, \fBkeyGetOwner()\fP, \fBkeyGetFullName()\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

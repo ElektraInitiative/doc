@@ -1,0 +1,296 @@
+.TH "kdbopmphm.h" 3elektra "Tue Oct 31 2017" "Version 0.8.20" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbopmphm.h \- Defines for the Order Preserving Minimal Perfect Hash Map\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdint\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+
+.SS "Classes"
+
+.in +1c
+.ti -1c
+.RI "struct \fBOpmphmEdge\fP"
+.br
+.RI "The r-partite hypergraph\&. "
+.ti -1c
+.RI "struct \fBOpmphm\fP"
+.br
+.RI "The opmphm\&. "
+.in -1c
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBOPMPHMR_PARTITE\fP   3"
+.br
+.RI "The Order Preserving Minimal Perfect Hash Map (OPMPHM) maps each element to an edge in an r-partite hypergraph\&. "
+.ti -1c
+.RI "#define \fBOPMPHM_HASHFUNCTION_ROT\fP(x,  k)   (((x) << (k)) | ((x) >> (32 \- (k))))"
+.br
+.RI "Hash function By Bob Jenkins, May 2006 http://burtleburtle.net/bob/c/lookup3.c\&. "
+.in -1c
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef const char *(* \fBopmphmGetString\fP) (void *)"
+.br
+.RI "Only needed for Initialisation\&. "
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "double \fBopmphmMinC\fP (void)"
+.br
+.RI "Graph functions\&. "
+.ti -1c
+.RI "OpmphmGraph * \fBopmphmGraphNew\fP (\fBOpmphm\fP *opmphm, size_t n, double c)"
+.br
+.RI "Allocates and initializes the OpmphmGraph\&. "
+.ti -1c
+.RI "void \fBopmphmGraphDel\fP (OpmphmGraph *graph)"
+.br
+.RI "Deletes the OpmphmGraph\&. "
+.ti -1c
+.RI "int \fBopmphmMapping\fP (\fBOpmphm\fP *opmphm, OpmphmGraph *graph, OpmphmInit *init, size_t n)"
+.br
+.RI "Build functions\&. "
+.ti -1c
+.RI "int \fBopmphmAssignment\fP (\fBOpmphm\fP *opmphm, OpmphmGraph *graph, size_t n, int defaultOrder)"
+.br
+.RI "Assigns the vertices of the r-partite hypergraph\&. "
+.ti -1c
+.RI "size_t \fBopmphmLookup\fP (\fBOpmphm\fP *opmphm, const void *name)"
+.br
+.RI "Lookup functions\&. "
+.ti -1c
+.RI "\fBOpmphm\fP * \fBopmphmNew\fP (void)"
+.br
+.RI "Basic functions\&. "
+.ti -1c
+.RI "void \fBopmphmDel\fP (\fBOpmphm\fP *opmphm)"
+.br
+.RI "Deletes the OPMPHM\&. "
+.ti -1c
+.RI "void \fBopmphmClear\fP (\fBOpmphm\fP *opmphm)"
+.br
+.RI "Clears the OPMPHM\&. "
+.ti -1c
+.RI "int \fBopmphmIsEmpty\fP (\fBOpmphm\fP *opmphm)"
+.br
+.RI "Determines if the OPMPHM is Empty\&. "
+.ti -1c
+.RI "uint32_t \fBopmphmHashfunction\fP (const void *key, size_t length, uint32_t initval)"
+.br
+.RI "Hash function By Bob Jenkins, May 2006 http://burtleburtle.net/bob/c/lookup3.c Original name: hashlitte\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Defines for the Order Preserving Minimal Perfect Hash Map\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see doc/COPYING or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define OPMPHMR_PARTITE   3"
+
+.PP
+The Order Preserving Minimal Perfect Hash Map (OPMPHM) maps each element to an edge in an r-partite hypergraph\&. The r-partite hypergraph consist of \fCOPMPHMR_PARTITE\fP components, each component has \fCOpmphm->componentSize\fP vertices\&. An edge connects \fCOPMPHMR_PARTITE\fP vertices, each one in separate components of the r-partite hypergraph\&. The number of vertices in one component of the r-partite hypergraph (\fCOpmphm->componentSize\fP) is calculated during \fCopmphmGraphNew ()\fP the following way:
+.PP
+.PP
+.nf
+Opmphm->componentSize = (c * n / OPMPHMR_PARTITE) + 1;
+.fi
+.PP
+.PP
+Note that \fCc\fP must have a minimal value in order to generate acyclic r-partite hypergraphs\&. The minimal value of \fCc\fP depends on \fCOPMPHMR_PARTITE\fP and is provided by the function \fCopmphmMinC ()\fP\&.
+.PP
+The finals size of the opmphm (\fCOpmphm->graph\fP) is: \fCOpmphm->componentSize * OPMPHMR_PARTITE\fP 
+.SH "Function Documentation"
+.PP 
+.SS "int opmphmAssignment (\fBOpmphm\fP * opmphm, OpmphmGraph * graph, size_t n, int defaultOrder)"
+
+.PP
+Assigns the vertices of the r-partite hypergraph\&. Allocs the memory for the final OPMPHM \fCOpmphm->graph\fP\&. Uses the remove sequence \fCOpmphmGraph->removeOrder\fP, generated during cycle check, to assign each vertex\&. Either with \fCOpmphmEdge->order\fP or the default order, default is the order of \fCOpmphmInit->data\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIgraph\fP the OpmphmGraph 
+.br
+\fIn\fP the number of elements 
+.br
+\fIdefaultOrder\fP boolean flag
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on memory error 
+.RE
+.PP
+
+.SS "void opmphmClear (\fBOpmphm\fP * opmphm)"
+
+.PP
+Clears the OPMPHM\&. Clears and frees all internal memory of \fBOpmphm\fP, but not the \fBOpmphm\fP instance\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.RE
+.PP
+
+.SS "void opmphmDel (\fBOpmphm\fP * opmphm)"
+
+.PP
+Deletes the OPMPHM\&. Clears and frees all memory in \fBOpmphm\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.RE
+.PP
+
+.SS "void opmphmGraphDel (OpmphmGraph * graph)"
+
+.PP
+Deletes the OpmphmGraph\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIgraph\fP the OpmphmGraph 
+.RE
+.PP
+
+.SS "OpmphmGraph* opmphmGraphNew (\fBOpmphm\fP * opmphm, size_t n, double c)"
+
+.PP
+Allocates and initializes the OpmphmGraph\&. The OpmphmGraph represents a r-partite hypergraph\&. Calculates also the size of one partition in the r-partite hypergraph and stores it in \fCopmphm->componentSize\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIn\fP the number of elements 
+.br
+\fIc\fP space influencing parameter
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIOpmphmGraph\fP * success 
+.br
+\fINULL\fP memory error 
+.RE
+.PP
+
+.SS "int opmphmIsEmpty (\fBOpmphm\fP * opmphm)"
+
+.PP
+Determines if the OPMPHM is Empty\&. Empty means opmphm->size is 0\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fItrue\fP empty 
+.br
+\fIfalse\fP non empty 
+.RE
+.PP
+
+.SS "size_t opmphmLookup (\fBOpmphm\fP * opmphm, const void * name)"
+
+.PP
+Lookup functions\&. Lookup functions\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIname\fP the name of the element
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIsize_t\fP the order of the element\&. 
+.RE
+.PP
+
+.SS "int opmphmMapping (\fBOpmphm\fP * opmphm, OpmphmGraph * graph, OpmphmInit * init, size_t n)"
+
+.PP
+Build functions\&. Build functions\&.
+.PP
+Sets the seeds for the opmphmHashfunctions, \fCOpmphmInit->initSeed\fP will be changed\&. Inserts each element as edge in the r-partite hypergraph and checks if the graph contains a cycle\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIgraph\fP the OpmphmGraph 
+.br
+\fIinit\fP the OpmphmInit 
+.br
+\fIn\fP the number of elements
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP mapping not possible 
+.RE
+.PP
+
+.SS "double opmphmMinC (void)"
+
+.PP
+Graph functions\&. Graph functions\&.
+.PP
+This minimal values come from Fabiano Cupertino Botelho, Near-Optimal Space Perfect Hashing Algorithms, 2008\&.
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIc\fP the minimal c value 
+.RE
+.PP
+
+.SS "\fBOpmphm\fP* opmphmNew (void)"
+
+.PP
+Basic functions\&. Basic functions\&.
+.PP
+The returned OPMPHM instance is Empty\&.
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI\fBOpmphm\fP\fP * success 
+.br
+\fINULL\fP memory error 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

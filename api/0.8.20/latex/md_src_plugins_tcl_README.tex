@@ -1,0 +1,91 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the tcl plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/tcl
+\item infos/needs = code null binary
+\item infos/placements = setstorage getstorage
+\item infos/status = unfinished concept
+\item infos/description = Serialize tcl lists
+\end{DoxyItemize}
+
+This plugin is a storage plugin which writes keys to lists {\itshape in the style of} the Tcl programming language.
+
+\subsection*{Format}
+
+The format does not have significant spaces. The advantage of T\+CL style lists is that also arbitrary metadata can be embedded in a natural and distinguish-\/able style. It looks like\+: \begin{DoxyVerb}{
+    {
+        key=val
+        {
+            metakey = b
+        }
+        {
+            comment = huhu
+        }
+    }
+}
+\end{DoxyVerb}
+
+
+\subsection*{Basic Usage}
+
+``{\ttfamily  $<$h1$>$Mount Tcl plugin to namespace}user/examples/tcl` sudo kdb mount config.\+tcl user/examples/tcl tcl
+
+\section*{Add a key value pair to the database}
+
+kdb set user/examples/tcl/key value \section*{The Tcl plugin also supports metadata}
+
+kdb setmeta user/examples/tcl/key comment \char`\"{}\+This key contains example data.\char`\"{} \section*{A known limitation of the plugin is that it discards whitespace characters}
+
+kdb getmeta user/examples/tcl/key comment \#$>$ Thiskeycontainsexampledata.
+
+kdb export user/examples/tcl tcl \#$>$ \{ \#$>$ \{ \#$>$ user/examples/tcl/key = value \#$>$ \{ \#$>$ comment = Thiskeycontainsexampledata. \#$>$ \} \#$>$ \} \#$>$ \}
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/examples/tcl sudo kdb umount user/examples/tcl 
+\begin{DoxyCode}
+## Binary Data
+
+The plugin also supports binary data via the [base64 plugin](@ref src\_plugins\_base64\_README\_md) and null
+       keys via the [null plugin](@ref src\_plugins\_null\_README\_md).
+\end{DoxyCode}
+ \section*{Mount plugin}
+
+sudo kdb mount config.\+tcl user/tests tcl
+
+\section*{Import some data}
+
+kdb import user/tests/dump xmltool $<$ src/plugins/xmltool/xmltool/dump.\+xml
+
+\section*{Take a look at imported data}
+
+kdb ls user/tests/dump \#$>$ user/tests/dump/.Hidden\+Binary\+Key \#$>$ user/tests/dump/.Hidden\+Directory\+Key \#$>$ user/tests/dump/.Hidden\+String\+Key \#$>$ user/tests/dump/\+Perfect\+Binary\+Key \#$>$ user/tests/dump/\+Perfect\+Directory\+Key \#$>$ user/tests/dump/\+Perfect\+String\+Key \#$>$ user/tests/dump/\+Ug.\+ly\+:Bin{\itshape } €ry\+Key \#$>$ user/tests/dump/\+Ug.\+ly\+:Dir€ory\+Key \#$>$ user/tests/dump/\+Ug.\+ly\+:St€n.\+g\+Key
+
+\section*{The plugin supports binary data…}
+
+kdb get user/tests/dump/\+Perfect\+Binary\+Key \#$>$ 
+
+\section*{… and empty keys}
+
+kdb get user/tests/dump/\+Ug.\+ly\+:Bin{\itshape } €ry\+Key
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/tests sudo kdb umount user/tests ```
+
+\subsection*{Limitations}
+
+
+\begin{DoxyItemize}
+\item whitespaces are discarded
+\item no comments
+\end{DoxyItemize}
+
+\subsection*{Dependencies}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libboost-\/dev} 
+\end{DoxyItemize}
