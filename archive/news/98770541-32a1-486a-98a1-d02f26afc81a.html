@@ -1,0 +1,233 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional //EN">
+<html>
+<head>
+  <meta name="GENERATOR" content="mkd2html 2.1.7 DL=BOTH ID-ANCHOR GITHUB-TAGS FENCED-CODE">
+  <meta http-equiv="Content-Type"
+        content="text/html; charset-us-ascii"></head>
+<body>
+<h1>0.8.12 Release</h1>
+
+<p>Again we managed to release with new features, many build system
+fixes and also other improvements.</p>
+
+<h2>dir namespace</h2>
+
+<p>This namespace adds per-project or per-directory (hence the name) configurations.
+E.g. think how git works: not only /etc and ~ are relevant sources
+for configuration but also the nearest .git directory.</p>
+
+<p>This technique is, however, much more widely useful than just for git
+repositories! Nearly every application can benefit from such a per-dir
+configuration. Its almost certain that you have already run into the
+problem that different projects have different guidelines
+(e.g. coding conventions, languages, whitespace requirements, line breaks, ..).
+Obviously, thats not a per-user configuration and
+its also not a per-file issue (thats how its usually solved today).
+So in fact you want, e.g., your editor to have an additional per-project layer
+to choose between such settings.</p>
+
+<p>The technique is useful for nearly every other tool:
+- different color palettes in gimp, inkscape,..
+- different languages for libreoffice
+- different security settings for media players, interpreters (e.g. when in Download folder)
+- per-folder .htaccess in apache or other web servers
+- any other per-dir configuration you can imagine..</p>
+
+<p>It is simple to use, also for the administrative side. First, change to the folder to your
+folder (e.g. where a project is):</p>
+
+<pre><code>cd ~/projects/abc
+</code></pre>
+
+<p>Then add some user (or system or spec) configuration to have some default.</p>
+
+<pre><code>kdb set user/sw/editor/textwidth 72
+</code></pre>
+
+<p>Then verify that we get this value back when we do a cascading lookup:</p>
+
+<pre><code>kdb get /sw/editor/textwidth
+</code></pre>
+
+<p>The default configuration file for the dir-namespace is <code>pwd</code>/KDB_DB_DIR/filename:</p>
+
+<pre><code>kdb file dir/sw/editor/textwidth
+</code></pre>
+
+<ul>
+<li>KDB_DB_DIR can be modified at compile-time and is <code>.dir</code> per default</li>
+<li>filename can be modified by mounting, see below, and is <code>default.ecf</code> by default</li>
+</ul>
+
+
+<p>We assume, that the project abc has the policy to use textwidth 120, so
+we change the dir-configuration:</p>
+
+<pre><code>kdb set dir/sw/editor/textwidth 120
+</code></pre>
+
+<p>Now we will get the value 120 in the folder ~/projects/abc and its
+subdirectories (!), but everywhere else we still get 72:</p>
+
+<pre><code>kdb get /sw/editor/textwidth
+</code></pre>
+
+<p>Obviously, that does not only work with kdb, but with every elektrified tool.</p>
+
+<h3>mount files in dir namespaces</h3>
+
+<p>For cascading mountpoints, the dir name is also automatically mounted, e.g.:</p>
+
+<pre><code>kdb mount editor.ini /sw/editor ini
+</code></pre>
+
+<p>But its also possible to only mount for the namespace dir if no cascading mountpoint is
+present already:</p>
+
+<pre><code>kdb mount app.ini dir/sw/app tcl
+</code></pre>
+
+<p>In both cases keys below dir/sw/editor would be in the INI file
+<code>.dir/editor.ini</code> and not in the file <code>.dir/default.ecf</code>.</p>
+
+<h3>dir together with spec namespace</h3>
+
+<p>In the project P we had the following issue: We needed on a specific computer the
+configuration in /etc to be used in favour of the dir config.</p>
+
+<p>We could easily solve the problem using the specification:</p>
+
+<pre><code>kdb setmeta spec/sw/P/current/org/base override/#0 /sw/P/override/org/base
+</code></pre>
+
+<p>Hence, we could create system/sw/P/override/org/base which would be in favour of dir/sw/P/current/org/base.
+So we get system/sw/P/override/org/base when we do:</p>
+
+<pre><code>kdb get /sw/P/current/org/base
+</code></pre>
+
+<p>Alternatively, one could also use the specification:</p>
+
+<pre><code>kdb setmeta spec/sw/P/current/org/base namespace/#0 user
+kdb setmeta spec/sw/P/current/org/base namespace/#1 system
+kdb setmeta spec/sw/P/current/org/base namespace/#2 dir
+</code></pre>
+
+<p>Which makes dir the namespace with the least priority and system would be preferred.
+This was less suitable for our purpose, because we needed the override
+only on one computer. For all other computers we wanted dir
+to be preferred with only one specification.</p>
+
+<h3>Conclusion</h3>
+
+<p>The great thing is, that every elektrified application, automatically gets all the mentioned features.
+Not even a recompilation of the application is necessary.</p>
+
+<p>Especially the specification provides flexibility not present in other configuration systems.</p>
+
+<h2>Qt-Gui 0.0.7</h2>
+
+<p>Raffael Pancheri again did a lot of stabilizing work:
+- show errormessage on exception when starting gui
+- Correctly update keyAreaView property when selecting item in TreeView
+- Fix crash when creating key in MountingWizard
+- Remove information on successful export
+- Show error dialog on failed import
+- Remove namefilters (every syntax can have any file extension)
+- other namespaces (including dir) are included</p>
+
+<p>The GUI can be handy for many purposes, e.g. we use it already as xml and json editor.
+Note that there are still <a href="http://git.libelektra.org/issues">some bugs</a>.</p>
+
+<h2>Other fixes</h2>
+
+<ul>
+<li>constants now additionally gives information about SPEC and DIR.</li>
+<li>Doku about CMake variables <code>ELEKTRA_DEBUG_BUILD</code> and <code>ELEKTRA_VERBOSE_BUILD</code> fixed, thanks to Kurt Micheli</li>
+<li>Fixed compilation of <code>ELEKTRA_DEBUG_BUILD</code> and <code>ELEKTRA_VERBOSE_BUILD</code>, thanks to Manuel Mausz</li>
+<li>Example with error handling added, thanks to Kurt Micheli</li>
+<li>Add design decision about global plugins</li>
+<li>Split dependencies document to individual README.md, thanks to Ian Donnelly</li>
+<li>Fix nearly all compilation warnings of SWIG, thanks to Manuel Mausz</li>
+<li>CMake: Fix gtest to be build if <code>BUILD_TESTING</code> activated, but not <code>ENABLE_TESTING</code></li>
+<li>CMake: Allow compilation without BUILD_STATIC</li>
+<li>Explain compilation options more, thanks to Kai-Uwe Behrmann for asking the question</li>
+<li>CMake: always build examples, allow one to only build documentation</li>
+<li>add common header file for C++ plugins (used by plugins struct and type)</li>
+<li>fix compilation of race tool under oS-11.4 thanks to Kai-Uwe Behrmann</li>
+<li>CMake: find python3 correctly</li>
+<li>CMake: fix BUILD_SHARED_LIBS</li>
+<li>Doxygen: remove <code>HTML_TIMESTAMP</code> to make build reproduceable</li>
+<li>Doxygen: rewrite of main page+add info about all five namespaces</li>
+<li>CMake: allow one to use qt-gui with qt built with -reduce-relocations</li>
+<li>fix kdb ls, get to list warnings during open</li>
+<li>during kdbOpen() use Configfile: to state phase</li>
+<li>add -f option to kdb check+improve docu</li>
+<li>improve readability of warning output</li>
+<li>run_all always uses dump for backups</li>
+<li>line plugin roundtrips correctly</li>
+<li>untypical resolvers have their non-existant filename handled correctly + sync ignored them correctly</li>
+<li>cmake-3.0 fixes</li>
+<li>cascading merging, a big thanks to Felix Berlakovich for the last minute fix</li>
+</ul>
+
+
+<h2>Compatibility</h2>
+
+<p>As always, the API and API is fully compatible. Because nothing was added, its even
+possible to link against an older version of Elektra (if compiled against 0.8.12).</p>
+
+<p>In plugins some small changes may effect compatibility:
+- in rename the handling of parent key is different (see #206)
+- resolving of spec absolute and relative paths are no more handled identical.
+  Instead absolute paths will be searched absolutely, while relatives are below KDB_DB_SPEC (as before).
+  This behaviour is consistent to the behaviour of the other namespaces.</p>
+
+<p>These two points are also the only unit tests that fail when Elektra 0.8.12 is used with 0.8.11 unit tests.</p>
+
+<h2>Build Server</h2>
+
+<ul>
+<li>special github command to build bindings &ldquo;jenkins build bindings please&rdquo;, thanks to Manuel Mausz</li>
+<li>open build service update
+For <a href="https://build.opensuse.org/package/show/home:bekun:devel/elektra">OpenSUSE, CentOS, Fedora, RHEL and SLE</a>
+Kai-Uwe Behrmann kindly provides packages <a href="http://software.opensuse.org/download.html?project=home%3Abekun%3Adevel&amp;package=libelektra4">for download</a>.</li>
+</ul>
+
+
+<h2>Get It!</h2>
+
+<p>You can download the release from
+<a href="http://www.libelektra.org/ftp/elektra/releases/elektra-0.8.12.tar.gz">here</a>
+and now also <a href="https://github.com/ElektraInitiative/ftp/tree/master/releases/elektra-0.8.12.tar.gz">here on github</a></p>
+
+<ul>
+<li>name: elektra-0.8.12.tar.gz</li>
+<li>size: 2102450</li>
+<li>md5sum: a40a33ae6661ebfa096378f0986ede6c</li>
+<li>sha1: 3594ef58b6e3b0ffa9589d787679b6e739fbb0dd</li>
+<li>sha256: 562432bea9455a61ff6e6b3263078ea9b26bef2ed177a04b5f9b181d605bc021</li>
+</ul>
+
+
+<p>This release tarball now is also available
+<a href="http://www.libelektra.org/ftp/elektra/releases/elektra-0.8.12.tar.gz.gpg">signed by me using gpg</a></p>
+
+<p>already built API-Docu can be found <a href="http://doc.libelektra.org/api/0.8.12/html/">here</a></p>
+
+<h2>Stay tuned!</h2>
+
+<p>Subscribe to the
+<a href="http://doc.libelektra.org/news/feed.rss">RSS feed</a>
+to always get the release notifications.</p>
+
+<p>For any questions and comments, please contact the
+<a href="https://lists.sourceforge.net/lists/listinfo/registry-list">Mailing List</a>
+the issue tracker <a href="http://git.libelektra.org/issues">on github</a>
+or by mail elektra@markus-raab.org.</p>
+
+<p><a href="http://doc.libelektra.org/news/98770541-32a1-486a-98a1-d02f26afc81a.html">Permalink to this NEWS entry</a></p>
+
+<p>For more information, see http://libelektra.org</p>
+</body>
+</html>
