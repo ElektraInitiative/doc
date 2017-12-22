@@ -1,0 +1,85 @@
+.TH "md_src_plugins_list_README" 3elektra "Fri Dec 22 2017" "Version 0.8.21" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_list_READMEPlugin: list 
+ \- 
+.IP "\(bu" 2
+infos = Information about the list plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/placements = presetstorage pregetstorage postgetstorage precommit postcommit prerollback postrollback
+.IP "\(bu" 2
+infos/status = maintained unittest nodep libc configurable global
+.IP "\(bu" 2
+infos/description = delegates work to a list of plugins
+.PP
+.PP
+The List plugin can be used everywhere a list of plugins is required\&. It takes a list of plugins + configurations for every placement it's placed in and loads them\&.
+.PP
+.SS "Configuration"
+.PP
+\fCplacements/set\fP
+.PP
+Specifies the set-placements for the list plugin, e\&.g\&. 'presetstorage precommit'
+.PP
+\fCplacements/get\fP
+.PP
+Specifies the get-placements for the list plugin\&.
+.PP
+\fCplacements/error\fP
+.PP
+Specifies the error-placements for the list plugin\&.
+.PP
+\fCplugins/#\fP
+.PP
+The name of the plugin to load\&.
+.PP
+\fCplugins/#/placements/set\fP
+.PP
+A list of set-placements for the plugin\&. Same for 'get' and 'error'
+.PP
+\fCplugins/#/config/\fP
+.PP
+Plugin specific config\&.
+.PP
+.SS "Example"
+.PP
+.PP
+.nf
+placements/get = "postgetstorage"
+plugins/#0 = "rename"
+plugins/#0/placements   plugin placements
+plugins/#0/placements/get = "postgetstorage"
+plugins/#0/config   pluginconfig goes here
+plugins/#0/config/cut = "will/be/stripped"
+plugins/#1 = "keytometa"
+plugins/#1/placements
+plugins/#1/placements/get = "postgetstorage"
+plugins/#2 = "enum"
+plugins/#2/placements
+plugins/#2/placements/get = "postgetstorage"
+.fi
+.PP
+.PP
+would have the callstack:
+.PP
+.IP "1." 4
+\fClist->kdbGet\fP
+.IP "  1." 6
+\fCrename->kdbGet\fP
+.IP "  2." 6
+\fCkeytometa->kdbGet\fP
+.IP "  3." 6
+\fCenum->kdbGet\fP 
+.PP
+
+.PP
+

@@ -1,0 +1,98 @@
+.TH "md_doc_help_kdb-ls" 3elektra "Fri Dec 22 2017" "Version 0.8.21" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_doc_help_kdb-lskdb-ls(1) -- List keys in the key database 
+ \- \fCkdb ls <path>\fP
+.PP
+Where \fCpath\fP is the path in which the user would like to list keys below\&.
+.PP
+.SS "DESCRIPTION"
+.PP
+This command will list the name of all keys below a given path\&.
+.PP
+.SS "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-m\fP, \fC--min-depth <min-depth>\fP: Specify the minimum path depth of the output (0 by default), exclusive and relative to the name to list\&.
+.IP "\(bu" 2
+\fC-M\fP, \fC--max-depth <max-depth>\fP: Specify the maximum path depth of the output (unlimited by default, 1 to show only the next level), inclusive and relative to the name to list\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&.
+.IP "\(bu" 2
+\fC-0\fP, \fC--null\fP: Use binary 0 termination\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information\&.
+.PP
+.PP
+.SS "EXAMPLES"
+.PP
+.PP
+.nf
+# Backup-and-Restore: /sw/elektra/examples
+
+# Create the keys we use for the examples
+kdb set /sw/elektra/examples/kdb-ls/test val1
+kdb set /sw/elektra/examples/kdb-ls/test/foo/bar val2
+kdb set /sw/elektra/examples/kdb-ls/test/fizz/buzz fizzbuzz
+kdb set /sw/elektra/examples/kdb-ls/tost val3
+kdb set /sw/elektra/examples/kdb-ls/tost/level lvl
+
+# list all keys below /sw/elektra/examples/kdb-ls
+kdb ls /sw/elektra/examples/kdb-ls
+#>user/sw/elektra/examples/kdb-ls/test
+#>user/sw/elektra/examples/kdb-ls/test/fizz/buzz
+#>user/sw/elektra/examples/kdb-ls/test/foo/bar
+#>user/sw/elektra/examples/kdb-ls/tost
+#>user/sw/elektra/examples/kdb-ls/tost/level
+
+# list the next level of keys below /sw/elektra/examples/kdb-ls
+# note that if the search key ends with a /, it lists the next level
+kdb ls /sw/elektra/examples/kdb-ls/ --max-depth=1
+#>user/sw/elektra/examples/kdb-ls/test
+#>user/sw/elektra/examples/kdb-ls/tost
+
+# list the current level of keys below /sw/elektra/examples/kdb-ls
+# note the difference to the previous example
+kdb ls /sw/elektra/examples/kdb-ls --max-depth=1
+# this yields no output as /sw/elektra/examples/kdb-ls is not a key
+
+# list all keys below /sw/elektra/examples/kdb-ls with are minimum 1 level away from that key
+# and maximum 2 levels away
+kdb ls /sw/elektra/examples/kdb-ls --min-depth=1 --max-depth=2
+#>user/sw/elektra/examples/kdb-ls/tost/level
+
+# list all keys below /sw/elektra/examples/kdb-ls/test
+kdb ls /sw/elektra/examples/kdb-ls/test
+#>user/sw/elektra/examples/kdb-ls/test
+#>user/sw/elektra/examples/kdb-ls/test/fizz/buzz
+#>user/sw/elektra/examples/kdb-ls/test/foo/bar
+
+# list all keys under /sw/elektra/examples/kdb-ls in verbose mode
+kdb ls /sw/elektra/examples/kdb-ls/ -v
+#>size of all keys in mountpoint: 31
+#>size of requested keys: 5
+#>user/sw/elektra/examples/kdb-ls/test
+#>user/sw/elektra/examples/kdb-ls/test/fizz/buzz
+#>user/sw/elektra/examples/kdb-ls/test/foo/bar
+#>user/sw/elektra/examples/kdb-ls/tost
+#>user/sw/elektra/examples/kdb-ls/tost/level
+.fi
+.PP
+.PP
+.SS "SEE ALSO"
+.PP
+.IP "\(bu" 2
+If the user would also like to see the values of the keys below \fCpath\fP then you should consider the \fBkdb-export(1)\fP command\&.
+.IP "\(bu" 2
+\fBelektra-key-names(7)\fP for an explanation of key names\&. 
+.PP
+
