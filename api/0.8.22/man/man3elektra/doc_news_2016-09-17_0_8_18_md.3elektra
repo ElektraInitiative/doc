@@ -1,0 +1,226 @@
+.TH "doc_news_2016-09-17_0_8_18_md" 3elektra "Tue Feb 27 2018" "Version 0.8.22" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2016-09-17_0_8_18_md0\&.8\&.18 Release 
+ \- 
+.IP "\(bu" 2
+guid: 190576e0-9fef-486e-b8da-c4e75be08329
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Fri, 16 Sep 2016 23:31:27 +0200
+.IP "\(bu" 2
+shortDesc: adds intercept open, crypto plugins & improved git-resolver
+.PP
+.PP
+.SS "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration parameters in a global, hierarchical key database\&. For a small demo see here:
+.PP
+\fC\fP.PP
+.SS "Highlights"
+.PP
+.IP "\(bu" 2
+Intercept open syscalls which allows Elektra to dynamically generate config files from Elektra’s database
+.IP "\(bu" 2
+Experimental version of cryptographic plugins
+.IP "\(bu" 2
+A new zsh completion file (next to the bash completion file)
+.IP "\(bu" 2
+Gitresolver allows to directly read and write config files from git instead of files present in the file system\&.
+.IP "\(bu" 2
+Survey completed successfully (and debts paid), we are now preparing raw data\&.
+.PP
+.PP
+.SS "Crypto Plugin"
+.PP
+Gpg is now used to decrypt a master password, which is used by the individual crypto backends\&. So all necessary parts for encryption of decryption of individual keys is present\&.
+.PP
+Furthermore, a new \fCbotan\fP backend was implemented\&.
+.PP
+\fCSee here\fP
+.PP
+Thanks to Peter Nirschl\&.
+.PP
+.SS "Open Interception"
+.PP
+When Elektra directly modifies config files which are on the disc, and applications read the config files without Elektra, Elektra has no control over the access, e\&.g\&. we cannot dynamically calculate values\&. To avoid this, we wrote a library that intercepts the \fCopen\fP-call\&.
+.PP
+Together with the \fCmozprefs\fP plugin, we got control over the configuration of Firefox and can dynamically change config values with all possibilities Elektra provides\&.
+.PP
+For easy setup, we implemented the script \fCconfigure-firefox\fP\&.
+.PP
+\fCSee here\fP
+.PP
+Thanks to Thomas Waser\&.
+.PP
+.SS "Resolver"
+.PP
+Resolvers in Elektra are the code that are responsible to determine where content should be read from and stored to\&. They are independent of the actual configuration file syntax\&.
+.PP
+The \fCgitresolver\fP allows you to get/store config data in git\&.
+.PP
+The \fCblockresolver\fP allows Elektra to take control of parts of the configuration file\&. This is useful for config files such as vim or zsh, which contain program code\&. The plugin allows you to split config files with special markers into parts containing code and others controlled by Elektra\&.
+.PP
+.SS "zsh completion"
+.PP
+Added zsh completion file, and a script (\fCkdb install-sh-completion\fP) that installs bash+zsh completion when the default installation places do not work (e\&.g\&. for macOS)\&.
+.PP
+Thanks to Sebastian Bachmann\&.
+.PP
+.SS "Documentation"
+.PP
+.IP "\(bu" 2
+fix \fCkdb-import\fP man page, thanks to Kurt Micheli
+.IP "\(bu" 2
+mark \fCkeyIsSystem\fP/\fCkeyIsUser\fP as internal
+.IP "\(bu" 2
+fix doxygen reference to example
+.IP "\(bu" 2
+better document that \fCglobal-mount\fP or \fCgmount\fP will overwrite previously mounted global plugins
+.IP "\(bu" 2
+fix spelling mistake, thanks to René Schwaiger
+.IP "\(bu" 2
+Wrote tutorial how to use Elektra-python bindings, thanks to Ulrike Schäfer
+.PP
+.PP
+.SS "Quality"
+.PP
+.IP "\(bu" 2
+shell recorder test cases now run during \fCmake test\fP, thanks to Kurt Micheli and René Schwaiger (Warning: might remove present keys when it conflicts with their mountpoints)
+.IP "\(bu" 2
+find-tools now is pep and pyflakes happy, thanks to Kurt Micheli
+.IP "\(bu" 2
+fix bashism, thanks to Thomas Waser and Kurt Micheli
+.IP "\(bu" 2
+better error message for conditionals plugin, thanks to Thomas Waser
+.IP "\(bu" 2
+better error message for augeas plugin, thanks to Felix Berlakovich
+.IP "\(bu" 2
+Many compilation warnings fixed, thanks to Gabriel Rauter, Thomas Waser
+.IP "\(bu" 2
+GSettings: fix double free, thanks to Gabriel Rauter
+.IP "\(bu" 2
+Fix external links and implement an external link checker, thanks to Kurt Micheli
+.IP "\(bu" 2
+Fix openwrt/musl warnings with wrong printf format, thanks to Thomas Waser
+.IP "\(bu" 2
+Fix NODEP metadata, allows you to build all plugins that do not have dependencies\&.
+.PP
+.PP
+.SS "Compatibility"
+.PP
+As always, the ABI and API of kdb\&.h is fully compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API)\&.
+.PP
+.SS "Libtools"
+.PP
+Libtools got a new major version (SOVERSION 0 -> 1):
+.PP
+.IP "\(bu" 2
+backend/plugin configs are now validated by plugins (needed by gpg plugin, which checks if wrong key IDs are supplied during mount)
+.IP "\(bu" 2
+resolveRecommends was never implemented and was now removed
+.PP
+.PP
+.SS "Plugins"
+.PP
+The plugins conditionals and mathcheck are incompatible in some cases because of changes in syntax\&.
+.PP
+.SS "Proposal"
+.PP
+New API: \fCkeyRel2\fP which differs from \fCkeyRel\fP by allowing you to specify which relation should be checked\&.
+.PP
+.SS "Development"
+.PP
+.IP "\(bu" 2
+github descriptions+workflow (displayed by github when creating PRs and issues)
+.IP "\(bu" 2
+new trigger phases for github, see \fBhttps:\fP//git\&.libelektra\&.org/tree/master/doc/GIT\&.md 'doc/GIT' thanks to Mihael Pranjić
+.IP "\(bu" 2
+valgrind suppressions are great again, thanks to Peter Nirschl
+.IP "\(bu" 2
+Plugins get a new namespace \fCinternal\fP which can be used for meta-data that is not relevant for other plugins\&.
+.IP "\(bu" 2
+kdberrors\&.h is only generated once, which allows us to use other build systems, thanks to René Schwaiger
+.IP "\(bu" 2
+\fCINCLUDE_SYSTEM_DIRECTORIES\fP in add_plugin allows you to add a include path where warnings are suppressed (useful for boost)\&.
+.IP "\(bu" 2
+\fCinfos/provides\fP now allows multiple entries
+.PP
+.PP
+.SS "Packaging"
+.PP
+.IP "\(bu" 2
+Plugin-provider \fCCRYPTO\fP can be used to enable/disable all crypto plugin variants (not enabled by default because its experimental)\&.
+.IP "\(bu" 2
+Config option \fCENABLE_OPTIMIZATIONS\fP, enable by default: trade more memory for speed (can be turned off on embedded systems)
+.IP "\(bu" 2
+\fCINSTALL_SYSTEM_FILES\fP is now off by default on macOS\&.
+.IP "\(bu" 2
+bash-completion is installed to where pkg-config tells us, thanks to Gabriel Rauter (fallback is now \fC/usr/share/bash-completion/completions/kdb\fP) was \fC/etc/bash_completion\&.d/kdb\fP (removed)
+.IP "\(bu" 2
+zsh is now installed to \fC/usr/share/zsh/vendor-completions/_kdb\fP (except for Darwin, where \fC/usr/local/share/zsh/site-functions\fP is used)
+.IP "\(bu" 2
+removed \fC/etc/profile\&.d/kdb\&.sh\fP: the script \fCelektraenv\&.sh\fP was removed (and is no longer installed), superseded by \fCelektrify-getenv\fP
+.IP "\(bu" 2
+added scripts install-sh-completion configure-firefox elektrify-open
+.IP "\(bu" 2
+added plugins libelektra-blockresolver\&.so libelektra-boolean\&.so libelektra-crypto_botan\&.so libelektra-crypto_openssl\&.so libelektra-desktop\&.so libelektra-mozprefs\&.so libelektra-passwd\&.so
+.IP "\(bu" 2
+added tests testmod_blockresolver testmod_boolean testmod_crypto_botan testmod_crypto gcrypt testmod_crypto_openssl testmod_mozprefs testmod_passwd test_opmphm_vheap test_opmphm_vstack
+.IP "\(bu" 2
+added test data blockresolver mozprefs passwd
+.PP
+.PP
+.SS "Other"
+.PP
+.IP "\(bu" 2
+Conditionals and mathcheck plugins got support to specify relative keys, thanks to Thomas Waser
+.IP "\(bu" 2
+\fCkdb\fP command-list: commands are written in bold
+.IP "\(bu" 2
+GSettings backend can be build standalone, thanks to Gabriel Rauter
+.IP "\(bu" 2
+first data structures for order preserving minimal perfect hash map, thanks to Kurt Micheli
+.IP "\(bu" 2
+added a new passwd plugin, thanks to Thomas Waser
+.IP "\(bu" 2
+\fCboolean\fP plugin to normalize boolean values, thanks to Thomas Waser
+.IP "\(bu" 2
+\fCdesktop\fP plugin to detect which desktop currently is running (supports kde, gnome, tde, unity or any other XDG conformant desktop)
+.IP "\(bu" 2
+\fCdoc/paper\fP contains some info for \fCjoss\fP
+.PP
+.PP
+.SS "Get It!"
+.PP
+You can download the release from \fChere\fP and also \fChere on github\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.18\&.tar\&.gz
+.IP "\(bu" 2
+size: 2582183
+.IP "\(bu" 2
+md5sum: 62fe0fbf9ee57ffaa58a982f602f596a
+.IP "\(bu" 2
+sha1: 743484e16b102a00cd58956a49f0c558939d56a8
+.IP "\(bu" 2
+sha256: 9ee65895ba5cba6736c13c264637664c1410b25f4aaaeac8f1f83712ff93d53b
+.PP
+.PP
+This release tarball now is also available \fCsigned by me using gpg\fP
+.PP
+already built API-Docu can be found \fChere\fP
+.PP
+.SS "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the \fCMailing List\fP the issue tracker \fCon github\fP or by email elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, Markus 

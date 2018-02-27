@@ -1,0 +1,127 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mini plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com}
+\item infos/licence = B\+SD
+\item infos/needs = code
+\item infos/provides = storage/ini
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained shelltest unittest nodep limited
+\item infos/metadata =
+\item infos/description = A minimal plugin for simple I\+NI files
+\end{DoxyItemize}
+
+The “maybe this is not I\+N\+I” plugin ({\ttfamily mini}) is a very simple storage plugin loosely based on the \href{https://en.wikipedia.org/wiki/INI_file}{\tt I\+NI} file format. Since this plugin {\bfseries does not support sections} it might be more appropriate to say that it is based on the \href{https://en.wikipedia.org/wiki/.properties}{\tt .properties} format, used in many Java applications.
+
+\subsection*{Examples}
+
+\subsubsection*{Basic Usage}
+
+The following example shows basic usage of the {\ttfamily mini} plugin.
+
+``{\ttfamily  $<$h1$>$Mount mini plugin to cascading namespace}/examples/mini` sudo kdb mount mini.\+ini /examples/mini mini
+
+\section*{Add two key value pairs to the database}
+
+kdb set /examples/mini/key value \#$>$ Using name user/examples/mini/key \#$>$ Create a new key user/examples/mini/key with string \char`\"{}value\char`\"{} kdb set /examples/mini/mi/mi/mr beaker \#$>$ Using name user/examples/mini/mi/mi/mr \#$>$ Create a new key user/examples/mini/mi/mi/mr with string \char`\"{}beaker\char`\"{}
+
+\section*{Export our current configuration}
+
+kdb export /examples/mini mini \#$>$ key=value \#$>$ mi/mi/mr=beaker
+
+\section*{Manually add some values}
+
+echo \char`\"{}🔑 = 🦄\char`\"{} $>$$>$ {\ttfamily kdb file /examples/mini} echo \char`\"{}level1/level2 = 👾\char`\"{} $>$$>$ {\ttfamily kdb file /examples/mini}
+
+\section*{Now {\ttfamily /examples/mini} contains four key value pairs}
+
+kdb ls /examples/mini \#$>$ user/examples/mini/key \#$>$ user/examples/mini/level1/level2 \#$>$ user/examples/mini/mi/mi/mr \#$>$ user/examples/mini/🔑
+
+\section*{Let us check if {\ttfamily /examples/mini/🔑} contains the correct value}
+
+kdb get \char`\"{}/examples/mini/🔑\char`\"{} \#$>$ 🦄
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r /examples/mini sudo kdb umount /examples/mini 
+\begin{DoxyCode}
+### Escaping
+
+As with most configuration file formats, some characters carry special meaning. In the case of the `mini`
+       plugin that character are
+
+1. the `=` sign, which separates keys from values and
+2. `#` and `;`, the characters that denote a comment.
+
+In case of **key values** you do not need to care about the special meaning of these characters most of the
+       time, since the plugin handles escaping and unescaping of them for you. Since mINI use the backslash
+       character (`\(\backslash\)`) to escape values, the backspace character will be escaped too (`\(\backslash\)\(\backslash\)`). The following example shows
+       the escaping behavior.
+\end{DoxyCode}
+ sudo kdb mount mini.\+ini /examples/mini mini
+
+\section*{Store a value containing special characters}
+
+kdb set /examples/mini/key \textquotesingle{};\#=\textbackslash{}\textquotesingle{} \#$>$ Using name user/examples/mini/key \#$>$ Create a new key user/examples/mini/key with string \char`\"{};\#=\textbackslash{}\char`\"{}
+
+\section*{The actual file contains escaped version of the characters}
+
+kdb file /examples/mini $\vert$ xargs cat \#$>$ key=\textbackslash{};\#\textbackslash{}=\textbackslash{}
+
+\section*{However, if you retrieve the value you do not have to care}
+
+\section*{about the escaped characters}
+
+kdb get /examples/mini/key \#$>$ ;\#=\textbackslash{}
+
+\section*{If we do not escape the {\ttfamily ;} and {\ttfamily \#} characters, then they}
+
+\section*{donate a comment.}
+
+echo \textquotesingle{}background = \#0\+F0\+F0F ; Background color\textquotesingle{} $>$$>$ {\ttfamily kdb file /examples/mini} echo \textquotesingle{}foreground = \#F\+F\+F\+F\+FF \# Foreground color\textquotesingle{} $>$$>$ {\ttfamily kdb file /examples/mini} kdb get /examples/mini/background \#$>$ \#0\+F0\+F0F kdb get /examples/mini/foreground \#$>$ \#\+F\+F\+F\+F\+FF
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r /examples/mini sudo kdb umount /examples/mini 
+\begin{DoxyCode}
+In the case of **key names** you **must not use any of the characters mentioned above** (`;`, `#` and `=`)
+       at all. Otherwise the behavior of the plugin will be **undefined**.
+
+## Limitations
+
+This plugin only supports simple key-value based properties files without sections. mINI also does not
+       support metadata. If you want a more feature complete plugin, then please take a look at the [ini plugin](@ref
+       src\_plugins\_ini\_README\_md). The example below shows some of the limitations of the plugin.
+\end{DoxyCode}
+ sudo kdb mount mini.\+ini /examples/mini mini
+
+\section*{The plugin does not support sections or multi-\/line values}
+
+echo \textquotesingle{}\mbox{[}section\mbox{]}\textquotesingle{} $>$$>$ {\ttfamily kdb file /examples/mini} printf \textquotesingle{}key=\char`\"{}multi\textbackslash{}nline\char`\"{}\textquotesingle{} $>$$>$ {\ttfamily kdb file /examples/mini}
+
+\section*{m\+I\+NI only reads the first line of the value with the name {\ttfamily key}, since}
+
+\section*{the plugin assigns no special meaning to double or single quotes.}
+
+kdb ls /examples/mini 2$>$ stderr.\+txt \#$>$ user/examples/mini/key
+
+\section*{As we can see in the first two line of the standard error output below,}
+
+\section*{m\+I\+NI will inform us about lines it was unable to parse.}
+
+cat stderr.\+txt $\vert$ grep \textquotesingle{}Reason\+:\textquotesingle{} $\vert$ sed \textquotesingle{}s/$^\wedge$\mbox{[}\mbox{[}\+:space\+:\mbox{]}\mbox{]}$\ast$//\textquotesingle{} \#$>$ Reason\+: Line 1\+: “\mbox{[}section\mbox{]}” is not a valid key value pair \#$>$ Reason\+: Line 3\+: “line"” is not a valid key value pair
+
+\section*{Unlike the {\ttfamily ini} and {\ttfamily ni} plugin, m\+I\+NI does not support metadata.}
+
+kdb lsmeta /examples/mini \section*{R\+ET\+: 1}
+
+\section*{The value of {\ttfamily key} also contains the double quote symbol, since m\+I\+NI does}
+
+\section*{not assign special meaning to quote characters.}
+
+kdb get /examples/mini/key \#$>$ "multi
+
+\section*{Undo modifications}
+
+rm stderr.\+txt kdb rm -\/r /examples/mini sudo kdb umount /examples/mini ``` 

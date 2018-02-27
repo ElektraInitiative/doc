@@ -1,0 +1,169 @@
+.TH "md_src_plugins_csvstorage_README" 3elektra "Tue Feb 27 2018" "Version 0.8.22" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_csvstorage_READMEPlugin: csvstorage 
+ \- 
+.IP "\(bu" 2
+infos = Information about the csvstorage plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/csv
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = productive maintained unittest nodep libc configurable
+.IP "\(bu" 2
+infos/description = parses csv files
+.PP
+.PP
+This plugin allows you to read and write CSV files within Elektra\&. It aims to be compatible with RFC 4180\&. Rows and columns are written in Elektra arrays (\fC#0\fP, \fC#1\fP,\&.\&.)\&. Using configuration you can give columns a name\&.
+.PP
+.SS "Configuration"
+.PP
+\fCdelimiter\fP Tells the plugin what delimiter is used in the file\&. The default delimiter is \fC,\fP and will be used if \fCdelimiter\fP is not set\&.
+.PP
+\fCheader\fP Tells the plugin to use the first line as a header if it's set to 'colname'\&. The columns will get the corresponding names\&. Skip the first line if it's set to 'skip' or treat the first line as a record if it's set to 'record'\&. If \fCheader\fP is not set, or set to 'record', the columns get named #0,#1,\&.\&.\&. (array key naming)
+.PP
+\fCcolumns\fP If this key is set the plugin will yield an error for every file that doesn't have exactly the amount of columns as specified in \fCcolumns\fP\&.
+.PP
+\fCcolumns/names\fP Sets the column names\&. Only usable in combination with the \fCcolumns\fP key\&. The number of subkeys must match the number of columns\&. Conflicts with usage of \fCheader\fP\&.
+.PP
+.SS "Examples"
+.PP
+First line should determine the headers: 
+.PP
+.nf
+kdb mount test.csv /csv csvstorage "delimiter=;,header=colname,columns=2,columns/names,columns/names/#0=col0Name,columns/names/#1=col1Name"
+
+.fi
+.PP
+.PP
+.SS "Usage"
+.PP
+The example below shows how you can use this plugin to read and write CSV files\&.
+.PP
+``\fC <h1>Mount plugin to cascading namespace\fP/examples/csv` 
+.SH "We use the column names from the first line of the"
+.PP
+.PP
+.SH "config file as key names"
+.PP
+.PP
+sudo kdb mount config\&.csv /examples/csv csvstorage 'header=colname,columns/names/#0=col0Name,columns/names/#1=col1Name'
+.PP
+.SH "Add some data"
+.PP
+.PP
+printf 'band,album
+.br
+' >> \fCkdb file /examples/csv\fP printf 'Converge,All We Love We Leave Behind
+.br
+' >> \fCkdb file /examples/csv\fP printf 'mewithoutYou,Pale Horses
+.br
+' >> \fCkdb file /examples/csv\fP printf 'Kate Tempest,Everybody Down
+.br
+' >> \fCkdb file /examples/csv\fP
+.PP
+kdb ls /examples/csv #> user/examples/csv/#0 #> user/examples/csv/#0/album #> user/examples/csv/#0/band #> user/examples/csv/#1 #> user/examples/csv/#1/album #> user/examples/csv/#1/band #> user/examples/csv/#2 #> user/examples/csv/#2/album #> user/examples/csv/#2/band #> user/examples/csv/#3 #> user/examples/csv/#3/album #> user/examples/csv/#3/band
+.PP
+.SH "The first array element contains the column names"
+.PP
+.PP
+kdb get /examples/csv/#0/band #> band kdb get /examples/csv/#0/album #> album
+.PP
+.SH "Retrieve data from the last entry"
+.PP
+.PP
+kdb get /examples/csv/#3/album #> Everybody Down kdb get /examples/csv/#3/band #> Kate Tempest
+.PP
+.SH "Change an existing item"
+.PP
+.PP
+kdb set /examples/csv/#1/album 'You Fail Me' 
+.SH "Retrieve the new item"
+.PP
+.PP
+kdb get /examples/csv/#1/album #> You Fail Me
+.PP
+.SH "The plugin stores the index of the last column"
+.PP
+.PP
+.SH "in all of the parent keys\&."
+.PP
+.PP
+kdb get user/examples/csv/#0 #> #1 kdb get user/examples/csv/#1 #> #1 kdb get user/examples/csv/#2 #> #1 kdb get user/examples/csv/#3 #> #1
+.PP
+.SH "The configuration file reflects the changes"
+.PP
+.PP
+kdb file /examples/csv | xargs cat #> album,band #> You Fail Me,Converge #> Pale Horses,mewithoutYou #> Everybody Down,Kate Tempest
+.PP
+.SH "Undo changes to the key database"
+.PP
+.PP
+kdb rm -r /examples/csv sudo kdb umount /examples/csv 
+.PP
+.nf
+# Directory Values
+
+By default the `csvstorage` plugin saves the name of the last column in each parent key\&. If you want to store a different value, you can do
+so using the [Directory Value](@ref src_plugins_directoryvalue_README_md) plugin\&.
+
+.fi
+.PP
+ 
+.SH "Mount plugin together with \fCdirectoryvalue\fP to cascading namespace \fC/examples/csv\fP"
+.PP
+.PP
+kdb mount config\&.csv /examples/csv csvstorage directoryvalue
+.PP
+.SH "Add some data"
+.PP
+.PP
+printf 'Schindler’s List,1993,8\&.9
+.br
+' >> \fCkdb file /examples/csv\fP printf 'Léon: The Professional,1994,8\&.5
+.br
+' >> \fCkdb file /examples/csv\fP
+.PP
+.SH "Retrieve data"
+.PP
+.PP
+kdb ls /examples/csv #> user/examples/csv/#0 #> user/examples/csv/#0/#0 #> user/examples/csv/#0/#1 #> user/examples/csv/#0/#2 #> user/examples/csv/#1 #> user/examples/csv/#1/#0 #> user/examples/csv/#1/#1 #> user/examples/csv/#1/#2
+.PP
+kdb get user/examples/csv/#0/#0 #> Schindler’s List kdb get user/examples/csv/#1/#2 #> 8\&.5
+.PP
+.SH "The plugin stores the index of the last column in the parent keys"
+.PP
+.PP
+kdb get user/examples/csv/#0 #> #2 kdb get user/examples/csv/#1 #> #2
+.PP
+.SH "Since we use the Directory Value plugin we can also change the data in a parent key"
+.PP
+.PP
+kdb set user/examples/csv/#0 'Movie – Year – Rating' kdb set user/examples/csv/#1 'It’s a Me\&.'
+.PP
+.SH "Retrieve data stored in parent keys"
+.PP
+.PP
+kdb get user/examples/csv/#0 #> Movie – Year – Rating kdb get user/examples/csv/#1 #> It’s a Me\&.
+.PP
+.SH "Undo changes to the key database"
+.PP
+.PP
+kdb rm -r /examples/csv sudo kdb umount /examples/csv ```
+.PP
+.SS "Limitations"
+.PP
+.IP "\(bu" 2
+Does not work on file streams (e\&.g\&. \fCkdb import\fP without file) 
+.PP
+
