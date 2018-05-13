@@ -1,0 +1,118 @@
+.TH "plugin.c" 3elektra "Sun May 13 2018" "Version 0.8.23" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+plugin.c \- Interna of plugin functionality\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdbassert\&.h>\fP
+.br
+\fC#include <kdberrors\&.h>\fP
+.br
+\fC#include <kdbinternal\&.h>\fP
+.br
+\fC#include <kdbversion\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraProcessPlugin\fP (Key *cur, int *pluginNumber, char **pluginName, char **referenceName, Key *errorKey)"
+.br
+.ti -1c
+.RI "int \fBelektraProcessPlugins\fP (Plugin **plugins, KeySet *modules, KeySet *referencePlugins, KeySet *config, KeySet *systemConfig, Key *errorKey)"
+.br
+.RI "Load a plugin\&. "
+.ti -1c
+.RI "Plugin * \fBelektraPluginOpen\fP (const char *name, KeySet *modules, KeySet *config, Key *errorKey)"
+.br
+.RI "Opens a plugin\&. "
+.ti -1c
+.RI "size_t \fBelektraPluginGetFunction\fP (Plugin *plugin, const char *name)"
+.br
+.RI "Retrieves a function exported by a plugin\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Interna of plugin functionality\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "size_t elektraPluginGetFunction (Plugin * plugin, const char * name)"
+
+.PP
+Retrieves a function exported by a plugin\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIplugin\fP Plugin handle 
+.br
+\fIname\fP Function name 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Pointer to function\&. NULL if function not found or not enough memory available 
+.RE
+.PP
+
+.SS "Plugin* elektraPluginOpen (const char * name, KeySet * modules, KeySet * config, Key * errorKey)"
+
+.PP
+Opens a plugin\&. The config will be used as is\&. So be sure to transfer ownership of the config to it, with e\&.g\&. \fBksDup()\fP\&. elektraPluginClose() will delete the config\&.
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to a new created plugin or 0 on error 
+.RE
+.PP
+
+.SS "int elektraProcessPlugin (Key * cur, int * pluginNumber, char ** pluginName, char ** referenceName, Key * errorKey)"
+
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP and an allocated string of the pluginName if a new plugins should be created\&. 
+.br
+\fI2\fP and an allocated string of the referenceName if an old plugin should be used 
+.br
+\fI3\fP and both if a new plugin should be created and made available for later back referencing\&. 
+.br
+\fI-1\fP on error 
+.RE
+.PP
+
+.SS "int elektraProcessPlugins (Plugin ** plugins, KeySet * modules, KeySet * referencePlugins, KeySet * config, KeySet * systemConfig, Key * errorKey)"
+
+.PP
+Load a plugin\&. The array of plugins must be set to 0\&. Its length is NR_OF_PLUGINS\&.
+.PP
+systemConfig will only be used, not deleted\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIconfig\fP the config with the information how the plugins should be put together 
+.br
+\fIsystemConfig\fP the shared (system) config for the plugins\&. Every plugin additional get this config\&.
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on failure 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

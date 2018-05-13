@@ -1,0 +1,371 @@
+\subsection*{Introduction}
+
+Libraries need pervasive testing for continuous improvement. Any problem found and behavior described must be written down as test so that it is assured that no new regressions will be added.
+
+\subsection*{Running Tests}
+
+Running all tests in the build directory\+: \begin{DoxyVerb}make run_all
+\end{DoxyVerb}
+
+
+And on the target (installed) system\+: \begin{DoxyVerb}kdb run_all
+\end{DoxyVerb}
+
+
+To run {\ttfamily memcheck} tests run in the build directory\+: \begin{DoxyVerb}make run_memcheck
+\end{DoxyVerb}
+
+
+They are supplementary, ideally you run all three.
+
+Some tests write into system paths and into the home directory. This implies that the U\+ID running the tests must have a home directory. To avoid running tests that write to the disk you can use\+: \begin{DoxyVerb}make run_nokdbtests
+\end{DoxyVerb}
+
+
+You can also directly run ctest to make use of parallel testing\+: \begin{DoxyVerb}ctest -T Test --output-on-failure -j 6
+ctest -T MemCheck -LE memleak --output-on-failure -j 6
+\end{DoxyVerb}
+
+
+The alternative to {\ttfamily make run\+\_\+nokdbtests}\+: \begin{DoxyVerb}ctest -T Test --output-on-failure -LE kdbtests -j 6
+\end{DoxyVerb}
+
+
+If the access is denied, several tests will fail. You have some options to avoid running them as root\+:
+
+
+\begin{DoxyEnumerate}
+\item To avoid running the problematic test cases (reduces the test coverage!) run {\ttfamily ctest} without tests that have the label {\ttfamily kdbtests}\+: {\ttfamily ctest -\/-\/output-\/on-\/failure -\/\+LE kdbtests} (which is also what {\ttfamily make run\+\_\+nokdbtests} does)
+\item To give your user the permissions to the relevant paths execute the lines below once as root.
+
+{\bfseries Warning\+: Changing permissions on the wrong paths can be harmful! Please make sure that the paths are correct.} In doubt make sure that you have a backup of the affected directories.
+
+First load the required information and verify the paths\+: ``` kdb mount-\/info echo {\ttfamily kdb sget system/info/elektra/constants/cmake/\+C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+IX .}/{\ttfamily kdb sget system/info/elektra/constants/cmake/\+K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC .} echo {\ttfamily kdb sget system/info/elektra/constants/cmake/\+K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM .} 
+\begin{DoxyCode}
+Then change the permissions:
+\end{DoxyCode}
+ chown -\/R {\ttfamily whoami} {\ttfamily kdb sget system/info/elektra/constants/cmake/\+C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+IX .}/{\ttfamily kdb sget system/info/elektra/constants/cmake/\+K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC .} chown -\/R {\ttfamily whoami} {\ttfamily kdb sget system/info/elektra/constants/cmake/\+K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM .} ``` After that all test cases should run successfully as described above.
+\item Compile Elektra so that system paths are not actual system paths, e.\+g. to write everything into the home directory ({\ttfamily $\sim$}) use cmake options\+: {\ttfamily -\/\+D\+K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM=\char`\"{}$\sim$/.\+config/kdb/system\char`\"{} -\/\+D\+K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC=\char`\"{}$\sim$/.\+config/kdb/spec\char`\"{}} (for another example with ini see {\ttfamily scripts/configure-\/home})
+\item Use the X\+DG resolver (see {\ttfamily scripts/configure-\/xdg}) and set the environment variable {\ttfamily X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+RS}, currently lacks {\ttfamily spec} namespaces, see \#734.
+\end{DoxyEnumerate}
+
+\subsection*{Recommended Environment}
+
+The tests are designed to disable themselves if some necessary tools are missing or other environmental constraints are not met. To really run {\itshape all} tests (also those that are mostly designed for internal development) you need to fulfil\+:
+
+
+\begin{DoxyItemize}
+\item Elektra must be installed (for gen + external test cases).
+\item Mounted /dev (to have stdin and stdout for import \& export test cases).
+\item A running dbus daemon (Either \char`\"{}system\char`\"{} or \char`\"{}session\char`\"{} daemon).
+\item {\ttfamily gpg2} or {\ttfamily gpg} binary must be available.
+\end{DoxyItemize}
+
+Above environment is needed for both {\ttfamily kdb run\+\_\+all} (installed test cases) and {\ttfamily make run\+\_\+all} (test cases executed from the build directory). For {\ttfamily make run\+\_\+all} following development tools enable even more tests\+:
+
+
+\begin{DoxyItemize}
+\item The script {\ttfamily checkbashisms} is needed to check for bashism (tests/shell/check\+\_\+bashisms.\+sh), it is part of {\ttfamily devscripts}.
+\item {\ttfamily git} and {\ttfamily clang-\/reformat-\/5} (to 7) to check formatting.
+\item {\ttfamily pkg-\/config} must be available (check\+\_\+external.\+sh and check\+\_\+gen.\+sh).
+\item A build environment including gcc (check\+\_\+gen.\+sh).
+\end{DoxyItemize}
+
+\subsection*{Conventions}
+
+
+\begin{DoxyItemize}
+\item All names of the test must start with test (needed by test driver for installed tests).
+\item No tests should run if E\+N\+A\+B\+L\+E\+\_\+\+T\+E\+S\+T\+I\+NG is O\+FF.
+\item All tests that access system/spec namespaces (e.\+g. mount something)\+:
+\begin{DoxyItemize}
+\item should be tagged with {\ttfamily kdbtests}\+: \begin{DoxyVerb} set_property(TEST testname PROPERTY LABELS kdbtests)
+\end{DoxyVerb}
+
+\item should not run, if {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+K\+D\+B\+\_\+\+T\+E\+S\+T\+I\+NG} is O\+FF.
+\item should only write below
+\begin{DoxyItemize}
+\item {\ttfamily /tests/$<$testname$>$} (e.\+g. {\ttfamily /tests/ruby}) and
+\item {\ttfamily system/elektra} (e.\+g. for mounts or globalplugins).
+\end{DoxyItemize}
+\item Before executing tests, no keys must be present below {\ttfamily /tests}. The test cases need to clean up everything they wrote. (Including temporary files)
+\end{DoxyItemize}
+\item If your test has memory leaks, e.\+g. because the library used leaks and they cannot be fixed, give them the label {\ttfamily memleak} with the following command\+: \begin{DoxyVerb}  set_property(TEST testname PROPERTY LABELS memleak)
+\end{DoxyVerb}
+
+\item If your test modifies resources needed by other tests you also need to set {\ttfamily R\+U\+N\+\_\+\+S\+E\+R\+I\+AL}\+: \begin{DoxyVerb}set_property(TEST testname PROPERTY RUN_SERIAL TRUE)
+\end{DoxyVerb}
+
+\end{DoxyItemize}
+
+\subsection*{Strategy}
+
+The testing must happen on every level of the software to achieve a maximum coverage with the available time. In the rest of the document we describe the different levels and where these tests are.
+
+\subsubsection*{C\+Framework}
+
+This is basically a bunch of assertion macros and some output facilities. It is written in pure C and very lightweight.
+
+It is located here.
+
+\subsubsection*{A\+BI Tests}
+
+C A\+BI Tests are written in plain C with the help of {\ttfamily cframework}.
+
+The main purpose of these tests are, that the binaries of old versions can be used against new versions as A\+BI tests.
+
+So lets say we compile Elektra 0.\+8.\+8 (at this version dedicated A\+BI tests were introduced) in the {\ttfamily -\/full} variant. But when we run the tests, we use {\ttfamily libelektra-\/full.\+so.\+0.\+8.\+9} (either by installing it or by setting {\ttfamily L\+D\+\_\+\+L\+I\+B\+R\+A\+R\+Y\+\_\+\+P\+A\+TH}). You can check with {\ttfamily ldd} which version is used.
+
+The tests are located here.
+
+\subsubsection*{C Unit Tests}
+
+C Unit Tests are written in plain C with the help of {\ttfamily cframework}.
+
+It is used to test internal data structures of libelektra that are not A\+BI relevant.
+
+A\+BI tests can be done on theses tests, too. But by nature from time to time these tests will fail.
+
+They are located here.
+
+\paragraph*{Internal Functions}
+
+According to {\ttfamily src/libs/elektra/libelektra-\/symbols.\+map}, all functions starting with\+:
+
+
+\begin{DoxyItemize}
+\item libelektra
+\item elektra
+\item kdb
+\item key
+\item ks
+\end{DoxyItemize}
+
+get exported. Functions not starting with this prefix are internal only and therefore not visible in the test cases. Test internal functionality by including the corresponding C file.
+
+\subsubsection*{Module Tests}
+
+The modules, which are typically used as plugins in Elektra (but can also be available statically or in the {\ttfamily -\/full} variant), should have their own tests.
+
+Use the C\+Make macro {\ttfamily add\+\_\+plugintest} for adding these tests.
+
+\subsubsection*{C++ Unit Tests}
+
+C++ Unit tests are done using the Google Test framework. See \hyperlink{doc_decisions_unit_testing_md}{architectural decision}.
+
+Use the C\+Make macro {\ttfamily add\+\_\+gtest} for adding these tests.
+
+\subsubsection*{Script Tests}
+
+Tests which need scripts are done using shell recorder or directly with P\+O\+S\+IX shell commands. See \hyperlink{doc_decisions_script_testing_md}{architectural decision}.
+
+The script tests have different purposes\+:
+
+
+\begin{DoxyItemize}
+\item End to End tests (usage of tools as an end user would do)
+\item External compilation tests (compile and run programs as a user would do)
+\item Conventions tests (do internal checks that check for common problems)
+\item Meta Test Suites (run other test suites)
+\end{DoxyItemize}
+
+See here.
+
+\subsubsection*{Shell Recorder}
+
+The more elegant way to specify script tests are via the so called shell recorder using Markdown Syntax.
+
+See here.
+
+\subsubsection*{Fuzz Testing}
+
+We assume that your current working directory is a newly created build directory. First compile Elektra with afl ($\sim$e is source-\/dir of Elektra)\+: \begin{DoxyVerb}~e/scripts/configure-debian -DCMAKE_C_COMPILER=/usr/src/afl/afl-2.52b/afl-gcc -DCMAKE_CXX_COMPILER=/usr/src/afl/afl-2.52b/afl-g++ ~e
+\end{DoxyVerb}
+
+
+Copy some import files to {\ttfamily testcase\+\_\+dir}, for example\+: \begin{DoxyVerb}mkdir -p testcase_dir
+cp ~e/src/plugins/ini/ini/* testcase_dir
+\end{DoxyVerb}
+
+
+Fewer files is better. Then run, for example\+: \begin{DoxyVerb}LD_LIBRARY_PATH=`pwd`/lib /usr/src/afl/afl-2.52b/afl-fuzz -i testcase_dir -o findings_dir bin/kdb import user/tests ini
+\end{DoxyVerb}
+
+
+Check if something is happening with\+: \begin{DoxyVerb}watch kdb export user/tests
+\end{DoxyVerb}
+
+
+\subsubsection*{A\+S\+AN}
+
+To enable sanitize checks use {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+A\+S\+AN} via cmake.
+
+Then, to use A\+S\+AN, run {\ttfamily run\+\_\+asan} in the build directory, which simply does\+: \begin{DoxyVerb}    ASAN_OPTIONS=symbolize=1 ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer) make run_all
+\end{DoxyVerb}
+
+
+It could also happen that you need to preload A\+S\+AN library, e.\+g.\+: \begin{DoxyVerb}    LD_PRELOAD=/usr/lib/clang/3.8.0/lib/linux/libclang_rt.asan-x86_64.so run_asan
+\end{DoxyVerb}
+
+
+or on Debian\+: \begin{DoxyVerb}    LD_PRELOAD=/usr/lib/llvm-3.8/lib/clang/3.8.1/lib/linux/libclang_rt.asan-x86_64.so run_asan
+\end{DoxyVerb}
+
+
+See also build server jobs\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://build.libelektra.org/job/elektra-clang-asan/}{\tt clang-\/asan}
+\item \href{https://build.libelektra.org/job/elektra-gcc-asan/}{\tt gcc-\/asan}
+\end{DoxyItemize}
+
+\paragraph*{mac\+OS}
+
+If you use mac\+OS you might want to use the {\ttfamily clang} versions provided by Homebrew, since it supports the \href{https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer}{\tt Leak\+Sanitizer}. To use Homebrew’s version of {\ttfamily clang} you need to first install L\+L\+VM\+:
+
+
+\begin{DoxyCode}
+brew install llvm
+\end{DoxyCode}
+
+
+. After that change the {\ttfamily CC} and {\ttfamily C\+XX} environment variables to point to the the clang tools provided by L\+L\+VM\+:
+
+
+\begin{DoxyCode}
+export CC=/usr/local/opt/llvm/bin/clang
+export CXX=/usr/local/opt/llvm/bin/clang++
+\end{DoxyCode}
+
+
+. Now run C\+Make and build Elektra just like you normally would. To enable the Leak Sanitizer you need to also set the variable {\ttfamily A\+S\+A\+N\+\_\+\+O\+P\+T\+I\+O\+NS} before you run a test\+:
+
+
+\begin{DoxyCode}
+export ASAN\_OPTIONS=detect\_leaks=1
+\end{DoxyCode}
+
+
+\subsubsection*{C\+B\+MC}
+
+For bounded model checking tests, see {\ttfamily scripts/cbmc}.
+
+\subsubsection*{Static Code Checkers}
+
+There is a number of static code checkers available for all kind of programming languages. The following section show how the most common ones can be used with {\ttfamily libelektra}.
+
+\paragraph*{Cppcheck}
+
+\href{http://cppcheck.sourceforge.net/}{\tt Cppcheck} can be used directly on a C or C++ source file by calling it with {\ttfamily cppcheck -\/-\/enable=all $<$sourcefile$>$}. This way it might miss some header files though and thus doesn\textquotesingle{}t detect all possible issues, but still gives useful hints in general.
+
+To analyze the whole project, use it in conjunction with {\ttfamily cmake} by calling {\ttfamily cmake} with the parameter {\ttfamily -\/\+D\+C\+M\+A\+K\+E\+\_\+\+E\+X\+P\+O\+R\+T\+\_\+\+C\+O\+M\+P\+I\+L\+E\+\_\+\+C\+O\+M\+M\+A\+N\+DS=ON}. This way {\ttfamily cmake} creates a file called {\ttfamily compile\+\_\+commands.\+json} in the build directory. Afterwards, call {\ttfamily cppcheck} with the cmake settings and store the output as xml\+: \begin{DoxyVerb}cppcheck --project=compile_commands.json --enable=all -j 8 --xml-version=2 2> cppcheck_result.xml
+\end{DoxyVerb}
+
+
+Since the X\+ML file is difficult to read directly, the best way is to convert it to an H\+T\+ML report. Cppcheck already includes a tool for that, call it with the X\+ML report\+: \begin{DoxyVerb}cppcheck-htmlreport --file=cppcheck_result.xml --report-dir=cppcheck_report --source-dir=.
+\end{DoxyVerb}
+
+
+Now you can view the html report by opening {\ttfamily index.\+html} in the specified folder to get an overview of the issues found in the whole project.
+
+\paragraph*{O\+C\+Lint}
+
+\href{http://oclint.org/}{\tt O\+C\+Lint} is a static code analyzer for C, C++ and Objective C. To use this tool enable the C\+Make option {\ttfamily C\+M\+A\+K\+E\+\_\+\+E\+X\+P\+O\+R\+T\+\_\+\+C\+O\+M\+P\+I\+L\+E\+\_\+\+C\+O\+M\+M\+A\+N\+DS}. The steps below show a step-\/by-\/step guide on how to analyze files with O\+C\+Lint.
+
+
+\begin{DoxyEnumerate}
+\item Create a build directory if you have not done so already and change the working path to this directory\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}
+mkdir -p build
+cd build
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Run C\+Make with the option {\ttfamily C\+M\+A\+K\+E\+\_\+\+E\+X\+P\+O\+R\+T\+\_\+\+C\+O\+M\+P\+I\+L\+E\+\_\+\+C\+O\+M\+M\+A\+N\+DS}\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}
+cmake .. -DCMAKE\_EXPORT\_COMPILE\_COMMANDS=ON
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Build Elektra
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}
+make
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Run the {\ttfamily oclint} command specifying the files you want to analyze
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}
+cd ..
+oclint -p build -no-analytics -enable-global-analysis -enable-clang-static-analyzer src/plugins/ini/*.c
+\end{DoxyCode}
+
+
+\paragraph*{scan-\/build}
+
+\href{http://clang-analyzer.llvm.org/scan-build.html}{\tt scan-\/build} is a tool that is usually bundled along with L\+L\+V\+M/\+Clang and is also primarily intended for C and C++ code. On mac\+OS you have to install the package {\ttfamily llvm} with homebrew, then you\textquotesingle{}ll find the tool in the folder {\ttfamily /usr/local/opt/llvm/bin/}.
+
+To use it, change the C compiler and the C++ compiler to the L\+L\+VM analyzer. To do this, you can configure the project from scratch and prefix the cmake command with {\ttfamily scan-\/build}. Alternatively, set the c compiler to {\ttfamily ccc-\/analyzer} and the C++ compiler to {\ttfamily c++-\/analyzer} (bundled with L\+L\+V\+M/\+Clang).
+
+Then you can build the project with {\ttfamily make} like usual, prefixing the command with {\ttfamily scan-\/build}. The {\ttfamily -\/o} option specifies where the html results get stored. Ensure you build the project from scratch, otherwise the analyzation might be incomplete. \begin{DoxyVerb}scan-build -o ./scanbuild_result make -j 4
+\end{DoxyVerb}
+
+
+Afterwards, the report can be viewed by using the tool {\ttfamily scan-\/view}, also found in the llvm folder. The report is created in the folder specified above, along with the current date of the analyzation, for instance\+: \begin{DoxyVerb}scan-view <path specified above>/2017-06-18-171027-27108-1
+\end{DoxyVerb}
+
+
+Alternatively, you can also open the {\ttfamily index.\+html} file in the aforementioned folder, but using the tool the report is enriched with further information.
+
+\paragraph*{Sonar\+Lint}
+
+\href{http://www.sonarlint.org/}{\tt Sonar\+Lint} is a static code checker primarily intended for Java. It is usually used by installing the corresponding plugin for the used I\+DE, then there is no further configuration required.
+
+\subsubsection*{Randoop}
+
+For using the unit test generator randoop with the jna bindings, see {\ttfamily scripts/randoop/randoop}.
+
+\subsubsection*{Code Coverage}
+
+Run\+: \begin{DoxyVerb}    make coverage-start
+    # now run all tests! E.g.:
+    make run_all
+    make coverage-stop
+    make coverage-genhtml
+\end{DoxyVerb}
+
+
+The H\+T\+ML files can be found in the build directory in the folder {\ttfamily coverage}.
+
+See also the build server job\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://build.libelektra.org/job/elektra-incremental/}{\tt gcc-\/asan}
+\end{DoxyItemize}
+
+\subsection*{See also}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{doc_COMPILE_md}{C\+O\+M\+P\+I\+LE}.
+\item \hyperlink{doc_INSTALL_md}{I\+N\+S\+T\+A\+LL}. 
+\end{DoxyItemize}

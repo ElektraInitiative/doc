@@ -1,0 +1,126 @@
+.TH "doc_dev_logging_md" 3elektra "Sun May 13 2018" "Version 0.8.23" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_logging_mdHow-To: Logging 
+ \- 
+.SS "Step by Step Guide"
+.PP
+.SS "Preparation"
+.PP
+.IP "1." 4
+Import the logging library in your code:
+.PP
+.PP
+.PP
+.nf
+#include <kdblogger\&.h>
+.fi
+.PP
+.PP
+.IP "2." 4
+Insert logging statements:
+.PP
+.PP
+.PP
+.nf
+ELEKTRA_LOG("Hello, %s!", "🌎");
+.fi
+.PP
+.PP
+.SS "Log Everything"
+.PP
+If Elektra should display all log messages, then please follow the steps below\&.
+.PP
+.IP "1." 4
+Uncomment the line:
+.PP
+.PP
+.PP
+.nf
+// #define NO_FILTER
+.fi
+.PP
+.PP
+in the file \fC\fBsrc/libs/elektra/log\&.c\fP\fP\&.
+.PP
+.IP "2." 4
+Optional: Change the debug level in \fC\fBsrc/include/kdblogger\&.h\fP\fP\&. For example, if you want to see debug messages too, then change the line
+.PP
+.PP
+.PP
+.nf
+ELEKTRA_LOG_LEVEL = ELEKTRA_LOG_LEVEL_INFO,
+.fi
+.PP
+.PP
+to
+.PP
+.PP
+.nf
+ELEKTRA_LOG_LEVEL = ELEKTRA_LOG_LEVEL_DEBUG,
+.fi
+.PP
+.PP
+.SS "File Specific Logging"
+.PP
+If you want to only log messages below a specific directory prefix, then please follow the steps below\&.
+.PP
+.IP "1." 4
+Search for the code:
+.PP
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     // XXX Filter level …
+#endif
+.fi
+.PP
+.PP
+in the file \fC\fBsrc/libs/elektra/log\&.c\fP\fP\&.
+.PP
+.IP "2." 4
+Replace the code with something like:
+.PP
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     if (strncmp (file, "src/postfix/", sizeof ("src/postfix"))) goto end;
+#endif
+.fi
+.PP
+.PP
+, where \fCsrc/postfix\fP contains all source files with logging statements that Elektra should log\&. For example, if you want to log everything from the \fCyamlcpp\fP plugin, then use the following code\&.
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     if (strncmp (file, "src/plugins/yamlcpp/", sizeof ("src/plugins/yamlcpp"))) goto end;
+#endif
+.fi
+.PP
+.PP
+.SS "Compilation"
+.PP
+.IP "1." 4
+Enable the logger: e\&.g\&. run \fCcmake\fP with the switch \fC-DENABLE_LOGGER=ON\fP
+.IP "2." 4
+Build Elektra
+.PP
+.PP
+.SS "Log Levels"
+.PP
+There are four log levels (ERROR is reserved for aborts within \fCELEKTRA_ASSERT\fP):
+.PP
+.IP "\(bu" 2
+ELEKTRA_LOG_WARNING, something critical that should be shown to the user (e\&.g\&. API misuse), see \fBELEKTRA_LOG_LEVEL_WARNING\fP
+.IP "\(bu" 2
+ELEKTRA_LOG_NOTICE, something important developers are likely interested in, see \fBELEKTRA_LOG_LEVEL_NOTICE\fP
+.IP "\(bu" 2
+ELEKTRA_LOG, standard level gives information what the code is doing without flooding the log, see \fBELEKTRA_LOG_LEVEL_INFO\fP
+.IP "\(bu" 2
+ELEKTRA_LOG_DEBUG, for less important logs, see \fBELEKTRA_LOG_LEVEL_DEBUG\fP 
+.PP
+

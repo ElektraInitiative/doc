@@ -1,0 +1,263 @@
+\hypertarget{pluginprocess_8c}{}\section{pluginprocess.\+c File Reference}
+\label{pluginprocess_8c}\index{pluginprocess.\+c@{pluginprocess.\+c}}
+
+
+Source for the pluginprocess library.  
+
+
+{\ttfamily \#include \char`\"{}kdbpluginprocess.\+h\char`\"{}}\newline
+{\ttfamily \#include $<$kdberrors.\+h$>$}\newline
+{\ttfamily \#include $<$kdbinvoke.\+h$>$}\newline
+{\ttfamily \#include $<$kdblogger.\+h$>$}\newline
+{\ttfamily \#include $<$kdbprivate.\+h$>$}\newline
+{\ttfamily \#include $<$errno.\+h$>$}\newline
+{\ttfamily \#include $<$limits.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$sys/stat.\+h$>$}\newline
+{\ttfamily \#include $<$sys/types.\+h$>$}\newline
+{\ttfamily \#include $<$unistd.\+h$>$}\newline
+Include dependency graph for pluginprocess.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pluginprocess_8c__incl}
+\end{center}
+\end{figure}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{pluginprocess_8c_aa45f0e358d30fcaa11cef6b4da6c9860}{elektra\+Plugin\+Process\+Start} (Plugin $\ast$handle, Elektra\+Plugin\+Process $\ast$pp)
+\begin{DoxyCompactList}\small\item\em Start the child process\textquotesingle{} command loop. \end{DoxyCompactList}\item 
+int \hyperlink{pluginprocess_8c_afb351eb50b21c443b1e8bc67a75eee47}{elektra\+Plugin\+Process\+Send} (const Elektra\+Plugin\+Process $\ast$pp, pluginprocess\+\_\+t command, Key\+Set $\ast$original\+Key\+Set, Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Call a plugin\textquotesingle{}s function in a child process. \end{DoxyCompactList}\item 
+int \hyperlink{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}{elektra\+Plugin\+Process\+Is\+Parent} (const Elektra\+Plugin\+Process $\ast$pp)
+\begin{DoxyCompactList}\small\item\em Check if a given plugin process is the parent or the child process. \end{DoxyCompactList}\item 
+Elektra\+Plugin\+Process $\ast$ \hyperlink{pluginprocess_8c_ac0733d8e60e00cc01ea0a1adf9c9e905}{elektra\+Plugin\+Process\+Init} (Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Initialize a plugin to be executed in its own process. \end{DoxyCompactList}\item 
+int \hyperlink{pluginprocess_8c_aabd3645799a694d6bde9ae201d536d01}{elektra\+Plugin\+Process\+Open} (Elektra\+Plugin\+Process $\ast$pp, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Call a plugin\textquotesingle{}s open function in a child process. \end{DoxyCompactList}\item 
+int \hyperlink{pluginprocess_8c_a38953aec2e9d627e0eb48fe21cd6737a}{elektra\+Plugin\+Process\+Close} (Elektra\+Plugin\+Process $\ast$pp, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Cleanup a plugin process. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Source for the pluginprocess library. 
+
+Executes plugins in a separate process via fork and uses a simple communication protocol based on the dump plugin via named pipes.
+
+\begin{DoxyCopyright}{Copyright}
+B\+SD License (see L\+I\+C\+E\+N\+S\+E.\+md or \href{https://www.libelektra.org}{\tt https\+://www.\+libelektra.\+org}) 
+\end{DoxyCopyright}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{pluginprocess_8c_a38953aec2e9d627e0eb48fe21cd6737a}\label{pluginprocess_8c_a38953aec2e9d627e0eb48fe21cd6737a}} 
+\index{pluginprocess.\+c@{pluginprocess.\+c}!elektra\+Plugin\+Process\+Close@{elektra\+Plugin\+Process\+Close}}
+\index{elektra\+Plugin\+Process\+Close@{elektra\+Plugin\+Process\+Close}!pluginprocess.\+c@{pluginprocess.\+c}}
+\subsubsection{\texorpdfstring{elektra\+Plugin\+Process\+Close()}{elektraPluginProcessClose()}}
+{\footnotesize\ttfamily int elektra\+Plugin\+Process\+Close (\begin{DoxyParamCaption}\item[{Elektra\+Plugin\+Process $\ast$}]{pp,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Cleanup a plugin process. 
+
+This will decrease the internal counter how often open/close has been called, closing opened pipes when the counter reaches 0. This will not delete the plugin data associated with the handle as it may contain other data out of the scope of this library, so this has to be done manually like 
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraPluginClose (Plugin * handle, Key * errorKey)
+\{
+        ElektraPluginProcess * pp = \hyperlink{group__plugin_gaafcf3216b46292f222b8cc7828b4dd20}{elektraPluginGetData} (handle);
+        \textcolor{keywordflow}{if} (\hyperlink{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}{elektraPluginProcessIsParent} (pp)) \{
+                \textcolor{keywordtype}{int} result = \hyperlink{pluginprocess_8c_afb351eb50b21c443b1e8bc67a75eee47}{elektraPluginProcessSend} (pp, 
+      \hyperlink{kdbplugin_8h_afed89ef026fb0622918a5de020de7814a449e166b322550b3ad26efd4c46e49e3}{ELEKTRA\_PLUGIN\_CLOSE}, NULL, errorKey);
+                \textcolor{keywordflow}{if} (\hyperlink{pluginprocess_8c_a38953aec2e9d627e0eb48fe21cd6737a}{elektraPluginProcessClose} (pp, errorKey)) 
+      \hyperlink{group__plugin_gaf4b941a52ff55d0ca2a9158d90208ef2}{elektraPluginSetData} (handle, NULL);
+                \textcolor{keywordflow}{return} result;
+        \}
+
+        \textcolor{comment}{// actual plugin functionality to be executed in a child process}
+        \textcolor{keywordflow}{return} \hyperlink{kdbplugin_8h_a7ae271ada880a1447179094ce6f66821}{ELEKTRA\_PLUGIN\_STATUS\_SUCCESS};
+\}
+\end{DoxyCode}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em pp} & the data structure containing the plugin\textquotesingle{}s process information \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if the data structure got cleaned up \\
+\hline
+{\em 0} & if the data structure is still used \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{pluginprocess_8c_ac0733d8e60e00cc01ea0a1adf9c9e905}\label{pluginprocess_8c_ac0733d8e60e00cc01ea0a1adf9c9e905}} 
+\index{pluginprocess.\+c@{pluginprocess.\+c}!elektra\+Plugin\+Process\+Init@{elektra\+Plugin\+Process\+Init}}
+\index{elektra\+Plugin\+Process\+Init@{elektra\+Plugin\+Process\+Init}!pluginprocess.\+c@{pluginprocess.\+c}}
+\subsubsection{\texorpdfstring{elektra\+Plugin\+Process\+Init()}{elektraPluginProcessInit()}}
+{\footnotesize\ttfamily Elektra\+Plugin\+Process$\ast$ elektra\+Plugin\+Process\+Init (\begin{DoxyParamCaption}\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Initialize a plugin to be executed in its own process. 
+
+This will prepare all the required resources and then fork the current process. After the initialization the child process will typically call the command loop while the parent starts to send commands to it. Also the resulting process information has to be stored for the plugin. In order to allow users to handle custom plugin data this will not automatically call elektra\+Plugin\+Set\+Data.
+
+Typically called in a plugin\textquotesingle{}s open function like (assuming no custom plugin data)\+: 
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektraPluginOpen} (Plugin * handle, Key * errorKey)
+\{
+        ElektraPluginProcess * pp = \hyperlink{group__plugin_gaafcf3216b46292f222b8cc7828b4dd20}{elektraPluginGetData} (handle);
+        \textcolor{keywordflow}{if} (pp == NULL)
+        \{
+                \textcolor{keywordflow}{if} ((pp = \hyperlink{pluginprocess_8c_ac0733d8e60e00cc01ea0a1adf9c9e905}{elektraPluginProcessInit} (handle, errorKey)) == NULL) \textcolor{keywordflow}{
+      return} \hyperlink{kdbplugin_8h_a0a5d59c7d1a2ce87a1d060c7be0261a4}{ELEKTRA\_PLUGIN\_STATUS\_ERROR};
+                \hyperlink{group__plugin_gaf4b941a52ff55d0ca2a9158d90208ef2}{elektraPluginSetData} (handle, pp);
+                \textcolor{keywordflow}{if} (!\hyperlink{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}{elektraPluginProcessIsParent} (pp)) 
+      \hyperlink{pluginprocess_8c_aa45f0e358d30fcaa11cef6b4da6c9860}{elektraPluginProcessStart} (handle, pp);
+        \}
+        \textcolor{keywordflow}{if} (\hyperlink{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}{elektraPluginProcessIsParent} (pp)) \textcolor{keywordflow}{return} 
+      \hyperlink{pluginprocess_8c_aabd3645799a694d6bde9ae201d536d01}{elektraPluginProcessOpen} (pp, errorKey);
+
+        \textcolor{comment}{// actual plugin functionality to be executed in a child process}
+        \textcolor{keywordflow}{return} \hyperlink{kdbplugin_8h_a7ae271ada880a1447179094ce6f66821}{ELEKTRA\_PLUGIN\_STATUS\_SUCCESS};
+\}
+\end{DoxyCode}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & the plugin\textquotesingle{}s handle \\
+\hline
+{\em error\+Key} & a key where error messages will be set \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em N\+U\+LL} & if the initialization failed \\
+\hline
+{\em a} & pointer to the information \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}\label{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}} 
+\index{pluginprocess.\+c@{pluginprocess.\+c}!elektra\+Plugin\+Process\+Is\+Parent@{elektra\+Plugin\+Process\+Is\+Parent}}
+\index{elektra\+Plugin\+Process\+Is\+Parent@{elektra\+Plugin\+Process\+Is\+Parent}!pluginprocess.\+c@{pluginprocess.\+c}}
+\subsubsection{\texorpdfstring{elektra\+Plugin\+Process\+Is\+Parent()}{elektraPluginProcessIsParent()}}
+{\footnotesize\ttfamily int elektra\+Plugin\+Process\+Is\+Parent (\begin{DoxyParamCaption}\item[{const Elektra\+Plugin\+Process $\ast$}]{pp }\end{DoxyParamCaption})}
+
+
+
+Check if a given plugin process is the parent or the child process. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pp} & the data structure containing the plugin\textquotesingle{}s process information \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if it\textquotesingle{}s the child process \\
+\hline
+{\em the} & child process\textquotesingle{} pid otherwise \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{pluginprocess_8c_aabd3645799a694d6bde9ae201d536d01}\label{pluginprocess_8c_aabd3645799a694d6bde9ae201d536d01}} 
+\index{pluginprocess.\+c@{pluginprocess.\+c}!elektra\+Plugin\+Process\+Open@{elektra\+Plugin\+Process\+Open}}
+\index{elektra\+Plugin\+Process\+Open@{elektra\+Plugin\+Process\+Open}!pluginprocess.\+c@{pluginprocess.\+c}}
+\subsubsection{\texorpdfstring{elektra\+Plugin\+Process\+Open()}{elektraPluginProcessOpen()}}
+{\footnotesize\ttfamily int elektra\+Plugin\+Process\+Open (\begin{DoxyParamCaption}\item[{Elektra\+Plugin\+Process $\ast$}]{pp,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Call a plugin\textquotesingle{}s open function in a child process. 
+
+This will increase the internal counter how often open/close has been called, so the opened pipes and forks will not be closed too early.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pp} & the data structure containing the plugin\textquotesingle{}s process information \\
+\hline
+{\em error\+Key} & a key where error messages will be set \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em the} & return value of the plugin\textquotesingle{}s open function \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{pluginprocess_8c_ac0733d8e60e00cc01ea0a1adf9c9e905}{elektra\+Plugin\+Process\+Init} for an example how and where this function is typically used 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{pluginprocess_8c_afb351eb50b21c443b1e8bc67a75eee47}\label{pluginprocess_8c_afb351eb50b21c443b1e8bc67a75eee47}} 
+\index{pluginprocess.\+c@{pluginprocess.\+c}!elektra\+Plugin\+Process\+Send@{elektra\+Plugin\+Process\+Send}}
+\index{elektra\+Plugin\+Process\+Send@{elektra\+Plugin\+Process\+Send}!pluginprocess.\+c@{pluginprocess.\+c}}
+\subsubsection{\texorpdfstring{elektra\+Plugin\+Process\+Send()}{elektraPluginProcessSend()}}
+{\footnotesize\ttfamily int elektra\+Plugin\+Process\+Send (\begin{DoxyParamCaption}\item[{const Elektra\+Plugin\+Process $\ast$}]{pp,  }\item[{pluginprocess\+\_\+t}]{command,  }\item[{Key\+Set $\ast$}]{original\+Key\+Set,  }\item[{Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Call a plugin\textquotesingle{}s function in a child process. 
+
+This will wrap all the required information to execute the given command in a keyset and send it over to the child process. Then it waits for the child process\textquotesingle{}s answer and copies the result back into the original plugin keyset and plugin key.
+
+Typically called like 
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraPluginSet (Plugin * handle, KeySet * returned, Key * parentKey)
+\{
+        ElektraPluginProcess * pp = \hyperlink{group__plugin_gaafcf3216b46292f222b8cc7828b4dd20}{elektraPluginGetData} (handle);
+        \textcolor{keywordflow}{if} (\hyperlink{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}{elektraPluginProcessIsParent} (pp)) \textcolor{keywordflow}{return} 
+      \hyperlink{pluginprocess_8c_afb351eb50b21c443b1e8bc67a75eee47}{elektraPluginProcessSend} (pp, \hyperlink{kdbplugin_8h_afed89ef026fb0622918a5de020de7814a85c9545261cf0bcc932616e67ea3b70a}{ELEKTRA\_PLUGIN\_SET}, returned, 
+      parentKey);
+
+        \textcolor{comment}{// actual plugin functionality to be executed in a child process}
+        \textcolor{keywordflow}{return} \hyperlink{kdbplugin_8h_a7ae271ada880a1447179094ce6f66821}{ELEKTRA\_PLUGIN\_STATUS\_SUCCESS};
+\}
+\end{DoxyCode}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em pp} & the data structure containing the plugin\textquotesingle{}s process information \\
+\hline
+{\em command} & the plugin command that should be executed, e.\+g. E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+G\+ET \\
+\hline
+{\em original\+Key\+Set} & the original key set that the parent process receives \\
+\hline
+{\em key} & the original key the parent process receives \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+S\+T\+A\+T\+U\+S\+\_\+\+E\+R\+R\+OR} & if the child process communication failed \\
+\hline
+{\em the} & called plugin\textquotesingle{}s return value otherwise \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{pluginprocess_8c_aff49312d0e6fb866b1fc78bc230e9150}{elektra\+Plugin\+Process\+Is\+Parent} for checking if we are in the parent or child process 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{pluginprocess_8c_aa45f0e358d30fcaa11cef6b4da6c9860}\label{pluginprocess_8c_aa45f0e358d30fcaa11cef6b4da6c9860}} 
+\index{pluginprocess.\+c@{pluginprocess.\+c}!elektra\+Plugin\+Process\+Start@{elektra\+Plugin\+Process\+Start}}
+\index{elektra\+Plugin\+Process\+Start@{elektra\+Plugin\+Process\+Start}!pluginprocess.\+c@{pluginprocess.\+c}}
+\subsubsection{\texorpdfstring{elektra\+Plugin\+Process\+Start()}{elektraPluginProcessStart()}}
+{\footnotesize\ttfamily void elektra\+Plugin\+Process\+Start (\begin{DoxyParamCaption}\item[{Plugin $\ast$}]{handle,  }\item[{Elektra\+Plugin\+Process $\ast$}]{pp }\end{DoxyParamCaption})}
+
+
+
+Start the child process\textquotesingle{} command loop. 
+
+This will make the child process wait for plugin commands and execute them, returning the result to the parent. This is typically called in a plugin\textquotesingle{}s open function.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & the plugin\textquotesingle{}s handle \\
+\hline
+{\em pp} & the data structure containing the plugin\textquotesingle{}s process information \\
+\hline
+\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{pluginprocess_8c_ac0733d8e60e00cc01ea0a1adf9c9e905}{elektra\+Plugin\+Process\+Init} how to use this function in a \hyperlink{group__plugin}{Plugins} 
+\end{DoxySeeAlso}

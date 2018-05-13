@@ -1,0 +1,168 @@
+\subsection*{Problem}
+
+Some plugins are generic in the sense that they cannot fully define their contract statically. (Note\+: if they can decide it statically, you should prefer \hyperlink{doc_tutorials_compilation-variants_md}{compilation variants}.) Instead their contract is based on their configuration. We will call every combination of plugins+configuration where we get a different contract {\bfseries plugin variant}.
+
+The current issue is that there is no way to enumerate possible plugin variants as needed to list all functionality of Elektra.
+
+\subsection*{Constraints}
+
+
+\begin{DoxyItemize}
+\item User Customizability\+:
+\begin{DoxyItemize}
+\item Users must be able to add new plugin variants
+\item Users should be able to suppress plugin variants
+\end{DoxyItemize}
+\item Modularity\+:
+\begin{DoxyItemize}
+\item The plugins themselves yield a list of plugin variants
+\item The code defining variants is part of the plugin\textquotesingle{}s code
+\item To get a full list of all variants of all plugins, one simply has to iterate over all plugins and ask the plugins for possible variants.
+\end{DoxyItemize}
+\item libtool should provide a convenience layer for easy access of all plugin variants. In this case there should also be a performance optimization, that plugins do not need to be reopened required multiple times.
+\end{DoxyItemize}
+
+\subsection*{Assumptions}
+
+
+\begin{DoxyItemize}
+\item The number of variants needs to be bounded\+: plugin variants need to be fully enumerable
+\end{DoxyItemize}
+
+\subsection*{Considered Alternatives}
+
+A specification of the plugin\textquotesingle{}s configuration and a tool that can enumerate all possible essential configurations. Problems here are\+:
+
+
+\begin{DoxyItemize}
+\item Plugins might need to self-\/reference (a validation plugin might have plugin variants, too)
+\item Elektra’s specification language was not complete nor consistent at point of writing
+\item Does not fit with the {\ttfamily checkconf} (\href{https://git.libelektra.org/issues/559}{\tt see here}) approach.
+\end{DoxyItemize}
+
+\subsection*{Decision}
+
+
+\begin{DoxyEnumerate}
+\item Provide a function {\ttfamily int genconf (Key\+Set $\ast$ ks, Key $\ast$ error\+Key)} where {\ttfamily ks} is filled with a list of all variants with the essential configuration (subkeys {\ttfamily config}) and the changed parts of the contract (subkeys {\ttfamily infos}).
+\item Keys defined in {\ttfamily system/elektra/plugins/$<$plugin$>$/variants/$<$variantname$>$} have the same content, but take precedence. If a variant with the same name is defined, only {\ttfamily config} or {\ttfamily infos} from {\ttfamily genconf} are considered if they are not mentioned in {\ttfamily system/elektra/plugins/variants}.
+\item If the bool key {\ttfamily override} (for a plugin or a variant) is true, it will be overwritten (content of {\ttfamily genconf} ignored, but instead a plugin or variant as given is created).
+\item If the bool key {\ttfamily disable} (for a plugin or a variant) is true the plugin or a variant of the plugin will not be available.
+\item Empty {\ttfamily config} and {\ttfamily infos} mean\+:
+\begin{DoxyItemize}
+\item {\ttfamily config}\+: The \char`\"{}default variant\char`\"{} (without any parameter) should be also available (has useful functionality)
+\item {\ttfamily infos}\+: It is not possible to determine the changes of the contract, the user need to instantiate the plugin and enquiry the contract.
+\end{DoxyItemize}
+\end{DoxyEnumerate}
+
+\subsubsection*{Example}
+
+{\ttfamily genconf} for augeas yields\+: 
+\begin{DoxyCode}
+system/access
+system/access/config
+system/access/config/lens = Access.lns
+system/access/infos
+system/access/infos/provides = storage/access
+system/aliases
+system/aliases/config
+system/aliases/config/lens = Aliases.lns
+system/aliases/infos
+system/aliases/infos/provides = storage/aliases
+\end{DoxyCode}
+
+
+{\ttfamily genconf} for python might yield\+: 
+\begin{DoxyCode}
+user/configparser/config
+user/configparser/config/script = python\_configparser.py
+\end{DoxyCode}
+
+
+The user/admin specifies\+: 
+\begin{DoxyCode}
+system/elektra/plugins/jni/disable = 1
+system/elektra/plugins/augeas/variants/access
+system/elektra/plugins/augeas/variants/access/disable = 1
+system/elektra/plugins/augeas/variants/aliases
+system/elektra/plugins/augeas/variants/aliases/infos
+system/elektra/plugins/augeas/variants/aliases/infos/status = 10000
+system/elektra/plugins/python/variants/configparser
+system/elektra/plugins/python/variants/configparser/override = 1
+system/elektra/plugins/python/variants/configparser/config
+system/elektra/plugins/python/variants/configparser/config/script = mybetter\_configparser.py
+\end{DoxyCode}
+
+
+As result we get\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily access} of plugin {\ttfamily augeas} is not available
+\item {\ttfamily aliases} of plugin {\ttfamily augeas} as defined from {\ttfamily genconf}, but with changes in contract ({\ttfamily infos/status})
+\item {\ttfamily configparser} of plugin {\ttfamily python} is completely redefined (result from {\ttfamily genconf} will not be considered) but it will be considered as specified.
+\item the plugin {\ttfamily jni} will not be available
+\end{DoxyEnumerate}
+
+To have a space-\/separated simpleini one would use\+: 
+\begin{DoxyCode}
+system/elektra/plugins/simpleini/variants/spacesep
+system/elektra/plugins/simpleini/variants/spacesep/config
+system/elektra/plugins/simpleini/variants/spacesep/config/format = "% %"
+\end{DoxyCode}
+
+
+\subsection*{Rationale}
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily genconf} A\+PI was chosen to be consistent with {\ttfamily checkconf}. The pluginhandle might be missing for some scenarios. If it is needed, we should change both A\+P\+Is for consistency reasons.
+\item The very verbose (deeply nested) subkeys (and names instead of arrays) provide better customizability and extensibility.
+\end{DoxyItemize}
+
+\subsection*{Implications}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily genconf} needs to be implemented for the plugins\+:
+\begin{DoxyItemize}
+\item augeas
+\item jni
+\item lua
+\item python
+\item python2
+\end{DoxyItemize}
+\item {\ttfamily Plugin\+Database} needs an extension to list all plugin variants
+\item {\ttfamily kdb list} should be able to list all variants, e.\+g. like\+: {\ttfamily augeas lens=Access.\+lns} so that a user can copy and paste this for the {\ttfamily kdb mount} command.
+\end{DoxyItemize}
+
+\subsection*{Current state}
+
+Currently only overrides of plugin configuration ({\ttfamily config/...}) is possible, overrides of other plugin information (contract information) does not work yet.
+
+It is also not possible to add additional information to a variant, only overrides work. E.\+g. 
+\begin{DoxyCode}
+system/elektra/plugins/augeas/variants/aliases
+system/elektra/plugins/augeas/variants/aliases/override = 1
+system/elektra/plugins/augeas/variants/aliases/config
+system/elektra/plugins/augeas/variants/aliases/config/lens = Aliases.lns
+system/elektra/plugins/augeas/variants/aliases/config/otherparam = 0
+\end{DoxyCode}
+ works, while 
+\begin{DoxyCode}
+system/elektra/plugins/augeas/variants/aliases
+system/elektra/plugins/augeas/variants/aliases/config
+system/elektra/plugins/augeas/variants/aliases/config/otherparam = 0
+\end{DoxyCode}
+ gets ignored.
+
+\subsection*{Related decisions}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{doc_decisions_global_plugins_md}{Global Plugins}
+\end{DoxyItemize}
+
+\subsection*{Notes}
+
+Discussions took place \href{https://git.libelektra.org/issues/1006}{\tt here}. 

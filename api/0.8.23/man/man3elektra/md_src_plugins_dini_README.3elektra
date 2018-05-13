@@ -1,0 +1,83 @@
+.TH "md_src_plugins_dini_README" 3elektra "Sun May 13 2018" "Version 0.8.23" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_dini_READMEPlugin: dini 
+ \- 
+.IP "\(bu" 2
+infos = Information about the dini plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab markus@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/ini
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = recommended productive maintained conformant compatible shelltest tested nodep libc
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = default INI plugin
+.PP
+.PP
+The dini plugin is proposed to become the new default plugin\&. It pulls in all deps as needed for INI\&.
+.PP
+To be compatible with legacy installations, it will use the dump plugin to parse dump configuration files\&.
+.PP
+.SS "Usage"
+.PP
+.PP
+.nf
+kdb change-storage-symlink dini
+.fi
+.PP
+.PP
+.SS "Dependencies"
+.PP
+.IP "\(bu" 2
+Loads the \fCdump\fP plugin at run-time (optional, only for parsing)
+.IP "\(bu" 2
+Loads the \fCini\fP plugin and its dependencies
+.PP
+.PP
+.SS "Examples"
+.PP
+``` 
+.SH "Create a need for legacy support"
+.PP
+.PP
+sudo kdb mount config\&.file /examples/dini dump
+.PP
+kdb set /examples/dini/key 'legacy value' #> Using name user/examples/dini/key #> Create a new key user/examples/dini/key with string 'legacy value'
+.PP
+kdb umount /examples/dini
+.PP
+.SH "Mount dini plugin to cascading namespace \fC/examples/dini\fP"
+.PP
+.PP
+sudo kdb mount config\&.file /examples/dini dini
+.PP
+kdb get /examples/dini/key #> legacy value
+.PP
+kdb set /examples/dini/key2 value #> Using name user/examples/dini/key2 #> Create a new key user/examples/dini/key2 with string 'value'
+.PP
+kdb get /examples/dini/key #> legacy value
+.PP
+kdb get /examples/dini/key2 #> value
+.PP
+cat \fCkdb file /examples/dini\fP
+.PP
+.SH "Undo modifications to the key database"
+.PP
+.PP
+kdb rm -r /examples/dini sudo kdb umount /examples/dini ```
+.PP
+.SS "Limitations"
+.PP
+None\&. 
