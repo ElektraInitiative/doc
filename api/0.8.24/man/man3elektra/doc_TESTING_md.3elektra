@@ -1,0 +1,487 @@
+.TH "doc_TESTING_md" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_TESTING_mdTesting 
+ \- 
+.SS "Introduction"
+.PP
+Libraries need pervasive testing for continuous improvement\&. Any problem found and behavior described must be written down as test so that it is assured that no new regressions will be added\&.
+.PP
+.SS "Running Tests"
+.PP
+Running all tests in the build directory: 
+.PP
+.nf
+make run_all
+
+.fi
+.PP
+.PP
+And on the target (installed) system: 
+.PP
+.nf
+kdb run_all
+
+.fi
+.PP
+.PP
+To run \fCmemcheck\fP tests run in the build directory: 
+.PP
+.nf
+make run_memcheck
+
+.fi
+.PP
+.PP
+They are supplementary, ideally you run all three\&.
+.PP
+Some tests write into system paths and into the home directory\&. This implies that the UID running the tests must have a home directory\&. To avoid running tests that write to the disk you can use: 
+.PP
+.nf
+make run_nokdbtests
+
+.fi
+.PP
+.PP
+You can also directly run ctest to make use of parallel testing: 
+.PP
+.nf
+ctest -T Test --output-on-failure -j 6
+ctest -T MemCheck -LE memleak --output-on-failure -j 6
+
+.fi
+.PP
+.PP
+The alternative to \fCmake run_nokdbtests\fP: 
+.PP
+.nf
+ctest -T Test --output-on-failure -LE kdbtests -j 6
+
+.fi
+.PP
+.PP
+If the access is denied, several tests will fail\&. You have some options to avoid running them as root:
+.PP
+.IP "1." 4
+To avoid running the problematic test cases (reduces the test coverage!) run \fCctest\fP without tests that have the label \fCkdbtests\fP: \fCctest --output-on-failure -LE kdbtests\fP (which is also what \fCmake run_nokdbtests\fP does)
+.IP "2." 4
+To give your user the permissions to the relevant paths execute the lines below once as root\&.
+.PP
+\fBWarning: Changing permissions on the wrong paths can be harmful! Please make sure that the paths are correct\&.\fP In doubt make sure that you have a backup of the affected directories\&.
+.PP
+First load the required information and verify the paths: ``` kdb mount-info echo \fCkdb sget system/info/elektra/constants/cmake/CMAKE_INSTALL_PREFIX \&.\fP/\fCkdb sget system/info/elektra/constants/cmake/KDB_DB_SPEC \&.\fP echo \fCkdb sget system/info/elektra/constants/cmake/KDB_DB_SYSTEM \&.\fP 
+.PP
+.nf
+Then change the permissions:
+
+.fi
+.PP
+ chown -R \fCwhoami\fP \fCkdb sget system/info/elektra/constants/cmake/CMAKE_INSTALL_PREFIX \&.\fP/\fCkdb sget system/info/elektra/constants/cmake/KDB_DB_SPEC \&.\fP chown -R \fCwhoami\fP \fCkdb sget system/info/elektra/constants/cmake/KDB_DB_SYSTEM \&.\fP ``` After that all test cases should run successfully as described above\&.
+.IP "3." 4
+Compile Elektra so that system paths are not actual system paths, e\&.g\&. to write everything into the home directory (\fC~\fP) use cmake options: \fC-DKDB_DB_SYSTEM='~/\&.config/kdb/system' -DKDB_DB_SPEC='~/\&.config/kdb/spec'\fP (for another example with ini see \fCscripts/configure-home\fP)
+.IP "4." 4
+Use the XDG resolver (see \fCscripts/configure-xdg\fP) and set the environment variable \fCXDG_CONFIG_DIRS\fP, currently lacks \fCspec\fP namespaces, see #734\&.
+.PP
+.PP
+.SS "Recommended Environment"
+.PP
+The tests are designed to disable themselves if some necessary tools are missing or other environmental constraints are not met\&. To really run \fIall\fP tests (also those that are mostly designed for internal development) you need to fulfil:
+.PP
+.IP "\(bu" 2
+Elektra must be installed (for gen + external test cases)\&.
+.IP "\(bu" 2
+Mounted /dev (to have stdin and stdout for import & export test cases)\&.
+.IP "\(bu" 2
+A running dbus daemon (Either 'system' or 'session' daemon)\&.
+.IP "\(bu" 2
+\fCgpg2\fP or \fCgpg\fP binary must be available\&.
+.PP
+.PP
+Above environment is needed for both \fCkdb run_all\fP (installed test cases) and \fCmake run_all\fP (test cases executed from the build directory)\&. For \fCmake run_all\fP following development tools enable even more tests:
+.PP
+.IP "\(bu" 2
+The script \fCcheckbashisms\fP is needed to check for bashism (tests/shell/check_bashisms\&.sh), it is part of \fCdevscripts\fP\&.
+.IP "\(bu" 2
+\fCgit\fP, \fCclang-format\fP (version 5 up to version 7), and \fCcmake-format\fP to check formatting\&.
+.IP "\(bu" 2
+\fCpkg-config\fP must be available (check_external\&.sh and check_gen\&.sh)\&.
+.IP "\(bu" 2
+A build environment including gcc (check_gen\&.sh)\&.
+.IP "\(bu" 2
+The \fCMarkdown Shell Recorder\fP requires POSIX utilities (\fCawk\fP, \fCgrep\fP, …) and the \fCBourne Again Shell\fP\&.
+.PP
+.PP
+.SS "Conventions"
+.PP
+.IP "\(bu" 2
+All names of the test must start with test (needed by test driver for installed tests)\&.
+.IP "\(bu" 2
+No tests should run if ENABLE_TESTING is OFF\&.
+.IP "\(bu" 2
+All tests that access system/spec namespaces (e\&.g\&. mount something):
+.IP "  \(bu" 4
+should be tagged with \fCkdbtests\fP: 
+.PP
+.nf
+ set_property(TEST testname PROPERTY LABELS kdbtests)
+
+.fi
+.PP
+
+.IP "  \(bu" 4
+should not run, if \fCENABLE_KDB_TESTING\fP is OFF\&.
+.IP "  \(bu" 4
+should only write below
+.IP "    \(bu" 6
+\fC/tests/<testname>\fP (e\&.g\&. \fC/tests/ruby\fP) and
+.IP "    \(bu" 6
+\fCsystem/elektra\fP (e\&.g\&. for mounts or globalplugins)\&.
+.PP
+
+.IP "  \(bu" 4
+Before executing tests, no keys must be present below \fC/tests\fP\&. The test cases need to clean up everything they wrote\&. (Including temporary files)
+.PP
+
+.IP "\(bu" 2
+If your test has memory leaks, e\&.g\&. because the library used leaks and they cannot be fixed, give them the label \fCmemleak\fP with the following command: 
+.PP
+.nf
+  set_property(TEST testname PROPERTY LABELS memleak)
+
+.fi
+.PP
+
+.IP "\(bu" 2
+If your test modifies resources needed by other tests you also need to set \fCRUN_SERIAL\fP: 
+.PP
+.nf
+set_property(TEST testname PROPERTY RUN_SERIAL TRUE)
+
+.fi
+.PP
+
+.PP
+.PP
+.SS "Strategy"
+.PP
+The testing must happen on every level of the software to achieve a maximum coverage with the available time\&. In the rest of the document we describe the different levels and where these tests are\&.
+.PP
+.SS "CFramework"
+.PP
+This is basically a bunch of assertion macros and some output facilities\&. It is written in pure C and very lightweight\&.
+.PP
+It is located \fBhere\fP\&.
+.PP
+.SS "ABI Tests"
+.PP
+C ABI Tests are written in plain C with the help of \fCcframework\fP\&.
+.PP
+The main purpose of these tests are, that the binaries of old versions can be used against new versions as ABI tests\&.
+.PP
+So lets say we compile Elektra 0\&.8\&.8 (at this version dedicated ABI tests were introduced) in the \fC-full\fP variant\&. But when we run the tests, we use \fClibelektra-full\&.so\&.0\&.8\&.9\fP (either by installing it or by setting \fCLD_LIBRARY_PATH\fP)\&. You can check with \fCldd\fP which version is used\&.
+.PP
+The tests are located \fBhere\fP\&.
+.PP
+.SS "C Unit Tests"
+.PP
+C Unit Tests are written in plain C with the help of \fCcframework\fP\&.
+.PP
+It is used to test internal data structures of libelektra that are not ABI relevant\&.
+.PP
+ABI tests can be done on theses tests, too\&. But by nature from time to time these tests will fail\&.
+.PP
+They are located \fBhere\fP\&.
+.PP
+.SS "Internal Functions"
+.PP
+According to \fCsrc/libs/elektra/libelektra-symbols\&.map\fP, all functions starting with:
+.PP
+.IP "\(bu" 2
+libelektra
+.IP "\(bu" 2
+elektra
+.IP "\(bu" 2
+kdb
+.IP "\(bu" 2
+key
+.IP "\(bu" 2
+ks
+.PP
+.PP
+get exported\&. Functions not starting with this prefix are internal only and therefore not visible in the test cases\&. Test internal functionality by including the corresponding C file\&.
+.PP
+.SS "Module Tests"
+.PP
+The modules, which are typically used as plugins in Elektra (but can also be available statically or in the \fC-full\fP variant), should have their own tests\&.
+.PP
+Use the CMake macro \fCadd_plugintest\fP for adding these tests\&.
+.PP
+.SS "C++ Unit Tests"
+.PP
+C++ Unit tests are done using the Google Test framework\&. See \fBarchitectural decision\fP\&.
+.PP
+Use the CMake macro \fCadd_gtest\fP for adding these tests\&.
+.PP
+.SS "Script Tests"
+.PP
+Tests which need scripts are done using shell recorder or directly with POSIX shell commands\&. See \fBarchitectural decision\fP\&.
+.PP
+The script tests have different purposes:
+.PP
+.IP "\(bu" 2
+End to End tests (usage of tools as an end user would do)
+.IP "\(bu" 2
+External compilation tests (compile and run programs as a user would do)
+.IP "\(bu" 2
+Conventions tests (do internal checks that check for common problems)
+.IP "\(bu" 2
+Meta Test Suites (run other test suites)
+.PP
+.PP
+See \fBhere\fP\&.
+.PP
+.SS "Shell Recorder"
+.PP
+The more elegant way to specify script tests are via the so called shell recorder using Markdown Syntax\&.
+.PP
+See \fBhere\fP\&.
+.PP
+.SS "Fuzz Testing"
+.PP
+We assume that your current working directory is a newly created build directory\&. First compile Elektra with afl (~e is source-dir of Elektra): 
+.PP
+.nf
+~e/scripts/configure-debian -DCMAKE_C_COMPILER=/usr/src/afl/afl-2.52b/afl-gcc -DCMAKE_CXX_COMPILER=/usr/src/afl/afl-2.52b/afl-g++ ~e
+
+.fi
+.PP
+.PP
+Copy some import files to \fCtestcase_dir\fP, for example: 
+.PP
+.nf
+mkdir -p testcase_dir
+cp ~e/src/plugins/ini/ini/* testcase_dir
+
+.fi
+.PP
+.PP
+Fewer files is better\&. Then run, for example: 
+.PP
+.nf
+LD_LIBRARY_PATH=`pwd`/lib /usr/src/afl/afl-2.52b/afl-fuzz -i testcase_dir -o findings_dir bin/kdb import user/tests ini
+
+.fi
+.PP
+.PP
+Check if something is happening with: 
+.PP
+.nf
+watch kdb export user/tests
+
+.fi
+.PP
+.PP
+.SS "ASAN"
+.PP
+To enable sanitize checks use \fCENABLE_ASAN\fP via cmake\&.
+.PP
+Then, to use ASAN, run \fCrun_asan\fP in the build directory, which simply does: 
+.PP
+.nf
+    ASAN_OPTIONS=symbolize=1 ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer) make run_all
+
+.fi
+.PP
+.PP
+It could also happen that you need to preload ASAN library, e\&.g\&.: 
+.PP
+.nf
+    LD_PRELOAD=/usr/lib/clang/3.8.0/lib/linux/libclang_rt.asan-x86_64.so run_asan
+
+.fi
+.PP
+.PP
+or on Debian: 
+.PP
+.nf
+    LD_PRELOAD=/usr/lib/llvm-3.8/lib/clang/3.8.1/lib/linux/libclang_rt.asan-x86_64.so run_asan
+
+.fi
+.PP
+.PP
+See also build server jobs:
+.PP
+.IP "\(bu" 2
+\fCclang-asan\fP
+.IP "\(bu" 2
+\fCgcc-asan\fP
+.PP
+.PP
+.SS "macOS"
+.PP
+If you use macOS you might want to use the \fCclang\fP versions provided by Homebrew, since it supports the \fCLeakSanitizer\fP\&. To use Homebrew’s version of \fCclang\fP you need to first install LLVM:
+.PP
+.PP
+.nf
+brew install llvm
+.fi
+.PP
+.PP
+\&. After that change the \fCCC\fP and \fCCXX\fP environment variables to point to the the clang tools provided by LLVM:
+.PP
+.PP
+.nf
+export CC=/usr/local/opt/llvm/bin/clang
+export CXX=/usr/local/opt/llvm/bin/clang++
+.fi
+.PP
+.PP
+\&. Now run CMake and build Elektra just like you normally would\&. To enable the Leak Sanitizer you need to also set the variable \fCASAN_OPTIONS\fP before you run a test:
+.PP
+.PP
+.nf
+export ASAN_OPTIONS=detect_leaks=1
+.fi
+.PP
+.PP
+.SS "CBMC"
+.PP
+For bounded model checking tests, see \fCscripts/cbmc\fP\&.
+.PP
+.SS "Static Code Checkers"
+.PP
+There is a number of static code checkers available for all kind of programming languages\&. The following section show how the most common ones can be used with \fClibelektra\fP\&.
+.PP
+.SS "Cppcheck"
+.PP
+\fCCppcheck\fP can be used directly on a C or C++ source file by calling it with \fCcppcheck --enable=all <sourcefile>\fP\&. This way it might miss some header files though and thus doesn't detect all possible issues, but still gives useful hints in general\&.
+.PP
+To analyze the whole project, use it in conjunction with \fCcmake\fP by calling \fCcmake\fP with the parameter \fC-DCMAKE_EXPORT_COMPILE_COMMANDS=ON\fP\&. This way \fCcmake\fP creates a file called \fCcompile_commands\&.json\fP in the build directory\&. Afterwards, call \fCcppcheck\fP with the cmake settings and store the output as xml: 
+.PP
+.nf
+cppcheck --project=compile_commands.json --enable=all -j 8 --xml-version=2 2> cppcheck_result.xml
+
+.fi
+.PP
+.PP
+Since the XML file is difficult to read directly, the best way is to convert it to an HTML report\&. Cppcheck already includes a tool for that, call it with the XML report: 
+.PP
+.nf
+cppcheck-htmlreport --file=cppcheck_result.xml --report-dir=cppcheck_report --source-dir=.
+
+.fi
+.PP
+.PP
+Now you can view the html report by opening \fCindex\&.html\fP in the specified folder to get an overview of the issues found in the whole project\&.
+.PP
+.SS "OCLint"
+.PP
+\fCOCLint\fP is a static code analyzer for C, C++ and Objective C\&. To use this tool enable the CMake option \fCCMAKE_EXPORT_COMPILE_COMMANDS\fP\&. The steps below show a step-by-step guide on how to analyze files with OCLint\&.
+.PP
+.IP "1." 4
+Create a build directory if you have not done so already and change the working path to this directory:
+.PP
+.PP
+.PP
+.nf
+mkdir -p build
+cd build
+.fi
+.PP
+.PP
+.IP "2." 4
+Run CMake with the option \fCCMAKE_EXPORT_COMPILE_COMMANDS\fP:
+.PP
+.PP
+.PP
+.nf
+cmake \&.\&. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+.fi
+.PP
+.PP
+.IP "3." 4
+Build Elektra
+.PP
+.PP
+.PP
+.nf
+make
+.fi
+.PP
+.PP
+.IP "4." 4
+Run the \fCoclint\fP command specifying the files you want to analyze
+.PP
+.PP
+.PP
+.nf
+cd \&.\&.
+oclint -p build -no-analytics -enable-global-analysis -enable-clang-static-analyzer src/plugins/ini/*\&.c
+.fi
+.PP
+.PP
+.SS "scan-build"
+.PP
+\fCscan-build\fP is a tool that is usually bundled along with LLVM/Clang and is also primarily intended for C and C++ code\&. On macOS you have to install the package \fCllvm\fP with homebrew, then you'll find the tool in the folder \fC/usr/local/opt/llvm/bin/\fP\&.
+.PP
+To use it, change the C compiler and the C++ compiler to the LLVM analyzer\&. To do this, you can configure the project from scratch and prefix the cmake command with \fCscan-build\fP\&. Alternatively, set the c compiler to \fCccc-analyzer\fP and the C++ compiler to \fCc++-analyzer\fP (bundled with LLVM/Clang)\&.
+.PP
+Then you can build the project with \fCmake\fP like usual, prefixing the command with \fCscan-build\fP\&. The \fC-o\fP option specifies where the html results get stored\&. Ensure you build the project from scratch, otherwise the analyzation might be incomplete\&. 
+.PP
+.nf
+scan-build -o ./scanbuild_result make -j 4
+
+.fi
+.PP
+.PP
+Afterwards, the report can be viewed by using the tool \fCscan-view\fP, also found in the llvm folder\&. The report is created in the folder specified above, along with the current date of the analyzation, for instance: 
+.PP
+.nf
+scan-view <path specified above>/2017-06-18-171027-27108-1
+
+.fi
+.PP
+.PP
+Alternatively, you can also open the \fCindex\&.html\fP file in the aforementioned folder, but using the tool the report is enriched with further information\&.
+.PP
+.SS "SonarLint"
+.PP
+\fCSonarLint\fP is a static code checker primarily intended for Java\&. It is usually used by installing the corresponding plugin for the used IDE, then there is no further configuration required\&.
+.PP
+.SS "Randoop"
+.PP
+For using the unit test generator randoop with the jna bindings, see \fCscripts/randoop/randoop\fP\&.
+.PP
+.SS "Code Coverage"
+.PP
+Run: 
+.PP
+.nf
+    make coverage-start
+    # now run all tests! E.g.:
+    make run_all
+    make coverage-stop
+    make coverage-genhtml
+
+.fi
+.PP
+.PP
+The HTML files can be found in the build directory in the folder \fCcoverage\fP\&.
+.PP
+See also the build server job:
+.PP
+.IP "\(bu" 2
+\fCgcc-asan\fP
+.PP
+.PP
+.SS "See also"
+.PP
+.IP "\(bu" 2
+\fBCOMPILE\fP\&.
+.IP "\(bu" 2
+\fBINSTALL\fP\&.
+.IP "\(bu" 2
+\fBBUILDSERVER\fP\&. 
+.PP
+

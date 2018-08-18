@@ -1,0 +1,357 @@
+.TH "doc_tutorials_snippet-sharing-rest-service_md" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_snippet-sharing-rest-service_mdREST Service for Sharing of Configuration Snippets 
+ \- This tutorial explains how to install, configure and run everything that is required for the Snippet Sharing service and website\&. As operating system we expect Debian Jessie to be used, although most parts should also be applicable to other systems\&.
+.PP
+.SS "What is This?"
+.PP
+The Snippet Sharing service consists of two parts, a backend (the REST server) and a frontend (an AngularJS application executed in the browser), which also includes the Elektra website\&. The service itself can be used to share configuration snippets, i\&.e\&. configuration files of arbitrary applications\&.
+.PP
+.SS "Installation"
+.PP
+.SS "Install Dependencies"
+.PP
+As first step we need to install some dependencies required by the applications\&.
+.PP
+.SS "Backend"
+.PP
+The backend requires the most dependencies and unfortunately some of them need to be installed manually because no APT packages are available\&.
+.PP
+The required dependencies with their own dependencies are:
+.PP
+.IP "\(bu" 2
+CppCMS >= v1\&.0\&.0
+.IP "  \(bu" 4
+Zlib library
+.IP "  \(bu" 4
+PCRE library
+.IP "  \(bu" 4
+Python >= v2\&.4 (but not v3)
+.IP "  \(bu" 4
+ICU library >= v3\&.6
+.IP "  \(bu" 4
+gcrypt or OpenSSL library
+.PP
+
+.IP "\(bu" 2
+Boost >= v1\&.45
+.IP "\(bu" 2
+OpenSSL
+.IP "\(bu" 2
+LibJWT >= v1\&.5
+.IP "  \(bu" 4
+Jansson
+.IP "  \(bu" 4
+OpenSSL
+.PP
+
+.PP
+.PP
+You'll also need CMake and a modern C/C++ compiler, so in case you don't have them installed already, use \fCapt-get install build-essential cmake\fP to do so\&.
+.PP
+.SS "APT Packages"
+.PP
+To install all required APT packages at once, simply run: \fCapt-get install libboost-all-dev libpcre3-dev zlib1g-dev libgcrypt11-dev libicu-dev python libssl-dev\fP
+.PP
+.SS "CppCMS"
+.PP
+To install CppCMS, there are two options available:
+.PP
+.IP "\(bu" 2
+Download and build from source
+.IP "\(bu" 2
+Install via dependency manager
+.PP
+.PP
+To install CppCMS manually without dependency manager:
+.PP
+.IP "\(bu" 2
+Download the (latest) CppCMS source from \fCSourceForge\fP
+.IP "\(bu" 2
+Extract the archive: \fCtar -xjf cppcms-1\&.x\&.x\&.tar\&.bz2 && cd cppcms-1\&.x\&.x\fP (replace 1\&.x\&.x with your version)
+.IP "\(bu" 2
+Configure the build: \fCmkdir build && cd build && cmake \&.\&.\fP
+.IP "\(bu" 2
+Execute the build, run tests and install: \fCmake && make test && make install\fP
+.PP
+.PP
+Further build and installation information can be found on their \fCwebsite\fP\&. It contains also a \fCguide\fP explaining the installation through a dependency manager\&. Unfortunately, no repository is available for Debian Jessie yet\&.
+.PP
+.SS "Jansson"
+.PP
+The Jansson library supports working with JSON data in C\&. To install it, use the following steps:
+.PP
+.IP "\(bu" 2
+Download the (latest) source from \fCtheir website\fP
+.IP "\(bu" 2
+Extract the archive: \fCbunzip2 -c jansson-2\&.x\&.tar\&.bz2 | tar xf - && cd jansson-2\&.x\fP (replace 2\&.x with your version)
+.IP "\(bu" 2
+Configure the build: \fCmkdir build && cd build && cmake \&.\&.\fP
+.IP "\(bu" 2
+Execute the build, run tests and install: \fCmake && make check && make install\fP
+.PP
+.PP
+.SS "LibJWT"
+.PP
+Now we can also install LibJWT:
+.PP
+.IP "\(bu" 2
+Download the (latest) source from \fCGitHub\fP
+.IP "\(bu" 2
+Extract the archive: \fCtar -xjf v1\&.x\&.x && cd libjwt-1\&.x\&.x\fP (replace 1\&.x\&.x with your version)
+.IP "\(bu" 2
+Configure the build: \fCautoreconf -i && \&./configure\fP
+.IP "\(bu" 2
+Execute the build and run tests: \fCmake all && make check\fP
+.PP
+.PP
+If you are using Ubuntu, LibJWT can also be installed through a pre-built APT package:
+.PP
+.IP "\(bu" 2
+Add APT repository: \fCadd-apt-repository ppa:ben-collins/libjwt\fP
+.IP "\(bu" 2
+Install via apt-get: \fCapt-get update && apt-get install libjwt\fP
+.PP
+.PP
+.SS "Frontend"
+.PP
+The frontend does only require the package manager \fCnpm\fP (>= v3)\&. It is preferred to install it along with \fCnodeJS\fP, for example via \fCprovided packages\fP\&. The version that comes via Debian Jessie (v1\&.4) is insufficient\&. The installation was tested with npm version 3\&.10\&.8-9, but it should also work with other versions of 3+\&.
+.PP
+.SS "Build & Install the Applications"
+.PP
+After installing the dependencies, we are ready to build the applications\&. To do so, we can follow the steps explained in the \fBbuild guide\fP\&. Make sure to include the two tools \fCrest-backend\fP and \fCrest-frontend\fP, e\&.g\&. by using the arguments \fC-DTOOLS='ALL;rest-backend;rest-frontend'\fP\&.
+.PP
+After building Elektra and the applications, we can use \fCmake install\fP to install them\&. Further information and troubleshooting can be found in the \fBinstall guide\fP\&.
+.PP
+.SS "Configuration"
+.PP
+The applications configure themselves as much as possible during build, but some settings have to be set manually afterwards\&.
+.PP
+.SS "Backend"
+.PP
+After the installation, the configuration specification of the backend has to be mounted with the command \fCkdb mount-rest-backend-config\fP\&. You can check if the mounting was successful by issuing \fCkdb mount\fP\&. There should be an entry in the list with a path like \fCspec/sw/elektra/restbackend/#0\fP and a similar one without the leading \fCspec\fP\&. If you do not see this mountpoints, have a look at the mount script in the tool_exec (which is defined during installation of Elektra)\&. You can also run the commands manually\&.
+.PP
+To complete the mounting, you also need to ensure that the \fCspec\fP plugin is used as global plugin\&. If you have not changed anything about the global plugins yet, you can simply use \fCkdb global-mount\fP to ensure that the \fCspec\fP plugin is added as global plugin\&. If not, you need to add all currently mounted global plugins to the command as they will be deleted otherwise\&.
+.PP
+After that you need to set an additional configuration parameter that has no default value\&. It is recommended to set it for the system namespace if you will use a tool like \fCsystemctl\fP to manage the services\&.
+.PP
+.PP
+.nf
+kdb set -N system /sw/elektra/restbackend/#0/current/backend/jwt/encryption/secret "use a secret key here"
+.fi
+.PP
+.PP
+To generate a secure key, you can also use \fCpwgen\fP (install via \fCapt-get install pwgen\fP)\&. Use
+.PP
+.PP
+.nf
+kdb set -N system /sw/elektra/restbackend/#0/current/backend/jwt/encryption/secret "$(pwgen -1cns 30)"
+.fi
+.PP
+.PP
+to generate and set a strong random encryption secret\&.
+.PP
+The option \fC-N system\fP for \fCkdb set\fP defines the used namespace (in this case it is \fCsystem\fP)\&. In order for the configuration specification to work (e\&.g\&. validation), we have to use cascading key names\&. This is why we have to define the namespace by using this option instead of passing it as part of the key name\&.
+.PP
+If you want to know the default values, you can get a list of used keys with \fCkdb ls /sw/elektra/restbackend/#0\fP\&. You can then retrieve the configuration value for each key with \fCkdb get <key>\fP, e\&.g\&., \fCkdb get /sw/elektra/restbackend/#0/current/backend/jwt/encryption/secret\fP
+.PP
+Additionally to the settings above, CppCMS needs some configuration\&. All configuration options are listed on \fCtheir website\fP\&. A stand-alone installation of the service (without proxy server) requires following configuration:
+.PP
+.PP
+.nf
+kdb set -N system /sw/elektra/restbackend/#0/current/cppcms/service/api "http"
+kdb set -N system /sw/elektra/restbackend/#0/current/cppcms/service/ip "0\&.0\&.0\&.0"
+kdb set -N system /sw/elektra/restbackend/#0/current/cppcms/service/port 8080
+kdb set -N system /sw/elektra/restbackend/#0/current/cppcms/http/script_names/#0 "/"
+.fi
+.PP
+.PP
+Note: here we have not used the option \fC-N system\fP because the CppCMS configuration is not part of the specification\&. That means it does not get validated\&.
+.PP
+.SS "Frontend"
+.PP
+The frontend does only require small mandatory changes in its configuration\&. Before they can be made, the configuration file has to be mounted though\&. This can be achieved by issuing \fCkdb mount-rest-frontend-config\fP\&. The configuration should then be available at \fCsystem/sw/elektra/restfrontend/#0/current\fP\&. To get a list of possible configuration parameters, use \fCkdb ls system/sw/elektra/restfrontend/#0/current\fP\&.
+.PP
+Note that the frontend is not elektrified, only changes within \fCsystem/sw/elektra/restfrontend/#0/current\fP will work\&.
+.PP
+The parameters that need to be changed in order for the frontend to work correctly, are:
+.PP
+.IP "\(bu" 2
+\fCsystem/sw/elektra/restfrontend/#0/current/backend/root\fP: set it to the URL where the backend will be reachable, e\&.g\&. \fChttp://restapi.libelektra.org/\fP (with trailing slash!)
+.IP "\(bu" 2
+\fCsystem/sw/elektra/restfrontend/#0/current/website/url\fP: set it to the URL where the frontend will be reachable, e\&.g\&. \fChttps://libelektra.org/\fP (with trailing slash!)
+.PP
+.PP
+.SS "Running the Applications"
+.PP
+As last step we need to run the applications:
+.PP
+.IP "\(bu" 2
+First we start the backend server with \fCkdb run-rest-backend\fP\&. To ensure the backend is accessible, you can use \fCcurl http://localhost:8080/version\fP (change port to your setting), which should show you some version information in JSON format\&.
+.IP "\(bu" 2
+Although the frontend was compiled during installation already, we want to have a freshly built homepage and use \fCkdb build-rest-frontend\fP to do so\&.
+.IP "\(bu" 2
+Then we run the frontend analogously with \fCkdb run-rest-frontend\fP\&. It should now be reachable at the configured port\&.
+.PP
+.PP
+If everything went smooth, both applications should now be online and reachable\&.
+.PP
+.SS "Stopping the Applications"
+.PP
+Both applications can be stopped with a simple command:
+.PP
+.IP "\(bu" 2
+Backend: \fCkdb stop-rest-backend\fP
+.IP "\(bu" 2
+Frontend: \fCkdb stop-rest-frontend\fP
+.PP
+.PP
+.SS "Additional Tasks"
+.PP
+.SS "API Specification"
+.PP
+For the backend a detailed description in the \fCAPI blueprint\fP format is available\&. To compile the \fBblueprint\fP we need the \fCapiary-client\fP to be installed, which in return is installed as Ruby gem:
+.PP
+.IP "\(bu" 2
+So we first install Ruby with gem: \fCapt-get install ruby\fP
+.IP "\(bu" 2
+Then we install the apiary-cli: \fCgem install apiaryio\fP
+.IP "\(bu" 2
+Finally we can use \fCapiary preview --path=snippet-sharing\&.apib --output=snippet-sharing-api\&.html\fP in the \fBblueprints\fP directory to generate the pretty version of the API description\&. This file can then be placed wherever it is accessible or needed\&.
+.PP
+.PP
+In case you change the API description (and the backend), you may want to ensure that your API blueprint is still syntax conform\&. To do so, you can use the tool \fCDrafter\fP\&. After installing it, you can use \fCdrafter <filename>\fP (e\&.g\&. \fCdrafter snippet-sharing\&.apib\fP) to run the check\&.
+.PP
+.SS "Use Other Webserver Than the Built-in Grunt Webserver"
+.PP
+Of course it is possible to use another webserver instead of the built-in one\&. To do so, simply run \fCkdb build-rest-frontend\fP and copy the content of the \fC/usr/local/share/elektra/tool_data/rest-frontend/public\fP directory to your desired target location\&.
+.PP
+It is required that you set a rewrite rule that serves the \fCindex\&.html\fP for every request that does not access a static file (\fCjs\fP, \fCcss\fP, \fCpng\fP, \fCmd\fP, etc\&.)\&. If you omit this step, it will not be possible to use direct links to access resources of the frontend; accessing the frontend from the \fCindex\&.html\fP will still work though\&.
+.PP
+.SS "Example Structure"
+.PP
+The following is a description of the setup we used for the Elektra website reachable at https://www.libelektra.org\&.
+.PP
+We assume that Elektra is now installed to the default path on Debian Jessie, which is \fC/usr/local\fP\&.
+.PP
+.SS "Web Server"
+.PP
+As web server we use Debian Jessie’s Apache2\&. Several domains are used for different tasks, whereas only two are relevant for the here described service:
+.PP
+.IP "\(bu" 2
+\fCrestapi\&.libelektra\&.org\fP for the API provided by the \fCrest-backend\fP
+.IP "\(bu" 2
+\fCwww\&.libelektra\&.org\fP for the website and frontend provided by the \fCrest-frontend\fP
+.PP
+.PP
+The server redirects requests on port 80 (non-SSL) to 443 using a very simple configuration like
+.PP
+.PP
+.nf
+# file: /etc/apache2/sites-available/www\&.libelektra\&.org\&.conf
+<VirtualHost *:80>
+    ServerName www\&.libelektra\&.org
+    Redirect permanent / https://www\&.libelektra\&.org/
+</VirtualHost>
+.fi
+.PP
+.PP
+for the \fCwww\&.libelektra\&.org\fP domain (similar for \fCrestapi\&.libelektra\&.org\fP)\&.
+.PP
+The secured variant of the configuration looks like
+.PP
+.PP
+.nf
+# file: /etc/apache2/sites-available/www\&.libelektra\&.org-le-ssl\&.conf
+<IfModule mod_ssl\&.c>
+<VirtualHost *:443>
+    ServerName www\&.libelektra\&.org
+
+    DocumentRoot "/usr/local/share/elektra/tool_data/rest-frontend/public"
+    <Directory />
+        FallbackResource /index\&.html
+        Options Indexes MultiViews
+        AllowOverride None
+        Require all granted
+        Allow from all
+    </Directory>
+
+    LogLevel info
+        ErrorLog ${APACHE_LOG_DIR}/error\&.log
+        CustomLog ${APACHE_LOG_DIR}/access\&.log combined
+
+    SSLCertificateFile /etc/letsencrypt/live/www\&.libelektra\&.org/fullchain\&.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/www\&.libelektra\&.org/privkey\&.pem
+    Include /etc/letsencrypt/options-ssl-apache\&.conf
+</VirtualHost>
+</IfModule>
+.fi
+.PP
+.PP
+Important is the \fCDirectory\fP configuration because the \fCrest-frontend\fP requires the \fCFallbackResource\fP option to function correctly\&.
+.PP
+For the \fCrestapi\&.libelektra\&.org\fP domain we use an SCGI setup:
+.PP
+.PP
+.nf
+# file: /etc/apache2/sites-available/restapi\&.libelektra\&.org-le-ssl\&.conf
+<IfModule mod_ssl\&.c>
+<VirtualHost *:443>
+    ServerName restapi\&.libelektra\&.org
+
+    SCGIMount / 127\&.0\&.0\&.1:8081
+
+    LogLevel info
+        ErrorLog ${APACHE_LOG_DIR}/error\&.log
+        CustomLog ${APACHE_LOG_DIR}/access\&.log combined
+
+    SSLCertificateFile /etc/letsencrypt/live/restapi\&.libelektra\&.org/fullchain\&.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/restapi\&.libelektra\&.org/privkey\&.pem
+    Include /etc/letsencrypt/options-ssl-apache\&.conf
+</VirtualHost>
+</IfModule>
+.fi
+.PP
+.PP
+.SS "Rest-Backend"
+.PP
+The \fCrest-backend\fP itself is configured normally as described in the configuration section above, but with CppCMS using SCGI instead of HTTP as API variant\&. This requires setting the keys
+.PP
+.PP
+.nf
+kdb set system/sw/elektra/restbackend/#0/current/cppcms/service/api "scgi"
+kdb set system/sw/elektra/restbackend/#0/current/cppcms/service/ip "127\&.0\&.0\&.1"
+kdb set system/sw/elektra/restbackend/#0/current/cppcms/service/port 8081
+.fi
+.PP
+.PP
+Additionally we are using a worker process, which ensures that in case of a crash the backend restarts automatically (= basically supervisor + worker)\&. Config:
+.PP
+.PP
+.nf
+kdb set system/sw/elektra/restbackend/#0/current/cppcms/service/worker_processes 1
+.fi
+.PP
+.PP
+Configuration snippets and users are stored at \fCsystem/configs\fP and \fCsystem/users\fP:
+.PP
+.PP
+.nf
+kdb set system/sw/elektra/restbackend/#0/current/backend/kdb/path/configs = system/configs
+kdb set system/sw/elektra/restbackend/#0/current/backend/kdb/path/users = system/users
+.fi
+.PP
+.PP
+.SS "Rest-Frontend"
+.PP
+Because of the Apache server using the rest-frontend installation directory as document root, there is no further configuration necessary other than already explained in the configuration section above\&.
+.PP
+During the build, the frontend will be recompiled\&. It is not taken offline for this though and everything that is necessary to accomplish a clean deployment is taken care of by the compile script as well\&.
+.PP
+.SS "Jenkins Build Script"
+.PP
+The build script basically builds the applications, runs tests, installs everything and restarts the backend\&. Finally, it can run the configuration script for the frontend, which updates the website content\&.
+.PP
+The current build script can be found \fBhere\fP\&. 

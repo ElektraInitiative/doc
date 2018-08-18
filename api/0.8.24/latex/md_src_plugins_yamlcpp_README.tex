@@ -1,0 +1,432 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the yamlcpp plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com}
+\item infos/licence = B\+SD
+\item infos/needs = base64 directoryvalue
+\item infos/provides = storage/yaml
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest preview unfinished concept discouraged
+\item infos/metadata =
+\item infos/description = This storage plugin reads and writes data in the Y\+A\+ML format
+\end{DoxyItemize}\hypertarget{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}{}\section{Y\+A\+M\+L C\+PP}\label{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}
+\subsection*{Introduction}
+
+The Y\+A\+ML C\+PP plugin reads and writes configuration data via the \href{https://github.com/jbeder/yaml-cpp}{\tt yaml-\/cpp} library.
+
+\subsection*{Usage}
+
+You can mount this plugin via {\ttfamily kdb mount}\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount config.yaml /tests/yamlcpp yamlcpp
+\end{DoxyCode}
+
+
+. To unmount the plugin use {\ttfamily kdb umount}\+:
+
+
+\begin{DoxyCode}
+sudo kdb umount /tests/yamlcpp
+\end{DoxyCode}
+
+
+. The following examples show how you can store and retrieve data via {\ttfamily yamlcpp}.
+
+``{\ttfamily  $<$h1$>$Mount yamlcpp plugin to cascading namespace}/tests/yamlcpp` sudo kdb mount config.\+yaml /tests/yamlcpp yamlcpp
+
+\section*{Manually add a mapping to the database}
+
+echo \char`\"{}🔑 \+: 🐳\char`\"{} $>$ {\ttfamily kdb file /tests/yamlcpp} \section*{Retrieve the value of the manually added key}
+
+kdb get /tests/yamlcpp/🔑 \#$>$ 🐳
+
+\section*{Manually add syntactically incorrect data}
+
+echo \char`\"{}some key\+: @some  value\char`\"{} $>$$>$ {\ttfamily kdb file /tests/yamlcpp} kdb get \char`\"{}/tests/yamlcpp/some key\char`\"{} \section*{S\+T\+D\+E\+RR\+: .$\ast$yaml-\/cpp\+: error at line 2, column 11\+: unknown token.$\ast$}
+
+\section*{E\+R\+R\+OR\+: 10}
+
+\section*{R\+ET\+: 5}
+
+\section*{Overwrite incorrect data}
+
+echo \char`\"{}🔑\+: value\char`\"{} $>$ {\ttfamily kdb file /tests/yamlcpp}
+
+\section*{Add some values via {\ttfamily kdb set}}
+
+kdb set /tests/yamlcpp 🎵 kdb set /tests/yamlcpp/fleetwood mac kdb set /tests/yamlcpp/the chain
+
+\section*{Retrieve the new values}
+
+kdb get /tests/yamlcpp \#$>$ 🎵 kdb get /tests/yamlcpp/the \#$>$ chain kdb get /tests/yamlcpp/fleetwood \#$>$ mac
+
+\section*{Undo modifications}
+
+kdb rm -\/r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+\begin{DoxyCode}
+## Arrays
+
+YAML CPP provides basic support for Elektra’s array data type.
+\end{DoxyCode}
+ \section*{Mount yamlcpp plugin to cascading namespace {\ttfamily /tests/yamlcpp}}
+
+sudo kdb mount config.\+yaml /tests/yamlcpp yamlcpp
+
+\section*{Manually add an array to the database}
+
+echo \textquotesingle{}sunny\+:\textquotesingle{} $>$ {\ttfamily kdb file /tests/yamlcpp} echo \textquotesingle{} -\/ Charlie\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/yamlcpp} echo \textquotesingle{} -\/ Dee\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/yamlcpp}
+
+\section*{List the array entries}
+
+kdb ls /tests/yamlcpp \#$>$ user/tests/yamlcpp/sunny \#$>$ user/tests/yamlcpp/sunny/\#0 \#$>$ user/tests/yamlcpp/sunny/\#1
+
+\section*{Read an array entry}
+
+kdb get user/tests/yamlcpp/sunny/\#1 \#$>$ Dee
+
+\section*{You can retrieve the last index of an array by reading the metakey {\ttfamily array}}
+
+kdb getmeta /tests/yamlcpp/sunny array \section*{1}
+
+\section*{Extend the array}
+
+kdb set user/tests/yamlcpp/sunny/\#2 Dennis kdb set user/tests/yamlcpp/sunny/\#3 Frank kdb set user/tests/yamlcpp/sunny/\#4 Mac
+
+\section*{The plugin supports empty array fields}
+
+kdb set user/tests/yamlcpp/sunny/\#\+\_\+10 \textquotesingle{}The Waitress\textquotesingle{} kdb getmeta user/tests/yamlcpp/sunny array \#$>$ \#\+\_\+10 kdb get user/tests/yamlcpp/sunny/\#\+\_\+9 \section*{R\+ET\+: 11}
+
+\section*{Retrieve the last array entry}
+
+kdb get user/tests/yamlcpp/sunny/\$(kdb getmeta user/tests/yamlcpp/sunny array) \#$>$ The Waitress
+
+\section*{The plugin also supports empty arrays (arrays without any elements)}
+
+kdb setmeta user/tests/yamlcpp/empty array \textquotesingle{}\textquotesingle{} kdb export user/tests/yamlcpp/empty yamlcpp \#$>$ \mbox{[}\mbox{]}
+
+\section*{For arrays with at least one value we do not need to set the type {\ttfamily array}}
+
+kdb set user/tests/yamlcpp/movies kdb set user/tests/yamlcpp/movies/\#0 \textquotesingle{}A Silent Voice\textquotesingle{} kdb getmeta user/tests/yamlcpp/movies array \#$>$ \#0 kdb export user/tests/yamlcpp/movies yamlcpp \#$>$ -\/ A Silent Voice
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+\begin{DoxyCode}
+The plugin also supports nested arrays.
+\end{DoxyCode}
+ \section*{Mount yamlcpp plugin to cascading namespace {\ttfamily /tests/yamlcpp}}
+
+sudo kdb mount config.\+yaml /tests/yamlcpp yamlcpp
+
+\section*{Add some key value pairs}
+
+kdb set /tests/yamlcpp/key value kdb set /tests/yamlcpp/array/\#0 scalar kdb set /tests/yamlcpp/array/\#1/key value kdb set /tests/yamlcpp/array/\#1/🔑 🙈
+
+kdb ls /tests/yamlcpp \#$>$ user/tests/yamlcpp/array \#$>$ user/tests/yamlcpp/array/\#0 \#$>$ user/tests/yamlcpp/array/\#1/key \#$>$ user/tests/yamlcpp/array/\#1/🔑 \#$>$ user/tests/yamlcpp/key
+
+\section*{Retrieve part of an array value}
+
+kdb get /tests/yamlcpp/array/\#1/key \#$>$ value
+
+\section*{Since an array saves a list of values, an array parent}
+
+\section*{-\/ which represent the array -\/ does not store a value!}
+
+echo \char`\"{}/tests/yamlcpp/array\+: “`kdb get /tests/yamlcpp/array`”\char`\"{} \#$>$ /tests/yamlcpp/array\+: “”
+
+\section*{Remove part of an array value}
+
+kdb rm /tests/yamlcpp/array/\#1/key
+
+kdb ls /tests/yamlcpp \#$>$ user/tests/yamlcpp/array \#$>$ user/tests/yamlcpp/array/\#0 \#$>$ user/tests/yamlcpp/array/\#1/🔑 \#$>$ user/tests/yamlcpp/key
+
+\section*{The plugin stores array keys using Y\+A\+ML sequences.}
+
+\section*{Since yaml-\/cpp stores keys in arbitrary order -\/}
+
+\section*{either {\ttfamily key} or {\ttfamily array} could be the “first” key -\/}
+
+\section*{we remove {\ttfamily key} before we retrieve the data. This way}
+
+\section*{we make sure that the output below will always look}
+
+\section*{the same.}
+
+kdb rm /tests/yamlcpp/key kdb file /tests/yamlcpp $\vert$ xargs cat \#$>$ array\+: \#$>$ -\/ scalar \#$>$ -\/ 🔑\+: 🙈
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+\begin{DoxyCode}
+## Metadata
+
+The plugin supports metadata. The example below shows how a basic `Key` including some metadata, looks
+       inside the YAML configuration file:
+
+```yaml
+key without metadata: value
+key with metadata:
+  !elektra/meta
+    - value2
+    - metakey: metavalue
+      empty metakey:
+      another metakey: another metavalue
+\end{DoxyCode}
+
+
+. As we can see above the value containing metadata is marked by the tag handle {\ttfamily !elektra/meta}. The data type contains a list with two elements. The first element of this list specifies the value of the key, while the second element contains a map saving the metadata for the key. The data above represents the following key set in Elektra if we mount the file directly to the namespace {\ttfamily user}\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\PBS\centering \textbf{ Name }&\PBS\centering \textbf{ Value }&\PBS\centering \textbf{ Metaname }&\PBS\centering \textbf{ Metavalue  }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\PBS\centering \textbf{ Name }&\PBS\centering \textbf{ Value }&\PBS\centering \textbf{ Metaname }&\PBS\centering \textbf{ Metavalue  }\\\cline{1-4}
+\endhead
+\PBS\centering user/key without metadata &\PBS\centering value1 &\PBS\centering — &\PBS\centering — \\\cline{1-4}
+\PBS\centering user/key with metadata &\PBS\centering value2 &\PBS\centering metakey &\PBS\centering metavalue \\\cline{1-4}
+\PBS\centering &\PBS\centering &\PBS\centering empty metakey &\PBS\centering — \\\cline{1-4}
+\PBS\centering &\PBS\centering &\PBS\centering another metakey &\PBS\centering another metavalue \\\cline{1-4}
+\end{longtabu}
+. The example below shows how we can read and write metadata using the {\ttfamily yamlcpp} plugin via {\ttfamily kdb}.
+
+``{\ttfamily  $<$h1$>$Mount yamlcpp plugin to cascading namespace}/tests/yamlcpp` sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp
+
+\section*{Manually add a key including metadata to the database}
+
+echo \char`\"{}🔑\+: !elektra/meta \mbox{[}🦄, \{comment\+: Unicorn\}\mbox{]}\char`\"{} $>$ {\ttfamily kdb file user/tests/yamlcpp} kdb lsmeta user/tests/yamlcpp/🔑 \#$>$ comment kdb getmeta user/tests/yamlcpp/🔑 comment \#$>$ Unicorn
+
+\section*{Add a new key and add some metadata to the new key}
+
+kdb set user/tests/yamlcpp/brand new kdb setmeta user/tests/yamlcpp/brand comment \char`\"{}\+The Devil And God Are Raging Inside Me\char`\"{} kdb setmeta user/tests/yamlcpp/brand rationale \char`\"{}\+Because I Love It\char`\"{}
+
+\section*{Retrieve metadata}
+
+kdb lsmeta user/tests/yamlcpp/brand \#$>$ comment \#$>$ rationale kdb getmeta user/tests/yamlcpp/brand rationale \#$>$ Because I Love It
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}
+We can also invoke additional plugins that use metadata like `type`.
+\end{DoxyCode}
+ sudo kdb mount config.\+yaml /tests/yamlcpp yamlcpp type kdb set /tests/yamlcpp/typetest/number 21 kdb setmeta /tests/yamlcpp/typetest/number check/type short
+
+kdb set /tests/yamlcpp/typetest/number \char`\"{}\+One\char`\"{} \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$\+The type short failed to match for .$\ast$/number with string\+: One.$\ast$}
+
+\section*{E\+R\+R\+OR\+: 52}
+
+kdb get /tests/yamlcpp/typetest/number \#$>$ 21
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+\begin{DoxyCode}
+## Binary Data
+
+YAML CPP also supports [base64](https://tools.ietf.org/html/rfc4648) encoded data via the [Base64](@ref
+       src\_plugins\_base64\_README\_md) plugin.
+\end{DoxyCode}
+ \section*{Mount Y\+A\+ML C\+PP plugin at cascading namespace {\ttfamily /tests/binary}}
+
+sudo kdb mount test.\+yaml /tests/binary yamlcpp \section*{Manually add binary data}
+
+echo \textquotesingle{}bin\+: !!binary a\+Gk=\textquotesingle{} $>$ {\ttfamily kdb file /tests/binary}
+
+\section*{Base 64 decodes the data {\ttfamily a\+Gk=} to {\ttfamily hi} and stores the value in binary form.}
+
+\section*{The command {\ttfamily kdb get} prints the data as hexadecimal byte values.}
+
+kdb get /tests/binary/bin \#$>$ 
+
+\section*{We can use {\ttfamily bash} to convert the hexadecimal value returned by {\ttfamily kdb get}}
+
+\section*{to its A\+S\+C\+II representation.}
+
+bash -\/c \textquotesingle{}printf {\ttfamily kdb get /tests/binary/bin}\textquotesingle{} \#$>$ hi
+
+\section*{Add a string value to the database}
+
+kdb set /tests/binary/text mate \section*{Base 64 does not modify textual values}
+
+kdb get /tests/binary/text \#$>$ mate
+
+\section*{The Base 64 plugin re-\/encodes binary data before Y\+A\+ML C\+PP stores the key set. Hence the}
+
+\section*{configuration file contains the value {\ttfamily a\+Gk=} even after Y\+A\+ML C\+PP wrote a new configuration.}
+
+grep -\/q \textquotesingle{}bin\+: !.$\ast$ a\+Gk=\textquotesingle{} {\ttfamily kdb file user/tests/binary} \section*{R\+ET\+: 0}
+
+\section*{Undo modifications to the database}
+
+kdb rm -\/r /tests/binary sudo kdb umount /tests/binary 
+\begin{DoxyCode}
+## Null & Empty
+
+Sometimes you only want to save a key without a value (null key) or a key with an empty value. The commands
+       below show that YAML CPP supports this scenario properly.
+\end{DoxyCode}
+ \section*{Mount Y\+A\+ML C\+PP plugin at cascading namespace {\ttfamily user/tests/yamlcpp}}
+
+sudo kdb mount test.\+yaml user/tests/yamlcpp yamlcpp
+
+\section*{Check if the plugin saves null keys correctly}
+
+kdb set user/tests/yamlcpp/null kdb set user/tests/yamlcpp/null/level1/level2 kdb setmeta user/tests/yamlcpp/null/level1/level2 comment \textquotesingle{}Null key\textquotesingle{}
+
+kdb ls user/tests/yamlcpp/null \#$>$ user/tests/yamlcpp/null \#$>$ user/tests/yamlcpp/null/level1/level2 kdb get -\/v user/tests/yamlcpp/null $\vert$ grep -\/q \textquotesingle{}The key is null.\textquotesingle{} kdb get -\/v user/tests/yamlcpp/null/level1/level2 $\vert$ grep -\/q \textquotesingle{}The key is null.\textquotesingle{}
+
+\section*{Check if the plugin saves empty keys correctly}
+
+kdb set user/tests/yamlcpp/empty \char`\"{}\char`\"{} kdb set user/tests/yamlcpp/empty/level1/level2
+
+kdb ls user/tests/yamlcpp/empty \#$>$ user/tests/yamlcpp/empty \#$>$ user/tests/yamlcpp/empty/level1/level2 kdb get -\/v user/tests/yamlcpp/empty $\vert$ grep -\/vq \textquotesingle{}The key is null.\textquotesingle{}
+
+\section*{Undo modifications to the database}
+
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}
+## Dependencies
+
+This plugin requires [yaml-cpp][]. On a Debian based OS the package for the library is called
+       `libyaml-cpp-dev` . On macOS you can install the package `yaml-cpp` via [HomeBrew](https://brew.sh).
+
+## Limitations
+
+### Leaf Values
+
+One of the limitations of this plugin is, that it only supports values inside [leaf
+       nodes](https://github.com/ElektraInitiative/libelektra/issues/106). Let us look at an example to show what that means. The YAML
+       file below:
+
+```yaml
+root:
+  subtree:    🍂
+  below root: leaf
+level 1:
+  level 2:
+    level 3:  🍁
+\end{DoxyCode}
+
+
+stores all of the values ({\ttfamily 🍂}, {\ttfamily leaf} and {\ttfamily 🍁}) in the leaves of the mapping. The drawing below makes this situation a little bit clearer.
+
+
+
+The key set that this plugin creates using the data above looks like this (assuming we mount the plugin to {\ttfamily user/tests/yamlcpp})\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Name }&\textbf{ Value  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Name }&\textbf{ Value  }\\\cline{1-2}
+\endhead
+user/tests/yamlcpp/level &\\\cline{1-2}
+user/tests/yamlcpp/level 1/level 2 &\\\cline{1-2}
+user/tests/yamlcpp/level 1/level 2/level 3 &🍁 \\\cline{1-2}
+user/tests/yamlcpp/root &\\\cline{1-2}
+user/tests/yamlcpp/root/below root &leaf \\\cline{1-2}
+user/tests/yamlcpp/root/subtree &🍂 \\\cline{1-2}
+\end{longtabu}
+. Now why is this plugin unable to store values outside leaf nodes? For example, why can we not store a value inside {\ttfamily user/tests/yamlcpp/level 1/level 2}? To answer this question we need to look at the Y\+A\+ML representation\+:
+
+
+\begin{DoxyCode}
+level 1:
+  level 2:
+    level 3:  🍁
+\end{DoxyCode}
+
+
+. In a naive approach we might just try to add a value e.\+g. {\ttfamily 🙈} right next to level 2\+:
+
+
+\begin{DoxyCode}
+level 1:
+  level 2: 🙈
+    level 3:  🍁
+\end{DoxyCode}
+
+
+. This however would be not correct, since then the Y\+A\+ML node {\ttfamily level 2} would contain both a scalar value ({\ttfamily 🙈}) and a mapping ({\ttfamily \{ level 3\+: 🍁 \}}). We could solve this dilemma using a list\+:
+
+
+\begin{DoxyCode}
+level 1:
+  level 2:
+    - 🙈
+    - level 3:  🍁
+\end{DoxyCode}
+
+
+. However, if we use this approach we are not able to support Elektra’s array type properly.
+
+\paragraph*{Directory Values}
+
+To overcome the limitation described above, the Y\+A\+ML C\+PP plugin requires the \hyperlink{md_src_plugins_directoryvalue_README_src_plugins_directoryvalue_README_md}{Directory Value} plugin. This plugin converts the value of a non-\/leaf node to a leaf node with the name {\ttfamily \+\_\+\+\_\+\+\_\+dirdata}. For example, let us assume we have the following key set\+:
+
+
+\begin{DoxyCode}
+directory      = Directory Data
+directory/file = Leaf Data
+\end{DoxyCode}
+
+
+. The Directory Value plugin will convert the key set in the set (write) direction to
+
+
+\begin{DoxyCode}
+directory            =
+directory/\_\_\_dirdata = Directory Data
+directory/file       = Leaf Data
+\end{DoxyCode}
+
+
+. Consequently the Y\+A\+ML plugin will store the key set as
+
+
+\begin{DoxyCode}
+directory:
+  \_\_\_dirdata = Directory Data
+  file       = Leaf Data
+\end{DoxyCode}
+
+
+. A user of the Y\+A\+ML plugin will not notice this feature unless he edits the configuration file by hand, as the following example shows\+:
+
+``{\ttfamily  $<$h1$>$Mount Y\+A\+ML C\+PP plugin at}user/tests/yamlcpp` sudo kdb mount test.\+yaml user/tests/yamlcpp yamlcpp
+
+kdb set user/tests/yamlcpp/directory \textquotesingle{}Directory Data\textquotesingle{} kdb setmeta user/tests/yamlcpp/directory comment \textquotesingle{}Directory Metadata\textquotesingle{} kdb set user/tests/yamlcpp/directory/file \textquotesingle{}Leaf Data\textquotesingle{}
+
+kdb ls user/tests/yamlcpp/directory \#$>$ user/tests/yamlcpp/directory \#$>$ user/tests/yamlcpp/directory/file
+
+kdb get user/tests/yamlcpp/directory \#$>$ Directory Data kdb getmeta user/tests/yamlcpp/directory comment \#$>$ Directory Metadata kdb get user/tests/yamlcpp/directory/file \#$>$ Leaf Data
+
+\section*{Undo modifications to the database}
+
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}
+.
+
+### Other Limitations
+
+- Adding and removing keys does remove **comments** inside the configuration file
+- The plugin currently lacks proper **type support** for scalars.
+- If Elektra uses YAML CPP as **default storage** plugin, multiple tests of the test suite fail. However,
+       if you mount YAML CPP at `/`:
+\end{DoxyCode}
+ kdb mount default.\+yaml / yamlcpp ```
+
+all tests should work correctly. The problem here is that Elektra does not load additional required plugins ({\ttfamily infos/needs}) for a default storage plugin. 

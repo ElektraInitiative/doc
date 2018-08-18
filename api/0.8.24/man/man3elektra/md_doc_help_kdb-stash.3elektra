@@ -1,0 +1,61 @@
+.TH "md_doc_help_kdb-stash" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_doc_help_kdb-stashkdb-stash -- Stash away KDB to be restored later 
+ \- \fCkdb stash\fP
+.PP
+.SS "DESCRIPTION"
+.PP
+This command will stash away the \fCsystem\fP, \fCuser\fP and \fCspec\fP configuration, i\&.e\&. it releases all mountpoints and reset Elektra to a clean state\&. Afterwards a timestamp which can be used to restore everything will be printed\&.
+.PP
+The backup will be done in the \fC/var/tmp\fP directory, so make sure the backup is not deleted\&.
+.PP
+.SS "EXAMPLES"
+.PP
+.PP
+.nf
+kdb set user/x foo
+#>
+#> Create a new key user/x with string "foo"
+
+kdb mount a\&.ini /a
+kdb mount
+#> a\&.ini on /a with name /a
+#> none on system/info/elektra/constants with name system/info/elektra/constants
+#> /usr/local/share/doc/elektra/CONTRACT\&.ini on system/info/elektra/contract/#0 with name system/info/elektra/contract/#0
+#> none on system/info/elektra/desktop with name system/info/elektra/desktop
+#> /usr/local/share/doc/elektra/METADATA\&.ini on system/info/elektra/metadata/#0 with name system/info/elektra/metadata/#0
+#> none on system/info/elektra/uname with name system/info/elektra/uname
+
+kdb backup
+#> restore with "kdb restore 1500000000"
+
+kdb get user/x
+#> Did not find key
+
+kdb mount
+
+kdb restore 1500000000
+
+kdb get user/x
+#> foo
+
+kdb mount
+#> a\&.ini on /a with name /a
+#> none on system/info/elektra/constants with name system/info/elektra/constants
+#> /usr/local/share/doc/elektra/CONTRACT\&.ini on system/info/elektra/contract/#0 with name system/info/elektra/contract/#0
+#> none on system/info/elektra/desktop with name system/info/elektra/desktop
+#> /usr/local/share/doc/elektra/METADATA\&.ini on system/info/elektra/metadata/#0 with name system/info/elektra/metadata/#0
+#> none on system/info/elektra/uname with name system/info/elektra/uname
+.fi
+.PP
+.PP
+.SS "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBkdb-restore(7)\fP
+.IP "\(bu" 2
+\fBkdb-backup(7)\fP 
+.PP
+

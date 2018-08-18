@@ -1,0 +1,288 @@
+
+\begin{DoxyItemize}
+\item guid\+: 6ce57ecf-\/420a-\/4a31-\/821e-\/1c5fe5532eb4
+\item author\+: Markus Raab
+\item pub\+Date\+: Tue, 02 Dec 2014 18\+:37\+:51 +0100
+\item short\+Desc\+: adds X\+D\+G/\+Open\+I\+CC compatibility \& java binding
+\end{DoxyItemize}
+
+Hello,
+
+we are delighted to announce our latest feature release providing major updates in\+:
+
+
+\begin{DoxyItemize}
+\item compatibility with standards,
+\item tooling,
+\item plugins (hosts, rename),
+\item Qt-\/\+Gui and
+\item a new Java binding
+\end{DoxyItemize}
+
+\subsection*{X\+DG Compatibility}
+
+Elektra now is \href{http://standards.freedesktop.org/basedir-spec/basedir-spec-0.8.html}{\tt fully X\+DG 0.\+8} compliant. Following changes were necessary\+:
+
+
+\begin{DoxyItemize}
+\item newly created configuration files for user/ now have the permissions 0600
+\item newly created configuration directories for user/ now have the permissions 0700
+\item existing configuration files will retain their permissions.
+\item The default path to store user configuration is now $\sim$/.config
+\item A new resolver variant x (for user and system) is introduced
+\begin{DoxyItemize}
+\item implements handling of X\+DG environment variables
+\item ignores empty dirs and absolute paths in envvar
+\end{DoxyItemize}
+\item add new shell based test suite for (xdg)-\/resolver
+\end{DoxyItemize}
+
+For example, we could use resolver\+\_\+fm\+\_\+xhp\+\_\+x\+: \begin{DoxyVerb}kdb mount --resolver=resolver_fm_xhp_x file.dump /example dump
+kdb file user/example
+kdb file system/example
+\end{DoxyVerb}
+
+
+Will show you that for both user+system the resolver respects X\+DG environment variables, e.\+g. above lines will print\+: \begin{DoxyVerb}/home/m/.config/file.dump
+/etc/xdg/file.dump
+\end{DoxyVerb}
+
+
+Of course, any attempts to get and set keys below user/example and system/example will also be in these files.
+
+The letters after \+\_\+ describe the variant of the resolver\+:
+
+
+\begin{DoxyItemize}
+\item f .. file based locking
+\item m .. mutex based locking (for multiple K\+DB per process)
+\item for user configuration (after next \+\_\+)
+\begin{DoxyItemize}
+\item x .. first check X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+H\+O\+ME environment
+\item h .. then check H\+O\+ME environment
+\item p .. then fall back to passwd
+\end{DoxyItemize}
+\item for system configuration (after next \+\_\+)
+\begin{DoxyItemize}
+\item x .. check all paths in X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+RS and falls back to /etc/xdg
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+A lot of such resolver variants are added when -\/\+D\+P\+L\+U\+G\+I\+NS=A\+LL is used. Of course you can create new variants with different behaviour by adding them to P\+L\+U\+G\+I\+NS.
+
+To make your application (that uses Elektra) X\+DG aware, you have nothing to do\+: you get it to free. Make sure to always use cascading lookup. Additionally, an X\+DG conforming application should not write system/ keys.
+
+\subsection*{Open\+I\+CC Compatibility}
+
+Based on that, Elektra now also implements the draft for \href{https://www.openicc.info/index.php%3Ftitle=OpenICC_Configuration_0.1.html}{\tt the Open\+I\+CC specification}.
+
+The mount command looks like quite complicated, but it consists of simple parts\+: \begin{DoxyVerb}kdb mount --resolver=resolver_fm_xhp_x \
+  color/settings/openicc-devices.json /org/freedesktop/openicc \
+  yajl rename cut=org/freedesktop/openicc
+\end{DoxyVerb}
+
+
+We already know the first two lines\+: we use the X\+DG resolver already introduced above. Only the file name and the path where it should be mounted differs.
+
+The plugin yajl is a storage plugin that reads/writes json. The plugin rename was the missing link to support Open\+I\+CC (thanks to Felix Berlakovich for closing this gap). It is needed, because every Open\+I\+CC file starts like this\+: \begin{DoxyVerb}{ "org": { "freedesktop": { "openicc": {
+\end{DoxyVerb}
+
+
+Because the backend is mounted at /org/freedesktop/openicc, it would lead to keys below /org/freedesktop/openicc/org/freedesktop/openicc which we obviously do not want. So we simply get rid of the common prefix by cutting it out using the rename plugin.
+
+Of course this renaming functionality can be used in every situation and is not limited to Open\+I\+CC.
+
+\subsection*{Tools}
+
+A large number of old and new tools were added, mostly for convenience e.\+g.\+: \begin{DoxyVerb}kdb mount-openicc
+\end{DoxyVerb}
+
+
+saves you from writing the long mount command we had in the previous section.
+
+To get a list of all tools that are installed, now the command (which is also an external tool and as such currently not displayed in kdb --help)\+: \begin{DoxyVerb}kdb list-tools
+\end{DoxyVerb}
+
+
+is available. Do not be surprised\+: on typical installations this will be a large list. You can run each of these tools by using kdb $<$command$>$. Most of the tools, however, are part of the test suite, which you can run using\+: \begin{DoxyVerb}kdb run_all
+\end{DoxyVerb}
+
+
+Other tools are \char`\"{}old friends\char`\"{}, e.\+g. convert-\/fstab written in 2006 by Avi Alkalay still works\+: \begin{DoxyVerb}kdb convert-fstab | kdb import system/filesystems xmltool
+\end{DoxyVerb}
+
+
+It will parse your /etc/fstab and generate a X\+ML. This X\+ML then can be imported. Other convert tools directly produce kdb commands, though.
+
+kdb now uses K\+DB itself for many commands\+:
+
+
+\begin{DoxyItemize}
+\item /sw/kdb/current/resolver .. You always want a different default resolver than that was compiled in as default when mounting backends?
+\item /sw/kdb/current/format .. If you are annoyed by the default format dump format for import/export.
+\item /sw/kdb/current/plugins .. If you always forget to add some plugins when mounting something.
+\end{DoxyItemize}
+
+By default the plugin \char`\"{}sync\char`\"{} is added automatically (it makes sure that fsync is executed on config files, the directory is already done by the resolver), you should not remove it from /sw/kdb/current/plugins otherwise the next mount command will not add it. To preserve it use a space separated list, e.\+g.\+: \begin{DoxyVerb}kdb set user/sw/kdb/current/plugins "sync syslog"
+\end{DoxyVerb}
+
+
+Last, but not least, kdb get now supports cascading get\+: \begin{DoxyVerb}kdb get /sw/kdb/current/plugins
+\end{DoxyVerb}
+
+
+This feature allows you to see the configuration exactly as seen by the application.
+
+Other options\+:
+
+
+\begin{DoxyItemize}
+\item -\/123 options for hiding nth column in {\ttfamily kdb mount}
+\item hide warnings during script usage of {\ttfamily kdb mount}
+\item -\/0 option accepted in some tools (null termination)
+\item Mount got a new -\/c option for backend configuration. For example -\/c cut=org/freedesktop/openicc would be the parameter cut for all plugins. Have a look at \#146 if you want to use it.
+\end{DoxyItemize}
+
+\subsection*{Compatibility}
+
+The core A\+PI (kdb.\+h), as always, stayed A\+P\+I/\+A\+BI compatible. The only changes in kdb.\+h is the addition of K\+E\+Y\+\_\+\+C\+A\+S\+C\+A\+D\+I\+N\+G\+\_\+\+N\+A\+ME and K\+E\+Y\+\_\+\+M\+E\+T\+A\+\_\+\+N\+A\+ME. So applications compiled against 0.\+8.\+10 and using these constants, will not work with Elektra 0.\+8.\+9.
+
+The constants allow us to create following kinds of keys\+:
+
+
+\begin{DoxyItemize}
+\item empty names\+: this was always possible, because invalid names (including empty names) did not cause key\+New to abort
+\item metanames\+: this is a new feature that allows us to compare key names with metakeys
+\item cascading names\+: names starting with / have the special meaning that they do not specify which namespace they have. When such names are used for
+\begin{DoxyItemize}
+\item \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()} and \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()} keys are retrieved from all namespaces
+\item \hyperlink{group__keyset_gaa34fc43a081e6b01e4120daa6c112004}{ks\+Lookup()} keys are searched in all namespaces
+\item \hyperlink{group__keyset_gad2e30fb6d4739d917c5abb2ac2f9c1a1}{ks\+Lookup\+By\+Name()} is now just a wrapper for \hyperlink{group__keyset_gaa34fc43a081e6b01e4120daa6c112004}{ks\+Lookup()}. The method does not do much except creating a key and passing them to \hyperlink{group__keyset_gaa34fc43a081e6b01e4120daa6c112004}{ks\+Lookup()}.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+Usage in C is\+: \begin{DoxyVerb}Key *c = keyNew("/org/freedesktop", KEY_CASCADING_NAME, KEY_END);
+Key *m = keyNew("comment/#0", KEY_META_NAME, KEY_END);
+\end{DoxyVerb}
+
+
+The same functionality exists, of course, in available in all bindings, too.
+
+Changes in non-\/core A\+PI are\+:
+
+
+\begin{DoxyItemize}
+\item xmltool now does not output default (unchanged) uid,gid and mode
+\item ks\+Lookup\+By\+Spec from \hyperlink{kdbproposal_8h}{kdbproposal.\+h} was removed, is now integrated into ks\+Lookup
+\item extension key\+Name\+Get\+Namespace was removed
+\item the hosts comment format has changed
+\item the default resolver has changed (uses passwd)
+\item \hyperlink{classkdb_1_1tools_1_1Backend_a1650b149ebf313ee8cd3472247212263}{kdb\+::tools\+::\+Backend\+::\+Backend} constructor, try\+Plugin and add\+Plugin have changed\+:
+\begin{DoxyItemize}
+\item mountname is now automatically calculated
+\item add\+Plugin allows us to add a Key\+Set to validate plugins with different contracts correctly
+\end{DoxyItemize}
+\item C++ binding now throws std\+::bad\+\_\+alloc on allocation problems (and not Invalid\+Name)
+\end{DoxyItemize}
+
+\subsection*{C\+Make}
+
+It is now possible to remove a plugin/binding/tools by prefixing a name with \char`\"{}-\/\char`\"{}. The new \char`\"{}-\/element\char`\"{} syntax is accepted by T\+O\+O\+LS, B\+I\+N\+D\+I\+N\+GS and P\+L\+U\+G\+I\+NS. It is very handy in combination with A\+LL, e.\+g.\+: \begin{DoxyVerb}-DPLUGINS="ALL;-xmltool"
+\end{DoxyVerb}
+
+
+will include all plugins except xmltool.
+
+\subsection*{Improved comments}
+
+Comment preserving was improved a lot. Especially, the hosts plugin was rewritten completely. Now multiple different comment styles can be intermixed without losing information. E.\+g. some I\+NI formats support both ; and \# for comments. With the new comments it is possible to preserve that information and even better\+: applications can iterate over that information (metadata).
+
+To mount the new hosts plugin use (if you already have mounted it, you have nothing to do)\+: \begin{DoxyVerb}kdb mount /etc/hosts system/hosts hosts
+\end{DoxyVerb}
+
+
+The hosts plugin now seperates from ipv4 and ipv6 which makes the host names canonical again, e.\+g.\+: \begin{DoxyVerb}kdb get system/hosts/ipv4/localhost
+kdb get system/hosts/ipv6/localhost
+\end{DoxyVerb}
+
+
+To access the inline-\/comment, use\+: \begin{DoxyVerb}kdb getmeta system/hosts/ipv4/localhost "comment/#0"
+\end{DoxyVerb}
+
+
+For other meta information, see\+: \begin{DoxyVerb}kdb lsmeta system/hosts/ipv4/localhost
+\end{DoxyVerb}
+
+
+Additionally, a small A\+PI for specific metadata operations emerges. These operations will be moved to a separate library and will not stay in Elektra’s core library.
+
+\subsection*{Proposal}
+
+
+\begin{DoxyItemize}
+\item lookup options\+:
+\begin{DoxyItemize}
+\item K\+D\+B\+\_\+\+O\+\_\+\+S\+P\+EC uses the lookup key as specification
+\item K\+D\+B\+\_\+\+O\+\_\+\+C\+R\+E\+A\+TE creates a key if it could not be found
+\end{DoxyItemize}
+\item elektra\+Key\+Get\+Meta\+Key\+Set creates a Key\+Set from metadata
+\item elektra\+Ks\+Filter allows us to filter a Key\+Set arbitrarily (not only key\+Is\+Below in case of ks\+Cut). It reintroduces more functional programming.
+\item key\+Get\+Namespace was reintroduced. In one of the next versions of Elektra we will introduce new namespaces. key\+Get\+Namespace allows the compiler to output a warning when some namespaces are not handled in your C/\+C++ code.
+\end{DoxyItemize}
+
+\subsection*{Java binding}
+
+Elektra now fully supports applications written in Java and also Plugins written in the same language.
+
+The \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/bindings/jna}{\tt new binding was developed using jna.} For the \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/plugins/jni}{\tt plugin interface J\+NI} was used. We developed already \href{https://master.libelektra.org/src/bindings/jna/libelektra4j/src/main/java/org/libelektra/plugin}{\tt some plugins}.
+
+\subsection*{Qt-\/\+Gui}
+
+Raffael Pancheri released the version 0.\+0.\+2 of the Qt-\/\+Gui\+:
+
+
+\begin{DoxyItemize}
+\item added Backend Wizard for mounting
+\item user can hover over Tree\+View items and quickly see key name, key value and metakeys
+\item it is now easily possible to create and edit arrays
+\item added header to Meta\+Area for better clarity
+\item many small layout and view update fixes
+\end{DoxyItemize}
+
+\subsection*{Further stuff and small fixes}
+
+
+\begin{DoxyItemize}
+\item Two new error/warnings information\+: mountpoint and configfile. It is added automatically and all tools will print it.
+\item C++ I/O for key(s) now allows null terminator next to new-\/line terminator
+\item fix error plugin\+: now use on\+\_\+open/trigger\+\_\+warnings to be consistent
+\item fix metaset\+: now correctly append new key
+\item arrays are also available when compiled with mingw (but tests still have to be excluded for successful compilation)
+\item fix \#136
+\item fix long help text in {\ttfamily kdb check}
+\item signed release tags are now used
+\end{DoxyItemize}
+
+\subsection*{Get It!}
+
+You can download the release from \href{http://www.markus-raab.org/ftp/elektra/releases/elektra-0.8.10.tar.gz}{\tt here}
+
+
+\begin{DoxyItemize}
+\item size\+: 1915277
+\item md5sum\+: 2b16a4b555bc187562a0b38919d822a1
+\item sha1\+: 08b1d0139fc5eb0d03c52408478e68b91b1825dc
+\item sha256\+: 526e2ed61e87d89966eb36ddad78d8139b976e01ce18aab340d8a1df47132355
+\end{DoxyItemize}
+
+already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.10/html/}{\tt here}
+
+\subsection*{Stay tuned!}
+
+Subscribe to the \href{https://doc.libelektra.org/news/feed.rss}{\tt new R\+SS feed} to always get the release notifications.
+
+\href{https://doc.libelektra.org/news/6ce57ecf-420a-4a31-821e-1c5fe5532eb4.html}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://www.libelektra.org}{\tt https\+://www.\+libelektra.\+org}
+
+Best regards, Markus 

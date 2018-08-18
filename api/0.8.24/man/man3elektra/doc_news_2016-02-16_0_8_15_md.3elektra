@@ -1,0 +1,571 @@
+.TH "doc_news_2016-02-16_0_8_15_md" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2016-02-16_0_8_15_md0\&.8\&.15 Release 
+ \- 
+.IP "\(bu" 2
+guid: 1ab4a560-c286-46d2-a058-1a8e7e208fe8
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Tue, 16 Feb 2016 17:47:00 +0100
+.IP "\(bu" 2
+shortDesc: adds improved mounting, split of library & configuration validation
+.PP
+.PP
+In case you do not yet know about it, here is an abstract about Elektra:
+.PP
+Elektra serves as a universal and secure framework to access configuration parameters in a global, hierarchical key database\&. Elektra provides a mature, consistent and easily comprehensible API\&. Its modularity effectively avoids code duplication across applications and tools regarding configuration tasks\&. Elektra abstracts from cross-platform-related issues and allows applications to be aware of other applications' configurations, leveraging easy application integration\&.
+.PP
+See \fChttps://libelektra\&.org\fP
+.PP
+.SS "Overview"
+.PP
+This is one of the largest release up to now\&. It includes many user-visible improvements\&. Some highlights:
+.PP
+.IP "\(bu" 2
+Mounting is vastly improved: think about Debian's 'dpkg' to 'apt'-like functionality
+.IP "\(bu" 2
+In previous releases you could already specify the structure of the configuration\&. Now you can also automatically enforce this property\&.
+.IP "\(bu" 2
+We split the shared library \fClibelektra\fP into smaller parts\&. Now users can link against the parts of the library they need\&.
+.IP "\(bu" 2
+As always, the ABI and API is fully forward-compatible\&.
+.IP "\(bu" 2
+The release contains improvements in the \fBhttps:\fP//github\&.com/ElektraInitiative/libelektra/blob/master/doc/decisions/bootstrap\&.md 'bootstrapping process'\&.
+.IP "\(bu" 2
+We improved the \fCini\fP, \fCrename\fP and \fCcrypto\fP plugins\&.
+.IP "\(bu" 2
+The tool \fCkdb\fP now supports bookmarks and profiles\&.
+.IP "\(bu" 2
+The new tool \fCkdb editor\fP allows you to edit KDB configuration in your favorite text editor\&.
+.IP "\(bu" 2
+We are glad of the new packages for Debian, Arch Linux and OpenWRT\&.
+.PP
+.PP
+The same text as follows is also available \fChere as html\fP and \fBhttps:\fP//github\&.com/ElektraInitiative/libelektra/blob/master/doc/news/2016-02-16_0\&.8\&.15\&.md 'here on github'
+.PP
+.SS "Global Mount"
+.PP
+Sometimes you simply want some functionality for the whole key database\&. For example, you want to enable logging or notification of configuration changes\&. In previous versions, you had to change every mountpoint individually\&. Even more problematic, every mountpoint created its individual logs and notifications, without any way for someone to know if an application has issued its last log/notification\&.
+.PP
+These problems are now solved by global plugins\&. The same plugins are reused for this purpose\&. Also the mounting works nearly in the same way, you only have to omit the configuration file and the mountpoint: 
+.PP
+.nf
+    kdb global-mount syslog journald dbus
+
+.fi
+.PP
+.PP
+Voilà, from now on every configuration change gets logged to syslog and journald\&. Additionally, every application gets notified via dbus\&.
+.PP
+If you want it more verbose for debugging, you can easily do so by: 
+.PP
+.nf
+    kdb global-mount logchange counter
+
+.fi
+.PP
+.PP
+Which gives you detailed information to standard output which keys were changed/edited/deleted\&. Additionally, Elektra counts how often the \fCcounter\fP plugin is invoked\&.
+.PP
+The underlying work for the global plugins, i\&.e\&. hooks in the core libraries and the \fClist\fP plugin that allows us to use many plugins without bloating the core was done by Thomas Waser\&.
+.PP
+It was already possible in earlier versions of Elektra to specify the configuration of your program\&. Until now, this specification could be mainly used to to generate code as described \fChere\fP\&. This release adds two more interesting options:
+.PP
+.IP "1." 4
+the spec plugin, and
+.IP "2." 4
+the spec mount\&.
+.PP
+.PP
+.SS "Spec Plugin"
+.PP
+The most important global plugin that is now newly introduced with this release (thanks to Thomas Waser) is the \fCspec\fP plugin\&. By default it will be added for every global-mount\&. So for a new installation make sure you executed at least once: 
+.PP
+.nf
+    kdb global-mount
+
+.fi
+.PP
+.PP
+The spec plugin is a global plugin that copies metadata from the \fCspec\fP-namespace to other namespaces\&. That means, it reads the specification, and makes sure that the configuration conforms to it\&. The actual validation is done by the many validation plugins already present\&.
+.PP
+Lets start by saying a key is a long and must have at least the value 10: 
+.PP
+.nf
+    kdb setmeta spec/example/longkey check/type long
+
+.fi
+.PP
+.PP
+Then we can create a key in a different namespace and see if the \fCspec\fP plugin applies the metadata correctly: 
+.PP
+.nf
+    kdb set /example/longkey 25
+    kdb lsmeta /example/longkey
+
+.fi
+.PP
+.PP
+Should now at least print \fCcheck/type\fP\&. By itself, this is useful for documentation of keys\&. For example, the application developer says: 
+.PP
+.nf
+    kdb setmeta spec/example/longkey description "Do not change"
+    kdb setmeta spec/example/longkey example 30
+
+.fi
+.PP
+.PP
+The user can retrieve this documentation by: 
+.PP
+.nf
+    kdb getmeta /example/longkey description
+
+.fi
+.PP
+.PP
+But we want \fCcheck/type\fP to be not only a documentation, but also enforced\&.
+.PP
+.SS "Spec Mount"
+.PP
+Using \fCkdb setmeta\fP extensively and always looking out that all plugins are mounted correctly is error-prone\&. So instead, one can directly mount the plugins as specified\&. For the example above one simply needs: 
+.PP
+.nf
+    kdb setmeta spec/example mountpoint example.ecf
+    kdb spec-mount /example
+
+.fi
+.PP
+.PP
+Now, when we try to modify \fC/example/longkey\fP it will be validated: 
+.PP
+.nf
+    kdb set /example/longkey a
+    > Error (#52) [...] long [not] matched [...] a
+
+.fi
+.PP
+.PP
+Based on the present metadata, the correct plugins (in this case \fCtype\fP because of the metadata \fCcheck/type\fP) will be loaded\&.
+.PP
+We can also create a whole specification file, first mount the specification and then the mountpoint according the specification, e\&.g when we have \fCbattery\&.ini\fP in the folder \fC$(dirname $(kdb file spec))\fP with following content: 
+.PP
+.nf
+    []
+    mountpoint = battery.ini
+    infos/plugins = ini
+
+    [level]
+    check/enum = 'critical', 'low', 'high', 'full'
+
+.fi
+.PP
+.PP
+Then we can use: 
+.PP
+.nf
+    # mount the file itself:
+    kdb mount battery.ini spec/example/battery ni
+    # make sure all plugins are present (e.g. enum for check/enum):
+    kdb spec-mount /example/battery
+
+.fi
+.PP
+.PP
+Now lets verify if it worked: 
+.PP
+.nf
+    kdb lsmeta /example/battery/level
+    # we see it has a check/enum
+    kdb getmeta /example/battery/level check/enum
+    # now we know allowed values
+    kdb set /example/battery/level low
+    # success, low is ok!
+    kdb set /example/battery/level wrong
+    # fails, not one of the allowed values!
+
+.fi
+.PP
+.PP
+The main idea of the spec-mount is: search a plugin for every specification (metadata) found in the spec-namespace\&.
+.PP
+.SS "General Mount Improvements"
+.PP
+In earlier versions \fCkdb mount\fP failed when plugin dependencies were not satisfied\&. Now dependencies will automatically be fulfilled, e\&.g\&. 
+.PP
+.nf
+    kdb mount /etc/modules system/modules line
+
+.fi
+.PP
+.PP
+In earlier versions you would have got an error because of the missing \fCnull\fP plugin\&. Now it simply adds the needed plugins\&.
+.PP
+The plugins given in the command-line used to be real plugins\&. Now also so called providers are accepted\&.
+.PP
+To make providers useful we need to actually know which plugin is the best candidate\&. To get the information we added a \fCinfos/status\fP clause in the contract\&. In this clause the plugin developer adds many details how well the plugin is tested, reviewed, documented, maintained and so on\&. Based on this information, the best suited plugin will be chosen\&. For example, you now can use: 
+.PP
+.nf
+    kdb mount /etc/security/limits.conf system/limits augeas \
+            lens=Limits.lns logging
+
+.fi
+.PP
+.PP
+And the best suitable logger will automatically be chosen\&.
+.PP
+The configuration variable \fC/sw/kdb/current/plugins\fP now allows us to pass plugin configuration with the same syntax as the plugin specification passed on the commandline\&. A subtle difference is that thus the shell-splitting of arguments is missing, it is not possible to include whitespaces in the plugin configuration that way\&.
+.PP
+Now it is also possible to include the same plugin multiple times and also give them individual names\&. This feature is essential for script-based plugins, e\&.g\&. you now might add: 
+.PP
+.nf
+    kdb mount file.x /example/mountpoint \
+            lua#resolver script=resolver.lua \
+            lua#storage script=storage.lua
+
+.fi
+.PP
+.PP
+Furthermore, \fCkdb mount\fP now supports recommendations, which can be enabled with \fC--with-recommends\fP\&. E\&.g\&. supplied to the mount command using augeas above, comments will automatically transformed to metadata to avoid cluttering of the real configuration\&.
+.PP
+.SS "Library Split"
+.PP
+Up to now, Elektra consisted only of a single shared library, \fClibelektra\&.so\fP\&. Not all symbols in it were relevant to end users, for example, some were only needed by plugins\&. Others were only proposed and not yet part of the stable API\&. And finally, other symbols were not needed in some situations, e\&.g\&. the plugins do not need the \fCkdb\fP interface\&.
+.PP
+Thus, we split \fClibelektra\&.so\fP, so that only coherent parts are in the same library:
+.PP
+.IP "\(bu" 2
+\fClibelektra-core\&.so\fP only contains the \fCKeySet\fP data structure and module loading\&. Every binary using Elektra should link against it\&.
+.IP "\(bu" 2
+\fClibelektra-kdb\&.so\fP contains the missing \fCKDB\fP symbols\&. Together with the \fCcore\fP they contain everything declared in \fCkdb\&.h\fP\&. Michael Zehender plans to have multiple variants of \fClibelektra-kdb\&.so\fP that use different kinds of concurrency\&. Headerfile: \fC<kdb\&.h>\fP
+.IP "\(bu" 2
+\fClibelektra-ease\&.so\fP adds functionality missing in \fCcore\fP to make the life for C programmers easier\&. New headerfile: \fCkdbease\&.h\fP
+.IP "\(bu" 2
+\fClibelektra-proposal\&.so\fP adds functionality proposed for \fCcore\fP\&. It directly uses internal structures of \fCcore\fP, thus they always need to have exactly the same version\&. Headerfile: \fC\fBkdbproposal\&.h\fP\fP
+.PP
+.PP
+The source code is now better organized by the introduction of a \fClibs\fP folder\&. The explanation of every library can be found in \fC/src/libs/\fP\&.
+.PP
+The rationale of the library split is documented \fBhttps:\fP//github\&.com/ElektraInitiative/libelektra/blob/master/doc/decisions/library_split\&.md 'here'\&. Shortly put, it was needed for further evolution and allowing us to grow and enhance without getting a fat core\&.
+.PP
+Thanks to Manuel Mausz for fixing many bugs related to the library split and also adapting all the bindings for it\&.
+.PP
+.SS "Benchmark"
+.PP
+To show that the split does not make Elektra slower, Mihael Pranjić made a small benchmark\&. The real time of \fCbenchmarks/large\fP and revision 634ad924109d3cf5d9f83c33aacfdd341b8de17a
+.PP
+.IP "1." 4
+kdb-static: Median :0\&.8800
+.IP "2." 4
+kdb-full: Median :0\&.8700
+.IP "3." 4
+kdb: Median :0\&.8700
+.PP
+.PP
+So it seems that the split does not influence the time of running elektrified processes\&.
+.PP
+\fITimes were measured with time(1) and the median is calculated for 21 runs of benchmarks/large\&. This was done using \fCscripts/benchmark_libsplit\&.sh\fP\fP
+.PP
+.SS "Compatibility"
+.PP
+As always, the ABI and API is fully forward-compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile every program without errors (API)\&.
+.PP
+We added \fCkeyGetNamespace\fP which allows us to handle all namespaces in a switch and to iterate all namespaces\&. This is essential, when a new namespace is added, thus then the compiler can warn you about every part where the new namespace is not yet considered\&. We currently do not plan to add a new namespace, but better be safe than sorry\&.
+.PP
+The internal function \fCkeyCompare\fP now also detects any metadata change\&.
+.PP
+libtools was nearly rewritten\&. Even though it is mostly API compatible (you should not use the low-level \fCBackend\fP anymore but instead use the \fCBackendBuilder\fP), it is certainly not ABI compatible\&. If you have an undefined symbol: \fC_ZN3kdb5tools7Backend9addPluginESsNS_6KeySetE\fP you need to recompile your tool\&. Even the merging part has ABI incompatibility (different size of \fC_ZTVN3kdb5tools7merging14NewKeyStrategyE\fP)\&. Unfortunately, we still cannot guarantee compatibility in \fClibtools\fP, further changes are planned (e\&.g\&. implementing mounting of lazy plugins)\&.
+.PP
+The python(2) and lua interfaces changed, an additional argument (the plugin configuration) is passed to \fCopen\fP\&.
+.PP
+The INI plugin was rewritten, so many options changed in incompatible ways\&.
+.PP
+The default format plugin (e\&.g\&. for import/export) is no longer hard coded to be \fCdump\fP\&. Instead KDB_DEFAULT_STORAGE will be used\&. To get KDB_DEFAULT_STORAGE you can use the constants plugin: 
+.PP
+.nf
+    kdb mount-info
+    kdb get system/info/elektra/constants/cmake/KDB_DEFAULT_STORAGE
+
+.fi
+.PP
+.PP
+Thanks to Manuel Mausz plugins do no longer export any method other than \fCelektraPluginSymbol\fP\&. It now will fail if you directly linked against plugins and did not correctly use their public interface\&. Please use the module loading and access functions via the contract\&.
+.PP
+The CMake and Pkgconfig Files now only link against \fCelektra-core\fP and \fCelektra-kdb\fP\&. If you used some symbols not present in \fCkdb\&.h\fP, your application might not work anymore\&.
+.PP
+\fClibelektra\&.so\fP is still present for compatibility reasons\&. It should not be used for new applications\&. Some unimportant parts, however, moved to the 'sugar' libraries\&. E\&.g\&. the symbol \fCelektraKeyCutNamePart\fP is no longer part of \fClibelektra\&.so\fP\&.
+.PP
+.SS "Bootstrapping"
+.PP
+When you use \fCkdbOpen\fP in Elektra as first step it reads mountpoint configuration from \fC/elektra\fP\&. This step is the only hard coded one, and all other places of the KDB's tree can be customized as desired via mounting\&.
+.PP
+The bootstrapping now changed, so that \fC/elektra\fP is not part of the default configuration \fCdefault\&.ecf\fP (or as configured with \fCKDB_DB_FILE\fP), but instead we use \fCelektra\&.ecf\fP (or as configured with \fCKDB_DB_INIT\fP)\&. This behaviour solves the problem that \fCdefault\&.ecf\fP was read twice (and even differently, once for \fC/elektra\fP and once for \fC/\fP)\&.
+.PP
+To be fully compatible with previous mountpoints, Elektra will still read mountpoints from \fCdefault\&.ecf\fP as long as \fCelektra\&.ecf\fP is not present\&.
+.PP
+To migrate the mountpoints to the new method, simply use: 
+.PP
+.nf
+    kdb upgrade-bootstrap
+
+.fi
+.PP
+.PP
+which basically exports \fCsystem/elektra/mountpoints\fP, then does \fCkdb rm -r system/elektra/mountpoints\fP so that \fCdefault\&.ecf\fP will be without an mountpoint and thus the compatibility mode does not apply anymore\&. As last step it will import again what it exported before\&.
+.PP
+\fBhttps:\fP//github\&.com/ElektraInitiative/libelektra/blob/master/doc/decisions/bootstrap\&.md 'Details are here'
+.PP
+.SS "Plugins"
+.PP
+We already highlighted the new \fCspec\fP plugin, but also other plugins were improved at many places\&. Small other changes are:
+.PP
+.IP "\(bu" 2
+Conditionals now also support \fCassign/condition\fP syntax, thanks to Thomas Waser
+.IP "\(bu" 2
+Lua and Python are not tagged experimental anymore\&. They now correctly add their configuration to the open-call\&.
+.IP "\(bu" 2
+The plugin \fCyajl\fP (the json parser and generator) now also accepts the type \fCstring\fP and yields better warnings on wrong types\&.
+.IP "\(bu" 2
+Improved error message in the \fCtype\fP plugin\&.
+.PP
+.PP
+Larger changes were done in the following plugins:
+.PP
+.SS "INI"
+.PP
+The INI plugin was rewritten and a huge effort was taken so that it fully-roundtrips and additionally preserves all comments and ordering\&. Currently, it is brand new\&. It is planned that it will replace \fCdump\fP in the future\&.
+.PP
+Currently is has some minor problems when used as KDB_DEFAULT_STORAGE\&. You can avoid most problems by mounting a different file into root: 
+.PP
+.nf
+    kdb mount root.ini /
+
+.fi
+.PP
+.PP
+Read \fChere about the details\fP\&.
+.PP
+A huge thanks to Thomas Waser\&.
+.PP
+.SS "Rename"
+.PP
+Thanks to Thomas Waser \fCrename\fP is now fixed for cascading keys\&. Additionally, it does not change the \fCsync\fP status of the keys so that notification plugins work properly afterwards\&.
+.PP
+.SS "Crypto"
+.PP
+The crypto plugin is a facility for securing sensitive Keys by symmetric encryption of the value\&. It acts as a filter plugin and it will only operate on Keys, which have the meta-key „crypto/encrypt“ set\&.
+.PP
+The key derivation is still work-in-progress, so the plugin does not work with kdb yet\&. A planned method for key derivation is to utilize the gpg-agent\&.
+.PP
+For now the plugin requires the following Keys within the plugin configuration in order to work properly:
+.PP
+.IP "1." 4
+/crypto/key - the cryptographic key (binary 256 bit long)
+.IP "2." 4
+/crypto/iv - the initialization vector (binary 128 bit long)
+.PP
+.PP
+Please note that this method of key input is for testing purposes only and should never be used in a productive environment!
+.PP
+Thanks to Peter Nirschl, especially the patience for also supporting different platforms where dependencies need to be handled differently\&.
+.PP
+.SS "KDB"
+.PP
+A technical preview of a new tool was added: \fCkdb editor\fP allows you to edit any part of Elektra’s configuration with any editor and any syntax\&. It uses 3-way merging and other stable technology, but it currently does not provides a way to abort editing\&. So you only should use it with care\&.
+.PP
+The tool \fCkdb list\fP now searches in the rpath for libraries and thus will also find plugins not present at compile time (using \fCglob\fP)\&. Additionally, it sorts the plugins by \fCinfos/status\fP score, which can also be printed with \fC-v\fP\&. The last plugins printed are the ones ranked highest\&.
+.PP
+When running as root, \fCkdb\fP will now use the \fCsystem\fP namespace when writing configuration to cascading key names\&.
+.PP
+Long paths are cumbersome to enter in the CLI\&. Thus one can define bookmarks now\&. Bookmarks are key names that start with \fC+\fP\&. They are only recognized by the \fCkdb\fP tool or tools that explicitly have support for it\&. Applications should not depend on the presence of a bookmark\&. For example, if you set the bookmark kdb: 
+.PP
+.nf
+    kdb set user/sw/elektra/kdb/#0/current/bookmarks
+    kdb set user/sw/elektra/kdb/#0/current/bookmarks/kdb user/sw/elektra/kdb/#0/current
+
+.fi
+.PP
+.PP
+You are able to use: 
+.PP
+.nf
+    kdb ls +kdb/bookmarks
+    kdb set +kdb/format ini
+
+.fi
+.PP
+.PP
+The kdb tool got much more robust when the initial configuration is broken, no man page viewer is present or Elektra was installed wrongly\&.
+.PP
+The \fC--help\fP usage is unified and improved\&.
+.PP
+The new key naming conventions are now used for configuration of the \fCkdb\fP-tool itself: \fC/sw/elektra/kdb/#0/%/\fP and \fC/sw/elektra/kdb/#0/current/\fP are additionally read\&. The option \fC-p\fP/\fC--profile\fP is now supported for every command, it allows to fetch configuration from \fC/sw/elektra/kdb/#0/<profile>/\fP instead of \fCcurrent\fP\&. KDB is more robust when it cannot fetch its own configuration due to KDB errors\&.
+.PP
+.SS "Coding Guidelines"
+.PP
+Thanks to Kurt Micheli the code guidelines are \fBhttps:\fP//github\&.com/ElektraInitiative/libelektra/blob/master/doc/CODING\&.md 'now properly documented'\&. Thanks to René Schwaiger we also provide a style file for clang-format\&.
+.PP
+Furthermore we unified and fixed the source:
+.IP "\(bu" 2
+only use @ for doxygen commands
+.IP "\(bu" 2
+always use elektra* functions for allocation
+.IP "\(bu" 2
+added a file header for every file
+.PP
+.PP
+.SS "C++11 migration"
+.PP
+Since we now only use C++11, we applied \fCclang-modernize\fP which simplified many loops and replaced many \fC0\fP to \fCnullptr\fP\&. Additionally, we added \fCoverride\fP and \fCdefault\fP at many places\&.
+.PP
+We removed all places where we had \fCifdefs\fP to use \fCauto_ptr\fP if no modern smart pointer is available\&.
+.PP
+Because of these changes there is no easy way to compile Elektra without C++11 support, except by avoiding the C++ parts all together\&.
+.PP
+The C++ \fCKeySet\fP now also supports a \fCget\fP to retrieve whole containers at once\&. By specializing \fCKeySetTypeWrapper\fP you can support your own containers\&. Currently only \fCmap<string, T>\fP is supported (T is any type supported by \fCKey::get\fP)\&.
+.PP
+If you haven't removed it from your flags already, there is no use anymore to set \fCENABLE_CXX11\fP\&.
+.PP
+.SS "Documentation"
+.PP
+The documentation was improved vastly\&. Most thanks to Kurt Micheli who did a lot of editing and fixed many places throughout the documentation Also thanks to Michael Zehender who added two paragraphs in the main README\&.md\&.
+.PP
+Key names of applications should be called \fC/sw/org/app/#0/current\fP, where \fCcurrent\fP is the default profile (non given)\&. \fCorg\fP and \fCapp\fP is supposed to not contain \fC/\fP and be completely lowercase\&. Key names are documented \fBhere\fP\&. \fBSee also here\fP\&. The main reason for long paths is the provided flexibility in the future (e\&.g\&. to use profiles and have a compatible path for new major versions of configuration)\&. By using bookmarks, users should not be confronted by it too often\&.
+.PP
+.IP "\(bu" 2
+many man pages were improved
+.IP "\(bu" 2
+many typos were fixed, thanks to Pino Toscano!
+.IP "\(bu" 2
+Fix documentation for kdb list, thanks to Christian Berrer
+.IP "\(bu" 2
+Compilation variants are explained better, thanks to Peter Nirschl for pointing out what was missing
+.IP "\(bu" 2
+document ronn as dependency, thanks to Michael Zehender
+.IP "\(bu" 2
+fix broken links, thanks to Daniel Bugl
+.PP
+.PP
+Thanks to Kurt Micheli, developers are now warned during compilation on broken links in Markdown\&. The output format is the same as for gcc\&. Additionally, the markdown documentation of plugins now get a proper title in the pdf and html output of doxygen\&.
+.PP
+.SS "Qt-Gui 0\&.0\&.10"
+.PP
+Raffael Pancheri again updated qt-gui with many nice improvements:
+.PP
+.IP "\(bu" 2
+update existing nodes in case the config was changed outside the gui
+.IP "\(bu" 2
+safely update tree
+.IP "\(bu" 2
+add update signal to metadata
+.IP "\(bu" 2
+fix crash when closing the GUI
+.IP "\(bu" 2
+move Actions in separate file to make main\&.qml less clustered
+.IP "\(bu" 2
+plugins do not output messages at startup
+.IP "\(bu" 2
+\fCBackendBuilder\fP is now used, which automatically takes cares of the correct ordering of plugins
+.IP "\(bu" 2
+Qt 5\&.4 compatibility is still ensured
+.IP "\(bu" 2
+C++11 is now used in Qt-Gui, too
+.PP
+.PP
+.SS "Packaging and Build System"
+.PP
+Elektra 0\&.8\&.14 now in Debian with qt-gui, man pages, thanks to Pino Toscano \fCread more here\fP
+.PP
+Thanks to Gustavo Alvarez for updating and splitting the packages on Arch Linux!
+.PP
+Thanks to \fCHarald Geyer\fP, Elektra is now packaged for OpenWRT\&. We fixed a number of cross-compilation issues and now officially support building against musl libc, with one minor limitation: RPATH works differently on musl so you need to install all plugins directly in /usr/lib/ or set LD_LIBRARY_PATH\&. Report any bugs in \fCHarald's OpenWRT packaging issue tracker\fP\&.
+.PP
+.IP "\(bu" 2
+export errors/symbols are now called \fCelektra-export-symbols\fP and \fCelektra-export-symbols\fP and can be installed using \fCINSTALL_BUILD_TOOLS\fP (by default off)\&. This is needed for cross-compilation\&. Thanks to Harald Geyer for reporting\&.
+.IP "\(bu" 2
+some header files are renamed because they endlessly included themselves if the header files were found in wrong order\&. Thanks to Harald Geyer for reporting\&.
+.IP "\(bu" 2
+fixed compilation when built on more than 20 cores with >= -j15, thanks to Gustavo Alvarez for reporting and Manuel Mausz for analyzing
+.IP "\(bu" 2
+lua 5\&.1 now works too (except for iterators), thanks to Harald Geyer for reporting\&. thanks to Manuel Mausz for adding a new FindLua\&.cmake
+.IP "\(bu" 2
+pdf builds do not fail due to half written files, reported by René Schwaiger and fixed by Kurt Micheli
+.PP
+.PP
+Read about \fCother packages here\fP\&.
+.PP
+.SS "Fixes and Improvements"
+.PP
+.IP "\(bu" 2
+3 way merge now properly deals with binary data, thanks to Felix Berlakovich
+.IP "\(bu" 2
+getenv: fix wrapping on powerpc, thanks to Pino Toscano
+.IP "\(bu" 2
+markdownlinkconverter: fix char/int mismatch, thanks to Pino Toscano
+.IP "\(bu" 2
+wresolver: use KDB_MAX_PATH_LENGTH instead of PATH_MAX, thanks to Pino Toscano
+.IP "\(bu" 2
+Cleaning up #ifdefs that break statements, thanks to Romero Malaquias
+.IP "\(bu" 2
+Daniel Bugl tested the INI plugin
+.IP "\(bu" 2
+cmake list_filter was broken because of different behaviour in cmake_parse_arguments, thanks to Christian Berrer for reporting
+.IP "\(bu" 2
+g++5\&.3 is now supported
+.IP "\(bu" 2
+gtest does not link against pthread if not needed
+.IP "\(bu" 2
+testcases that are built with BUILD_SHARED also successfully work
+.IP "\(bu" 2
+kdb list works when libs are in same path as plugins, thanks to Harald Geyer for reporting
+.IP "\(bu" 2
+fix macOS issues, thanks to Peter Nirschl, René Schwaiger and Mihael Pranjic
+.IP "\(bu" 2
+fix resolver-baseflag docu, thanks to Harald Geyer for reporting
+.IP "\(bu" 2
+do not create wrong directories called \fC(\fP and \fC)\fP in source, thanks to René Schwaiger
+.IP "\(bu" 2
+fix cmake for systems where iconv is not part of libc, thanks to Michael Zehender and Peter Kümmel (for FindIconv\&.cmake)
+.IP "\(bu" 2
+fix segfault in libgetenv if root keys are present
+.IP "\(bu" 2
+lua: fix Key:tostring(), thanks to Manuel Mausz
+.IP "\(bu" 2
+add list of \fCsupported bindings\fP, thanks to Manuel Mausz
+.PP
+.PP
+.SS "Get It!"
+.PP
+You can download the release from \fChere\fP and now also \fChere on github\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.15\&.tar\&.gz
+.IP "\(bu" 2
+size: 2338297
+.IP "\(bu" 2
+md5sum: 33ec1e5982fb7fbd8893bf7b579b80f0
+.IP "\(bu" 2
+sha1: 6b1fdd5aa5aaad6ba377b4bb5ef437e0c85319ff
+.IP "\(bu" 2
+sha256: 6a406986cecb8d4a44485ced118ee803bc039b0824b72298e123b4dd47eb0b22
+.IP "\(bu" 2
+sha512: 86a408dd546b33e3b437f92f415de7aee6a235189f9eab0762b3f44ab4c453ee369a53de10a9f5b0df1b446460b12c57c6b8b77c282648ec2a49f2328d9af13d
+.PP
+.PP
+This release tarball now is also available \fCsigned by me using gpg\fP
+.PP
+already built API-Docu can be found \fChere\fP
+.PP
+.SS "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the \fCMailing List\fP the issue tracker \fCon github\fP or by mail elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, Markus 
