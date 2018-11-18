@@ -1,0 +1,495 @@
+.TH "md_src_plugins_yamlcpp_README" 3elektra "Sun Nov 18 2018" "Version 0.8.25" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_yamlcpp_READMEPlugin: yamlcpp 
+ \- 
+.IP "\(bu" 2
+infos = Information about the yamlcpp plugin is in keys below
+.IP "\(bu" 2
+infos/author = René Schwaiger sanssecours@me.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs = base64 directoryvalue
+.IP "\(bu" 2
+infos/provides = storage/yaml
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest preview unfinished concept discouraged
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = This storage plugin reads and writes data in the YAML format
+.PP
+.SH "YAML CPP"
+.PP
+.SS "Introduction"
+.PP
+The YAML CPP plugin reads and writes configuration data via the \fCyaml-cpp\fP library\&.
+.PP
+.SS "Usage"
+.PP
+You can mount this plugin via \fCkdb mount\fP:
+.PP
+.PP
+.nf
+sudo kdb mount config\&.yaml /tests/yamlcpp yamlcpp
+.fi
+.PP
+.PP
+\&. To unmount the plugin use \fCkdb umount\fP:
+.PP
+.PP
+.nf
+sudo kdb umount /tests/yamlcpp
+.fi
+.PP
+.PP
+\&. The following examples show how you can store and retrieve data via \fCyamlcpp\fP\&.
+.PP
+``\fC <h1>Mount yamlcpp plugin to cascading namespace\fP/tests/yamlcpp` sudo kdb mount config\&.yaml /tests/yamlcpp yamlcpp
+.PP
+.SH "Manually add a mapping to the database"
+.PP
+.PP
+echo '🔑 : 🐳' > \fCkdb file /tests/yamlcpp\fP 
+.SH "Retrieve the value of the manually added key"
+.PP
+.PP
+kdb get /tests/yamlcpp/🔑 #> 🐳
+.PP
+.SH "Manually add syntactically incorrect data"
+.PP
+.PP
+echo 'some key: @some  value' >> \fCkdb file /tests/yamlcpp\fP kdb get '/tests/yamlcpp/some key' 
+.SH "STDERR: \&.*yaml-cpp: error at line 2, column 11: unknown token\&.*"
+.PP
+.PP
+.SH "ERROR: 10"
+.PP
+.PP
+.SH "RET: 5"
+.PP
+.PP
+.SH "Overwrite incorrect data"
+.PP
+.PP
+echo '🔑: value' > \fCkdb file /tests/yamlcpp\fP
+.PP
+.SH "Add some values via \fCkdb set\fP"
+.PP
+.PP
+kdb set /tests/yamlcpp 🎵 kdb set /tests/yamlcpp/fleetwood mac kdb set /tests/yamlcpp/the chain
+.PP
+.SH "Retrieve the new values"
+.PP
+.PP
+kdb get /tests/yamlcpp #> 🎵 kdb get /tests/yamlcpp/the #> chain kdb get /tests/yamlcpp/fleetwood #> mac
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+.PP
+.nf
+## Arrays
+
+YAML CPP provides basic support for Elektra’s array data type\&.
+
+.fi
+.PP
+ 
+.SH "Mount yamlcpp plugin to cascading namespace \fC/tests/yamlcpp\fP"
+.PP
+.PP
+sudo kdb mount config\&.yaml /tests/yamlcpp yamlcpp
+.PP
+.SH "Manually add an array to the database"
+.PP
+.PP
+echo 'sunny:' > \fCkdb file /tests/yamlcpp\fP echo ' - Charlie' >> \fCkdb file /tests/yamlcpp\fP echo ' - Dee' >> \fCkdb file /tests/yamlcpp\fP
+.PP
+.SH "List the array entries"
+.PP
+.PP
+kdb ls /tests/yamlcpp #> user/tests/yamlcpp/sunny #> user/tests/yamlcpp/sunny/#0 #> user/tests/yamlcpp/sunny/#1
+.PP
+.SH "Read an array entry"
+.PP
+.PP
+kdb get user/tests/yamlcpp/sunny/#1 #> Dee
+.PP
+.SH "You can retrieve the last index of an array by reading the metakey \fCarray\fP"
+.PP
+.PP
+kdb getmeta /tests/yamlcpp/sunny array 
+.SH "1"
+.PP
+.PP
+.SH "Extend the array"
+.PP
+.PP
+kdb set user/tests/yamlcpp/sunny/#2 Dennis kdb set user/tests/yamlcpp/sunny/#3 Frank kdb set user/tests/yamlcpp/sunny/#4 Mac
+.PP
+.SH "The plugin supports empty array fields"
+.PP
+.PP
+kdb set user/tests/yamlcpp/sunny/#_10 'The Waitress' kdb getmeta user/tests/yamlcpp/sunny array #> #_10 kdb get user/tests/yamlcpp/sunny/#_9 
+.SH "RET: 11"
+.PP
+.PP
+.SH "Retrieve the last array entry"
+.PP
+.PP
+kdb get user/tests/yamlcpp/sunny/$(kdb getmeta user/tests/yamlcpp/sunny array) #> The Waitress
+.PP
+.SH "The plugin also supports empty arrays (arrays without any elements)"
+.PP
+.PP
+kdb setmeta user/tests/yamlcpp/empty array '' kdb export user/tests/yamlcpp/empty yamlcpp #> []
+.PP
+.SH "For arrays with at least one value we do not need to set the type \fCarray\fP"
+.PP
+.PP
+kdb set user/tests/yamlcpp/movies kdb set user/tests/yamlcpp/movies/#0 'A Silent Voice' kdb getmeta user/tests/yamlcpp/movies array #> #0 kdb export user/tests/yamlcpp/movies yamlcpp #> - A Silent Voice
+.PP
+.SH "Undo modifications to the key database"
+.PP
+.PP
+kdb rm -r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+.PP
+.nf
+The plugin also supports nested arrays\&.
+
+.fi
+.PP
+ 
+.SH "Mount yamlcpp plugin to cascading namespace \fC/tests/yamlcpp\fP"
+.PP
+.PP
+sudo kdb mount config\&.yaml /tests/yamlcpp yamlcpp
+.PP
+.SH "Add some key value pairs"
+.PP
+.PP
+kdb set /tests/yamlcpp/key value kdb set /tests/yamlcpp/array/#0 scalar kdb set /tests/yamlcpp/array/#1/key value kdb set /tests/yamlcpp/array/#1/🔑 🙈
+.PP
+kdb ls /tests/yamlcpp #> user/tests/yamlcpp/array #> user/tests/yamlcpp/array/#0 #> user/tests/yamlcpp/array/#1/key #> user/tests/yamlcpp/array/#1/🔑 #> user/tests/yamlcpp/key
+.PP
+.SH "Retrieve part of an array value"
+.PP
+.PP
+kdb get /tests/yamlcpp/array/#1/key #> value
+.PP
+.SH "Since an array saves a list of values, an array parent"
+.PP
+.PP
+.SH "- which represent the array - does not store a value!"
+.PP
+.PP
+echo '/tests/yamlcpp/array: “`kdb get /tests/yamlcpp/array`”' #> /tests/yamlcpp/array: “”
+.PP
+.SH "Remove part of an array value"
+.PP
+.PP
+kdb rm /tests/yamlcpp/array/#1/key
+.PP
+kdb ls /tests/yamlcpp #> user/tests/yamlcpp/array #> user/tests/yamlcpp/array/#0 #> user/tests/yamlcpp/array/#1/🔑 #> user/tests/yamlcpp/key
+.PP
+.SH "The plugin stores array keys using YAML sequences\&."
+.PP
+.PP
+.SH "Since yaml-cpp stores keys in arbitrary order -"
+.PP
+.PP
+.SH "either \fCkey\fP or \fCarray\fP could be the “first” key -"
+.PP
+.PP
+.SH "we remove \fCkey\fP before we retrieve the data\&. This way"
+.PP
+.PP
+.SH "we make sure that the output below will always look"
+.PP
+.PP
+.SH "the same\&."
+.PP
+.PP
+kdb rm /tests/yamlcpp/key kdb file /tests/yamlcpp | xargs cat #> array: #> - scalar #> - 🔑: 🙈
+.PP
+.SH "Undo modifications to the key database"
+.PP
+.PP
+kdb rm -r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+.PP
+.nf
+## Metadata
+
+The plugin supports metadata\&. The example below shows how a basic `Key` including some metadata, looks inside the YAML configuration file:
+
+```yaml
+key without metadata: value
+key with metadata:
+  !elektra/meta
+    - value2
+    - metakey: metavalue
+      empty metakey:
+      another metakey: another metavalue
+
+.fi
+.PP
+.PP
+\&. As we can see above the value containing metadata is marked by the tag handle \fC!elektra/meta\fP\&. The data type contains a list with two elements\&. The first element of this list specifies the value of the key, while the second element contains a map saving the metadata for the key\&. The data above represents the following key set in Elektra if we mount the file directly to the namespace \fCuser\fP:
+.PP
+Name Value Metaname Metavalue  user/key without metadata value1 — — user/key with metadata value2 metakey metavalue empty metakey — another metakey another metavalue \&. The example below shows how we can read and write metadata using the \fCyamlcpp\fP plugin via \fCkdb\fP\&.
+.PP
+``\fC <h1>Mount yamlcpp plugin to cascading namespace\fP/tests/yamlcpp` sudo kdb mount config\&.yaml user/tests/yamlcpp yamlcpp
+.PP
+.SH "Manually add a key including metadata to the database"
+.PP
+.PP
+echo '🔑: !elektra/meta [🦄, {comment: Unicorn}]' > \fCkdb file user/tests/yamlcpp\fP kdb lsmeta user/tests/yamlcpp/🔑 #> comment kdb getmeta user/tests/yamlcpp/🔑 comment #> Unicorn
+.PP
+.SH "Add a new key and add some metadata to the new key"
+.PP
+.PP
+kdb set user/tests/yamlcpp/brand new kdb setmeta user/tests/yamlcpp/brand comment 'The Devil And God Are Raging Inside Me' kdb setmeta user/tests/yamlcpp/brand rationale 'Because I Love It'
+.PP
+.SH "Retrieve metadata"
+.PP
+.PP
+kdb lsmeta user/tests/yamlcpp/brand #> comment #> rationale kdb getmeta user/tests/yamlcpp/brand rationale #> Because I Love It
+.PP
+.SH "Undo modifications to the key database"
+.PP
+.PP
+kdb rm -r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+.PP
+.nf
+We can also invoke additional plugins that use metadata like `type`\&.
+
+.fi
+.PP
+ sudo kdb mount config\&.yaml /tests/yamlcpp yamlcpp type kdb set /tests/yamlcpp/typetest/number 21 kdb setmeta /tests/yamlcpp/typetest/number check/type short
+.PP
+kdb set /tests/yamlcpp/typetest/number 'One' 
+.SH "RET: 5"
+.PP
+.PP
+.SH "STDERR: \&.*The type short failed to match for \&.*/number with string: One\&.*"
+.PP
+.PP
+.SH "ERROR: 52"
+.PP
+.PP
+kdb get /tests/yamlcpp/typetest/number #> 21
+.PP
+.SH "Undo modifications to the key database"
+.PP
+.PP
+kdb rm -r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+.PP
+.nf
+## Binary Data
+
+YAML CPP also supports [base64](https://tools\&.ietf\&.org/html/rfc4648) encoded data via the [Base64](@ref src_plugins_base64_README_md) plugin\&.
+
+.fi
+.PP
+ 
+.SH "Mount YAML CPP plugin at cascading namespace \fC/tests/binary\fP"
+.PP
+.PP
+sudo kdb mount test\&.yaml /tests/binary yamlcpp 
+.SH "Manually add binary data"
+.PP
+.PP
+echo 'bin: !!binary aGk=' > \fCkdb file /tests/binary\fP
+.PP
+.SH "Base 64 decodes the data \fCaGk=\fP to \fChi\fP and stores the value in binary form\&."
+.PP
+.PP
+.SH "The command \fCkdb get\fP prints the data as hexadecimal byte values\&."
+.PP
+.PP
+kdb get /tests/binary/bin #> 
+.PP
+.SH "Add a string value to the database"
+.PP
+.PP
+kdb set /tests/binary/text mate 
+.SH "Base 64 does not modify textual values"
+.PP
+.PP
+kdb get /tests/binary/text #> mate
+.PP
+.SH "The Base 64 plugin re-encodes binary data before YAML CPP stores the key set\&. Hence the"
+.PP
+.PP
+.SH "configuration file contains the value \fCaGk=\fP even after YAML CPP wrote a new configuration\&."
+.PP
+.PP
+grep -q 'bin: !\&.* aGk=' \fCkdb file user/tests/binary\fP 
+.SH "RET: 0"
+.PP
+.PP
+.SH "Undo modifications to the database"
+.PP
+.PP
+kdb rm -r /tests/binary sudo kdb umount /tests/binary 
+.PP
+.nf
+## Null & Empty
+
+Sometimes you only want to save a key without a value (null key) or a key with an empty value\&. The commands below show that YAML CPP supports this scenario properly\&.
+
+.fi
+.PP
+ 
+.SH "Mount YAML CPP plugin at cascading namespace \fCuser/tests/yamlcpp\fP"
+.PP
+.PP
+sudo kdb mount test\&.yaml user/tests/yamlcpp yamlcpp
+.PP
+.SH "Check if the plugin saves null keys correctly"
+.PP
+.PP
+kdb set user/tests/yamlcpp/null kdb set user/tests/yamlcpp/null/level1/level2 kdb setmeta user/tests/yamlcpp/null/level1/level2 comment 'Null key'
+.PP
+kdb ls user/tests/yamlcpp/null #> user/tests/yamlcpp/null #> user/tests/yamlcpp/null/level1/level2 kdb get -v user/tests/yamlcpp/null | grep -q 'The key is null\&.' kdb get -v user/tests/yamlcpp/null/level1/level2 | grep -q 'The key is null\&.'
+.PP
+.SH "Check if the plugin saves empty keys correctly"
+.PP
+.PP
+kdb set user/tests/yamlcpp/empty '' kdb set user/tests/yamlcpp/empty/level1/level2
+.PP
+kdb ls user/tests/yamlcpp/empty #> user/tests/yamlcpp/empty #> user/tests/yamlcpp/empty/level1/level2 kdb get -v user/tests/yamlcpp/empty | grep -vq 'The key is null\&.'
+.PP
+.SH "Undo modifications to the database"
+.PP
+.PP
+kdb rm -r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+.PP
+.nf
+## Dependencies
+
+This plugin requires [yaml-cpp][]\&. On a Debian based OS the package for the library is called `libyaml-cpp-dev` \&. On macOS you can install the package `yaml-cpp` via [HomeBrew](https://brew\&.sh)\&.
+
+## Limitations
+
+### Leaf Values
+
+One of the limitations of this plugin is, that it only supports values inside [leaf nodes](https://github\&.com/ElektraInitiative/libelektra/issues/106)\&. Let us look at an example to show what that means\&. The YAML file below:
+
+```yaml
+root:
+  subtree:    🍂
+  below root: leaf
+level 1:
+  level 2:
+    level 3:  🍁
+
+.fi
+.PP
+.PP
+stores all of the values (\fC🍂\fP, \fCleaf\fP and \fC🍁\fP) in the leaves of the mapping\&. The drawing below makes this situation a little bit clearer\&.
+.PP
+.PP
+The key set that this plugin creates using the data above looks like this (assuming we mount the plugin to \fCuser/tests/yamlcpp\fP):
+.PP
+Name Value  user/tests/yamlcpp/level user/tests/yamlcpp/level 1/level 2 user/tests/yamlcpp/level 1/level 2/level 3 🍁 user/tests/yamlcpp/root user/tests/yamlcpp/root/below root leaf user/tests/yamlcpp/root/subtree 🍂 \&. Now why is this plugin unable to store values outside leaf nodes? For example, why can we not store a value inside \fCuser/tests/yamlcpp/level 1/level 2\fP? To answer this question we need to look at the YAML representation:
+.PP
+.PP
+.nf
+level 1:
+  level 2:
+    level 3:  🍁
+.fi
+.PP
+.PP
+\&. In a naive approach we might just try to add a value e\&.g\&. \fC🙈\fP right next to level 2:
+.PP
+.PP
+.nf
+level 1:
+  level 2: 🙈
+    level 3:  🍁
+.fi
+.PP
+.PP
+\&. This however would be not correct, since then the YAML node \fClevel 2\fP would contain both a scalar value (\fC🙈\fP) and a mapping (\fC{ level 3: 🍁 }\fP)\&. We could solve this dilemma using a list:
+.PP
+.PP
+.nf
+level 1:
+  level 2:
+    - 🙈
+    - level 3:  🍁
+.fi
+.PP
+.PP
+\&. However, if we use this approach we are not able to support Elektra’s array type properly\&.
+.PP
+.SS "Directory Values"
+.PP
+To overcome the limitation described above, the YAML CPP plugin requires the \fBDirectory Value\fP plugin\&. This plugin converts the value of a non-leaf node to a leaf node with the name \fC___dirdata\fP\&. For example, let us assume we have the following key set:
+.PP
+.PP
+.nf
+directory      = Directory Data
+directory/file = Leaf Data
+.fi
+.PP
+.PP
+\&. The Directory Value plugin will convert the key set in the set (write) direction to
+.PP
+.PP
+.nf
+directory            =
+directory/___dirdata = Directory Data
+directory/file       = Leaf Data
+.fi
+.PP
+.PP
+\&. Consequently the YAML plugin will store the key set as
+.PP
+.PP
+.nf
+directory:
+  ___dirdata = Directory Data
+  file       = Leaf Data
+.fi
+.PP
+.PP
+\&. A user of the YAML plugin will not notice this feature unless he edits the configuration file by hand, as the following example shows:
+.PP
+``\fC <h1>Mount YAML CPP plugin at\fPuser/tests/yamlcpp` sudo kdb mount test\&.yaml user/tests/yamlcpp yamlcpp
+.PP
+kdb set user/tests/yamlcpp/directory 'Directory Data' kdb setmeta user/tests/yamlcpp/directory comment 'Directory Metadata' kdb set user/tests/yamlcpp/directory/file 'Leaf Data'
+.PP
+kdb ls user/tests/yamlcpp/directory #> user/tests/yamlcpp/directory #> user/tests/yamlcpp/directory/file
+.PP
+kdb get user/tests/yamlcpp/directory #> Directory Data kdb getmeta user/tests/yamlcpp/directory comment #> Directory Metadata kdb get user/tests/yamlcpp/directory/file #> Leaf Data
+.PP
+.SH "Undo modifications to the database"
+.PP
+.PP
+kdb rm -r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+.PP
+.nf
+\&.
+
+### Other Limitations
+
+- Adding and removing keys does remove **comments** inside the configuration file
+- The plugin currently lacks proper **type support** for scalars\&.
+- If Elektra uses YAML CPP as **default storage** plugin, multiple tests of the test suite fail\&. However, if you mount YAML CPP at `/`:
+
+.fi
+.PP
+ kdb mount default\&.yaml / yamlcpp ```
+.PP
+all tests should work correctly\&. The problem here is that Elektra does not load additional required plugins (\fCinfos/needs\fP) for a default storage plugin\&. 

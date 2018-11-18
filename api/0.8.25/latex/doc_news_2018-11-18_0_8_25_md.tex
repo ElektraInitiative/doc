@@ -1,0 +1,428 @@
+This release did not happen yet but hopefully will happen today.
+
+
+\begin{DoxyItemize}
+\item guid\+: 472392e0-\/cc4f-\/4826-\/a0a9-\/2764d90c5f89
+\item author\+: Markus Raab
+\item pub\+Date\+: Sun, 18 Nov 2018 14\+:30\+:34 +0100
+\item short\+Desc\+: mmapstorage, faster lookup
+\end{DoxyItemize}
+
+We are proud to release Elektra 0.\+8.\+25.
+
+\subsection*{What is Elektra?}
+
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database. For more information, visit \href{https://libelektra.org}{\tt https\+://libelektra.\+org}.
+
+For a small demo see here\+:
+
+\href{https://asciinema.org/a/cantr04assr4jkv8v34uz9b8r}{\tt }
+
+You can also read the news \href{https://www.libelektra.org/news/0.8.25-release}{\tt on our website}
+
+\subsection*{Highlight}
+
+This release is dedicated to drastically improve the speed of Elektra. Two non-\/trivial features facilitate most of the improvement\+:
+
+
+\begin{DoxyItemize}
+\item mmap storage for very fast retrieval of configuration
+\item Hybrid Search Algorithm for {\ttfamily ks\+Lookup (...)} for very fast access of configuration
+\end{DoxyItemize}
+
+\subsubsection*{mmap storage}
+
+We added a new, binary and fast storage plugin called \href{https://libelektra.org/plugins/mmapstorage}{\tt {\ttfamily mmapstorage}}. It leverages the {\ttfamily mmap()} syscall and supports full Elektra semantics. We provide two compile variants\+: {\ttfamily mmapstorage} and {\ttfamily mmapstorage\+\_\+crc}. The {\ttfamily mmapstorage\+\_\+crc} variant enables C\+R\+C32 checksums for critical data, while the {\ttfamily mmapstorage} variant omits the checksum for maximum performance.
+
+We ran a synthetic benchmark with 257 iterations using 40k keys in a keyset, and compared the performance to the {\ttfamily dump} storage plugin.
+
+Median write time in microseconds\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Plugin }&\textbf{ Time  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Plugin }&\textbf{ Time  }\\\cline{1-2}
+\endhead
+{\ttfamily dump} &71079 \\\cline{1-2}
+{\ttfamily mmapstorage} &2964 \\\cline{1-2}
+{\ttfamily mmapstorage\+\_\+crc} &7644 \\\cline{1-2}
+\end{longtabu}
+Median read time in microseconds\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Plugin }&\textbf{ Time  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Plugin }&\textbf{ Time  }\\\cline{1-2}
+\endhead
+{\ttfamily dump} &82737 \\\cline{1-2}
+{\ttfamily mmapstorage} &1145 \\\cline{1-2}
+{\ttfamily mmapstorage\+\_\+crc} &5744 \\\cline{1-2}
+\end{longtabu}
+In our benchmark, the {\ttfamily mmapstorage} plugin writes more than 23x faster, and reads more than 72x faster than the {\ttfamily dump} storage plugin.
+
+For this release the plugin is marked as experimental, even though it is already used as default storage plugin in a build job on our \href{https://build.libelektra.org}{\tt build server}.
+
+Thanks to Mihael Pranjić for this improvement.
+
+\subsubsection*{Hybrid Search Algorithm for {\ttfamily ks\+Lookup (...)}}
+
+The hybrid search algorithm is now implemented, this concludes the extension of the {\ttfamily ks\+Lookup (...)} search with the \href{https://master.libelektra.org/doc/dev/data-structures.md#order-preserving-minimal-perfect-hash-map-aka-opmphm}{\tt order preserving minimal perfect hash map (O\+P\+M\+P\+HM)}. The hybrid search combines the best properties of the binary search and the \href{https://master.libelektra.org/doc/dev/data-structures.md#order-preserving-minimal-perfect-hash-map-aka-opmphm}{\tt O\+P\+M\+P\+HM}. The hybrid search decides dynamically which search algorithm to use.
+
+Because of the automatic decision, usually nothing needs to be done by A\+PI users to take advantage of this improvement. Advanced A\+PI user, however, can overrule the hybrid search by passing {\ttfamily K\+D\+B\+\_\+\+O\+\_\+\+O\+P\+M\+P\+HM} or {\ttfamily K\+D\+B\+\_\+\+O\+\_\+\+B\+I\+N\+S\+E\+A\+R\+CH} to {\ttfamily ks\+Lookup (...)}. The constants are defined in \href{https://master.libelektra.org/src/include/kdbproposal.h}{\tt kdbproposal.\+h}. For low-\/memory systems the building of the hash map can be disabled altogether at build-\/time by disabling the C\+Make variable {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+O\+P\+T\+I\+M\+I\+Z\+A\+T\+I\+O\+NS} (by default enabled now).
+
+The implemented randomized \href{https://master.libelektra.org/doc/dev/data-structures.md#order-preserving-minimal-perfect-hash-map-aka-opmphm}{\tt O\+P\+M\+P\+HM} algorithm is in 99.\+5\% of the measured random cases optimal. However the randomization property of the algorithm leaves an uncertainty.
+
+The results made with random cases had shown that the hybrid search is, except for small keyset sizes, almost always faster compared to the standalone binary search. The performance increase strongly depended on the measured hardware. In the random cases where the hybrid search is faster, on average $\sim$8.53\% to $\sim$20.92\% of time was saved. The implemented hybrid search works only above a keyset size of {\ttfamily 599} to exclude the small keyset sizes.
+
+Thanks to Kurt Micheli for this improvement.
+
+\subsection*{Plugins}
+
+The following section lists news about the \href{https://www.libelektra.org/plugins/readme}{\tt plugins} we updated in this release.
+
+\subsubsection*{Directory Value}
+
+We improved the performance of the \href{https://libelektra.org/plugins/directoryvalue}{\tt directoryvalue plugin}. $\ast$(René Schwaiger)$\ast$ This plugin is used for configuration file formats that do not support that directories contain values, like it is the case in J\+S\+ON. A program manipulating a 13 MB J\+S\+ON file which first did not succeed within 10 hours is now finished in 44 seconds.
+
+\subsubsection*{Process}
+
+There is a new, experimental plugin called \href{https://libelektra.org/plugins/process}{\tt process}. This plugin utilizes the pluginprocess library in order to execute arbitrary other plugins in an own process, acting as a proxy itself. Therefore it is not required to explicitly change a plugin\textquotesingle{}s implementation if it shall be executed in an own process. This plugin is not completely finished yet, as currently there is no way for it to mimic the proxied plugin\textquotesingle{}s contract in Elektra. It can be used with simple plugins like {\ttfamily dump} however, check the limitations in the readme for more details. $\ast$(Armin Wurzinger)$\ast$
+
+\subsubsection*{F\+S\+Tab}
+
+The detection of the {\ttfamily mntent} functions now also works correctly, if you use the compiler switch {\ttfamily -\/\+Werror}. $\ast$(René Schwaiger)$\ast$
+
+\subsubsection*{passwd}
+
+We fixed an issue with the passwd plugin not properly setting compile flags. This resolves a problem with undefined functions when building with musl. $\ast$(Lukas Winkler)$\ast$
+
+\subsubsection*{gpgme}
+
+The experimental \href{https://libelektra.org/plugins/gpgme}{\tt gpgme plugin} was brought into existence to provide cryptographic functions using Gnu\+GP via the {\ttfamily libgpgme} library. $\ast$(Peter Nirschl)$\ast$
+
+\subsubsection*{network}
+
+The {\ttfamily network} plugin now also allows for non-\/numerical hosts (i.\+e. \char`\"{}localhost\char`\"{}) to be set and tries to resolve it via D\+NS. $\ast$(Michael Zronek)$\ast$
+
+\subsubsection*{Y\+A\+M\+Bi}
+
+This new plugin parses a subset of Y\+A\+ML using a parser generated by \href{https://www.gnu.org/software/bison}{\tt Bison}. $\ast$(René Schwaiger)$\ast$
+
+\subsubsection*{Y\+A\+ML C\+PP}
+
+The build system now disables the plugin automatically, if you use a G\+CC compiler ({\ttfamily 6.\+x} or earlier) and enable the option {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+A\+S\+AN}. We updated the behavior, since otherwise the plugin will report memory leaks at runtime. $\ast$(René Schwaiger)$\ast$
+
+\subsubsection*{Yan LR}
+
+A new plugin parsing Y\+A\+ML files using Yan LR.
+
+
+\begin{DoxyItemize}
+\item The plugin does not modify the (original) parent key. As a consequence, setting values at the root of a mountpoint\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+sudo kdb mount config.yaml user/tests/yambi yambi
+kdb set user/tests/yanlr 'Mount Point Value'
+kdb get user/tests/yanlr
+#> Mount Point Value
+\end{DoxyCode}
+
+
+now works correctly. $\ast$(René Schwaiger)$\ast$
+\begin{DoxyItemize}
+\item We now use C++ code to test the plugin. $\ast$(René Schwaiger)$\ast$
+\item The C\+Make code of the plugin now also recognizes {\ttfamily antlr} as A\+N\+T\+LR executable, if {\ttfamily antlr4} is not available. $\ast$(René Schwaiger)$\ast$
+\item The build system now disables the unit test for the plugin, if you use G\+CC ({\ttfamily 6.\+x} or earlier) to translate Elektra. We introduced this behavior, since the code generated by A\+N\+T\+LR ({\ttfamily Y\+A\+M\+L.\+h}) seems to contain a double free that causes a segmentation fault on systems that use the G\+NU C library. $\ast$(René Schwaiger)$\ast$
+\item The build system now disables the plugin automatically, if you use a G\+CC compiler ({\ttfamily 6.\+x} or earlier) and enable the option {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+A\+S\+AN}. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+
+\subsubsection*{Y\+Awn}
+
+This new plugin parses a subset of Y\+A\+ML using the Earley Parser library \href{https://github.com/vnmakarov/yaep}{\tt Y\+A\+EP}. $\ast$(René Schwaiger)$\ast$
+
+\subsubsection*{Reference}
+
+This new plugin can be used to validate that the value of a key is a reference to another key. $\ast$(Klemens Böswirth)$\ast$
+
+\subsection*{Libraries}
+
+The text below summarizes updates to the \href{https://www.libelektra.org/libraries/readme}{\tt C (and C++)-\/based libraries} of Elektra.
+
+\subsubsection*{Compatibility}
+
+As always, the A\+BI and A\+PI of kdb.\+h is fully compatible, i.\+e. programs compiled against an older 0.\+8 version of Elektra will continue to work (A\+BI) and you will be able to recompile programs without errors (A\+PI).
+
+This is the last release for which we have built Jessie packages\+: \begin{DoxyVerb}    deb     [trusted=yes] https://debian-stable.libelektra.org/elektra-stable/ jessie main
+    deb-src [trusted=yes] https://debian-stable.libelektra.org/elektra-stable/ jessie main
+\end{DoxyVerb}
+
+
+Obviously, we will continue to update the stretch package\+: \begin{DoxyVerb}    deb     [trusted=yes] https://debian-stretch-repo.libelektra.org/ stretch main
+    deb-src [trusted=yes] https://debian-stretch-repo.libelektra.org/ stretch main
+\end{DoxyVerb}
+
+
+\subsubsection*{Package Maintainer}
+
+Following plugins got added\+:
+
+
+\begin{DoxyItemize}
+\item libelektra-\/gpgme.\+so
+\item libelektra-\/mmapstorage\+\_\+crc.\+so
+\item libelektra-\/mmapstorage.\+so
+\item libelektra-\/process.\+so
+\item libelektra-\/reference.\+so
+\item libelektra-\/yambi.\+so
+\end{DoxyItemize}
+
+A new library got added (should be packaged privately for now)\+:
+
+
+\begin{DoxyItemize}
+\item libelektra-\/globbing.\+so
+\end{DoxyItemize}
+
+\subsubsection*{Core}
+
+Optimize elektra\+Ks\+Filter to not duplicate keys $\ast$(Markus Raab)$\ast$
+
+\subsubsection*{Globbing}
+
+A new library which can be used to match keys against globbing patterns was introduced. $\ast$(Klemens Böswirth)$\ast$
+
+The A\+PI is still experimental, so it should not be used externally for now.
+
+\subsubsection*{Ease}
+
+{\ttfamily libease} provides the function {\ttfamily elektra\+Array\+Validate\+Base\+Name\+String}, which can be used to validate that a given string is an Elektra array name. $\ast$(Klemens Böswirth)$\ast$
+
+\subsection*{Bindings}
+
+Bindings allow you to utilize Elektra using \href{https://www.libelektra.org/bindings/readme}{\tt various programming languages}. This section keeps you up to date with the multi-\/language support provided by Elektra.
+
+\subsubsection*{Ruby}
+
+Do not use private Elektra headers for Ruby bindings as preparation for a Ruby {\ttfamily libelektra} gem. $\ast$(Bernhard Denner)$\ast$
+
+\subsection*{Tools}
+
+
+\begin{DoxyItemize}
+\item Added benchmarks for storage plugins. The currently benchmarked plugins are {\ttfamily dump} and {\ttfamily mmapstorage}. $\ast$(Mihael Pranjić)$\ast$
+\item Avoid raw pointers in K\+DB tools. $\ast$(Markus Raab)$\ast$
+\item Improved error text of K\+DB tool {\ttfamily cp}. $\ast$(Markus Raab)$\ast$
+\item Document hidden feature of K\+DB tool {\ttfamily mount}. $\ast$(Markus Raab)$\ast$
+\item Add more tags to the K\+DB tools to be used with {\ttfamily kdb find-\/tools}. $\ast$(Markus Raab)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Scripts}
+
+
+\begin{DoxyItemize}
+\item We now require \href{https://clang.llvm.org/docs/ClangFormat.html}{\tt {\ttfamily clang-\/format}} 6.\+0 for formatting C and C++ code. $\ast$(René Schwaiger)$\ast$
+\item The command \href{https://master.libelektra.org/scripts/reformat-source}{\tt {\ttfamily reformat-\/source}} now displays information about the installed version of {\ttfamily clang-\/format}, if it is unable to locate a supported version of the tool. $\ast$(René Schwaiger)$\ast$
+\item We now also check the P\+O\+S\+IX compatibility of our scripts with \href{https://github.com/mvdan/sh}{\tt {\ttfamily shfmt}}. $\ast$(René Schwaiger)$\ast$
+\item The new command \mbox{[}{\ttfamily reformat-\/shfmt}\mbox{]}\mbox{[}\href{https://master.libelektra.org/scripts/reformat-shfmt}{\tt https\+://master.\+libelektra.\+org/scripts/reformat-\/shfmt}\mbox{]} reformats Shell scripts using the tool \href{https://github.com/mvdan/sh}{\tt {\ttfamily shfmt}}. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Documentation}
+
+
+\begin{DoxyItemize}
+\item We fixed some minor spelling mistakes in the documentation. $\ast$(René Schwaiger)$\ast$
+\item Improved the plugins documentation. $\ast$(Michael Zronek)$\ast$
+\item The Read\+Me now includes two badges that show the latest released version of Elektra and the status of the Travis build. $\ast$(René Schwaiger)$\ast$
+\item Fixed documenation error on Ruby plugin Readme. $\ast$(Bernhard Denner)$\ast$
+\item Go into more detail in https\+://master.libelektra.\+org/doc/\+B\+U\+I\+L\+D\+S\+E\+R\+V\+ER.md \char`\"{}\+B\+U\+I\+L\+D\+S\+E\+R\+V\+E\+R.\+md\char`\"{}. $\ast$(Lukas Winkler)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Tests}
+
+
+\begin{DoxyItemize}
+\item Fix potential parallel execution of maven tests, which write to K\+DB. $\ast$(Markus Raab)$\ast$
+\item The unit test for the \href{https://www.libelektra.org/plugins/dbus}{\tt {\ttfamily dbus} plugin} does not leak memory anymore, if it fails on mac\+OS. $\ast$(Thomas Wahringer)$\ast$
+\item The tests {\ttfamily testkdb\+\_\+allplugins} and {\ttfamily testscr\+\_\+check\+\_\+kdb\+\_\+internal\+\_\+check} do not test a plugin on an A\+S\+AN enabled build anymore, if you specify the status tag {\ttfamily memleak} in the plugin contract. $\ast$(René Schwaiger)$\ast$
+\item The https\+://master.libelektra.\+org/doc/\+T\+E\+S\+T\+I\+NG.md \char`\"{}\+C\+Framework\char`\"{} macro {\ttfamily compare\+\_\+key} now also checks if the meta values of keys are equal. $\ast$(René Schwaiger)$\ast$
+\item The test {\ttfamily testscr\+\_\+check\+\_\+bashisms} does not print warnings about skipped files anymore. $\ast$(René Schwaiger)$\ast$
+\item We added a \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} test for the \href{https://www.libelektra.org/plugins/shell}{\tt {\ttfamily shell} plugin}. $\ast$(René Schwaiger)$\ast$
+\item Added many storage plugin tests. Most tests use the keyset, key name and value A\+P\+Is. Currently, the tests are only active for {\ttfamily dump} and {\ttfamily mmapstorage}. $\ast$(Mihael Pranjić)$\ast$
+\item The test {\ttfamily testcpp\+\_\+contextual\+\_\+basic} now compiles without warnings, if we use Clang 7 as compiler. $\ast$(René Schwaiger)$\ast$
+\item crypto, fcrypt and gpgme properly shut down the gpg-\/agent after the unit test is done. See \#1973 . $\ast$(Peter Nirschl)$\ast$
+\item minor refactoring of the unit tests for crypto, fcrypt, gpgme\+: moved shared code to separate module in order to avoid code duplication. $\ast$(Peter Nirschl)$\ast$
+\item The C\+Make targets for plugin tests ({\ttfamily testmod\+\_\+\mbox{[}plugin\mbox{]}}) now depend on the respective C\+Make targets for the plugins themselves ({\ttfamily elektra-\/\mbox{[}plugin\mbox{]}}). $\ast$(Klemens Böswirth)$\ast$
+\item Fixed bug in C\+Make plugin tests, if only {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL} but not {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+H\+A\+R\+ED} is used. $\ast$(Klemens Böswirth)$\ast$
+\item The test \href{https://master.libelektra.org/tests/shell/check_formatting.sh}{\tt {\ttfamily testscr\+\_\+check\+\_\+formatting}} now also checks the formatting of Shell code. $\ast$(René Schwaiger)$\ast$
+\item We pumped version numbers in X\+M\+L-\/test files. $\ast$(Markus Raab)$\ast$
+\item We fixed a crash in the unit test of the \href{https://www.libelektra.org/bindings/jna}{\tt J\+NA} binding. $\ast$(René Schwaiger)$\ast$
+\item The command https\+://master.libelektra.\+org/tests/\+R\+E\+A\+D\+ME.md \char`\"{}`kdb run\+\_\+all`\char`\"{} now only prints the output of tests that failed. To print the full output of all test, please use the option {\ttfamily -\/v}. $\ast$(René Schwaiger)$\ast$
+\item The \href{https://master.libelektra.org/tests/shell/shell_recorder}{\tt Shell Recorder} does not use the non-\/\+P\+O\+S\+IX grep option {\ttfamily -\/-\/text} any more. $\ast$(René Schwaiger)$\ast$
+\item The test suite now uses \href{https://github.com/google/googletest}{\tt Google Test} {\ttfamily 1.\+8.\+1}. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Build}
+
+\subsubsection*{C\+Make}
+
+
+\begin{DoxyItemize}
+\item We improved the detection of Python 2 and Python 3 in the C\+Make code of the Python bindings/plugins. $\ast$(René Schwaiger)$\ast$
+\item We restructured the code of the \href{https://master.libelektra.org/cmake/Modules/FindHaskell.cmake}{\tt C\+Make module} we use to detect Haskell tools . $\ast$(René Schwaiger)$\ast$
+\item Building the Haskell binding should now work again. $\ast$(René Schwaiger)$\ast$
+\item The C\+Make configuration step now displays less debug messages about found libraries. $\ast$(René Schwaiger)$\ast$
+\item Provide a wrapper around {\ttfamily check\+\_\+symbol\+\_\+exists} that handles issues with {\ttfamily -\/\+Werror -\/\+Wpedantic}. $\ast$(Lukas Winkler)$\ast$
+\item The argument {\ttfamily I\+N\+C\+L\+U\+D\+E\+\_\+\+S\+Y\+S\+T\+E\+M\+\_\+\+D\+I\+R\+E\+C\+T\+O\+R\+I\+ES} of the function {\ttfamily add\+\_\+plugin} now supports multiple include directories. $\ast$(René Schwaiger)$\ast$
+\item We reformatted all C\+Make source files with cmake-\/format 0.\+4.\+3. $\ast$(René Schwaiger)$\ast$
+\item Generating coverage data ({\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+C\+O\+V\+E\+R\+A\+GE=ON}) should now also work on mac\+OS. $\ast$(René Schwaiger)$\ast$
+\item You can use the new target {\ttfamily run\+\_\+checkshell} to run all shell checks ({\ttfamily testscr\+\_\+check.$\ast$}). $\ast$(René Schwaiger)$\ast$
+\item The new target {\ttfamily run\+\_\+nocheckshell} runs all tests except for shell checks. $\ast$(René Schwaiger)$\ast$
+\item The target {\ttfamily run\+\_\+all} now runs tests that do not modify the key database in parallel. $\ast$(René Schwaiger)$\ast$
+\item Fix C\+Make inclusion logic for G\+Lib/\+Gi $\ast$(Markus Raab)$\ast$
+\end{DoxyItemize}
+
+\subsubsection*{Docker}
+
+
+\begin{DoxyItemize}
+\item The Docker image for Debian stretch now contains all (optional) dependencies for Elektra. $\ast$(René Schwaiger)$\ast$
+\item The docker images used by our build system are now available to download from our systems without authentication. Try it out and list available images via {\ttfamily docker run -\/-\/rm anoxis/registry-\/cli -\/r \href{https://hub-public.libelektra.org}{\tt https\+://hub-\/public.\+libelektra.\+org}}. You can search for images using {\ttfamily -\/-\/images-\/like}, for example\+: {\ttfamily docker run -\/-\/rm anoxis/registry-\/cli -\/r \href{https://hub-public.libelektra.org}{\tt https\+://hub-\/public.\+libelektra.\+org} -\/-\/images-\/like alpine}. Afterwards pull your desired image as you would do from any public registry, for example\+: {\ttfamily docker pull hub-\/public.\+libelektra.\+org/build-\/elektra-\/alpine\+:201811-\/37597a34fed4988639cdaf4d6a2c54754d09918586f53389e4fde5fd3b3a7180}. $\ast$(Lukas Winkler)$\ast$
+\end{DoxyItemize}
+
+\subsubsection*{Vagrant}
+
+
+\begin{DoxyItemize}
+\item Added Vagrantfile for Ubuntu artful 32-\/bit. $\ast$(Mihael Pranjić)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Infrastructure}
+
+\subsubsection*{Jenkins}
+
+
+\begin{DoxyItemize}
+\item We enabled tests that write to the hard disk on the build job {\ttfamily alpine}. $\ast$(René Schwaiger)$\ast$
+\item The build jobs now print less non-\/relevant output. $\ast$(René Schwaiger)$\ast$
+\item Enable {\ttfamily -\/\+Werror} in {\ttfamily debian-\/stable-\/full}. $\ast$(Lukas Winkler)$\ast$
+\item We added the compiler switch {\ttfamily -\/\+Werror} to the build jobs\+:
+\begin{DoxyItemize}
+\item {\ttfamily alpine},
+\item {\ttfamily debian-\/stable-\/full-\/i386},
+\item {\ttfamily debian-\/stable-\/full-\/mmap-\/asan},
+\item {\ttfamily debian-\/stable-\/full-\/mmap},
+\item {\ttfamily debian-\/stable-\/full-\/optimizations-\/off},
+\item {\ttfamily debian-\/stable-\/full-\/xdg},
+\item {\ttfamily debian-\/stable-\/minimal},
+\item {\ttfamily debian-\/stable-\/multiconf},
+\item {\ttfamily debian-\/unstable-\/clang-\/asan},
+\item {\ttfamily debian-\/unstable-\/full-\/clang},
+\item {\ttfamily debian-\/unstable-\/full},
+\item {\ttfamily ubuntu-\/xenial}, and
+\item {\ttfamily debian-\/stable-\/asan}. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+\item Build Artifacts for all PR\textquotesingle{}s to detect issues before merging $\ast$(Lukas Winkler)$\ast$
+\item Stricter removal of temporary docker images on docker nodes $\ast$(Lukas Winkler)$\ast$
+\item Added jenkins build jobs {\ttfamily debian-\/stable-\/full-\/mmap} and {\ttfamily debian-\/stable-\/full-\/mmap-\/asan} with {\ttfamily mmapstorage} as the default storage. $\ast$(Mihael Pranjić)$\ast$
+\item We added basic support for coverage analysis via \href{http://coveralls.io}{\tt Coveralls}. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+
+\subsubsection*{Travis}
+
+
+\begin{DoxyItemize}
+\item Travis now also checks the code for memory leaks in the build job {\ttfamily 🍏 Clang A\+S\+AN}. $\ast$(René Schwaiger)$\ast$
+\item The Travis build jobs {\ttfamily 🍏 Clang A\+S\+AN} and {\ttfamily 🐧 G\+CC A\+S\+AN} now only translates a minimal set of plugins, since we had various timeout problems with these jobs before. We explicitly excluded plugins, to make sure that the build jobs still test newly added plugins. $\ast$(René Schwaiger)$\ast$
+\item Added travis build job {\ttfamily 🍏 mmap} on mac\+OS with {\ttfamily mmapstorage} as the default storage. $\ast$(Mihael Pranjić)$\ast$
+\item Travis now prints the C\+Make configuration for each build job. $\ast$(René Schwaiger)$\ast$
+\item We now test Elektra using the latest version of Xcode ({\ttfamily 10.\+0}). $\ast$(René Schwaiger)$\ast$
+\item We added the build job {\ttfamily 🍏 Check Shell}, which only runs shell checks such as {\ttfamily testscr\+\_\+check\+\_\+oclint}. This update allows us to remove the shell checks from the jobs {\ttfamily 🍏 M\+Map} and {\ttfamily 🍏 Clang}, which sometimes hit the \href{https://docs.travis-ci.com/user/customizing-the-build#build-timeouts}{\tt timeout limit for public repositories} before. $\ast$(René Schwaiger)$\ast$
+\item All Travis build jobs now use the compiler switch {\ttfamily -\/\+Werror}. $\ast$(René Schwaiger)$\ast$
+\item The new job {\ttfamily 🍏 F\+U\+LL} and the build job {\ttfamily 🐧 F\+U\+LL} build Elektra using the C\+Make options {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL=ON} and {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+H\+A\+R\+ED=O\+FF}. $\ast$(René Schwaiger)$\ast$
+\item The {\ttfamily script} stage of the build jobs print less non-\/relevant output. Usually the commands in this stage should now only print verbose output if a test fails. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Website}
+
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date.
+
+\subsection*{Outlook}
+
+We are currently working on following topics\+:
+
+
+\begin{DoxyItemize}
+\item Global mmap cache\+: This feature will enable Elektra to return configuration without parsing configuration files or executing other plugins as long as the configuration files are not changed. $\ast$(Mihael Pranjić)$\ast$
+\item Finish high-\/level A\+PI. $\ast$(Klemens Böswirth)$\ast$
+\item Validation improvements. $\ast$(Michael Zronek)$\ast$
+\item Improve Y\+A\+ML plugins. $\ast$(René Schwaiger)$\ast$
+\end{DoxyItemize}
+
+\subsection*{Statistics}
+
+Following authors made this release possible\+:
+
+
+\begin{DoxyItemize}
+\item 1 commit\+: Thomas Wahringer \href{mailto:thomas.wahringer@libelektra.org}{\tt thomas.\+wahringer@libelektra.\+org}
+\item 2 commits\+: Bernhard Denner \href{mailto:bernhard.denner@gmail.com}{\tt bernhard.\+denner@gmail.\+com}
+\item 7 commits\+: Kurt Micheli \href{mailto:e1026558@student.tuwien.ac.at}{\tt e1026558@student.\+tuwien.\+ac.\+at}
+\item 12 commits\+: Michael Zronek \href{mailto:michael.zronek@gmail.com}{\tt michael.\+zronek@gmail.\+com}
+\item 33 commits\+: Lukas Winkler \href{mailto:derwinlu+git@gmail.com}{\tt derwinlu+git@gmail.\+com}
+\item 28 commits\+: Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\tt k.\+boeswirth+git@gmail.\+com}
+\item 30 commits\+: Armin Wurzinger \href{mailto:e1528532@student.tuwien.ac.at}{\tt e1528532@student.\+tuwien.\+ac.\+at}
+\item 38 commits\+: Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com}
+\item 100 commits\+: Markus Raab \href{mailto:markus@libelektra.org}{\tt markus@libelektra.\+org}
+\item 180 commits\+: Mihael Pranjic \href{mailto:mpranj@limun.org}{\tt mpranj@limun.\+org}
+\item 418 commits\+: René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com}
+\end{DoxyItemize}
+
+849 commits, 581 files changed, 18503 insertions(+), 3192 deletions(-\/)
+
+We welcome new contributors!
+
+\subsection*{Finished Thesis}
+
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/ftp/elektra/publications/bugl2018web.pdf}{\tt Daniel Bugl}, see also \href{https://webdemo.libelektra.org/}{\tt the web demo}.
+\item \href{https://www.libelektra.org/ftp/elektra/publications/wahringer2018notification.pdf}{\tt Thomas Wahringer}.
+\item \href{https://www.libelektra.org/ftp/elektra/publications/micheli2018hybrid.pdf}{\tt Kurt Micheli}
+\item \href{https://catalogplus.tuwien.ac.at/primo_library/libweb/action/display.do?tabs=detailsTab&ct=display&fn=search&doc=UTW_alma7181921030003336&indx=1&recIds=UTW_alma7181921030003336}{\tt Armin Wurzinger}
+\end{DoxyItemize}
+
+\subsection*{Get It!}
+
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.25.tar.gz}{\tt here} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.25.tar.gz?raw=true}{\tt Git\+Hub}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.25.tar.gz.hashsum?raw=true}{\tt hashsums are\+:}
+
+$<$$<${\ttfamily scripts/generate-\/hashsums}$>$$>$
+
+The release tarball is also available signed by Markus Raab using Gnu\+PG from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.25.tar.gz.gpg}{\tt here} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases//elektra-0.8.25.tar.gz.gpg?raw=true}{\tt Git\+Hub}
+
+Already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.25/html/}{\tt here} or \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.8.25}{\tt Git\+Hub}.
+
+\subsection*{Stay tuned!}
+
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\tt R\+SS feed} to always get the release notifications.
+
+If you also want to participate, or for any questions and comments please contact us via the issue tracker \href{http://issues.libelektra.org}{\tt on Git\+Hub}.
+
+\href{https://www.libelektra.org/news/0.8.25-release}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://libelektra.org}{\tt https\+://libelektra.\+org}
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\tt Elektra Initiative} 

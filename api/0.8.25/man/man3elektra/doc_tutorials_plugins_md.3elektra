@@ -1,0 +1,404 @@
+.TH "doc_tutorials_plugins_md" 3elektra "Sun Nov 18 2018" "Version 0.8.25" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_plugins_mdHow-To: Write a Plugin 
+ \- This file serves as a tutorial on how to write a storage plugin (which includes all information to write filter plugins)\&.
+.PP
+.SS "Types of Plugins"
+.PP
+.IP "\(bu" 2
+Storage plugins are used by Elektra in order to store data in the Elektra Key Database in an intelligent way\&. They act as a liaison between configuration files and the Key Database\&. Storage plugins are largely responsible for the functionality of Elektra and they allow many of its advanced features to work\&. These plugins act as sources and destinations of configuration settings\&.
+.IP "\(bu" 2
+Filter plugins are simpler than storage plugins\&. They receive configuration settings in the same way as storage plugins but they do not have the responsibility to serialize the configuration settings to configuration files\&.
+.IP "\(bu" 2
+Resolver plugins are more complicated and not covered by this tutorial\&.
+.PP
+.PP
+.SS "Basics"
+.PP
+First, there are a few basic points to understand about Elektra plugins\&. This first section will explain the basic layout of a plugin and what various methods exists within one\&.
+.PP
+.SS "The Interface"
+.PP
+All plugins use the same basic interface\&. This interface consists of five basic functions:
+.PP
+.IP "\(bu" 2
+\fC\fCelektraPluginOpen\fP\fP,
+.IP "\(bu" 2
+\fC\fCelektraPluginGet\fP\fP,
+.IP "\(bu" 2
+\fC\fCelektraPluginSet\fP\fP,
+.IP "\(bu" 2
+\fC\fCelektraPluginError\fP\fP, and
+.IP "\(bu" 2
+\fC\fCelektraPluginClose\fP\fP
+.PP
+.PP
+\&. The developer replaces \fCPlugin\fP with the name of their plugin\&. So in the case of the line plugin, the names of these functions would be \fCelektraLineOpen()\fP, \fCelektraLineGet()\fP, \fCelektraLineSet()\fP, \fCelektraLineError()\fP, and \fCelektraLineClose()\fP\&. Additionally, there is one more function called \fCELEKTRA_PLUGIN_EXPORT\fP, where once again \fCPlugin\fP should be replaced with the name of the plugin, this time in uppercase\&. So for my line plugin this function would be \fCELEKTRA_PLUGIN_EXPORT(line)\fP\&. The developer may also define \fCelektraPluginCheckConf()\fP if configuration validation at mount-time is desired\&.
+.PP
+The KDB relies on the first five functions for interacting with configuration files stored in the key database\&. Calls to \fC\fBkdbGet()\fP\fP and \fC\fBkdbClose()\fP\fP will call the functions \fCelektraPluginGet()\fP and \fCelektraPluginClose()\fP respectively for the plugin that was used to mount the configuration data\&. \fC\fBkdbSet()\fP\fP calls \fCelektraPluginSet()\fP but also \fCelektraPluginError()\fP when an error occurs\&. \fC\fBelektraPluginOpen()\fP\fP is called before the first call to \fCelektraPluginGet()\fP or \fCelektraPluginSet()\fP\&. These functions serve different purposes that allow the plugin to work:
+.PP
+.IP "\(bu" 2
+\fC\fBelektraPluginOpen()\fP\fP is designed to allow each plugin to do initialization if necessary\&.
+.IP "\(bu" 2
+\fCelektraPluginGet()\fP is designed to turn information from a configuration file into a usable \fCKeySet\fP, this is technically the only function that is \fBrequired\fP in a plugin\&.
+.IP "\(bu" 2
+\fCelektraPluginSet()\fP is designed to store the information from the keyset back into a configuration file\&.
+.IP "\(bu" 2
+\fCelektraPluginError()\fP is designed to allow proper rollback of operations if needed and is called if any plugin fails during the set operation\&. This is not needed for storage plugins as the resolver already takes care to unlink the configuration files in such situations\&.
+.IP "\(bu" 2
+\fCelektraPluginClose()\fP is used to free resources that might be required for the plugin\&.
+.IP "\(bu" 2
+\fCELEKTRA_PLUGIN_EXPORT(Plugin)\fP simply lets Elektra know that the plugin exists and what the name of the above functions are\&.
+.PP
+.PP
+Most simply put: most plugins consist of five major functions, \fC\fBelektraPluginOpen()\fP\fP, \fCelektraPluginClose()\fP, \fCelektraPluginGet()\fP, \fCelektraPluginSet()\fP, and \fCELEKTRA_EXPORT_PLUGIN(Plugin)\fP\&.
+.PP
+Because remembering all these functions can be cumbersome, we provide a skeleton plugin in order to easily create a new plugin\&. The skeleton plugin is called \fB`template`\fP and a new plugin can be created by calling the \fBcopy-template script\fP \&. For example for my plugin I called \fCscripts/copy-template line\fP\&. Afterwards two important things are left to be done:
+.PP
+.IP "\(bu" 2
+remove all functions (and their exports) from the plugin that are not needed\&. For example not every plugin actually makes use of the \fC\fBelektraPluginOpen()\fP\fP function\&.
+.IP "\(bu" 2
+provide a basic contract as described above
+.PP
+.PP
+After these two steps your plugin is ready to be compiled, installed and mounted for the first time\&. Have a look at \fBHow-To: kdb mount\fP
+.PP
+.SS "C++ Based Plugins"
+.PP
+If you want to use C++ instead of C for plugin development you can use \fB`copy-template`\fP to create a plugin based on \fB`cpptemplate`\fP\&. For example, to create a new plugin called \fCpluginbaby\fP use the command:
+.PP
+.PP
+.nf
+scripts/copy-template -p pluginbaby
+.fi
+.PP
+.PP
+.SS "Contract"
+.PP
+In Elektra, multiple plugins form a backend\&. If every plugin would do whatever it likes to do, there would be chaos and backends would be unpredictable\&.
+.PP
+To avoid this situation, plugins export a so called \fIcontract\fP\&. In this contract the plugin states how nicely it will behave and what other plugins can depend on\&.
+.PP
+.SS "Writing a Contract"
+.PP
+Because the contracts also contain information for humans, these parts are written in a \fCREADME\&.md\fP files of the plugins\&. To make the contracts machine-readable, the following CMake command exists:
+.PP
+.PP
+.nf
+generate_readme(pluginname)
+.fi
+.PP
+.PP
+It will generate a \fCreadme_plugginname\&.c\fP (in the build-directory) out of the README\&.md of the plugin’s source directory\&.
+.PP
+But prefer to use
+.PP
+.PP
+.nf
+add_plugin(pluginname)
+.fi
+.PP
+.PP
+where the generation of the readme (among many other things) are already done for you\&. More details about how to write the \fCCMakeLists\&.txt\fP will be discussed later in the tutorial\&.
+.PP
+The \fCREADME\&.md\fP will be used by:
+.PP
+.IP "\(bu" 2
+the build system (\fC-DPLUGINS=\fP), e\&.g\&. to exclude experimental plugins (\fCinfos/status\fP)
+.IP "\(bu" 2
+the mount tool, e\&.g\&. to correctly place and order plugins
+.IP "\(bu" 2
+to know dependencies between plugin and what metadata they process
+.PP
+.PP
+.SS "Content of \fCREADME\&.md\fP"
+.PP
+The first lines must look like:
+.PP
+.PP
+.nf
+- infos = Information about YAJL plugin is in keys below
+- infos/author = Markus Raab <elektra@libelektra\&.org>
+- infos/licence = BSD
+- infos/provides = storage/json
+- infos/needs = directoryvalue
+- infos/recommends = rebase comment type
+- infos/placements = getstorage setstorage
+- infos/status = maintained coverage unittest
+- infos/description = JSON using YAJL
+.fi
+.PP
+.PP
+Every of these line represents a clause of the contract\&. All these clauses need to be present for every plugin\&.
+.PP
+The information of clauses are limited to a single line, starting with \fC-\fP (so that the file renders nicely in Markdown), followed by the clause itself separated with \fC=\fP\&. Only for the description an unlimited amount of lines can be used (until the end of the file)\&.
+.PP
+For the meaning (semantics) of these clauses, please refer to \fCcontract specification\fP\&. The only difference for filter plugins is that their \fCinfos/provides\fP and \fCinfos/placements\fP are different\&.
+.PP
+The already mentioned \fCgenerate_readme\fP will produce a list of Keys using the information in \fCREADME\&.md\fP\&. It would look like (for the third key): 
+.PP
+.nf
+    keyNew ("system/elektra/modules/yajl/infos/licence",
+            KEY_VALUE, "BSD", KEY_END),
+
+.fi
+.PP
+.PP
+.SS "Including \fCreadme_pluginname\&.c\fP"
+.PP
+In your plugin, specifically in your \fCelektraPluginGet()\fP implementation, you have to return the contract whenever configuration below \fCsystem/elektra/modules/plugin\fP is requested:
+.PP
+.PP
+.nf
+if (!strcmp (keyName(parentKey), "system/elektra/modules/plugin"))
+{
+        KeySet *moduleConfig = elektraPluginContract();
+        ksAppend(returned, moduleConfig);
+        ksDel(moduleConfig);
+        return 1;
+}
+.fi
+.PP
+.PP
+The \fCelektraPluginContract()\fP is a method implemented by the plugin developer containing the parts of the contract not specified in \fCREADME\&.md\fP\&. An example of this function (taken from the \fCyajl\fP plugin):
+.PP
+.PP
+.nf
+static inline KeySet *elektraYajlContract()
+{
+        return ksNew (30,
+        keyNew ("system/elektra/modules/yajl",
+                KEY_VALUE, "yajl plugin waits for your orders", KEY_END),
+        keyNew ("system/elektra/modules/yajl/exports", KEY_END),
+        keyNew ("system/elektra/modules/yajl/exports/get",
+                KEY_FUNC, elektraYajlGet,
+                KEY_END),
+        keyNew ("system/elektra/modules/yajl/exports/set",
+                KEY_FUNC, elektraYajlSet,
+                KEY_END),
+#include "readme_yourplugin\&.c"
+        keyNew ("system/elektra/modules/yajl/infos/version",
+                KEY_VALUE, PLUGINVERSION, KEY_END),
+        keyNew ("system/elektra/modules/yajl/config", KEY_END),
+        keyNew ("system/elektra/modules/yajl/config/",
+                KEY_VALUE, "system",
+                KEY_END),
+        keyNew ("system/elektra/modules/yajl/config/below",
+                KEY_VALUE, "user",
+                KEY_END),
+        KS_END);
+}
+.fi
+.PP
+.PP
+It basically only contains the symbols to be exported (these symbols depend on the functions the plugin provides) and the plugin version information that is always defined by the macro \fCPLUGINVERSION\fP\&.
+.PP
+As already said, \fCreadme_yourplugin\&.c\fP is generated in the binary directory, so make sure that your \fCCMakeLists\&.txt\fP contains (prefer to use \fCadd_plugin\fP where this is already done correctly):
+.PP
+.PP
+.nf
+include_directories (${CMAKE_CURRENT_BINARY_DIR})
+.fi
+.PP
+.PP
+.SS "CMake"
+.PP
+For every plugin you have to write a \fCCMakeLists\&.txt\fP\&. If your plugin has no dependencies, you can skip this section\&. The full documentation of \fCadd_plugin\fP is available \fChere\fP\&.
+.PP
+In order to understand how to write the \fCCMakeLists\&.txt\fP, you need to know that the same file is included multiple times for different reasons\&.
+.PP
+.IP "1." 4
+The first time, only the name of plugins and directories are enquired\&. In this phase, only the \fCadd_plugin\fP should be executed\&.
+.IP "2." 4
+The second time (if the plugin is actually requested), the \fCCMakeLists\&.txt\fP is used to detect if all dependencies are actually available\&.
+.PP
+.PP
+This means that in the first time, only the \fCadd_plugin\fP should be executed and in the second time the detection code together with \fCadd_plugin\fP\&.
+.PP
+So that you can distinguish the first and second phase, the variable \fCDEPENDENCY_PHASE\fP is set to \fCON\fP iff you should search for all needed CMake packages\&. You should avoid to search for packages otherwise, because this would:
+.PP
+.IP "\(bu" 2
+clutter the output
+.IP "\(bu" 2
+introduce more variables into the \fCCMakeCache\fP which are irrelevant for the user
+.IP "\(bu" 2
+maybe even find libraries in wrong versions which are incompatible to what other plugins need
+.PP
+.PP
+So usually you would have:
+.PP
+.PP
+.nf
+if (DEPENDENCY_PHASE)
+        find_package (LibXml2 QUIET)
+        if (LIBXML2_FOUND)
+                # add testdata, testcases\&.\&.\&.
+        else ()
+                remove_plugin (xmltool "libxml2 not found")
+        endif ()
+endif ()
+.fi
+.PP
+.PP
+So if you are in the second phase (\fCDEPENDENCY_PHASE\fP), you will search for all dependencies, in this case \fCLibXml2\fP\&. If all dependencies are satisfied, you add everything needed for the plugin, except the plugin itself\&. This happens after \fCendif ()\fP:
+.PP
+.PP
+.nf
+add_plugin (xmltool
+        SOURCES
+                \&.\&.\&.
+        LINK_LIBRARIES
+                ${LIBXML2_LIBRARIES}
+        DEPENDENCIES
+                ${LIBXML2_FOUND}
+        )
+.fi
+.PP
+.PP
+Important is that you pass the information which packages are found as boolean\&. The plugin will actually be added iff all of the \fCDEPENDENCIES\fP are true\&.
+.PP
+Note that no code should be outside of \fCif (DEPENDENCY_PHASE)\fP\&. It would be executed twice otherwise\&. The only exception is \fCadd_plugin\fP which \fImust\fP be called twice to successfully add a plugin\&.
+.PP
+.RS 4
+Please note that the parameters passed to \fCadd_plugin\fP need to be constant between all invocations\&. Some \fCfind_package\fP cache their variables, others do not, which might lead to toggling variables\&. To avoid problems, create a variable containing all \fCLINK_LIBRARIES\fP or \fCDEPENDENCIES\fP within \fCDEPENDENCY_PHASE\fP\&. 
+.RE
+.PP
+.PP
+If your plugin makes use of \fBcompilation variants\fP you should also read the information there\&.
+.PP
+.SS "Coding"
+.PP
+This section will focus on an overview of the kind of code you would use to develop a plugin\&. It gives examples from real plugins and should serve as a rough guide on how to write a storage plugin that can read and write configuration data into an Elektra \fCKeySet\fP\&.
+.PP
+.SS "\fCelektraPluginGet\fP"
+.PP
+\fCelektraPluginGet\fP is the function responsible for turning information from a file into a usable \fCKeySet\fP\&. This function usually differs pretty greatly between each plugin\&. This function should be of type \fCint\fP, it returns either \fC1\fP or on \fC0\fP on success\&.
+.PP
+.IP "\(bu" 2
+\fC1\fP: The function was successful (\fCELEKTRA_PLUGIN_STATUS_SUCCESS\fP)\&.
+.IP "\(bu" 2
+\fC0\fP: The function was successful and the given keyset/configuration was \fBnot changed\fP (\fCELEKTRA_PLUGIN_STATUS_NO_UPDATE\fP)\&.
+.PP
+.PP
+Any other return value indicates an error (\fCELEKTRA_PLUGIN_STATUS_ERROR\fP)\&. The function will take in a \fCKey\fP, usually called \fCparentKey\fP which contains a string containing the path to the file that is mounted\&. For instance, if you run the command \fCkdb mount /etc/linetest system/linetest line\fP then \fCkeyString(parentKey)\fP should be equal to \fC/etc/linetest\fP\&. At this point, you generally want to open the file so you can begin saving it into keys\&. Here is the trickier part to explain\&. Basically, at this point you will want to iterate through the file and create keys and store string values inside of them according to what your plugin is supposed to do\&. I will give a few examples of different plugins to better explain\&.
+.PP
+The line plugin was written to read files into a \fCKeySet\fP line by line using the newline character as a delimiter and naming the keys by their line number such as \fC#1\fP, \fC#2\fP, \&.\&. \fC#_22\fP for a file with 22 lines\&. So once I open the file given by \fCparentKey\fP, every time as I read a line I create a new key, let's call it \fCnew_key\fP using \fCdupKey(parentKey)\fP\&. Then I set \fCnew_key\fP's name to \fClineNN\fP (where NN is the line number) using \fCkeyAddBaseName\fP and store the string value of the line into the key using \fCkeySetString\fP\&. Once the key is initialized, I append it to the \fCKeySet\fP that was passed into the \fCelektraPluginGet\fP function, let's call it \fCreturned\fP for now, using \fCksAppendKey(returned, new_key)\fP\&. Now the \fCKeySet\fP will contain \fCnew_key\fP with the name \fC#N\fP properly saved where it should be according to the \fCkdb mount\fP command (in this case, \fCsystem/linetest/#N\fP), and a string value equal to the contents of that line in the file\&. The line plugin repeats these steps as long as it hasn't reached end of file, thus saving the whole file into a \fCKeySet\fP line by line\&.
+.PP
+The \fCsimpleini\fP plugin works similarly, but it parses for \fCini\fP files instead of just line-by-line\&. At their most simple level, \fCini\fP files are in the format of \fCname=value\fP with each pair taking one line\&. So for this plugin, it makes a lot of sense to name each \fCKey\fP in the \fCKeySet\fP by the string to the left of the \fC=\fP sign and store the value into each key as a string\&. For instance, the name of the key would be \fCname\fP and \fCkeyGetString(name)\fP would return \fCvalue\fP\&.
+.PP
+As you may have noticed, \fCsimpleini\fP and line plugins work very similarly\&. However, they just parse the files differently\&. The \fCsimpleini\fP plugin parses the file in a way that is more natural to \fCini\fP file (setting the key's name to the left side of the equals sign and the value to the right side of the equals sign)\&. The \fCelektraPluginGet\fP function is the heart of a storage plugin, it’s what allows Elektra to store configurations in its database\&. This function isn't just run when a file is first mounted, but whenever a file gets updated, this function is run to update the Elektra Key Database to match\&.
+.PP
+.SS "\fCelektraPluginSet\fP"
+.PP
+We also give a brief overview of the \fCelektraPluginSet\fP function\&. This function is basically the opposite of \fCelektraPluginGet\fP\&. Where \fCelektraPluginGet\fP reads information from a file into the Elektra Key Database, \fCelektraPluginSet\fP writes information from the database back into the mounted file\&.
+.PP
+First have a look at the signature of \fCelektraLineSet\fP:
+.PP
+.PP
+.nf
+int elektraLineSet(Plugin *handle ELEKTRA_UNUSED, KeySet *toWrite, Key *parentKey);
+.fi
+.PP
+.PP
+Lets start with the most important parameters, the \fCKeySet\fP and the \fCparentKey\fP\&. The \fCKeySet\fP supplied is the \fCKeySet\fP that is going to be persisted in the file\&. In our case it would contain the Keys representing the lines\&. The \fCparentKey\fP is the topmost \fCKey\fP of the \fCKeySet\fP and serves several purposes\&. First, it contains the filename of the destination file as its value\&. Second, errors and warnings can be emitted via the \fCparentKey\fP\&. We will discuss error handling in more detail later\&. The Plugin handle can be used to persist state information in a thread-safe way with \fCelektraPluginSetData\fP\&. As our plugin is not stateful and therefore does not use the handle, it is marked as unused in order to suppress compiler warnings\&.
+.PP
+Basically the implementation of \fCelektraLineSet\fP can be described with the following pseudocode:
+.PP
+.PP
+.nf
+// open the file
+if (error)
+{
+        ELEKTRA_SET_ERROR(74, parentKey, keyString(parentKey));
+}
+for (/* each key */)
+{
+        // write the key value together with a newline
+}
+// close the file
+.fi
+.PP
+.PP
+The full-blown code can be found at \fCline plugin\fP\&.
+.PP
+As you can see, all \fCelektraLineSet\fP does is open a file, take each \fCKey\fP from the \fCKeySet\fP (remember they are named \fC#1\fP, \fC#2\fP \&.\&.\&. \fC#_22\fP) in order, and write each key as its own line in the file\&. Since we don't care about the name of the \fCKey\fP in this case (other than for order), we just write the value of \fCkeyString\fP for each \fCKey\fP as a new line in the file\&. That's it\&. Now, each time the mounted \fCKeySet\fP is modified, \fCelektraPluginSet\fP will be called and the mounted file will be updated\&.
+.PP
+.SS "\fCELEKTRA_SET_ERROR\fP"
+.PP
+We haven't discussed \fCELEKTRA_SET_ERROR\fP yet\&. Because Elektra is a library, printing errors to stderr wouldn't be a good idea\&. Instead, errors and warnings can be appended to a key in the form of metadata\&. This is what \fCELEKTRA_SET_ERROR\fP does\&. Because the parentKey always exists even if a critical error occurs, we write the error to the parentKey\&. The error does not necessarily have to be in a configuration\&. If there are multiple errors in a configuration, only the first occurrence will be written to the metadata of the \fCparentKey\fP\&.
+.PP
+The first parameter of \fCELEKTRA_SET_ERROR\fP is an id specifying the general error that occurred\&. A listing of existing errors together with a short description and a categorization can be found at \fCerror specification\fP\&. The third parameter can be used to provide additional information about the error\&. In our case we simply supply the filename of the file that caused the error\&. The kdb tools will interpret this error and print it in a pretty way\&. Notice that this can be used in any plugin function where the parentKey is available\&.
+.PP
+.SS "\fCelektraPluginOpen\fP and \fCelektraPluginClose\fP"
+.PP
+The \fCelektraPluginOpen\fP and \fCelektraPluginClose\fP functions are not commonly used for storage plugins, but they can be useful and are worth reviewing\&. \fCelektraPluginOpen\fP function runs before \fCelektraPluginGet\fP and is useful to do initialization if necessary for the plugin\&. On the other hand \fCelektraPluginClose\fP is run after other functions of the plugin and can be useful for freeing up resources\&.
+.PP
+.SS "\fCelektraPluginCheckConf\fP"
+.PP
+The \fCelektraPluginCheckConf\fP function may be used for validation of the plugin configuration during mount-time\&. The signature of the function is:
+.PP
+.PP
+.nf
+int elektraLineCheckConfig (Key * errorKey, KeySet * conf);
+.fi
+.PP
+.PP
+The configuration of the plugin is provided as \fCconf\fP\&. The function may report an error or warnings using the \fCerrorKey\fP and the return value\&.
+.PP
+The following convention was established for the return value of \fCelektraPluginCheckConf\fP:
+.PP
+.IP "\(bu" 2
+\fC0\fP: The configuration was OK and has not been changed
+.IP "\(bu" 2
+\fC1\fP: The configuration has been changed and now it is OK
+.IP "\(bu" 2
+\fC-1\fP: The configuration was not OK and could not be fixed\&. An error has to be set to errorKey\&.
+.PP
+.PP
+The following example demonstrates how to limit the length of the values within the plugin configuration to 3 characters\&.
+.PP
+.PP
+.nf
+int elektraLineCheckConfig (Key * errorKey, KeySet * conf)
+{
+        Key * cur;
+        ksRewind (conf);
+        while ((cur = ksNext (conf)) != 0)
+        {
+                const char * value = keyString (cur);
+                if (strlen (value) > 3)
+                {
+                        ELEKTRA_SET_ERRORF (ELEKTRA_ERROR_VALUE_LENGTH, errorKey,
+                                            "value %s is more than 3 characters long",
+                                            value);
+                        return -1; // The configuration was not OK and could not be fixed
+                }
+        }
+        return 0; // The configuration was OK and has not been changed
+}
+.fi
+.PP
+.PP
+.SS "\fCELEKTRA_PLUGIN_EXPORT\fP"
+.PP
+The last function, one that is always needed in a plugin, is \fCELEKTRA_PLUGIN_EXPORT\fP\&. This functions is responsible for letting Elektra know that the plugin exists and which methods it implements\&. The code from the line plugin is a good example and pretty self-explanatory:
+.PP
+.PP
+.nf
+Plugin *ELEKTRA_PLUGIN_EXPORT(line)
+{
+        return elektraPluginExport("line",
+        ELEKTRA_PLUGIN_GET, &elektraLineGet,
+        ELEKTRA_PLUGIN_SET, &elektraLineSet,
+        ELEKTRA_PLUGIN_END);
+}
+.fi
+.PP
+.PP
+For further information see \fCthe API documentation\fP\&.
+.PP
+.SS "Note on Direct Method Calls via External Integrations"
+.PP
+Some applications want to call Elektra methods directly via native access\&. A \fCKeySet\fP is a data structure over which functions can iterate\&. If you want to start again from to first element, you have to explicitly call \fCrewind()\fP to set the internal pointer to the start\&. Any plugin expects the passed \fCKeySet\fP to be \fBrewinded\fP\&. 

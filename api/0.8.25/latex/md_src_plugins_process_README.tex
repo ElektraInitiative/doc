@@ -1,0 +1,43 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the process plugin is in keys below
+\item infos/author = Armin Wurzinger \href{mailto:e1528532@libelektra.org}{\tt e1528532@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = pregetstorage getstorage postgetstorage presetstorage setstorage
+\item infos/status = maintained unittest shelltest configurable experimental unfinished
+\item infos/metadata =
+\item infos/description = executes other plugins inside an own process
+\end{DoxyItemize}
+
+The process plugin uses the {\ttfamily pluginprocess} library in order to execute other plugins inside an own process. This is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used. It is also useful for plugins which cause memory leaks to be isolated in an own process.
+
+\subsection*{Usage}
+
+Mount this plugin and specify the plugin configuration parameter {\ttfamily plugin} to a plugin that exists on the system. The proxied plugin will then be executed in a separate process and this plugin handles the communication between the processes.
+
+\subsection*{Dependencies}
+
+The {\ttfamily pluginprocess} library, which is only available on P\+O\+S\+IX environments currently.
+
+\subsection*{Examples}
+
+``{\ttfamily  $<$h1$>$Mount the dump plugin a separate process via the process plugin to the cascading namespace}/examples/process` sudo kdb mount config.\+file /tests/process process plugin=dump
+
+kdb set /tests/process/key value \#$>$ Using name user/tests/process/key \#$>$ Create a new key user/tests/process/key with string \char`\"{}value\char`\"{}
+
+kdb get /tests/process/key \#$>$ value
+
+\section*{Undo modifications}
+
+kdb rm -\/r /tests/process sudo kdb umount /tests/process ```
+
+\subsection*{Limitations}
+
+
+\begin{DoxyItemize}
+\item Currently only plugins that act on one of the above-\/mentioned {\ttfamily placements} can be proxied successfully. Other metainformation like {\ttfamily needs} or {\ttfamily provides} or {\ttfamily recommends} will not be available when proxying using this plugin.
+\item This plugin cannot act as a proxy for itself to prevent loops. 
+\end{DoxyItemize}

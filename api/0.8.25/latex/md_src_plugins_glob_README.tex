@@ -1,0 +1,78 @@
+
+\begin{DoxyItemize}
+\item infos = Information about glob plugin is in keys below
+\item infos/author = Felix Berlakovich \href{mailto:elektra@berlakovich.net}{\tt elektra@berlakovich.\+net}
+\item infos/licence = B\+SD
+\item infos/provides = apply
+\item infos/needs =
+\item infos/recommends =
+\item infos/ordering = check keytometa
+\item infos/stacking = no
+\item infos/placements = presetstorage postgetstorage
+\item infos/status = unittest nodep libc configurable difficult
+\item infos/description = copies metadata to keys with the help of globbing
+\end{DoxyItemize}
+
+The glob plugin provides coping metadata given by the plugin\textquotesingle{}s configuration to keys identified using {\itshape glob expressions}. Globbing resembles regular expressions. They do not have the same expressive power, but are easier to use. The semantics are more suitable to match path names\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily $\ast$} matches any key name of just one hierarchy. This means it complies with any character except slash or null.
+\item {\ttfamily ?} satisfies single characters with the same exclusions.
+\item Additionally, there are ranges and character classes. They can also be inverted.
+\end{DoxyItemize}
+
+So this plugin adds metadata to keys identified by globbing expressions. The plugin copies the metadata of the corresponding globbing keys in its configuration. Globbing can be applied in get and set direction or both.
+
+\subsection*{Globbing Keys}
+
+The plugin is configured with globbing keys in its configuration. Each key below the configuration is interpreted as a globbing key. The value of the key contains the globbing expression. When a key matching the glob expression contained in one of the globbing keys is found, the metakeys of the corresponding globbing key are copied. Once a match is found, no further keys will be considered for globbing. The reason for this are catch all globbing keys that can be used to match all keys that have not been matched by a preceding globbing key.
+
+\subsubsection*{Globbing Direction}
+
+Globbing keys located directly below the configuration (e.\+g {\ttfamily config/glob/\#1}) are applied in both directions (get and set). Keys below \char`\"{}get\char`\"{} (e.\+g. {\ttfamily config/glob/get/\#1}) are applied only in the get direction and keys below set (e.\+g. {\ttfamily config/glob/set/\#1}) are applied only in the set direction.
+
+So the glob plugin iterates over a list of glob expressions for every key. Metadata is applied only for the first expression that matches. So later expressions can be used as default values.
+
+\subsubsection*{Globbing Flags}
+
+Globbing keys may contain a subkey named \char`\"{}flags\char`\"{}. This optional key contains the flags to be passed to the globbing function (currently fnmatch) as a comma separated list. Unknown flag names will be ignored. The allowed flag names are
+
+
+\begin{DoxyItemize}
+\item \char`\"{}noescape\char`\"{} which enables the F\+N\+M\+\_\+\+N\+O\+E\+S\+C\+A\+PE flag
+\item \char`\"{}pathname\char`\"{} which enables the F\+N\+M\+\_\+\+P\+A\+T\+H\+N\+A\+ME flag
+\item \char`\"{}period\char`\"{} which enables the F\+N\+M\+\_\+\+P\+E\+R\+I\+OD flag
+\end{DoxyItemize}
+
+If the flag key does not exist, F\+N\+M\+\_\+\+P\+A\+T\+H\+N\+A\+ME is used as a default (see fnmatch(3) for more details). An empty string disables all flags (i.\+e. also the default flag). \subsection*{Contracts}
+
+Glob statements are very useful together with contracts. Storage plugins can request the glob plugin to fill up metadata before they receive the keys in {\ttfamily elektra\+Plugin\+Set()}. In {\ttfamily config/needs}, the plugin declares which keys should obtain which metadata. If the glob expression starts with a slash, the contract checker will automatically prepend the mount point.
+
+For example, the hosts plugin contract contains\+:
+
+
+\begin{DoxyCode}
+\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/hosts/config/needs/glob/#1"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}, \textcolor{stringliteral}{"/*"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40a040582834bb2d90049947d7ef74e87e2}{KEY\_META}, \textcolor{stringliteral}{"check/ipaddr"}, \textcolor{stringliteral}{""}, \textcolor{comment}{/* Preferred way to check */}
+        \textcolor{comment}{/* Can be checked additionally */}
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40a040582834bb2d90049947d7ef74e87e2}{KEY\_META}, \textcolor{stringliteral}{"check/validation"}, \textcolor{stringliteral}{"^[0-9.:]+$"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40a040582834bb2d90049947d7ef74e87e2}{KEY\_META}, \textcolor{stringliteral}{"check/validation/message"},
+        \textcolor{stringliteral}{"Character present not suitable for ip address"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/hosts/config/needs/glob/#2"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}, \textcolor{stringliteral}{"/*/*"},
+        \textcolor{comment}{/* Strict character validation */}
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40a040582834bb2d90049947d7ef74e87e2}{KEY\_META}, \textcolor{stringliteral}{"check/validation"}, \textcolor{stringliteral}{"^[0-9a-zA-Z.:]+$"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40a040582834bb2d90049947d7ef74e87e2}{KEY\_META}, \textcolor{stringliteral}{"check/validation/message"},
+        \textcolor{stringliteral}{"Character present not suitable for host address"},
+    \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+\end{DoxyCode}
+
+
+We see that the {\ttfamily hosts} plugin adds two glob statements with the clause {\ttfamily config/needs}. The first one matches with hostnames, the second with aliases.
+
+The glob plugin only fills the metadata in {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. This makes a difference compared with adding the metadata already in {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}. Using the glob plugin, the user will not see the metadata, but later plugins in {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} will.
+
+To sum up, the glob plugin replenishes the keys with metadata. The plugin applies metadata in a flexible way. This metadata can be used for later checks. Limited configuration storage plugins, like the {\ttfamily hosts} plugin, use this feature. They need it because they are not able to store metadata themselves. It is obviously not possible to apply values to non-\/existing keys. 

@@ -1,0 +1,383 @@
+This file serves as a tutorial on how to write a storage plugin (which includes all information to write filter plugins).
+
+\subsection*{Types of Plugins}
+
+
+\begin{DoxyItemize}
+\item Storage plugins are used by Elektra in order to store data in the Elektra Key Database in an intelligent way. They act as a liaison between configuration files and the Key Database. Storage plugins are largely responsible for the functionality of Elektra and they allow many of its advanced features to work. These plugins act as sources and destinations of configuration settings.
+\item Filter plugins are simpler than storage plugins. They receive configuration settings in the same way as storage plugins but they do not have the responsibility to serialize the configuration settings to configuration files.
+\item Resolver plugins are more complicated and not covered by this tutorial.
+\end{DoxyItemize}
+
+\subsection*{Basics}
+
+First, there are a few basic points to understand about Elektra plugins. This first section will explain the basic layout of a plugin and what various methods exists within one.
+
+\subsubsection*{The Interface}
+
+All plugins use the same basic interface. This interface consists of five basic functions\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://doc.libelektra.org/api/current/html/group__plugin.html#ga23c2eb3584e38a4d494eb8f91e5e3d8d}{\tt {\ttfamily elektra\+Plugin\+Open}},
+\item \href{https://doc.libelektra.org/api/current/html/group__plugin.html#gacb69f3441c6d84241b4362f958fbe313}{\tt {\ttfamily elektra\+Plugin\+Get}},
+\item \href{https://doc.libelektra.org/api/current/html/group__plugin.html#gae65781a1deb34efc79c8cb9d9174842c}{\tt {\ttfamily elektra\+Plugin\+Set}},
+\item \href{https://doc.libelektra.org/api/current/html/group__plugin.html#gad74b35f558ac7c3262f6069c5c47dc79}{\tt {\ttfamily elektra\+Plugin\+Error}}, and
+\item \href{https://doc.libelektra.org/api/current/html/group__plugin.html#ga1236aefe5b2baf8b7bf636ba5aa9ea29}{\tt {\ttfamily elektra\+Plugin\+Close}}
+\end{DoxyItemize}
+
+. The developer replaces {\ttfamily Plugin} with the name of their plugin. So in the case of the line plugin, the names of these functions would be {\ttfamily elektra\+Line\+Open()}, {\ttfamily elektra\+Line\+Get()}, {\ttfamily elektra\+Line\+Set()}, {\ttfamily elektra\+Line\+Error()}, and {\ttfamily elektra\+Line\+Close()}. Additionally, there is one more function called \href{https://doc.libelektra.org/api/current/html/group__plugin.html#ga8dd092048e972a3f0c9c9f54eb41576e}{\tt E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+E\+X\+P\+O\+RT}, where once again {\ttfamily Plugin} should be replaced with the name of the plugin, this time in uppercase. So for my line plugin this function would be {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+E\+X\+P\+O\+R\+T(line)}. The developer may also define {\ttfamily elektra\+Plugin\+Check\+Conf()} if configuration validation at mount-\/time is desired.
+
+The K\+DB relies on the first five functions for interacting with configuration files stored in the key database. Calls to {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} and {\ttfamily \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} will call the functions {\ttfamily elektra\+Plugin\+Get()} and {\ttfamily elektra\+Plugin\+Close()} respectively for the plugin that was used to mount the configuration data. {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} calls {\ttfamily elektra\+Plugin\+Set()} but also {\ttfamily elektra\+Plugin\+Error()} when an error occurs. {\ttfamily \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}} is called before the first call to {\ttfamily elektra\+Plugin\+Get()} or {\ttfamily elektra\+Plugin\+Set()}. These functions serve different purposes that allow the plugin to work\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}} is designed to allow each plugin to do initialization if necessary.
+\item {\ttfamily elektra\+Plugin\+Get()} is designed to turn information from a configuration file into a usable {\ttfamily Key\+Set}, this is technically the only function that is {\bfseries required} in a plugin.
+\item {\ttfamily elektra\+Plugin\+Set()} is designed to store the information from the keyset back into a configuration file.
+\item {\ttfamily elektra\+Plugin\+Error()} is designed to allow proper rollback of operations if needed and is called if any plugin fails during the set operation. This is not needed for storage plugins as the resolver already takes care to unlink the configuration files in such situations.
+\item {\ttfamily elektra\+Plugin\+Close()} is used to free resources that might be required for the plugin.
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+E\+X\+P\+O\+R\+T(\+Plugin)} simply lets Elektra know that the plugin exists and what the name of the above functions are.
+\end{DoxyItemize}
+
+Most simply put\+: most plugins consist of five major functions, {\ttfamily \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}}, {\ttfamily elektra\+Plugin\+Close()}, {\ttfamily elektra\+Plugin\+Get()}, {\ttfamily elektra\+Plugin\+Set()}, and {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+E\+X\+P\+O\+R\+T\+\_\+\+P\+L\+U\+G\+I\+N(\+Plugin)}.
+
+Because remembering all these functions can be cumbersome, we provide a skeleton plugin in order to easily create a new plugin. The skeleton plugin is called \hyperlink{md_src_plugins_template_README_src_plugins_template_README_md}{`template`} and a new plugin can be created by calling the copy-\/template script . For example for my plugin I called {\ttfamily scripts/copy-\/template line}. Afterwards two important things are left to be done\+:
+
+
+\begin{DoxyItemize}
+\item remove all functions (and their exports) from the plugin that are not needed. For example not every plugin actually makes use of the {\ttfamily \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}} function.
+\item provide a basic contract as described above
+\end{DoxyItemize}
+
+After these two steps your plugin is ready to be compiled, installed and mounted for the first time. Have a look at \hyperlink{doc_tutorials_mount_md}{How-\/\+To\+: kdb mount}
+
+\paragraph*{C++ Based Plugins}
+
+If you want to use C++ instead of C for plugin development you can use `copy-\/template` to create a plugin based on \hyperlink{md_src_plugins_cpptemplate_README_src_plugins_cpptemplate_README_md}{`cpptemplate`}. For example, to create a new plugin called {\ttfamily pluginbaby} use the command\+:
+
+
+\begin{DoxyCode}
+scripts/copy-template -p pluginbaby
+\end{DoxyCode}
+
+
+\subsection*{Contract}
+
+In Elektra, multiple plugins form a backend. If every plugin would do whatever it likes to do, there would be chaos and backends would be unpredictable.
+
+To avoid this situation, plugins export a so called {\itshape contract}. In this contract the plugin states how nicely it will behave and what other plugins can depend on.
+
+\subsubsection*{Writing a Contract}
+
+Because the contracts also contain information for humans, these parts are written in a {\ttfamily R\+E\+A\+D\+M\+E.\+md} files of the plugins. To make the contracts machine-\/readable, the following C\+Make command exists\+:
+
+
+\begin{DoxyCode}
+generate\_readme(pluginname)
+\end{DoxyCode}
+
+
+It will generate a {\ttfamily readme\+\_\+plugginname.\+c} (in the build-\/directory) out of the R\+E\+A\+D\+M\+E.\+md of the plugin’s source directory.
+
+But prefer to use
+
+
+\begin{DoxyCode}
+add\_plugin(pluginname)
+\end{DoxyCode}
+
+
+where the generation of the readme (among many other things) are already done for you. More details about how to write the {\ttfamily C\+Make\+Lists.\+txt} will be discussed later in the tutorial.
+
+The {\ttfamily R\+E\+A\+D\+M\+E.\+md} will be used by\+:
+
+
+\begin{DoxyItemize}
+\item the build system ({\ttfamily -\/\+D\+P\+L\+U\+G\+I\+NS=}), e.\+g. to exclude experimental plugins ({\ttfamily infos/status})
+\item the mount tool, e.\+g. to correctly place and order plugins
+\item to know dependencies between plugin and what metadata they process
+\end{DoxyItemize}
+
+\subsubsection*{Content of {\ttfamily R\+E\+A\+D\+M\+E.\+md}}
+
+The first lines must look like\+:
+
+
+\begin{DoxyCode}
+- infos = Information about YAJL plugin is in keys below
+- infos/author = Markus Raab <elektra@libelektra.org>
+- infos/licence = BSD
+- infos/provides = storage/json
+- infos/needs = directoryvalue
+- infos/recommends = rebase comment type
+- infos/placements = getstorage setstorage
+- infos/status = maintained coverage unittest
+- infos/description = JSON using YAJL
+\end{DoxyCode}
+
+
+Every of these line represents a clause of the contract. All these clauses need to be present for every plugin.
+
+The information of clauses are limited to a single line, starting with {\ttfamily -\/} (so that the file renders nicely in Markdown), followed by the clause itself separated with {\ttfamily =}. Only for the description an unlimited amount of lines can be used (until the end of the file).
+
+For the meaning (semantics) of these clauses, please refer to \href{/home/markus/Projekte/Elektra/current/doc/CONTRACT.ini}{\tt contract specification}. The only difference for filter plugins is that their {\ttfamily infos/provides} and {\ttfamily infos/placements} are different.
+
+The already mentioned {\ttfamily generate\+\_\+readme} will produce a list of Keys using the information in {\ttfamily R\+E\+A\+D\+M\+E.\+md}. It would look like (for the third key)\+: \begin{DoxyVerb}    keyNew ("system/elektra/modules/yajl/infos/licence",
+            KEY_VALUE, "BSD", KEY_END),
+\end{DoxyVerb}
+
+
+\subsection*{Including {\ttfamily readme\+\_\+pluginname.\+c}}
+
+In your plugin, specifically in your {\ttfamily elektra\+Plugin\+Get()} implementation, you have to return the contract whenever configuration below {\ttfamily system/elektra/modules/plugin} is requested\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordflow}{if} (!strcmp (\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}(parentKey), \textcolor{stringliteral}{"system/elektra/modules/plugin"}))
+\{
+        KeySet *moduleConfig = elektraPluginContract();
+        \hyperlink{group__keyset_ga21eb9c3a14a604ee3a8bdc779232e7b7}{ksAppend}(returned, moduleConfig);
+        \hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}(moduleConfig);
+        \textcolor{keywordflow}{return} 1;
+\}
+\end{DoxyCode}
+
+
+The {\ttfamily elektra\+Plugin\+Contract()} is a method implemented by the plugin developer containing the parts of the contract not specified in {\ttfamily R\+E\+A\+D\+M\+E.\+md}. An example of this function (taken from the {\ttfamily yajl} plugin)\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{static} \textcolor{keyword}{inline} KeySet *elektraYajlContract()
+\{
+        \textcolor{keywordflow}{return} \hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew} (30,
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl"},
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}, \textcolor{stringliteral}{"yajl plugin waits for your orders"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/exports"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/exports/get"},
+                KEY\_FUNC, elektraYajlGet,
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/exports/set"},
+                KEY\_FUNC, elektraYajlSet,
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+#include \textcolor{stringliteral}{"readme\_yourplugin.c"}
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/infos/version"},
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}, PLUGINVERSION, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/config"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/config/"},
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}, \textcolor{stringliteral}{"system"},
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/elektra/modules/yajl/config/below"},
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}, \textcolor{stringliteral}{"user"},
+                \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}),
+        \hyperlink{kdbenum_8c_a7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END});
+\}
+\end{DoxyCode}
+
+
+It basically only contains the symbols to be exported (these symbols depend on the functions the plugin provides) and the plugin version information that is always defined by the macro {\ttfamily P\+L\+U\+G\+I\+N\+V\+E\+R\+S\+I\+ON}.
+
+As already said, {\ttfamily readme\+\_\+yourplugin.\+c} is generated in the binary directory, so make sure that your {\ttfamily C\+Make\+Lists.\+txt} contains (prefer to use {\ttfamily add\+\_\+plugin} where this is already done correctly)\+:
+
+
+\begin{DoxyCode}
+include\_directories ($\{CMAKE\_CURRENT\_BINARY\_DIR\})
+\end{DoxyCode}
+
+
+\subsection*{C\+Make}
+
+For every plugin you have to write a {\ttfamily C\+Make\+Lists.\+txt}. If your plugin has no dependencies, you can skip this section. The full documentation of {\ttfamily add\+\_\+plugin} is available \href{/home/markus/Projekte/Elektra/current/cmake/Modules/LibAddPlugin.cmake}{\tt here}.
+
+In order to understand how to write the {\ttfamily C\+Make\+Lists.\+txt}, you need to know that the same file is included multiple times for different reasons.
+
+
+\begin{DoxyEnumerate}
+\item The first time, only the name of plugins and directories are enquired. In this phase, only the {\ttfamily add\+\_\+plugin} should be executed.
+\item The second time (if the plugin is actually requested), the {\ttfamily C\+Make\+Lists.\+txt} is used to detect if all dependencies are actually available.
+\end{DoxyEnumerate}
+
+This means that in the first time, only the {\ttfamily add\+\_\+plugin} should be executed and in the second time the detection code together with {\ttfamily add\+\_\+plugin}.
+
+So that you can distinguish the first and second phase, the variable {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+Y\+\_\+\+P\+H\+A\+SE} is set to {\ttfamily ON} iff you should search for all needed C\+Make packages. You should avoid to search for packages otherwise, because this would\+:
+
+
+\begin{DoxyItemize}
+\item clutter the output
+\item introduce more variables into the {\ttfamily C\+Make\+Cache} which are irrelevant for the user
+\item maybe even find libraries in wrong versions which are incompatible to what other plugins need
+\end{DoxyItemize}
+
+So usually you would have\+:
+
+
+\begin{DoxyCode}
+if (DEPENDENCY\_PHASE)
+        find\_package (LibXml2 QUIET)
+        if (LIBXML2\_FOUND)
+                # add testdata, testcases...
+        else ()
+                remove\_plugin (xmltool "libxml2 not found")
+        endif ()
+endif ()
+\end{DoxyCode}
+
+
+So if you are in the second phase ({\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+Y\+\_\+\+P\+H\+A\+SE}), you will search for all dependencies, in this case {\ttfamily Lib\+Xml2}. If all dependencies are satisfied, you add everything needed for the plugin, except the plugin itself. This happens after {\ttfamily endif ()}\+:
+
+
+\begin{DoxyCode}
+add\_plugin (xmltool
+        SOURCES
+                ...
+        LINK\_LIBRARIES
+                $\{LIBXML2\_LIBRARIES\}
+        DEPENDENCIES
+                $\{LIBXML2\_FOUND\}
+        )
+\end{DoxyCode}
+
+
+Important is that you pass the information which packages are found as boolean. The plugin will actually be added iff all of the {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+I\+ES} are true.
+
+Note that no code should be outside of {\ttfamily if (D\+E\+P\+E\+N\+D\+E\+N\+C\+Y\+\_\+\+P\+H\+A\+SE)}. It would be executed twice otherwise. The only exception is {\ttfamily add\+\_\+plugin} which {\itshape must} be called twice to successfully add a plugin.
+
+\begin{quote}
+Please note that the parameters passed to {\ttfamily add\+\_\+plugin} need to be constant between all invocations. Some {\ttfamily find\+\_\+package} cache their variables, others do not, which might lead to toggling variables. To avoid problems, create a variable containing all {\ttfamily L\+I\+N\+K\+\_\+\+L\+I\+B\+R\+A\+R\+I\+ES} or {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+I\+ES} within {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+Y\+\_\+\+P\+H\+A\+SE}. \end{quote}
+
+
+If your plugin makes use of \hyperlink{doc_tutorials_compilation-variants_md}{compilation variants} you should also read the information there.
+
+\subsection*{Coding}
+
+This section will focus on an overview of the kind of code you would use to develop a plugin. It gives examples from real plugins and should serve as a rough guide on how to write a storage plugin that can read and write configuration data into an Elektra {\ttfamily Key\+Set}.
+
+\subsubsection*{{\ttfamily elektra\+Plugin\+Get}}
+
+{\ttfamily elektra\+Plugin\+Get} is the function responsible for turning information from a file into a usable {\ttfamily Key\+Set}. This function usually differs pretty greatly between each plugin. This function should be of type {\ttfamily int}, it returns either {\ttfamily 1} or on {\ttfamily 0} on success.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily 1}\+: The function was successful ({\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+S\+T\+A\+T\+U\+S\+\_\+\+S\+U\+C\+C\+E\+SS}).
+\item {\ttfamily 0}\+: The function was successful and the given keyset/configuration was {\bfseries not changed} ({\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+S\+T\+A\+T\+U\+S\+\_\+\+N\+O\+\_\+\+U\+P\+D\+A\+TE}).
+\end{DoxyItemize}
+
+Any other return value indicates an error ({\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+S\+T\+A\+T\+U\+S\+\_\+\+E\+R\+R\+OR}). The function will take in a {\ttfamily Key}, usually called {\ttfamily parent\+Key} which contains a string containing the path to the file that is mounted. For instance, if you run the command {\ttfamily kdb mount /etc/linetest system/linetest line} then {\ttfamily key\+String(parent\+Key)} should be equal to {\ttfamily /etc/linetest}. At this point, you generally want to open the file so you can begin saving it into keys. Here is the trickier part to explain. Basically, at this point you will want to iterate through the file and create keys and store string values inside of them according to what your plugin is supposed to do. I will give a few examples of different plugins to better explain.
+
+The line plugin was written to read files into a {\ttfamily Key\+Set} line by line using the newline character as a delimiter and naming the keys by their line number such as {\ttfamily \#1}, {\ttfamily \#2}, .. {\ttfamily \#\+\_\+22} for a file with 22 lines. So once I open the file given by {\ttfamily parent\+Key}, every time as I read a line I create a new key, let\textquotesingle{}s call it {\ttfamily new\+\_\+key} using {\ttfamily dup\+Key(parent\+Key)}. Then I set {\ttfamily new\+\_\+key}\textquotesingle{}s name to {\ttfamily line\+NN} (where NN is the line number) using {\ttfamily key\+Add\+Base\+Name} and store the string value of the line into the key using {\ttfamily key\+Set\+String}. Once the key is initialized, I append it to the {\ttfamily Key\+Set} that was passed into the {\ttfamily elektra\+Plugin\+Get} function, let\textquotesingle{}s call it {\ttfamily returned} for now, using {\ttfamily ks\+Append\+Key(returned, new\+\_\+key)}. Now the {\ttfamily Key\+Set} will contain {\ttfamily new\+\_\+key} with the name {\ttfamily \#N} properly saved where it should be according to the {\ttfamily kdb mount} command (in this case, {\ttfamily system/linetest/\#N}), and a string value equal to the contents of that line in the file. The line plugin repeats these steps as long as it hasn\textquotesingle{}t reached end of file, thus saving the whole file into a {\ttfamily Key\+Set} line by line.
+
+The {\ttfamily simpleini} plugin works similarly, but it parses for {\ttfamily ini} files instead of just line-\/by-\/line. At their most simple level, {\ttfamily ini} files are in the format of {\ttfamily name=value} with each pair taking one line. So for this plugin, it makes a lot of sense to name each {\ttfamily Key} in the {\ttfamily Key\+Set} by the string to the left of the {\ttfamily =} sign and store the value into each key as a string. For instance, the name of the key would be {\ttfamily name} and {\ttfamily key\+Get\+String(name)} would return {\ttfamily value}.
+
+As you may have noticed, {\ttfamily simpleini} and line plugins work very similarly. However, they just parse the files differently. The {\ttfamily simpleini} plugin parses the file in a way that is more natural to {\ttfamily ini} file (setting the key\textquotesingle{}s name to the left side of the equals sign and the value to the right side of the equals sign). The {\ttfamily elektra\+Plugin\+Get} function is the heart of a storage plugin, it’s what allows Elektra to store configurations in its database. This function isn\textquotesingle{}t just run when a file is first mounted, but whenever a file gets updated, this function is run to update the Elektra Key Database to match.
+
+\subsubsection*{{\ttfamily elektra\+Plugin\+Set}}
+
+We also give a brief overview of the {\ttfamily elektra\+Plugin\+Set} function. This function is basically the opposite of {\ttfamily elektra\+Plugin\+Get}. Where {\ttfamily elektra\+Plugin\+Get} reads information from a file into the Elektra Key Database, {\ttfamily elektra\+Plugin\+Set} writes information from the database back into the mounted file.
+
+First have a look at the signature of {\ttfamily elektra\+Line\+Set}\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraLineSet(Plugin *handle ELEKTRA\_UNUSED, KeySet *toWrite, Key *parentKey);
+\end{DoxyCode}
+
+
+Lets start with the most important parameters, the {\ttfamily Key\+Set} and the {\ttfamily parent\+Key}. The {\ttfamily Key\+Set} supplied is the {\ttfamily Key\+Set} that is going to be persisted in the file. In our case it would contain the Keys representing the lines. The {\ttfamily parent\+Key} is the topmost {\ttfamily Key} of the {\ttfamily Key\+Set} and serves several purposes. First, it contains the filename of the destination file as its value. Second, errors and warnings can be emitted via the {\ttfamily parent\+Key}. We will discuss error handling in more detail later. The Plugin handle can be used to persist state information in a thread-\/safe way with {\ttfamily elektra\+Plugin\+Set\+Data}. As our plugin is not stateful and therefore does not use the handle, it is marked as unused in order to suppress compiler warnings.
+
+Basically the implementation of {\ttfamily elektra\+Line\+Set} can be described with the following pseudocode\+:
+
+
+\begin{DoxyCode}
+\textcolor{comment}{// open the file}
+\textcolor{keywordflow}{if} (error)
+\{
+        \hyperlink{group__plugin_gaab1842b82272e6d4235b6a71587a64d9}{ELEKTRA\_SET\_ERROR}(74, parentKey, \hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}(parentKey));
+\}
+\textcolor{keywordflow}{for} (\textcolor{comment}{/* each key */})
+\{
+        \textcolor{comment}{// write the key value together with a newline}
+\}
+\textcolor{comment}{// close the file}
+\end{DoxyCode}
+
+
+The full-\/blown code can be found at \href{https://libelektra.org/tree/master/src/plugins/line/line.c}{\tt line plugin}.
+
+As you can see, all {\ttfamily elektra\+Line\+Set} does is open a file, take each {\ttfamily Key} from the {\ttfamily Key\+Set} (remember they are named {\ttfamily \#1}, {\ttfamily \#2} ... {\ttfamily \#\+\_\+22}) in order, and write each key as its own line in the file. Since we don\textquotesingle{}t care about the name of the {\ttfamily Key} in this case (other than for order), we just write the value of {\ttfamily key\+String} for each {\ttfamily Key} as a new line in the file. That\textquotesingle{}s it. Now, each time the mounted {\ttfamily Key\+Set} is modified, {\ttfamily elektra\+Plugin\+Set} will be called and the mounted file will be updated.
+
+\paragraph*{{\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+E\+T\+\_\+\+E\+R\+R\+OR}}
+
+We haven\textquotesingle{}t discussed {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+E\+T\+\_\+\+E\+R\+R\+OR} yet. Because Elektra is a library, printing errors to stderr wouldn\textquotesingle{}t be a good idea. Instead, errors and warnings can be appended to a key in the form of metadata. This is what {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+E\+T\+\_\+\+E\+R\+R\+OR} does. Because the parent\+Key always exists even if a critical error occurs, we write the error to the parent\+Key. The error does not necessarily have to be in a configuration. If there are multiple errors in a configuration, only the first occurrence will be written to the metadata of the {\ttfamily parent\+Key}.
+
+The first parameter of {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+E\+T\+\_\+\+E\+R\+R\+OR} is an id specifying the general error that occurred. A listing of existing errors together with a short description and a categorization can be found at \href{https://github.com/ElektraInitiative/libelektra/blob/master/src/error/specification}{\tt error specification}. The third parameter can be used to provide additional information about the error. In our case we simply supply the filename of the file that caused the error. The kdb tools will interpret this error and print it in a pretty way. Notice that this can be used in any plugin function where the parent\+Key is available.
+
+\subsubsection*{{\ttfamily elektra\+Plugin\+Open} and {\ttfamily elektra\+Plugin\+Close}}
+
+The {\ttfamily elektra\+Plugin\+Open} and {\ttfamily elektra\+Plugin\+Close} functions are not commonly used for storage plugins, but they can be useful and are worth reviewing. {\ttfamily elektra\+Plugin\+Open} function runs before {\ttfamily elektra\+Plugin\+Get} and is useful to do initialization if necessary for the plugin. On the other hand {\ttfamily elektra\+Plugin\+Close} is run after other functions of the plugin and can be useful for freeing up resources.
+
+\subsubsection*{{\ttfamily elektra\+Plugin\+Check\+Conf}}
+
+The {\ttfamily elektra\+Plugin\+Check\+Conf} function may be used for validation of the plugin configuration during mount-\/time. The signature of the function is\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraLineCheckConfig (Key * errorKey, KeySet * conf);
+\end{DoxyCode}
+
+
+The configuration of the plugin is provided as {\ttfamily conf}. The function may report an error or warnings using the {\ttfamily error\+Key} and the return value.
+
+The following convention was established for the return value of {\ttfamily elektra\+Plugin\+Check\+Conf}\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily 0}\+: The configuration was OK and has not been changed
+\item {\ttfamily 1}\+: The configuration has been changed and now it is OK
+\item {\ttfamily -\/1}\+: The configuration was not OK and could not be fixed. An error has to be set to error\+Key.
+\end{DoxyItemize}
+
+The following example demonstrates how to limit the length of the values within the plugin configuration to 3 characters.
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraLineCheckConfig (Key * errorKey, KeySet * conf)
+\{
+        Key * cur;
+        \hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind} (conf);
+        \textcolor{keywordflow}{while} ((cur = \hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ksNext} (conf)) != 0)
+        \{
+                \textcolor{keyword}{const} \textcolor{keywordtype}{char} * value = \hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString} (cur);
+                \textcolor{keywordflow}{if} (strlen (value) > 3)
+                \{
+                        \hyperlink{group__plugin_ga3e4fc2c20d8e64bed7a54bb1af882e34}{ELEKTRA\_SET\_ERRORF} (ELEKTRA\_ERROR\_VALUE\_LENGTH, errorKey,
+                                            \textcolor{stringliteral}{"value %s is more than 3 characters long"},
+                                            value);
+                        \textcolor{keywordflow}{return} -1; \textcolor{comment}{// The configuration was not OK and could not be fixed}
+                \}
+        \}
+        \textcolor{keywordflow}{return} 0; \textcolor{comment}{// The configuration was OK and has not been changed}
+\}
+\end{DoxyCode}
+
+
+\subsubsection*{{\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+E\+X\+P\+O\+RT}}
+
+The last function, one that is always needed in a plugin, is {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+E\+X\+P\+O\+RT}. This functions is responsible for letting Elektra know that the plugin exists and which methods it implements. The code from the line plugin is a good example and pretty self-\/explanatory\+:
+
+
+\begin{DoxyCode}
+Plugin *ELEKTRA\_PLUGIN\_EXPORT(line)
+\{
+        \textcolor{keywordflow}{return} \hyperlink{group__plugin_ga8dd092048e972a3f0c9c9f54eb41576e}{elektraPluginExport}(\textcolor{stringliteral}{"line"},
+        \hyperlink{kdbplugin_8h_afed89ef026fb0622918a5de020de7814a3d5f4a887e68878f1cc3a75985194204}{ELEKTRA\_PLUGIN\_GET}, &elektraLineGet,
+        \hyperlink{kdbplugin_8h_afed89ef026fb0622918a5de020de7814a85c9545261cf0bcc932616e67ea3b70a}{ELEKTRA\_PLUGIN\_SET}, &elektraLineSet,
+        \hyperlink{kdbplugin_8h_afed89ef026fb0622918a5de020de7814a64a0bc789482284d9fd27ce974e0959a}{ELEKTRA\_PLUGIN\_END});
+\}
+\end{DoxyCode}
+
+
+For further information see \href{https://doc.libelektra.org/api/current/html/group__plugin.html}{\tt the A\+PI documentation}.
+
+\subsection*{Note on Direct Method Calls via External Integrations}
+
+Some applications want to call Elektra methods directly via native access. A {\ttfamily Key\+Set} is a data structure over which functions can iterate. If you want to start again from to first element, you have to explicitly call {\ttfamily rewind()} to set the internal pointer to the start. Any plugin expects the passed {\ttfamily Key\+Set} to be {\bfseries rewinded}. 

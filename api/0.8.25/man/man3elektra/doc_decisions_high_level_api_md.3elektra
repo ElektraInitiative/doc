@@ -1,0 +1,334 @@
+.TH "doc_decisions_high_level_api_md" 3elektra "Sun Nov 18 2018" "Version 0.8.25" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_high_level_api_mdHigh-level API 
+ \- 
+.SS "Problem"
+.PP
+Projects usually do not want to use low-level APIs\&. \fCKDB\fP and \fCKeySet\fP is useful for plugins and to implement APIs but not to be directly used in applications\&.
+.PP
+.SS "Constraints"
+.PP
+.IP "1." 4
+should be extremely easy to get started with
+.IP "2." 4
+should be very hard to use it wrong
+.IP "3." 4
+all high-level APIs should work together very nicely
+.IP "  \(bu" 4
+same principles
+.IP "  \(bu" 4
+same API style
+.IP "  \(bu" 4
+same error handling
+.IP "  \(bu" 4
+can be arbitrarily intermixed
+.PP
+
+.PP
+.PP
+.SS "Assumptions"
+.PP
+.IP "\(bu" 2
+Thread-safety: a handle is the accepted better solution than having to care about whether it is reentrant, thread-safe, \&.\&.\&.
+.IP "\(bu" 2
+assumes that spec is available (either by compiled-in \fCKeySet\fP or exit after elektraOpen)
+.IP "\(bu" 2
+many projects do not care about some limitations (no binary, no metadata) but prefer a straightforward way to get/set config
+.IP "\(bu" 2
+When people hit limitations they fall back to direct use of ^KeySet^, ^Key^
+.PP
+.PP
+.SS "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+storing errors in the handle:
+.IP "  \(bu" 4
+Maintenance problem if error handling is added later
+.PP
+
+.IP "\(bu" 2
+only provide \fCKDB\fP, applications need to implement their own APIs:
+.IP "  \(bu" 4
+reduces consistency of how the API is used
+.PP
+
+.IP "\(bu" 2
+only provide generated API
+.IP "\(bu" 2
+assume type as \fCstring\fP if not given
+.IP "\(bu" 2
+force \fCdefault\fP to be part of parameters
+.PP
+.PP
+.SS "Decision"
+.PP
+We provide 3 high-level C APIs:
+.PP
+.IP "1." 4
+libelektra-highlevel (generic key-value getter/setter)
+.IP "2." 4
+libelektra-hierarchy (generic hierarchical getter/setter in a tree)
+.IP "3." 4
+code generator (specified key-value getter/setter with function names, KeySets, or strings from specifications)
+.PP
+.PP
+Furthermore, we will:
+.PP
+.IP "\(bu" 2
+have as goal that no errors in specified keys with default can occur
+.IP "\(bu" 2
+if you use \fCelektraGetType\fP before getting a value, no error can occur when getting it later
+.IP "\(bu" 2
+enforce that every key has a type
+.IP "\(bu" 2
+use \fCelektraError\fP as extra parameter (for prototyping and examples you can pass 0)
+.PP
+.PP
+.SS "Basic"
+.PP
+(needed for lcdproc)
+.PP
+.PP
+.nf
+Elektra * elektraOpen (const char * application, const KeySet * defaultSpec, ElektraError ** error);
+void elektraReload (Elektra * handle, ElektraError ** error);
+void elektraParse (Elektra * handle, int argc, char ** argv, char ** environ); // pass environ?
+void elektraDefault (Elektra * handle);
+void elektraClose (Elektra * handle);
+.fi
+.PP
+.PP
+If \fCNULL\fP is passed as error, the API will try to continue if possible\&. On fatal errors, i\&.e\&. on API misuse or when it is not safe to use the handle afterwards, the API aborts with \fCexit\fP\&.
+.PP
+If you want to avoid \fCelektraOpen\fP or later \fCelektraReload\fP to fail, make sure to use pass a \fCKeySet\fP, that has your whole specification included (and defaults everywhere needed)\&.
+.PP
+.SS "Error Handling"
+.PP
+.PP
+.nf
+const char * elektraErrorMessage (const ElektraError * error);
+kdb_boolean_t elektraErrorAbort (const ElektraError * error);
+void elektraErrorFree (ElektraError * error)
+.fi
+.PP
+.PP
+\fCelektraErrorAbort\fP tells you if you need to quit your application because of severe issues that are permanent\&. Otherwise, developers can just print the message and continue\&. (Default settings might be used then\&.)
+.PP
+.SS "Simple Getters"
+.PP
+(most of them needed for lcdproc)
+.PP
+.PP
+.nf
+// getters
+const char * elektraGetString (Elektra * elektra, const char * name);
+kdb_boolean_t elektraGetBoolean (Elektra * elektra, const char * name);
+kdb_char_t elektraGetChar (Elektra * elektra, const char * name);
+kdb_octet_t elektraGetOctet (Elektra * elektra, const char * name);
+kdb_short_t elektraGetShort (Elektra * elektra, const char * name);
+kdb_unsigned_short_t elektraGetUnsignedShort (Elektra * elektra, const char * name);
+kdb_long_t elektraGetLong (Elektra * elektra, const char * name);
+kdb_unsigned_long_t elektraGetUnsignedLong (Elektra * elektra, const char * name);
+kdb_long_long_t elektraGetLongLong (Elektra * elektra, const char * name);
+kdb_unsigned_long_long_t elektraGetUnsignedLongLong (Elektra * elektra, const char * name);
+kdb_float_t elektraGetFloat (Elektra * elektra, const char * name);
+kdb_double_t elektraGetDouble (Elektra * elektra, const char * name);
+kdb_long_double_t elektraGetLongDouble (Elektra * elektra, const char * name);
+.fi
+.PP
+.PP
+.SS "Arrays"
+.PP
+(needed for lcdproc)
+.PP
+.PP
+.nf
+size_t elektraArraySize (Elektra * handle, const char * name);
+kdb_long_t elektraArrayLong (Elektra * handle, const char * name, size_t elem);
+// same types as above
+.fi
+.PP
+.PP
+.SS "Code-Generation"
+.PP
+(needed for lcdproc)
+.PP
+For every entry in the specification, such as:
+.PP
+.PP
+.nf
+[key]
+default=10
+type=long
+.fi
+.PP
+.PP
+The code generator yields:
+.PP
+.IP "\(bu" 2
+\fCkdb_long_t elektraGetKey(Elektra * handle);\fP
+.IP "\(bu" 2
+a \fCKeySet\fP to be used as defaultSpec
+.IP "\(bu" 2
+\fCelektraOpenOrgApplication()\fP
+.PP
+.PP
+All spec keys together are part of the KeySet that is automatically applied on failures in lower-level calls when using: \fCelektraOpenOrgApplication()\fP where \fCOrgApplication\fP is the org and application name\&.
+.PP
+.SS "Enum"
+.PP
+In the specification:
+.PP
+.PP
+.nf
+[server/serverScreen]
+check/enum/#0=off
+check/enum/#1=on
+check/enum/#2=blank
+.fi
+.PP
+.PP
+The code generator emits:
+.PP
+.PP
+.nf
+typedef enum
+{
+        ELEKTRA_ENUM_SERVER_SERVERSCREEN_OFF = 0,
+        ELEKTRA_ENUM_SERVER_SERVERSCREEN_ON = 1,
+        ELEKTRA_ENUM_SERVER_SERVERSCREEN_BLANK = 2,
+} ElektraEnumScreen;
+.fi
+.PP
+.PP
+Which can be used as:
+.PP
+.PP
+.nf
+ElektraEnumScreen elektraGetEnum(\&.\&.\&.);
+.fi
+.PP
+.PP
+.PP
+.nf
+[server]
+define/type/serverscreenstatus
+define/type/serverscreenstatus/check/enum/#0=off
+define/type/serverscreenstatus/check/enum/#1=on
+define/type/serverscreenstatus/check/enum/#2=blank
+.fi
+.PP
+.PP
+Then we can define:
+.PP
+.PP
+.nf
+[server/serverScreen]
+type = serverscreenstatus
+.fi
+.PP
+.PP
+.PP
+.nf
+typedef enum
+{
+        ELEKTRA_ENUM_SERVER_SERVERSCREEN_OFF = 0,
+        ELEKTRA_ENUM_SERVER_SERVERSCREEN_ON = 1,
+        ELEKTRA_ENUM_SERVER_SERVERSCREEN_BLANK = 2,
+} ElektraEnumScreenStatus;
+.fi
+.PP
+.PP
+.SS "Extensions"
+.PP
+(not needed for lcdproc)
+.PP
+.PP
+.nf
+// gives you a duplicate for other threads (same application+version), automatically calls elektraErrorClear
+Elektra * elektraDup (Elektra * handle);
+
+enum ElektraType
+{
+        ELEKTRA_TYPE_BOOLEAN,
+        ELEKTRA_TYPE_NONE,
+        \&.\&.\&.
+};
+
+ElektraType elektraGetType (Elektra * handle);
+
+KDB * elektraGetKDB (Elektra * handle);
+KeySet * elektraGetKeySet (Elektra * handle, const char * cutkey);
+KeySet * elektraGetKeyHierarchy (Elektra * handle, const char * cutkey);
+
+// enum, int, tristate
+void elektraSetInt (Elektra * handle, const char * name, int value);
+.fi
+.PP
+.PP
+.SS "Lower-level type API"
+.PP
+(not needed for lcdproc)
+.PP
+.PP
+.nf
+// will be used internally in elektraGetInt, are for other APIs useful, too
+int keyGetInt (Key * key);
+
+// and so on
+.fi
+.PP
+.PP
+.SS "recursive KeyHierarchy"
+.PP
+(needed for lcdproc in a client)
+.PP
+A tree of \fCKeyHierarchy\fP elements, each element has a \fCKey\fP embedded\&. Can be transformed from/to keysets\&. With iterators to iterate over sub \fCKeyHierarchy\fP elements\&.
+.PP
+.PP
+.nf
+keyhHasChildren (KeyHierarchy * kh);
+
+// TODO, add rest of API
+.fi
+.PP
+.PP
+.SS "todos"
+.PP
+.IP "\(bu" 2
+const char * vs\&. string type?
+.IP "\(bu" 2
+merging on conflicts? (maybe libelektra-tools dynamically loaded?)
+.IP "\(bu" 2
+some API calls have a question mark next to it
+.PP
+.PP
+.SS "Rationale"
+.PP
+.IP "1." 4
+Very easy to get started with, to get a key needs 3 lines of codes:
+.PP
+.PP
+.PP
+.nf
+Elektra *handle = elektraOpen ("/sw/elektra/kdb/#0/current", 0);
+printf ("number /mykey is " ELEKTRA_LONG_F "\n", elektraGetLong (handle, "/mykey"));
+elektraClose (handle);
+.fi
+.PP
+.PP
+.IP "2." 4
+It is also easier to get started with writing new bindings\&.
+.IP "3." 4
+User can combine the different APIs\&.
+.PP
+.PP
+.SS "Implications"
+.PP
+.SS "Related decisions"
+.PP
+.SS "Notes"
+.PP
+https://issues.libelektra.org/1359 
