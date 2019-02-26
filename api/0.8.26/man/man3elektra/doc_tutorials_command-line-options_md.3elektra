@@ -1,0 +1,208 @@
+.TH "doc_tutorials_command-line-options_md" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_command-line-options_mdCommand-line Options 
+ \- 
+.SS "Introduction"
+.PP
+Many applications use command-line options and environment variables as a way to override configuration values\&. In Elektra this can be automated by providing a specification that maps command-line options and environment variables to keys in the KDB\&.
+.PP
+The function \fCelektraGetOpts\fP uses this specification together with \fCargv\fP and \fCenvp\fP and creates new keys in the \fCproc\fP namespace for any command-line option or environment variable it finds\&. Because the \fCproc\fP namespace is uses, these values will be preferred over any stored values in a cascading lookup\&.
+.PP
+.SS "Setup"
+.PP
+To use \fCelektraGetOpts\fP you need to link against \fCelektra-opts\fP, \fCelektra-meta\fP and \fCelektra-ease\fP\&.
+.PP
+.SS "Options"
+.PP
+To define a command-line option either set the \fCopt\fP metakey to the short option you want to use, or set \fCopt/long\fP to the long option you want to use\&. For short options, only the first character of the given value will be used ('\\0' is ignored)\&. Short and long options can be used simultaneously\&.
+.PP
+Additionally a key can also be associated with multiple short/long options\&. To achieve this treat \fCopt\fP as an array\&. For example for two options \fC-a\fP and \fC-b\fP you would set \fCopt=#1\fP, \fCopt/#0=a\fP and \fCopt/#1=b\fP\&. If not explicitly stated otherwise, you can replace \fCopt\fP with any \fCopt/#\fP array element in all meta-keys mentioned in this document\&. This of course includes long options (i\&.e\&. \fCopt/#0/long\fP, etc\&.)\&.
+.PP
+While you can specify multiple options (or environment variables, see below) for a single key, only one of them can be used at the same time\&. Using two or more options (or variables) that are all linked to the same key, will result in an error\&.
+.PP
+.SS "Option Arguments"
+.PP
+Per default an option is expected to have an argument\&. Arguments to short and long options are given in the same way as with \fCgetopt_long(3)\fP (i\&.e\&. \fC-oarg\fP, \fC-o arg\fP, \fC--option arg\fP or \fC--option=arg\fP)\&.
+.PP
+To change whether an option expects an argument set \fCopt/arg\fP to either \fC'none'\fP or \fC'optional'\fP (the default is \fC'required'\fP)\&.
+.PP
+.IP "\(bu" 2
+If you choose \fC'none'\fP, the corresponding key will be set to \fC'1'\fP, if the option is used\&. This value can be changed by setting \fCopt/flagvalue\fP\&.
+.IP "\(bu" 2
+An option that is set to \fC'optional'\fP is treated the same as with \fC'none'\fP, except that you can also set the value with the long option form \fC--option=value\fP\&. This also means that \fCopt/flagvalue\fP is used, if no argument is given\&. Contrary to \fCgetopt_long(3)\fP options with optional arguments can still have short forms\&. They just cannot have an argument in this form\&.
+.PP
+.PP
+.SS "Environment Variables"
+.PP
+Elektra also supports parsing environment variables in a similar manner\&. For these there are however, less configuration options\&. You can simply specify one or more environment variables for a key using the \fCenv\fP metakey (or \fCenv/#\fP meta-array for multiple)\&.
+.PP
+.SS "Arrays"
+.PP
+Both options and environment variables expose special behavior, if used in combination with arrays\&.
+.PP
+If an option is specified on a key with basename \fC#\fP, the option can be used repeatedly\&. All occurrences will be collected into the array\&.
+.PP
+Environment variables obviously cannot be repeated, instead a behavior similar that used for PATH is adopted\&. On Windows the variable will be split at each ';' character\&. On all other systems ':' is used as a separator\&.
+.PP
+.SS "Arguments (Parameters)"
+.PP
+All unused elements of \fCargv\fP are be collected into an array\&. You can access this array by specifying \fCargs=remaining\fP on a key with basename \fC#\fP\&. The array will be copied into this key\&. As is the case with getopt(3) processing of options will stop, if \fC--\fP is encountered in \fCargv\fP\&.
+.PP
+.SS "Help Message"
+.PP
+When one of the help options \fC-h\fP and \fC--help\fP is encountered in \fCargv\fP, \fCelektraGetOpts\fP only reads the specification, but does not create any keys in the \fCproc\fP namespace\&. It will however, generate a help message that can be accessed with \fCelektraGetOptsHelpMessage\fP\&.
+.PP
+The help message consists of a usage line and an options list\&. The program name for the usage line is taken from \fCargv[0]\fP\&. If the value contains a slash (\fC/\fP) it will be considered a path and only the part after the last slash will be used\&.
+.PP
+The options list will contain exactly one entry for each key that has at least one option\&. Each entry has to parts\&. First all the options for the key are listed and then (possibly on the next line, if there are a lot of options), the description for the key is listed\&. The description is taken from the \fCopt/help\fP or alternatively the \fCdescription\fP metakey\&.
+.PP
+\fBNote:\fP \fCopt/help\fP is specified \fIonly once per key\fP\&. That means even if the key uses \fCopt/#0\fP, \fCopt/#1\fP, etc\&. (unlike most other metadata) the description will always be taken from \fCopt/help\fP directly, because there can only be one description\&. In general we recommend using \fCdescription\fP, because it is used by other parts of Elektra as well\&. \fCopt/help\fP is intended to provide a less verbose description more suitable for the command-line\&.
+.PP
+The help message can be modified in a few different ways:
+.PP
+.IP "\(bu" 2
+The \fCusage\fP argument of \fCelektraGetOptsHelpMessage\fP can be used to replace the default usage line\&.
+.IP "\(bu" 2
+The \fCprefix\fP argument of \fCelektraGetOptsHelpMessage\fP can be used to insert text between the usage line and the options list\&.
+.IP "\(bu" 2
+An option can can be hidden from the help message by setting \fCopt/hidden\fP to \fC'1'\fP\&. This hides both the long and short form of the option\&. If you want to hide just one form, use an array of two options an hide just one index\&.
+.IP "\(bu" 2
+If the option has an \fC'optional'\fP or \fC'required'\fP argument, the string \fCARG\fP will be used as a placeholder by default\&. You can change this, by setting \fCopt/arg/help\fP for the corresponding option\&.
+.PP
+.PP
+.SS "Precedence"
+.PP
+The order of precedence is simple:
+.PP
+.IP "\(bu" 2
+If a short option for a key is found, it will always be used\&.
+.IP "\(bu" 2
+If none of the short options for a key are found, we look for long options\&.
+.IP "\(bu" 2
+Neither short nor long options are found, environment variables are considered\&.
+.PP
+.PP
+.SS "Limitations"
+.PP
+.IP "\(bu" 2
+Both options and environment variables can only be specified on a single key\&. If you need to have the value of one option/environment variable in multiple keys, you may use \fCfallback\fPs\&.
+.IP "\(bu" 2
+\fC-\fP and \fCh\fP cannot be used as short options, because they would collide with, the 'option end marker' and the help option respectively\&. \fChelp\fP cannot be used as a long option, because it would collide with the help option\&.
+.PP
+.PP
+.SS "Examples"
+.PP
+The following specification describes the command line interface similar to the one used by \fCrm\fP\&. (It is based of \fCrm (GNU coreutils) 8\&.30\fP)\&.
+.PP
+.PP
+.nf
+[force]
+opt = f
+opt/long = force
+opt/arg = none
+description = ignore nonexistent files and arguments, never prompt
+
+[interactive]
+opt = #1
+opt/#0 = i
+opt/#0/long = interactive
+opt/#0/arg = optional
+opt/#0/flagvalue = always
+opt/#1 = I
+opt/#1/flagvalue = once
+opt/#1/arg = none
+opt/arg/name = WHEN
+description = prompt according to WHEN: never, once (-I), or always (-i); without WHEN, prompt always
+
+[singlefs]
+opt/long = one-file-system
+opt/arg = none
+description = when removing a hierarchy recursively, skip any directory that is on a file system different from that of the corresponding line argument
+
+[nopreserve]
+opt/long = no-preserve-root
+opt/arg = none
+description = do not treat '/' specially
+
+[preserve]
+opt/long = preserve-root
+opt/arg = optional
+opt/arg/name = all
+opt/flagvalue = root
+description = do not remove '/' (default); with 'all', reject any command line argument on a separate device from its parent
+
+[recursive]
+opt = #1
+opt/#0 = r
+opt/#0/long = recursive
+opt/#0/arg = none
+opt/#1 = R
+opt/#1/arg = none
+description = remove directories and their contents recursively
+
+[emptydirs]
+opt = d
+opt/long = dir
+opt/arg = none
+description = remove empty directories
+
+[verbose]
+opt = v
+opt/long = verbose
+opt/arg = none
+env = VERBOSE
+description = explain what is being done
+
+[showversion]
+opt/long = version
+opt/arg = none
+description = output version information and exit
+
+[files/#]
+args = remaining
+env = FILES
+description = the files that shall be deleted
+.fi
+.PP
+.PP
+If this specification is used in a program called \fCerm\fP (for Elektra rm), which is called like this:
+.PP
+.PP
+.nf
+FILES="one\&.txt:other\&.log" VERBOSE=1 erm -fi --recursive
+.fi
+.PP
+.PP
+The following keys will be created by \fCelektraGetOpts\fP (assuming the specification is mounted at \fCspec/sw/org/erm/#0/current\fP):
+.PP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/force = '1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/interactive = 'always'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/recursive = '1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/verbose = '1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files [array] = '#1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#0 = 'one\&.txt'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#1 = 'other\&.log'\fP
+.PP
+.PP
+Calling \fCFILES='abcd\&.txt' erm 123\&.txt 456\&.txt\fP meanwhile will result in:
+.PP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files [array] = '#1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#0 = '123\&.txt'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#1 = '456\&.txt'\fP
+.PP
+.PP
+NOTE: \fCproc/sw/org/erm/#0/current/files [array] = '#1'\fP means the \fCarray\fP metadata of \fCproc/sw/org/erm/#0/current/files\fP is \fC#1\fP\&.
+.PP
+You can find a full working example \fChere\fP\&. However, it uses a hard coded specification which is a bit harder to read\&. 

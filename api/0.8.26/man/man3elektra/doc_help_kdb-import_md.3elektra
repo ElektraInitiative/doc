@@ -1,0 +1,84 @@
+.TH "doc_help_kdb-import_md" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-import_mdkdb-import(1) -- Import an existing configuration into the key database 
+ \- 
+.SS "SYNOPSIS"
+.PP
+\fCkdb import <destination> [<format>]\fP
+.PP
+Where \fCdestination\fP is the destination where the user wants the keys to be imported into\&. \fCformat\fP is the format of the keys that are imported\&.
+.PP
+.SS "DESCRIPTION"
+.PP
+If the \fCformat\fP argument is not passed, then the default format will be used as determined by the value of the \fCsw/kdb/current/format\fP key\&. By default, that key is set to the \fCstorage\fP format\&. The \fCformat\fP attribute relies on Elektra’s plugin system to properly import the configuration\&. The user can view all plugins available for use by running the kdb-list(1) command\&. To learn about any plugin, the user can simply use the kdb-info(1) command\&.
+.PP
+This command allows a user to import an existing configuration into the key database\&. The configuration that the user wants to import is read from \fCstdin\fP\&. The user should specify the format that the current configuration or keys are in, otherwise the default format will be used\&. The default format is \fCstorage\fP but can be changed by editing the value of the \fC/sw/elektra/kdb/#0/current/format\fP key\&. The \fCstorage\fP plugin can be configured at compile-time or changed by the link \fClibelektra-storage\&.so\fP\&.
+.PP
+.SS "CONFLICTS"
+.PP
+Conflicts can occur when importing a configuration to a part of the database where keys already exist\&. Conflicts when importing can be resolved using a strategy with the \fC-s\fP argument\&.
+.PP
+Specific to \fCkdb import\fP the following strategy exists:
+.PP
+.IP "\(bu" 2
+\fCvalidate\fP: apply metadata as received from base, and then cut+append all keys as imported\&. If the appended keys do not have a namespace, the namespace given by \fC-N\fP is added\&.
+.PP
+.PP
+The other strategies are implemented by the merge framework and are documented in \fBelektra-merge-strategy(7)\fP\&.
+.PP
+.SS "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-s\fP, \fC--strategy <name>\fP: Specify which strategy should be used to resolve conflicts\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&.
+.IP "\(bu" 2
+\fC-c\fP, \fC--plugins-config\fP: Add a configuration to the format plugin\&.
+.IP "\(bu" 2
+\fC-N\fP, \fC--namespace <namespace>\fP: Specify the namespace to use when writing cascading keys (\fCvalidate\fP strategy only)\&. See \fCbelow in KDB\fP\&.
+.PP
+.PP
+.SS "KDB"
+.PP
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/verbose\fP: Same as \fC-v\fP: Explain what is happening (output merged keys)\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/format\fP Change default format (if none is given at commandline) and built-in default is not your preferred format\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/namespace\fP: Specifies which default namespace should be used when setting a cascading name\&. By default the namespace is user, except \fCkdb\fP is used as root, then \fCsystem\fP is the default (\fCvalidate\fP strategy only)\&.
+.PP
+.PP
+.SS "EXAMPLES"
+.PP
+To import a configuration stored in the XML format in a file called \fCexample\&.xml\fP below \fCuser/keyset\fP:
+.br
+ \fCkdb import user/keyset xmltool < example\&.xml\fP
+.PP
+To import a configuration stored in the \fCini\fP format in a file called \fCexample\&.ini\fP below \fCuser/keyset\fP replacing any previous keys stored there:
+.br
+ \fCcat example\&.ini | kdb import -s cut user/keyset ini\fP
+.PP
+To import a configuration stored in the \fCini\fP format in a file called \fCexample\&.ini\fP below \fCuser/keyset\fP keeping any previous keys stored there that aren't present in the newly imported configuration:
+.br
+ \fCcat example\&.ini | kdb import -s import user/keyset ini\fP
+.PP
+To restore a backup (stored as \fCsw\&.ecf\fP) of a user's configuration below \fCsystem/sw\fP:
+.br
+ \fCcat sw\&.ecf | kdb import system/sw\fP
+.PP
+.SS "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBelektra-merge-strategy(7)\fP 
+.PP
+

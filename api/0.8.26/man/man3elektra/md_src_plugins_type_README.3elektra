@@ -1,0 +1,81 @@
+.TH "md_src_plugins_type_README" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_type_READMEPlugin: type 
+ \- 
+.IP "\(bu" 2
+infos = Information about type plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained nodep memleak unfinished old
+.IP "\(bu" 2
+infos/metadata = check/type type check/type/min check/type/max
+.IP "\(bu" 2
+infos/description = type checker using COBRA data types
+.PP
+.PP
+This plugin is a type checker plugin using the \fCCORBA\fP data types\&.
+.PP
+A common and successful type system happens to be CORBA\&. The system is well suited because of the many well-defined mappings it provides to other programming languages\&.
+.PP
+The type checker plugin supports all basic CORBA types: \fCshort\fP, \fCunsigned_short\fP, \fClong\fP, \fCunsigned_long\fP, \fClong_long\fP, \fCunsigned_long_long\fP, \fCfloat\fP, \fCdouble\fP, \fCchar\fP, \fCboolean\fP, \fCany\fP and \fCoctet\fP\&. When checking \fCany\fP it will always be successful, regardless of the content\&.
+.PP
+.SS "Deprecation"
+.PP
+\fCempty\fP and \fCFSType\fP are deprecated\&. Please use regular expressions or enums instead\&.
+.PP
+Sometimes the type should expresses that, for example, both an empty or another type is valid\&. This type checker allowed a space-separated list of types to expresses that\&. If any of those types match, the whole type was valid\&. For example, the type \fCstring empty\fP equals the type \fCany\fP\&. This facility builds a union of the sets of instances existing types specify\&. It is now deprecated due to a more general sum type facility\&.
+.PP
+\fCcheck/type/min\fP and \fCcheck/type/max\fP are deprecated, please use the range plugin instead\&.
+.PP
+.SS "Example"
+.PP
+.PP
+.nf
+# Mount the plugin
+sudo kdb mount typetest\&.dump user/tests/type dump type
+
+# Store a character value
+kdb set user/tests/type/key a
+
+# Only allow character values
+kdb setmeta user/tests/type/key check/type char
+kdb get user/tests/type/key
+#> a
+
+# If we store another character everything works fine
+kdb set user/tests/type/key b
+kdb get user/tests/type/key
+#> b
+
+# If we try to store a string Elektra will not change the value
+kdb set user/tests/type/key 'Not a char'
+# STDERR: \&.*Description: could not type check value of key\&.*
+# ERROR:  52
+# RET:    5
+kdb get user/tests/type/key
+#> b
+
+# Undo modifications to the database
+kdb rm user/tests/type/key
+sudo kdb umount user/tests/type
+.fi
+.PP
+.PP
+.SS "Limitations"
+.PP
+\fCwchar\fP is missing\&.
+.PP
+Enum and records are part of other plugins\&.
+.PP
+The \fCCORBA\fP type system also has its limits\&. The types \fCstring\fP and \fCenum\fP can be unsatisfactory\&. While string is too general and makes no limit on how the sequence of characters is structured, the enumeration is too finite\&. For example, it is not possible to say that a string is not allowed to have a specific symbol in it\&. Combine this plugin with other type checker plugins to circumvent such limitations\&. 

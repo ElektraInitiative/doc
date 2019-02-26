@@ -1,0 +1,222 @@
+.TH "doc_INSTALL_md" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_INSTALL_mdInstall 
+ \- 
+.SS "Status"
+.PP
+The graph below shows an (incomplete) list of available packages for Elektra\&.
+.PP
+\fC\fP.PP
+.SS "Linux"
+.PP
+For the following Linux distributions and package managers 0\&.8 packages are available:
+.PP
+.IP "\(bu" 2
+\fCArch Linux\fP
+.IP "\(bu" 2
+\fCOpenwrt\fP
+.IP "\(bu" 2
+\fCOpenSuse\fP
+.IP "\(bu" 2
+\fCDebian\fP
+.IP "\(bu" 2
+\fCUbuntu\fP
+.IP "\(bu" 2
+\fCGentoo\fP
+.IP "\(bu" 2
+\fCLinux Mint\fP
+.IP "\(bu" 2
+\fCLinuxBrew\fP
+.IP "\(bu" 2
+\fCAlpine Linux\fP
+.PP
+.PP
+For \fCOpenSUSE, CentOS, Fedora, RHEL and SLE\fP Kai-Uwe Behrmann kindly provides packages \fCfor download\fP\&.
+.PP
+.SS "Debian"
+.PP
+To use the debian repository of the latest builds from master put following lines in \fC/etc/apt/sources\&.list\fP:
+.PP
+For Stretch: 
+.PP
+.nf
+    deb     [trusted=yes] https://debian-stretch-repo.libelektra.org/ stretch main
+    deb-src [trusted=yes] https://debian-stretch-repo.libelektra.org/ stretch main
+
+.fi
+.PP
+.PP
+Which can also be done using: 
+.PP
+.nf
+    sudo apt-get install apt-transport-https
+    echo "deb     [trusted=yes] https://debian-stretch-repo.libelektra.org/ stretch main" | sudo tee /etc/apt/sources.list.d/elektra.list
+
+.fi
+.PP
+.PP
+Or alternatively, you can use (if you do not mind many dependences just to add one line to a config file): 
+.PP
+.nf
+    sudo apt-get install software-properties-common apt-transport-https
+    sudo add-apt-repository "deb     [trusted=yes] https://debian-stretch-repo.libelektra.org/ stretch main"
+
+.fi
+.PP
+.PP
+For Jessie (not updated anymore, contains 0\&.8\&.24 packages which were created shortly before 0\&.8\&.25 release) 
+.PP
+.nf
+    deb     [trusted=yes] https://debian-stable.libelektra.org/elektra-stable/ jessie main
+    deb-src [trusted=yes] https://debian-stable.libelektra.org/elektra-stable/ jessie main
+
+.fi
+.PP
+.PP
+For Wheezy (not updated anymore, contains 0\&.8\&.19-8121 packages): 
+.PP
+.nf
+    deb     [trusted=yes] https://build.libelektra.org/debian/ wheezy main
+    deb-src [trusted=yes] https://build.libelektra.org/debian/ wheezy main
+
+.fi
+.PP
+.PP
+To get all packaged plugins, bindings and tools install: 
+.PP
+.nf
+apt-get install libelektra4-all
+
+.fi
+.PP
+.PP
+For a small installation with command-line tools available use: 
+.PP
+.nf
+apt-get install elektra-bin
+
+.fi
+.PP
+.PP
+If you want to rebuild Elektra from Debian unstable or our repositories, add a \fCdeb-src\fP entry to \fC/etc/apt/sources\&.list\fP and then run: 
+.PP
+.nf
+apt-get source -b elektra
+
+.fi
+.PP
+.PP
+To build Debian Packages from the source you might want to use: 
+.PP
+.nf
+dpkg-buildpackage -us -uc -sa
+
+.fi
+.PP
+.PP
+(You need to be in the Debian branch, see \fBGIT\fP)
+.PP
+.SS "macOS"
+.PP
+You can install Elektra using \fCHomebrew\fP via the shell command:
+.PP
+.PP
+.nf
+brew install elektra
+.fi
+.PP
+.PP
+\&. We also provide a tap containing a more elaborate formula \fChere\fP\&.
+.PP
+.SS "Generic"
+.PP
+First follow the steps in \fBCOMPILE\fP\&.
+.PP
+To install Elektra use: 
+.PP
+.nf
+sudo make install
+sudo ldconfig  # See troubleshooting below
+
+.fi
+.PP
+.PP
+To uninstall Elektra use (will not be very clean, e\&.g\&. it will not remove directories and \fC*\&.pyc\fP files): 
+.PP
+.nf
+sudo make uninstall
+sudo ldconfig
+
+.fi
+.PP
+.PP
+or in the build directory (will not honor DESTDIR!): 
+.PP
+.nf
+xargs rm < install_manifest.txt
+
+.fi
+.PP
+.PP
+.SS "CPack"
+.PP
+First follow the steps in \fBCOMPILE\fP\&.
+.PP
+Then use: 
+.PP
+.nf
+cpack
+
+.fi
+.PP
+.PP
+which should create a package for distributions where a Generator is implemented\&. See \fCthis cmake file\fP for available Generators and send a merge request for your system\&.
+.PP
+.SS "Troubleshooting"
+.PP
+.SS "Error Loading Libraries"
+.PP
+If you encounter the problem that the library can not be found (output like this) 
+.PP
+.nf
+kdb: error while loading shared libraries:
+     libelektra-core.so.4: cannot open shared object file: No such file or directory
+
+.fi
+.PP
+.PP
+or: 
+.PP
+.nf
+kdb: error while loading shared libraries:
+     libelektratools.so.2: cannot open shared object file: No such file or directory
+
+.fi
+.PP
+.PP
+you need to place a configuration file at \fC/etc/ld\&.so\&.conf\&.d/\fP (e\&.g\&. \fC/etc/ld\&.so\&.conf\&.d/elektra\&.conf\fP)\&.
+.PP
+Add the path where the library has been installed 
+.PP
+.nf
+/usr/lib/local/
+
+.fi
+.PP
+.PP
+and run \fCldconfig\fP as root\&.
+.PP
+.SS "Installation Manuals"
+.PP
+For some of the plugins and tools that ship with Elektra, additional installation manuals have been written\&. You can find them in the \fBtutorial overview\fP\&.
+.PP
+.SS "See also"
+.PP
+.IP "\(bu" 2
+\fBCOMPILE\fP\&.
+.IP "\(bu" 2
+\fBTESTING\fP\&. 
+.PP
+

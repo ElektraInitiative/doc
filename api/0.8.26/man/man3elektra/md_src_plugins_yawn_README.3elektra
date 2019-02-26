@@ -1,0 +1,135 @@
+.TH "md_src_plugins_yawn_README" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_yawn_READMEPlugin: yawn 
+ \- 
+.IP "\(bu" 2
+infos = Information about the yawn plugin is in keys below
+.IP "\(bu" 2
+infos/author = René Schwaiger sanssecours@me.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs = directoryvalue yamlsmith
+.IP "\(bu" 2
+infos/provides = storage/yaml
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage
+.IP "\(bu" 2
+infos/status = maintained unittest preview experimental unfinished nodoc concept discouraged
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = This storage plugin uses an Earley parser to read YAML files
+.PP
+.SH "YAwn"
+.PP
+.SS "Introduction"
+.PP
+This plugin uses \fCYAEP\fP to parse \fCYAML\fP data\&.
+.PP
+.SS "Dependencies"
+.PP
+This plugin requires \fCYAEP\fP\&.
+.PP
+.SS "Examples"
+.PP
+.SS "Mappings"
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user/tests/yawn yawn
+
+# Set and retrieve some basic values
+kdb set user/tests/yawn 'is obviously a move introduced in Generation III of Pokemon' # Source: Bulbapedia
+kdb set user/tests/yawn/ing 'is something similar'
+
+kdb get user/tests/yawn/
+#> is obviously a move introduced in Generation III of Pokemon
+kdb get user/tests/yawn/ing
+#> is something similar
+
+kdb ls user/tests/yawn
+#> user/tests/yawn
+#> user/tests/yawn/ing
+
+# Undo modifications
+kdb rm -r user/tests/yawn
+sudo kdb umount user/tests/yawn
+.fi
+.PP
+.PP
+.SS "Arrays"
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user/tests/yawn yawn
+
+kdb set user/tests/yawn/movies
+kdb set user/tests/yawn/movies/#0 'YAwn I: Time to Wake Up'
+kdb set user/tests/yawn/movies/#1 'YAwn II: The Awakening'
+kdb set user/tests/yawn/movies/#2 'YAwn III: The Sleepover'
+kdb set user/tests/yawn/movies/#3 'YAwn IV: YAwn Again'
+
+# Retrieve last array index
+kdb getmeta user/tests/yawn/movies array
+#> #3
+
+kdb get user/tests/yawn/movies/#1
+#> YAwn II: The Awakening
+
+# Undo modifications
+kdb rm -r user/tests/yawn
+sudo kdb umount user/tests/yawn
+.fi
+.PP
+.PP
+.SS "Error Messages"
+.PP
+``` 
+.SH "Mount plugin"
+.PP
+.PP
+sudo kdb mount config\&.yaml user/tests/yawn yawn
+.PP
+.SH "Manually add some data"
+.PP
+.PP
+printf -- ' - Brutus
+.br
+' > \fCkdb file user/tests/yawn\fP 
+.SH "Add element with incorrect indentation"
+.PP
+.PP
+printf -- '- Burst' >> \fCkdb file user/tests/yawn\fP
+.PP
+.SH "Try to retrieve data"
+.PP
+.PP
+kdb ls user/tests/yawn 
+.SH "RET: 5"
+.PP
+.PP
+.SH "STDERR: \&.*/config\&.yaml:2:1: Syntax error on token number 5: “<Token, SEQUENCE_START, SEQUENCE START, 2:1–2:1>”\&.*"
+.PP
+.PP
+.SH "Fix syntax error"
+.PP
+.PP
+printf -- ' - Brutus
+.br
+' > \fCkdb file user/tests/yawn\fP printf -- ' - Burst' >> \fCkdb file user/tests/yawn\fP kdb ls user/tests/yawn #> user/tests/yawn #> user/tests/yawn/#0 #> user/tests/yawn/#1
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r user/tests/yawn sudo kdb umount user/tests/yawn ```
+.PP
+.SS "Limitations"
+.PP
+The plugin has the same limitations as \fBYAMBi \fP\&. 

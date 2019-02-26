@@ -1,0 +1,124 @@
+\subsection*{Key-\/\+Value Pairs}
+
+The main building block of Elektra’s database are hierarchical \href{https://en.wikipedia.org/wiki/Key-value_database}{\tt key-\/value pairs}. You can create such a pair using \hyperlink{doc_help_kdb-set_md}{`kdb set`}\+:
+
+
+\begin{DoxyCode}
+kdb set user/tests/parent value
+#> Create a new key user/tests/parent with string "value"
+\end{DoxyCode}
+
+
+. The command above created a key {\ttfamily user/tests/parent} with the value {\ttfamily value}. Since Elektra uses a hierarchical database we can also create keys {\bfseries below} {\ttfamily user/tests/parent}\+:
+
+
+\begin{DoxyCode}
+# If we do not provide a value, then `kdb set` creates keys with `null` values.
+kdb set user/tests/parent/son
+#> Create a new key user/tests/parent/son with null value
+
+kdb set user/tests/parent/daughter
+#> Create a new key user/tests/parent/daughter with null value
+
+kdb set user/tests/parent/daughter/grandchild
+#> Create a new key user/tests/parent/daughter/grandchild with null value
+\end{DoxyCode}
+
+
+. We can check the hierarchy of the keys using {\ttfamily kdb ls} and retrieve data using {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}
+# Elektra sorts keys alphabetically
+kdb ls user/tests/parent
+#> user/tests/parent
+#> user/tests/parent/daughter
+#> user/tests/parent/daughter/grandchild
+#> user/tests/parent/son
+
+kdb get user/tests/parent
+#> value
+kdb get user/tests/parent/daughter
+#>
+\end{DoxyCode}
+
+
+\subsection*{Array Keys}
+
+Since Elektra sorts keys alphabetically we can use the key-\/value pair structure described above to store sequences of values (aka. arrays).
+
+\subsubsection*{Empty Arrays}
+
+For an {\bfseries empty array} ({\ttfamily \mbox{[}\mbox{]}}) we just add the \hyperlink{doc_help_elektra-metadata_md}{metakey} {\ttfamily array}\+:
+
+``{\ttfamily  $<$h1$>$Create an empty array with the name}user/tests/sequence` kdb setmeta user/tests/sequence array \textquotesingle{}\textquotesingle{} 
+\begin{DoxyCode}
+.
+
+### Array Elements
+
+To create an **array element** we start the basename of a key with the `#` character and add the index of
+       the array element afterwards. For example, the commands below adds three elements to our array
+       `user/tests/sequence`:
+\end{DoxyCode}
+ kdb set user/tests/sequence/\#0 \textquotesingle{}First Element\textquotesingle{} kdb set user/tests/sequence/\#1 \textquotesingle{}Second Element\textquotesingle{} \section*{Arrays do not need to be contiguous}
+
+kdb set user/tests/sequence/\#3 \textquotesingle{}Fourth Element\textquotesingle{} 
+\begin{DoxyCode}
+. As you can see above arrays can contain “empty fields”: The key `user/tests/sequence/#2` is missing.
+
+For array elements with an index larger than `9` we must add **underscores** (`\_`) to the basename, so we
+       do not destroy the alphabetic order of the array. For example, to add a eleventh element to our array we use
+       the following command:
+\end{DoxyCode}
+ kdb set user/tests/sequence/\#\+\_\+10 \textquotesingle{}Eleventh Element\textquotesingle{} 
+\begin{DoxyCode}
+. The order of the array sequence is still correct afterwards, as the following command shows:
+\end{DoxyCode}
+ \section*{List all array elements}
+
+kdb ls user/tests/sequence/ \#$>$ user/tests/sequence/\#0 \#$>$ user/tests/sequence/\#1 \#$>$ user/tests/sequence/\#3 \#$>$ user/tests/sequence/\#\+\_\+10 
+\begin{DoxyCode}
+. For larger indices we add **one underscore less, than the number of digits** of the index. For example,
+       to add a element with index `1337` (`4` digits) we use the basename `#\_\_\_1337`. We can also generate the
+       basename programmatically:
+
+```bash
+ruby -e 'print("#", "\_" * (ARGV[0].length - 1), ARGV[0])' 12345
+#> #\_\_\_\_12345
+
+ruby -e 'print("#", "\_" * (ARGV[0].length - 1), ARGV[0])' 0
+#> #0
+
+ruby -e 'print("#", "\_" * (ARGV[0].length - 1), ARGV[0])' 42
+#> #\_42
+\end{DoxyCode}
+
+
+\subsubsection*{Metadata}
+
+To make life easier for users, Elektra’s \hyperlink{doc_tutorials_plugins_md}{storage plugins} should save the \hyperlink{doc_decisions_array_md}{basename of the last key in the array parent}. Some plugins do not support this feature. In that case you can add this value manually via {\ttfamily kdb setmeta}\+:
+
+
+\begin{DoxyCode}
+# Add array elements
+kdb set user/tests/favorites/superheros/#0 'One-Punch Man'
+kdb set user/tests/favorites/superheros/#1 'Mermaid Man and Barnacle Boy'
+kdb set user/tests/favorites/superheros/#\_\_\_\_99999 'The guy with the bow and arrow'
+
+# The metakey `array` should save the basename of the last element.
+kdb setmeta user/tests/favorites/superheros array '#\_\_\_\_99999'
+\end{DoxyCode}
+
+
+. This way you can always retrieve the last element of an array easily\+:
+
+``{\ttfamily  kdb get user/tests/favorites/superheros/}kdb getmeta user/tests/favorites/superheros array` \#$>$ The guy with the bow and arrow 
+\begin{DoxyCode}
+.
+
+# Closing Remarks
+
+We close this tutorial by removing the data created by the commands above:
+\end{DoxyCode}
+ kdb rm -\/r user/tests ```

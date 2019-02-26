@@ -1,0 +1,38 @@
+You should first read \hyperlink{src_plugins_README_md}{elektra-\/plugins} to get an idea about plugins.
+
+This document describes how \hyperlink{src_plugins_README_md}{elektra-\/plugins} are ordered with \hyperlink{doc_help_elektra-backends_md}{elektra-\/backends(7)}.
+
+Multiple plugins open up many ways in which they can be arranged. A simple way is to have one array with pointers to plugins. To store a {\ttfamily Key\+Set}, the first plugin starts off with the {\ttfamily Key\+Set} passed to it. The resulting {\ttfamily Key\+Set} is given to the next plugin. This is repeated for every plugin in the array.
+
+To obtain a {\ttfamily Key\+Set}, the array of plugins is processed the other way round. An empty {\ttfamily Key\+Set} is passed to the last plugin. The resulting {\ttfamily Key\+Set} is handed over to the previous one until the first plugin is executed.
+
+This approach has shown not to be powerful enough to express all use cases by counter-\/evidence. Logging should take place after the storage plugin performs its actions in both directions. It is not possible to do this with a {\itshape single array} processed in a way as described above.
+
+\subsection*{Separated lists}
+
+Two individual lists (get+set list) of plugins solve the described problem. Instead of bidirectional processing of a single list two separate arrays are used. It turns out that error scenarios also make this approach unsuccessful. When a plugin fails, no other plugin must be executed later on because it might depend on the previous plugin to work correctly. In {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}, this works well -- the update process will be stopped. But during {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}, changes to the file system must be reverted. Plugins can leave a lock, temporary file or journal. These resources need to be cleaned up properly.
+
+\subsection*{Error List}
+
+So every backend additionally needs a third array that is executed in error scenarios during {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. Plugins responsible for the cleanup, rollback or error notification are inserted into it.
+
+The resolver plugin requires this error list to do a proper rollback. Another use case is logging after a failure has happened.
+
+\subsection*{Placements}
+
+The ordering of plugins inside these three arrays is controlled by \hyperlink{doc_help_elektra-contracts_md}{elektra-\/contracts(7)}. Each of the three arrays has ten slots. These slots have names to be referred to in the contract.
+
+Here you see a table that contains all names\+: \begin{DoxyVerb}0     prerollback       getresolver         setresolver
+1     prerollback       pregetstorage      presetstorage
+2     prerollback       pregetstorage      presetstorage
+3     prerollback       pregetstorage      presetstorage
+4     prerollback       pregetstorage      presetstorage
+5      rollback            getstorage         setstorage
+6    postrollback      postgetstorage      precommit
+7    postrollback      postgetstorage         commit
+8    postrollback      postgetstorage     postcommit
+9    postrollback      postgetstorage     postcommit
+\end{DoxyVerb}
+
+
+. How the placement is influenced using {\ttfamily infos/placement}, {\ttfamily infos/ordering} and {\ttfamily infos/stacking} is described in \href{/home/markus/Projekte/Elektra/current/doc/CONTRACT.ini}{\tt C\+O\+N\+T\+R\+A\+C\+T.\+ini}. 

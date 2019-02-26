@@ -1,0 +1,108 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the spec plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = check apply
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained nodep configurable global preview
+\item infos/description = copies metadata from spec namespace to other namespaces
+\end{DoxyItemize}
+
+The spec plugin is a global plugin that copies metadata from the {\ttfamily spec}-\/namespace to other namespaces using their key names as globbing expressions. Globbing resembles regular expressions. They do not have the same expressive power, but are easier to use. The semantics are more suitable to match path names\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \+\_\+} matches any key name of just one hierarchy. This means it complies with any character except slash or null.
+\item {\ttfamily ?} satisfies single characters with the same exclusion.
+\item {\ttfamily \#} matches Elektra array elements.
+\item Additionally, there are ranges and character classes. They can also be inverted.
+\end{DoxyItemize}
+
+The plugin copies the metadata of the corresponding {\ttfamily spec} key to every matching key in the other namespaces.
+
+The spec plugin also provides basic validation and structural checking. Specifically it supports\+:
+
+
+\begin{DoxyItemize}
+\item detection of invalid array key names
+\item detection of missing keys
+\item validation of array ranges
+\item validating the number of subkeys
+\end{DoxyItemize}
+
+\subsection*{Configuration}
+
+\subsubsection*{Actions}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily E\+R\+R\+OR} yields an error when a conflict occurs
+\item {\ttfamily W\+A\+R\+N\+I\+NG} adds a warning when a conflict occurs
+\item {\ttfamily I\+N\+FO} adds a metakey {\ttfamily logs/spec/info} which can be used by logging plugins
+\item {\ttfamily I\+G\+N\+O\+RE} ignores the conflict, this is the default value
+\end{DoxyItemize}
+
+\subsubsection*{Conflicts}
+
+
+\begin{DoxyItemize}
+\item Invalid array {\ttfamily member}\+: an invalid array key has been detected. e.\+g. {\ttfamily /\#abc}
+\item Out of {\ttfamily range}\+: the array has more or less elements than specified by the {\ttfamily array} option.
+\item Invalid number of subkeys {\ttfamily count}\+: a key matching a {\ttfamily \+\_\+} expression has more or less subkeys than specified by the {\ttfamily required} option.
+\item Conflicting metadata {\ttfamily collision}\+: the metakey that\textquotesingle{}s supposed to be added already exists.
+\item Missing keys {\ttfamily missing}\+: the key structure doesn\textquotesingle{}t contain the required subkeys flagged with the {\ttfamily require} metakey in the {\ttfamily spec} namespace.
+\item Invalid keys {\ttfamily invalid}\+: keys that are subkeys of an invalid array member. e.\+g. {\ttfamily /\#abc/key}
+\end{DoxyItemize}
+
+\subsubsection*{Basic Configuration}
+
+{\ttfamily conflict/set} and {\ttfamily conflict/get} are used to specify what actions should be taken on conflicts. e.\+g. {\ttfamily conflict/get = E\+R\+R\+OR} yields an error on every conflict.
+
+\subsubsection*{Per Conflict Configuration}
+
+Actions can also be specified on a per conflict basis. Those actions take precedence over basic configuration options.
+
+Examples\+: \begin{DoxyVerb}conflict/get/member = WARNING
+conflict/set/range = ERROR
+\end{DoxyVerb}
+
+
+\subsubsection*{Per Key Configuration}
+
+Actions can also be specified per-\/key. Those will take precedence over basic and per-\/conflict configurations.
+
+Example\+: \begin{DoxyVerb}spec/test/#
+    conflict/get/member = INFO
+\end{DoxyVerb}
+
+
+\subsection*{Examples}
+
+Ini files can be found in /examples/spec which should be P\+WD so that the example works\+: \begin{DoxyVerb}cd ~e/examples/spec
+kdb global-mount        # mounts spec plugin by default
+kdb mount $PWD/spec.ini spec ni
+kdb mount $PWD/spectest.ini /testkey ni
+kdb export /testkey ni     # note: spec can only applied on cascading access
+\end{DoxyVerb}
+
+
+With spec mount one can use (in this case battery.\+ini needs to be installed in {\ttfamily kdb file spec} (this should be preferred on non-\/development machines so that everything still works after the source is removed)\+: \begin{DoxyVerb}cp battery.ini $(dirname $(kdb file spec))
+kdb mount battery.ini spec/example/battery ni
+kdb spec-mount /example/battery
+kdb lsmeta /example/battery/level    # we see it has a check/enum
+kdb getmeta /example/battery/level check/enum    # now we know allowed values
+kdb set /example/battery/level low   # success, low is ok!
+kdb set /example/battery/level x     # fails, not one of the allowed values!
+
+cp openicc.ini $(dirname $(kdb file spec))
+kdb mount openicc.ini spec/freedesktop/openicc ni
+kdb spec-mount /freedesktop/openicc
+
+kdb ls /freedesktop/openicc # lets see the whole configuration
+kdb export spec/freedesktop/openicc ni   # give us details about the specification
+kdb lsmeta /freedesktop/openicc/device/camera/#0/EXIF_serial   # seems like there is a check/type
+kdb set "/freedesktop/openicc/device/camera/#0/EXIF_serial" 203     # success, is a long
+kdb set "set "/freedesktop/openicc/device/camera/#0/EXIF_serial" x   # fails, not a long\end{DoxyVerb}
+ 

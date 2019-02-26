@@ -1,0 +1,228 @@
+
+\begin{DoxyItemize}
+\item infos = Information about Y\+A\+JL plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/json
+\item infos/needs = directoryvalue
+\item infos/recommends = rebase comment type
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained coverage unittest
+\item infos/description = J\+S\+ON using Y\+A\+JL
+\end{DoxyItemize}
+
+This is a plugin reading and writing J\+S\+ON files using the library \href{http://lloyd.github.com/yajl/}{\tt yail}
+
+The plugin was tested with yajl version 1.\+0.\+8-\/1 from Debian 6 and yajl version 2.\+0.\+4-\/2 from Debian 7.
+
+Examples of files which are used for testing can be found below the folder in \char`\"{}src/plugins/yajl/yajl\char`\"{}.
+
+The J\+S\+ON grammar can be found \href{http://www.ietf.org/rfc/rfc4627.txt}{\tt here}.
+
+A validator can be found \href{http://jsonlint.com/}{\tt here}.
+
+Supports every Key\+Set except when arrays are intermixed with other keys. Has only limited support for metadata.
+
+\subsection*{Dependencies}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libyajl-\/dev} (version 1 and 2 should work)
+\end{DoxyItemize}
+
+\subsection*{Types}
+
+The type of the data is available via the metadata {\ttfamily type}\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily string}\+: The J\+S\+ON string type.
+\item {\ttfamily boolean}\+: The J\+S\+ON boolean type (true or false)
+\item {\ttfamily double}\+: For J\+S\+ON numbers.
+\end{DoxyItemize}
+
+If no metadata {\ttfamily type} is given, the type is either\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily null} on binary null-\/key
+\item {\ttfamily string} otherwise
+\end{DoxyItemize}
+
+Any other type/value will still be treated as string, but the warning {\ttfamily \#78} will be added because of the potential data loss.
+
+\subsection*{Special values}
+
+In J\+S\+ON it is possible to have empty arrays and objects. In Elektra this is mapped using the special names \begin{DoxyVerb}###empty_array
+\end{DoxyVerb}
+
+
+and \begin{DoxyVerb}___empty_map
+\end{DoxyVerb}
+
+
+Arrays are mapped to Elektra’s array convention \#0, \#1,..
+
+\subsection*{Restrictions}
+
+
+\begin{DoxyItemize}
+\item Only U\+T\+F-\/8 is supported. Use the {\ttfamily iconv} plugin if your locale are not U\+T\+F-\/8. When using non-\/\+U\+T\+F-\/8 the plugin will be able to write the file, but cannot parse it back again. You will error \#77, invalid bytes in U\+T\+F8 string.
+\item Everything is string if not tagged by metakey \char`\"{}type\char`\"{} Only valid J\+S\+ON types can be used in type, otherwise there are some fall backs to string but warnings are produced.
+\item Arrays will be normalized (to \#0, \#1, ..)
+\item Comments of various J\+S\+O\+N-\/dialects are discarded.
+\item Mixing of arrays and maps is not detected and leads to corrupted J\+S\+ON files. Please specify arrays to avoid such situations.
+\item The plugin creates adds an empty root key to the database, even if you did not add this key (see \href{http://issues.libelektra.org/2132}{\tt http\+://issues.\+libelektra.\+org/2132}).
+\end{DoxyItemize}
+
+Because of these potential problems a type checker and comments filter are highly recommended.
+
+\subsection*{Usage}
+
+The following example shows you how you can read and write data using this plugin.
+
+``{\ttfamily  $<$h1$>$Mount the plugin to the cascading namespace}/tests/yajl` sudo kdb mount config.\+json /tests/yajl yajl
+
+\section*{Manually add a key-\/value pair to the database}
+
+printf \textquotesingle{}\{ \char`\"{}number\char`\"{}\+: 1337 \}\textquotesingle{} $>$ {\ttfamily kdb file /tests/yajl}
+
+\section*{Retrieve the new value}
+
+kdb get /tests/yajl/number \#$>$ 1337
+
+\section*{Determine the data type of the value}
+
+kdb getmeta /tests/yajl/number type \#$>$ double
+
+\section*{Add another key-\/value pair}
+
+kdb set /tests/yajl/key value \section*{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+EX\+: .$\ast$\+Create a new key (user$\vert$system)/tests/yajl/key with string \char`\"{}value\char`\"{}}
+
+\section*{Retrieve the new value}
+
+kdb get /tests/yajl/key \#$>$ value
+
+\section*{Check the format of the configuration file}
+
+\section*{The Directory Value plugin creates the entry}
+
+\section*{\char`\"{}\+\_\+\+\_\+\+\_\+dirdata\char`\"{}\+: \char`\"{}\char`\"{},}
+
+\section*{, since the plugin added an empty root key}
+
+\section*{({\ttfamily user/tests/yajl/}).}
+
+\section*{See also\+: \href{http://issues.libelektra.org/2132}{\tt http\+://issues.\+libelektra.\+org/2132}}
+
+kdb file /tests/yajl/ $\vert$ xargs cat \#$>$ \{ \#$>$ \char`\"{}\+\_\+\+\_\+\+\_\+dirdata\char`\"{}\+: \char`\"{}\char`\"{}, \#$>$ \char`\"{}key\char`\"{}\+: \char`\"{}value\char`\"{}, \#$>$ \char`\"{}number\char`\"{}\+: 1337 \#$>$ \}
+
+\section*{Add an array}
+
+kdb set /tests/yajl/piggy/\#0 straw kdb set /tests/yajl/piggy/\#1 sticks kdb set /tests/yajl/piggy/\#2 bricks
+
+\section*{Retrieve an array key}
+
+kdb get /tests/yajl/piggy/\#2 \#$>$ bricks
+
+\section*{Check the format of the configuration file}
+
+kdb file /tests/yajl $\vert$ xargs cat \#$>$ \{ \#$>$ \char`\"{}\+\_\+\+\_\+\+\_\+dirdata\char`\"{}\+: \char`\"{}\char`\"{}, \#$>$ \char`\"{}key\char`\"{}\+: \char`\"{}value\char`\"{}, \#$>$ \char`\"{}number\char`\"{}\+: 1337, \#$>$ \char`\"{}piggy\char`\"{}\+: \mbox{[} \#$>$ \char`\"{}\+\_\+\+\_\+\+\_\+dirdata\+: \char`\"{}, \#$>$ \char`\"{}straw\char`\"{}, \#$>$ \char`\"{}sticks\char`\"{}, \#$>$ \char`\"{}bricks\char`\"{} \#$>$ \mbox{]} \#$>$ \}
+
+\section*{Undo modifications to the database}
+
+kdb rm -\/r /tests/yajl sudo kdb umount /tests/yajl 
+\begin{DoxyCode}
+### Directory Values
+
+The YAJL plugin support values in directory keys via the [Directory Value](@ref
+       src\_plugins\_directoryvalue\_README\_md) plugin.
+\end{DoxyCode}
+ \section*{Mount the plugin to {\ttfamily user/tests/yajl}}
+
+sudo kdb mount config.\+json user/tests/yajl yajl
+
+\section*{Add two directory keys and one leaf key}
+
+kdb set user/tests/yajl/roots \textquotesingle{}Things Fall Apart\textquotesingle{} kdb set user/tests/yajl/roots/bloody \textquotesingle{}Radical Face\textquotesingle{} kdb set user/tests/yajl/roots/bloody/roots \textquotesingle{}No Roots\textquotesingle{}
+
+\section*{Add an array containing two elements}
+
+kdb set user/tests/yajl/now \textquotesingle{}, Now\textquotesingle{} kdb set user/tests/yajl/now/\#0 \textquotesingle{}Neighbors\textquotesingle{} kdb set user/tests/yajl/now/\#1 \textquotesingle{}Threads\textquotesingle{}
+
+kdb ls user/tests/yajl \#$>$ user/tests/yajl \#$>$ user/tests/yajl/now \#$>$ user/tests/yajl/now/\#0 \#$>$ user/tests/yajl/now/\#1 \#$>$ user/tests/yajl/roots \#$>$ user/tests/yajl/roots/bloody \#$>$ user/tests/yajl/roots/bloody/roots
+
+\section*{Retrieve directory values}
+
+kdb get user/tests/yajl/roots \#$>$ Things Fall Apart kdb get user/tests/yajl/roots/bloody \#$>$ Radical Face
+
+\section*{Retrieve leaf value}
+
+kdb get user/tests/yajl/roots/bloody/roots \#$>$ No Roots
+
+\section*{Check array}
+
+kdb get user/tests/yajl/now \#$>$ , Now kdb getmeta user/tests/yajl/now array \#$>$ \#1 kdb get user/tests/yajl/now/\#0 \#$>$ Neighbors kdb get user/tests/yajl/now/\#1 \#$>$ Threads
+
+\section*{Undo modifications to the database}
+
+kdb rm -\/r user/tests/yajl sudo kdb umount user/tests/yajl 
+\begin{DoxyCode}
+## OpenICC Device Config
+
+This plugin was specifically designed and tested for the
+`OpenICC\_device\_config\_DB` although it is of course not limited
+to it.
+
+Mount the plugin:
+
+```bash
+kdb mount --resolver=resolver\_fm\_xhp\_x color/settings/openicc-devices.json \(\backslash\)
+  /org/freedesktop/openicc yajl rename cut=org/freedesktop/openicc
+\end{DoxyCode}
+
+
+or\+:
+
+
+\begin{DoxyCode}
+kdb mount-openicc
+\end{DoxyCode}
+
+
+Then you can copy the {\ttfamily Open\+I\+C\+C\+\_\+device\+\_\+config\+\_\+\+D\+B.\+json} to systemwide or user config, e.\+g.
+
+
+\begin{DoxyCode}
+cp src/plugins/yajl/examples/OpenICC\_device\_config\_DB.json /etc/xdg
+cp src/plugins/yajl/examples/OpenICC\_device\_config\_DB.json ~/.config
+
+kdb ls system/org/freedesktop/openicc
+\end{DoxyCode}
+
+
+prints out then all device entries available in the config
+
+
+\begin{DoxyCode}
+kdb get system/org/freedesktop/openicc/device/camera/0/EXIF\_manufacturer
+\end{DoxyCode}
+
+
+prints out \char`\"{}\+Glasshuette\char`\"{} with the example config in source
+
+You can export the whole system openicc config to ini with\+:
+
+
+\begin{DoxyCode}
+kdb export system/org/freedesktop/openicc simpleini > dump.ini
+\end{DoxyCode}
+
+
+or import it\+:
+
+
+\begin{DoxyCode}
+kdb import system/org/freedesktop/openicc ini < dump.ini
+\end{DoxyCode}
+ 

@@ -1,0 +1,110 @@
+.TH "md_src_plugins_yaypeg_README" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_yaypeg_READMEPlugin: yaypeg 
+ \- 
+.IP "\(bu" 2
+infos = Information about the yaypeg plugin is in keys below
+.IP "\(bu" 2
+infos/author = René Schwaiger sanssecours@me.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs = directoryvalue yamlsmith
+.IP "\(bu" 2
+infos/provides = storage/yaml
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage
+.IP "\(bu" 2
+infos/status = maintained unittest preview experimental unfinished nodoc concept discouraged
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = This storage plugin uses a PEG based parser to read YAML files
+.PP
+.SH "YAy PEG"
+.PP
+The YAy PEG plugin use a parser based on \fCPEGTL\fP to convert YAML data to Elektra’s \fCKeySet\fP type\&.
+.PP
+.SS "Dependencies"
+.PP
+This plugin requires \fBhttps:\fP//github\&.com/taocpp/PEGTL/blob/2\&.7\&.x/doc/Installing-and-Using\&.md 'PEGTL' \fC2\&.7\&.1\fP\&. Previous versions of the library might work too\&. However, neither the current development version of PEGTL (\fC3\&.0\fP), nor the latest version of PEGTL \fC2\&.7\&.x\fP can be used by the plugin because of the issue referenced \fChere\fP\&.
+.PP
+.SS "Examples"
+.PP
+.SS "Mappings"
+.PP
+``` 
+.SH "Mount plugin"
+.PP
+.PP
+sudo kdb mount config\&.yaml user/tests/yaypeg yaypeg
+.PP
+.SH "Add some values"
+.PP
+.PP
+kdb set user/tests/yaypeg/movements/deadly 'Dull' kdb set user/tests/yaypeg/movements/deep 'Red'
+.PP
+.SH "Manually add a key"
+.PP
+.PP
+printf 'Rosalía: El::Mal::Querer' >> \fCkdb file user/tests/yaypeg\fP
+.PP
+.SH "List keys"
+.PP
+.PP
+kdb ls user/tests/yaypeg #> user/tests/yaypeg/Rosalía #> user/tests/yaypeg/movements/deadly #> user/tests/yaypeg/movements/deep
+.PP
+.SH "Retrieve a value"
+.PP
+.PP
+kdb get user/tests/yaypeg/Rosalía #> El::Mal::Querer
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r user/tests/yaypeg sudo kdb umount user/tests/yaypeg 
+.PP
+.nf
+### Arrays
+
+.fi
+.PP
+ 
+.SH "Mount plugin"
+.PP
+.PP
+sudo kdb mount config\&.yaml user/tests/yaypeg yaypeg
+.PP
+.SH "Manually add some values"
+.PP
+.PP
+printf 'ponies:
+.br
+' > \fCkdb file user/tests/yaypeg\fP printf ' - Flutter Shy # Yay!
+.br
+' >> \fCkdb file user/tests/yaypeg\fP printf ' - Pinkie Pie
+.br
+' >> \fCkdb file user/tests/yaypeg\fP printf ' - Maud Pie' >> \fCkdb file user/tests/yaypeg\fP
+.PP
+.SH "List array keys"
+.PP
+.PP
+kdb ls user/tests/yaypeg #> user/tests/yaypeg/ponies #> user/tests/yaypeg/ponies/#0 #> user/tests/yaypeg/ponies/#1 #> user/tests/yaypeg/ponies/#2
+.PP
+.SH "Retrieve last array entry"
+.PP
+.PP
+kdb get user/tests/yaypeg/ponies/$(kdb getmeta user/tests/yaypeg/ponies array) #> Maud Pie
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r user/tests/yaypeg sudo kdb umount user/tests/yaypeg ```
+.PP
+.SS "Limitations"
+.PP
+The plugin has the same limitations as \fBYAMBi \fP\&. 

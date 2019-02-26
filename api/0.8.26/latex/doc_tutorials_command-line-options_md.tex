@@ -1,0 +1,195 @@
+\subsection*{Introduction}
+
+Many applications use command-\/line options and environment variables as a way to override configuration values. In Elektra this can be automated by providing a specification that maps command-\/line options and environment variables to keys in the K\+DB.
+
+The function {\ttfamily elektra\+Get\+Opts} uses this specification together with {\ttfamily argv} and {\ttfamily envp} and creates new keys in the {\ttfamily proc} namespace for any command-\/line option or environment variable it finds. Because the {\ttfamily proc} namespace is uses, these values will be preferred over any stored values in a cascading lookup.
+
+\subsection*{Setup}
+
+To use {\ttfamily elektra\+Get\+Opts} you need to link against {\ttfamily elektra-\/opts}, {\ttfamily elektra-\/meta} and {\ttfamily elektra-\/ease}.
+
+\subsection*{Options}
+
+To define a command-\/line option either set the {\ttfamily opt} metakey to the short option you want to use, or set {\ttfamily opt/long} to the long option you want to use. For short options, only the first character of the given value will be used (\textquotesingle{}\textbackslash{}0\textquotesingle{} is ignored). Short and long options can be used simultaneously.
+
+Additionally a key can also be associated with multiple short/long options. To achieve this treat {\ttfamily opt} as an array. For example for two options {\ttfamily -\/a} and {\ttfamily -\/b} you would set {\ttfamily opt=\#1}, {\ttfamily opt/\#0=a} and {\ttfamily opt/\#1=b}. If not explicitly stated otherwise, you can replace {\ttfamily opt} with any {\ttfamily opt/\#} array element in all meta-\/keys mentioned in this document. This of course includes long options (i.\+e. {\ttfamily opt/\#0/long}, etc.).
+
+While you can specify multiple options (or environment variables, see below) for a single key, only one of them can be used at the same time. Using two or more options (or variables) that are all linked to the same key, will result in an error.
+
+\subsubsection*{Option Arguments}
+
+Per default an option is expected to have an argument. Arguments to short and long options are given in the same way as with {\ttfamily getopt\+\_\+long(3)} (i.\+e. {\ttfamily -\/oarg}, {\ttfamily -\/o arg}, {\ttfamily -\/-\/option arg} or {\ttfamily -\/-\/option=arg}).
+
+To change whether an option expects an argument set {\ttfamily opt/arg} to either {\ttfamily \char`\"{}none\char`\"{}} or {\ttfamily \char`\"{}optional\char`\"{}} (the default is {\ttfamily \char`\"{}required\char`\"{}}).
+
+
+\begin{DoxyItemize}
+\item If you choose {\ttfamily \char`\"{}none\char`\"{}}, the corresponding key will be set to {\ttfamily \char`\"{}1\char`\"{}}, if the option is used. This value can be changed by setting {\ttfamily opt/flagvalue}.
+\item An option that is set to {\ttfamily \char`\"{}optional\char`\"{}} is treated the same as with {\ttfamily \char`\"{}none\char`\"{}}, except that you can also set the value with the long option form {\ttfamily -\/-\/option=value}. This also means that {\ttfamily opt/flagvalue} is used, if no argument is given. Contrary to {\ttfamily getopt\+\_\+long(3)} options with optional arguments can still have short forms. They just cannot have an argument in this form.
+\end{DoxyItemize}
+
+\subsection*{Environment Variables}
+
+Elektra also supports parsing environment variables in a similar manner. For these there are however, less configuration options. You can simply specify one or more environment variables for a key using the {\ttfamily env} metakey (or {\ttfamily env/\#} meta-\/array for multiple).
+
+\subsection*{Arrays}
+
+Both options and environment variables expose special behavior, if used in combination with arrays.
+
+If an option is specified on a key with basename {\ttfamily \#}, the option can be used repeatedly. All occurrences will be collected into the array.
+
+Environment variables obviously cannot be repeated, instead a behavior similar that used for P\+A\+TH is adopted. On Windows the variable will be split at each \textquotesingle{};\textquotesingle{} character. On all other systems \textquotesingle{}\+:\textquotesingle{} is used as a separator.
+
+\subsection*{Arguments (Parameters)}
+
+All unused elements of {\ttfamily argv} are be collected into an array. You can access this array by specifying {\ttfamily args=remaining} on a key with basename {\ttfamily \#}. The array will be copied into this key. As is the case with getopt(3) processing of options will stop, if {\ttfamily -\/-\/} is encountered in {\ttfamily argv}.
+
+\subsection*{Help Message}
+
+When one of the help options {\ttfamily -\/h} and {\ttfamily -\/-\/help} is encountered in {\ttfamily argv}, {\ttfamily elektra\+Get\+Opts} only reads the specification, but does not create any keys in the {\ttfamily proc} namespace. It will however, generate a help message that can be accessed with {\ttfamily elektra\+Get\+Opts\+Help\+Message}.
+
+The help message consists of a usage line and an options list. The program name for the usage line is taken from {\ttfamily argv\mbox{[}0\mbox{]}}. If the value contains a slash ({\ttfamily /}) it will be considered a path and only the part after the last slash will be used.
+
+The options list will contain exactly one entry for each key that has at least one option. Each entry has to parts. First all the options for the key are listed and then (possibly on the next line, if there are a lot of options), the description for the key is listed. The description is taken from the {\ttfamily opt/help} or alternatively the {\ttfamily description} metakey.
+
+{\bfseries Note\+:} {\ttfamily opt/help} is specified {\itshape only once per key}. That means even if the key uses {\ttfamily opt/\#0}, {\ttfamily opt/\#1}, etc. (unlike most other metadata) the description will always be taken from {\ttfamily opt/help} directly, because there can only be one description. In general we recommend using {\ttfamily description}, because it is used by other parts of Elektra as well. {\ttfamily opt/help} is intended to provide a less verbose description more suitable for the command-\/line.
+
+The help message can be modified in a few different ways\+:
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily usage} argument of {\ttfamily elektra\+Get\+Opts\+Help\+Message} can be used to replace the default usage line.
+\item The {\ttfamily prefix} argument of {\ttfamily elektra\+Get\+Opts\+Help\+Message} can be used to insert text between the usage line and the options list.
+\item An option can can be hidden from the help message by setting {\ttfamily opt/hidden} to {\ttfamily \char`\"{}1\char`\"{}}. This hides both the long and short form of the option. If you want to hide just one form, use an array of two options an hide just one index.
+\item If the option has an {\ttfamily \char`\"{}optional\char`\"{}} or {\ttfamily \char`\"{}required\char`\"{}} argument, the string {\ttfamily A\+RG} will be used as a placeholder by default. You can change this, by setting {\ttfamily opt/arg/help} for the corresponding option.
+\end{DoxyItemize}
+
+\subsection*{Precedence}
+
+The order of precedence is simple\+:
+
+
+\begin{DoxyItemize}
+\item If a short option for a key is found, it will always be used.
+\item If none of the short options for a key are found, we look for long options.
+\item Neither short nor long options are found, environment variables are considered.
+\end{DoxyItemize}
+
+\subsection*{Limitations}
+
+
+\begin{DoxyItemize}
+\item Both options and environment variables can only be specified on a single key. If you need to have the value of one option/environment variable in multiple keys, you may use {\ttfamily fallback}s.
+\item {\ttfamily -\/} and {\ttfamily h} cannot be used as short options, because they would collide with, the \char`\"{}option end marker\char`\"{} and the help option respectively. {\ttfamily help} cannot be used as a long option, because it would collide with the help option.
+\end{DoxyItemize}
+
+\subsection*{Examples}
+
+The following specification describes the command line interface similar to the one used by {\ttfamily rm}. (It is based of {\ttfamily rm (G\+NU coreutils) 8.\+30}).
+
+
+\begin{DoxyCode}
+[force]
+opt = f
+opt/long = force
+opt/arg = none
+description = ignore nonexistent files and arguments, never prompt
+
+[interactive]
+opt = #1
+opt/#0 = i
+opt/#0/long = interactive
+opt/#0/arg = optional
+opt/#0/flagvalue = always
+opt/#1 = I
+opt/#1/flagvalue = once
+opt/#1/arg = none
+opt/arg/name = WHEN
+description = prompt according to WHEN: never, once (-I), or always (-i); without WHEN, prompt always
+
+[singlefs]
+opt/long = one-file-system
+opt/arg = none
+description = when removing a hierarchy recursively, skip any directory that is on a file system different
+       from that of the corresponding line argument
+
+[nopreserve]
+opt/long = no-preserve-root
+opt/arg = none
+description = do not treat '/' specially
+
+[preserve]
+opt/long = preserve-root
+opt/arg = optional
+opt/arg/name = all
+opt/flagvalue = root
+description = do not remove '/' (default); with 'all', reject any command line argument on a separate
+       device from its parent
+
+[recursive]
+opt = #1
+opt/#0 = r
+opt/#0/long = recursive
+opt/#0/arg = none
+opt/#1 = R
+opt/#1/arg = none
+description = remove directories and their contents recursively
+
+[emptydirs]
+opt = d
+opt/long = dir
+opt/arg = none
+description = remove empty directories
+
+[verbose]
+opt = v
+opt/long = verbose
+opt/arg = none
+env = VERBOSE
+description = explain what is being done
+
+[showversion]
+opt/long = version
+opt/arg = none
+description = output version information and exit
+
+[files/#]
+args = remaining
+env = FILES
+description = the files that shall be deleted
+\end{DoxyCode}
+
+
+If this specification is used in a program called {\ttfamily erm} (for Elektra rm), which is called like this\+:
+
+
+\begin{DoxyCode}
+FILES="one.txt:other.log" VERBOSE=1 erm -fi --recursive
+\end{DoxyCode}
+
+
+The following keys will be created by {\ttfamily elektra\+Get\+Opts} (assuming the specification is mounted at {\ttfamily spec/sw/org/erm/\#0/current})\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily proc/sw/org/erm/\#0/current/force = \char`\"{}1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/interactive = \char`\"{}always\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/recursive = \char`\"{}1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/verbose = \char`\"{}1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files \mbox{[}array\mbox{]} = \char`\"{}\#1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#0 = \char`\"{}one.\+txt\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#1 = \char`\"{}other.\+log\char`\"{}}
+\end{DoxyItemize}
+
+Calling {\ttfamily F\+I\+L\+ES=\char`\"{}abcd.\+txt\char`\"{} erm 123.\+txt 456.\+txt} meanwhile will result in\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files \mbox{[}array\mbox{]} = \char`\"{}\#1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#0 = \char`\"{}123.\+txt\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#1 = \char`\"{}456.\+txt\char`\"{}}
+\end{DoxyItemize}
+
+N\+O\+TE\+: {\ttfamily proc/sw/org/erm/\#0/current/files \mbox{[}array\mbox{]} = \char`\"{}\#1\char`\"{}} means the {\ttfamily array} metadata of {\ttfamily proc/sw/org/erm/\#0/current/files} is {\ttfamily \#1}.
+
+You can find a full working example \href{/home/markus/Projekte/Elektra/current/examples/opts.c}{\tt here}. However, it uses a hard coded specification which is a bit harder to read. 

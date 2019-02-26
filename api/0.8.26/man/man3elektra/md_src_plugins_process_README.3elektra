@@ -1,0 +1,59 @@
+.TH "md_src_plugins_process_README" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_process_READMEPlugin: process 
+ \- 
+.IP "\(bu" 2
+infos = Information about the process plugin is in keys below
+.IP "\(bu" 2
+infos/author = Armin Wurzinger e1528532@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = pregetstorage getstorage postgetstorage presetstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest shelltest configurable experimental unfinished
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = executes other plugins inside an own process
+.PP
+.PP
+The process plugin uses the \fCpluginprocess\fP library in order to execute other plugins inside an own process\&. This is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used\&. It is also useful for plugins which cause memory leaks to be isolated in an own process\&.
+.PP
+.SS "Usage"
+.PP
+Mount this plugin and specify the plugin configuration parameter \fCplugin\fP to a plugin that exists on the system\&. The proxied plugin will then be executed in a separate process and this plugin handles the communication between the processes\&.
+.PP
+.SS "Dependencies"
+.PP
+The \fCpluginprocess\fP library, which is only available on POSIX environments currently\&.
+.PP
+.SS "Examples"
+.PP
+``\fC <h1>Mount the dump plugin a separate process via the process plugin to\fPuser/examples/process` sudo kdb mount config\&.file user/tests/process process plugin=dump
+.PP
+kdb set user/tests/process/key value #> Create a new key user/tests/process/key with string 'value'
+.PP
+kdb get user/tests/process/key #> value
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r user/tests/process sudo kdb umount user/tests/process ```
+.PP
+.SS "Limitations"
+.PP
+.IP "\(bu" 2
+Currently only plugins that act on one of the above-mentioned \fCplacements\fP can be proxied successfully\&. Other metainformation like \fCneeds\fP or \fCprovides\fP or \fCrecommends\fP will not be available when proxying using this plugin\&.
+.IP "\(bu" 2
+This plugin cannot act as a proxy for itself to prevent loops\&. 
+.PP
+

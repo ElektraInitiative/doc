@@ -1,0 +1,363 @@
+.TH "md_src_plugins_ini_README" 3elektra "Tue Feb 26 2019" "Version 0.8.26" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_ini_READMEPlugin: ini 
+ \- 
+.IP "\(bu" 2
+infos = Information about the ini plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/ini
+.IP "\(bu" 2
+infos/recommends = binary
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest shelltest nodep libc configurable 1000
+.IP "\(bu" 2
+infos/metadata = order
+.IP "\(bu" 2
+infos/description = storage plugin for ini files
+.PP
+.PP
+This plugin allows Elektra's users to read and write INI files\&. INI files consist of simple key value pairs of the form \fCkey = value\fP\&. Additionally keys can be categorized into different sections\&. Sections must be enclosed in '[]', for example '[section]'\&. Each section is converted into a directory key (without value) and keys below the section are located below the section key\&. If the same section appears multiple times, the keys of all sections with the same name are merged together under the section key\&.
+.PP
+The plugin is feature rich and customizable (+1000 in status)
+.PP
+.SS "Usage"
+.PP
+If you want to add an ini file to the global key database, simply use mount:
+.PP
+.PP
+.nf
+sudo kdb mount file\&.ini user/tests/ini ini
+.fi
+.PP
+.PP
+Then you can modify the contents of the ini file using set:
+.PP
+.PP
+.nf
+kdb set user/tests/ini/key value
+#> Create a new key user/tests/ini/key with string "value"
+kdb set user/tests/ini/section
+#> Create a new key user/tests/ini/section with null value
+kdb set user/tests/ini/section/key value
+#> Create a new key user/tests/ini/section/key with string "value"
+.fi
+.PP
+.PP
+Find out which file you modified:
+.PP
+.PP
+.nf
+kdb file user/tests/ini
+# STDOUT-REGEX: \&.+/file\&.ini
+
+# Undo modifications
+kdb rm -r user/tests/ini
+sudo kdb umount user/tests/ini
+.fi
+.PP
+.PP
+.SS "Comments"
+.PP
+The ini plugin supports the use of comments\&. Comment lines start with a ';' or a '#'\&. Comments are put into the comment metadata of the key following the comment\&. This can be either a section key or a normal key\&. When creating new comments (e\&.g\&. via \fCkdb setmeta\fP) you can prefix your comment with the comment indicator of your choice (';' or '#') which will be used when writing the comment to the file\&. If the comment is not prefixed with a comment indicator, the ini plugin will use the character defined by the \fCcomment\fP option, or default to '#'\&.
+.PP
+.SS "Multi-Line Support"
+.PP
+The ini plugin supports multiline ini values\&. Continuations of previous values have to start with whitespace characters\&.
+.PP
+For example consider the following ini file:
+.PP
+.PP
+.nf
+key1 = value1
+key2 = value2
+        with continuation
+        lines
+.fi
+.PP
+.PP
+This would result in a KeySet containing two keys\&. One key named \fCkey1\fP with the value \fCvalue1\fP and another key named \fCkey2\fP with the value \fCvalue2\\nwith continuation\\nlines\fP\&.
+.PP
+By default this feature is enabled\&. The default continuation character is tab (\fC\\t\fP)\&. If you want to use another character, then please specify the configuration option \fClinecont\fP\&.
+.PP
+.SS "Arrays"
+.PP
+The ini plugin handles repeating keys by turning them into an elektra array when the \fCarray\fP config is set\&.
+.PP
+For example a ini file looking like:
+.PP
+.PP
+.nf
+[sec]
+a = 1
+a = 2
+a = 3
+a = 4
+.fi
+.PP
+.PP
+will be interpreted as
+.PP
+.PP
+.nf
+/sec
+/sec/a
+/sec/a/#0
+/sec/a/#1
+/sec/a/#2
+/sec/a/#3
+.fi
+.PP
+.PP
+The following example shows how you can store and retrieve array values using the \fCini\fP plugin\&.
+.PP
+.PP
+.nf
+# Mount the INI plugin with array support
+sudo kdb mount config\&.ini user/tests/ini ini array=true
+
+# Add an array storing song titles
+kdb set user/tests/ini/songs/#0 "Non-Zero Possibility"
+kdb set user/tests/ini/songs/#1 "Black Art Number One"
+kdb set user/tests/ini/songs/#2 "A Story Of Two Convicts"
+
+# Check if INI saved all array entries
+kdb ls user/tests/ini/songs
+#> user/tests/ini/songs
+#> user/tests/ini/songs/#0
+#> user/tests/ini/songs/#1
+#> user/tests/ini/songs/#2
+
+# Retrieve an array item
+kdb get user/tests/ini/songs/#2
+#> A Story Of Two Convicts
+
+# Check the file written by the INI plugin
+kdb file user/tests/ini | xargs cat
+#> songs = Non-Zero Possibility
+#> songs = Black Art Number One
+#> songs = A Story Of Two Convicts
+
+# Undo modifications
+kdb rm -r user/tests/ini
+sudo kdb umount user/tests/ini
+.fi
+.PP
+.PP
+.SS "Binary Data"
+.PP
+By default the INI plugin does not support binary data\&. You can use the \fBBase64 plugin\fP to remove this limitation\&.
+.PP
+``` 
+.SH "Mount INI and recommended plugin Base64"
+.PP
+.PP
+.SH "We add the required plugin \fCbase64\fP (which provides \fCbinary\fP) at the end too,"
+.PP
+.PP
+.SH "since otherwise this command leaks memory\&."
+.PP
+.PP
+sudo kdb mount --with-recommends config\&.ini user/tests/ini ini base64
+.PP
+.SH "Add empty binary value"
+.PP
+.PP
+printf 'nothing = '@BASE64'
+.br
+' > \fCkdb file user/tests/ini\fP 
+.SH "Copy binary data"
+.PP
+.PP
+kdb cp system/elektra/modules/ini/exports/get user/tests/ini/binary 
+.SH "Add textual data"
+.PP
+.PP
+kdb set user/tests/ini/text 'Na na na na na na na na na na na na na na na na Batman!'
+.PP
+.SH "Print empty binary value"
+.PP
+.PP
+kdb get user/tests/ini/nothing #>
+.PP
+.SH "Print binary data"
+.PP
+.PP
+kdb get user/tests/ini/binary 
+.SH "STDOUT-REGEX: ^(\\x[0-9a-f]{1,2})+$"
+.PP
+.PP
+.SH "Print textual data"
+.PP
+.PP
+kdb get user/tests/ini/text #> Na na na na na na na na na na na na na na na na Batman!
+.PP
+kdb rm -r user/tests/ini sudo kdb umount user/tests/ini 
+.PP
+.nf
+## Metadata
+
+The INI plugin also supports to store arbitrary metadata in comments after the `@META` declarative\&.
+
+.fi
+.PP
+ sudo kdb mount config\&.ini user/tests/ini ini
+.PP
+.SH "Add a new key and some metadata"
+.PP
+.PP
+kdb set user/tests/ini/brand new kdb setmeta user/tests/ini/brand description 'The Devil And God Are Raging Inside Me' kdb setmeta user/tests/ini/brand rationale 'Because I Love It'
+.PP
+.SH "The plugin stores metadata as comments inside the INI file"
+.PP
+.PP
+kdb file user/tests/ini | xargs cat #> # description = The Devil And God Are Raging Inside Me #> # rationale = Because I Love It #> brand = new
+.PP
+.SH "Retrieve metadata"
+.PP
+.PP
+kdb lsmeta user/tests/ini/brand | grep -v 'internal' 
+.SH "rationale"
+.PP
+.PP
+.SH "description"
+.PP
+.PP
+kdb getmeta user/tests/ini/brand description #> The Devil And God Are Raging Inside Me kdb getmeta user/tests/ini/brand rationale #> Because I Love It
+.PP
+.SH "The plugin ignores some metadata such as \fCcomment\fP!"
+.PP
+.PP
+kdb setmeta user/tests/ini/brand comment 'Where Art Thou?' kdb getmeta user/tests/ini/brand comment 
+.SH "STDERR: Metakey not found"
+.PP
+.PP
+.SH "RET: 2"
+.PP
+.PP
+kdb rm -r user/tests/ini sudo kdb umount user/tests/ini ```
+.PP
+.SS "Sections"
+.PP
+The ini plugin supports 3 different sectioning modes (via \fCsection=\fP):
+.PP
+.IP "\(bu" 2
+\fCNONE\fP sections wont be printed as \fC[Section]\fP but as part of the key name \fCsection/key\fP
+.IP "\(bu" 2
+\fCNULL\fP only empty keys will be printed as \fC[Section]\fP
+.IP "\(bu" 2
+\fCALWAYS\fP sections will be created automatically\&. This is the default setting:
+.PP
+.PP
+.PP
+.nf
+sudo kdb mount /empty\&.ini dir/tests ini
+kdb set dir/tests/a/b ab
+kdb get dir/tests/a       # <-- key is suddenly here
+cat empty\&.ini
+#> [a]
+#> b = ab
+
+# Undo modifications
+kdb rm -r dir/tests
+sudo kdb umount dir/tests
+.fi
+.PP
+.PP
+By changing the option \fCsection\fP you can suppress the automatic creation of keys\&. E\&.g\&., if you use \fCNULL\fP instead you only get a section if you explicitly create it:
+.PP
+.PP
+.nf
+sudo kdb mount /empty\&.ini dir/tests ini section=NULL
+kdb set dir/tests/a/b ab
+kdb get dir/tests/a       # no key here
+# RET: 11
+cat empty\&.ini
+#> a/b = ab
+kdb rm dir/tests/a/b
+kdb set dir/tests/a    # create section first
+kdb set dir/tests/a/b ab
+cat empty\&.ini
+#> [a]
+#> b = ab
+
+# Undo modifications
+kdb rm -r dir/tests
+sudo kdb umount dir/tests
+.fi
+.PP
+.PP
+.SS "Merge Sections"
+.PP
+The ini plugin supports merging duplicated section entries when the \fCmergesections\fP config is set\&. The keys will be appended to the first occurrence of the section key\&.
+.PP
+.SS "Ordering"
+.PP
+The ini plugin preserves the order\&. Inserted subsections get appended to the corresponding parent section and new sections by name\&.
+.PP
+Example:
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ini /tests/ini ini
+
+cat > `kdb file /tests/ini` <<EOF \
+[Section1]\
+key1 = val1\
+[Section3]\
+key3 = val3\
+EOF
+
+kdb file /tests/ini | xargs cat
+#> [Section1]
+#> key1 = val1
+#> [Section3]
+#> key3 = val3
+
+kdb set /tests/ini/Section1/Subsection1/subkey1 subval1
+kdb set /tests/ini/Section2/key2 val2
+kdb file /tests/ini | xargs cat
+#> [Section1]
+#> key1 = val1
+#> [Section1/Subsection1]
+#> subkey1 = subval1
+#> [Section2]
+#> key2 = val2
+#> [Section3]
+#> key3 = val3
+
+# Undo modifications
+kdb rm -r /tests/ini
+sudo kdb umount /tests/ini
+.fi
+.PP
+.PP
+.SS "Special Characters"
+.PP
+The INI plugin also supports values and keys containing delimiter characters (\fC=\fP) properly\&.
+.PP
+``` sudo kdb mount test\&.ini user/tests/ini ini
+.PP
+printf '[section1]
+.br
+' > \fCkdb file user/tests/ini\fP printf 'hello = world
+.br
+' >> \fCkdb file user/tests/ini\fP
+.PP
+kdb get user/tests/ini/section1/hello #> world
+.PP
+kdb set user/tests/ini/section1/x=x 'a + b = b + a' kdb get user/tests/ini/section1/x=x #> a + b = b + a
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r user/tests/ini sudo kdb umount user/tests/ini ``` 

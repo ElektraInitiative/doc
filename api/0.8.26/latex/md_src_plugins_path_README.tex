@@ -1,0 +1,79 @@
+
+\begin{DoxyItemize}
+\item infos = Information about path plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/placements = presetstorage
+\item infos/needs =
+\item infos/provides = check
+\item infos/status = maintained nodep libc nodoc
+\item infos/metadata = check/path check/path/mode check/path/user
+\item infos/description = Checks if keys enriched with appropriate metadata contain valid paths as values as well as correct permissions
+\end{DoxyItemize}
+
+This plugin checks whether the value of a key is a valid file system path and optionally if correct permissions are set for a certain user.
+
+\subsection*{Purpose}
+
+The motivation to write this plugin is given by the two paths that exist in /etc/fstab\+: the device file and the mountpoint. A missing file is not necessarily an error, because the device file may appear later when a device is plugged in and the mountpoint may be there when another subsequent mount was executed. So only warnings are yielded in that case. One situation, however, presents an error\+: Only an absolute path is allowed to occur for both device and mountpoint. When checking for relative files, it is not enough to look at the first character if it is a {\ttfamily /}, because remote file systems and some special names are valid, too.
+
+If {\ttfamily check/path/mode = $<$permission$>$} is also present it will check for the correct permissions of the file/directory. Optionally, you can also add {\ttfamily check/path/user = $<$user$>$"} which then checks the permissions for the given user. When calling {\ttfamily kdb set} on the actual key, you have to run as {\ttfamily root} user or the file permissions cannot be checked (you will receive an error message). It is also possible to leave the {\ttfamily check/path/user} empty (just provide an empty string) which then takes the executing user as target to check. So for example {\ttfamily sudo kdb set ...} will check if {\ttfamily root} can access the target file/directory whereas {\ttfamily kdb set ...} will take the current executing process/user. If {\ttfamily check/path/user} is not given at all, the plugin will check accessibility for the {\ttfamily root} user only (which again requires {\ttfamily sudo})
+
+{\ttfamily check/path/mode = rw} and {\ttfamily check/path/user = tomcat} for example will check if the user {\ttfamily tomcat} has read and write access to the path which was set for the key. Please note that the file has to exist already and it is not checked if the user has the right to create a file in the directory.
+
+Permissions available\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily r}\+: $\ast$$\ast$\+R$\ast$$\ast$ead
+\item {\ttfamily w}\+: $\ast$$\ast$\+W$\ast$$\ast$rite
+\item {\ttfamily x}\+: e$\ast$$\ast$\+X$\ast$$\ast$ecute
+\end{DoxyItemize}
+
+\subsection*{Usage}
+
+If the metakey {\ttfamily check/path} is present, it is checked if the value is a valid absolute file system path. If a metavalue is present, an additional check will be done if it is a directory or device file.
+
+\subsection*{Examples}
+
+An example on which the user should have no permission at all for the root directory.
+
+
+\begin{DoxyCode}
+sudo kdb mount test.dump user/tests path dump
+sudo kdb set user/tests/path "$HOME"
+sudo kdb setmeta user/tests/path check/path ""
+sudo kdb setmeta user/tests/path check/path/user ""
+sudo kdb setmeta user/tests/path check/path/mode "rw"
+
+# Standard users should not be able to read/write the root folder
+kdb set user/tests/path "/root"
+# ERROR:210
+
+# Set something which the current user can access for sure
+kdb set user/tests/path "$HOME"
+# STDOUT-REGEX: .*Set string to "/.*".*
+
+#cleanup
+sudo kdb rm -r user/tests
+sudo kdb umount user/tests
+\end{DoxyCode}
+
+
+An example where part of the permissions are missing for a tmp file
+
+``` sudo kdb mount test.\+dump user/tests path dump sudo kdb set user/tests/path \char`\"{}\$\+H\+O\+M\+E\char`\"{} sudo kdb setmeta user/tests/path check/path \char`\"{}\char`\"{} sudo kdb setmeta user/tests/path check/path/user \char`\"{}\char`\"{} sudo kdb setmeta user/tests/path check/path/mode \char`\"{}rwx\char`\"{}
+
+\section*{Standard users should not be able to read/write the root folder}
+
+kdb set user/tests/path/tempfile  chmod +rw {\ttfamily kdb get user/tests/path/tempfile} kdb set user/tests/path {\ttfamily kdb get user/tests/path/tempfile} \section*{E\+R\+R\+OR\+:210}
+
+\section*{Set something which the current user can access for sure}
+
+chmod +x {\ttfamily kdb get user/tests/path/tempfile} kdb set user/tests/path {\ttfamily kdb get user/tests/path/tempfile} \section*{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+EX\+: Set string to \char`\"{}/.$\ast$\char`\"{}.$\ast$}
+
+\#cleanup sudo rm -\/rf {\ttfamily kdb get user/tests/path/tempfile} sudo kdb rm -\/r user/tests sudo kdb umount user/tests ```
+
+\subsection*{Future work}
+
+Add a check which ensures that the given path is a file/directory/symbolic link/hard link/etc. 

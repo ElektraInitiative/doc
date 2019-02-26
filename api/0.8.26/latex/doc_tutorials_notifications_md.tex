@@ -1,0 +1,434 @@
+\subsection*{Preface}
+
+{\bfseries The features described in this document are experimental.}
+
+This document explains how notifications are implemented in Elektra and how they can be used by application developers.
+
+\subsection*{Notifications -\/ Overview \& Concept}
+
+Elektra\textquotesingle{}s notification feature consists of several components. While sending and receiving notifications is implemented by plugins, applications use the notification A\+PI in order to use different plugins.
+
+The \href{https://doc.libelektra.org/api/current/html/group__kdbnotification.html}{\tt notification A\+PI} implemented by the {\ttfamily elektra-\/notification} library allows receiving and handling notifications. An \href{https://doc.libelektra.org/api/current/html/group__kdbio.html}{\tt I/O abstraction layer} allows asynchronous notification processing by compatible plugins. The abstraction layer consists of an {\itshape interface} used by transport plugins and different implementations of that interface called {\itshape I/O bindings}. An I/O binding implements the actual I/O management functions for a specific event loop A\+PI. Applications typically use one I/O binding but can also use none or multiple I/O bindings. For more on I/O bindings see the \href{https://doc.libelektra.org/api/current/html/group__kdbio.html}{\tt A\+PI documenation}.
+
+Transport plugins exchange notifications via different protocols like D-\/\+Bus or Zero\+MQ. For each type of transport there are typically two types of plugins\+: One for sending and one for receiving notifications. Developers do not interact with those plugins directly. The underlying transports are transparent to them. The \char`\"{}internalnotification\char`\"{} plugin implements notification handling functions and feeds back configuration changes from within the application. It is only used internally by the {\ttfamily elektra-\/notification} library.
+
+
+
+When a configuration key is changed Elektra can generate change notifications that allow applications to process those changes. Developers can choose whether and how they want to receive and handle those notifications but not whether notifications are sent or which transport is used. How notifications are sent is specified in the {\itshape notification configuration} by the system operator.
+
+\subsection*{Notification Configuration}
+
+System operators can mount the desired transport plugins and configure them (e.\+g. set channel, host, port and credentials) globally.
+
+They need to mount both sending and receiving plugins in order to use a transport.
+
+
+\begin{DoxyCode}
+kdb global-mount dbus announce=once dbusrecv
+\end{DoxyCode}
+
+
+Plugins usable as transport plugin are marked with {\ttfamily notification} on the \href{https://www.libelektra.org/plugins/readme#notification-and-logging}{\tt plugin page}.
+
+\subsection*{How to integrate an I/O binding and send notifications asynchronously}
+
+Developers do not need to change their programs in order to start sending notifications. However without the integration of an I/O binding notifications {\itshape may} be sent synchronously which would block normal program execution. For programs without time constraints (e.\+g. C\+LI programs) this may not be important, but for G\+U\+Is or network services this will have negative impact.
+
+The \char`\"{}zeromqsend\char`\"{} and \char`\"{}dbus\char`\"{} plugins do not block program execution for sending as sending is handled asynchronously be the underlying libraries.
+
+The following is a basic example of an application using Elektra extended by the initialization of an I/O binding.
+
+
+\begin{DoxyCode}
+\textcolor{preprocessor}{#include <elektra/kdb.h>}
+\textcolor{preprocessor}{#include <elektra/kdbio.h>}
+\textcolor{preprocessor}{#include <elektra/kdbio/uv.h>}
+
+\textcolor{preprocessor}{#include <\hyperlink{uv_8h}{uv.h}>}
+
+\textcolor{keywordtype}{void} \hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main} (\textcolor{keywordtype}{void})
+\{
+        KDB* repo;
+
+        \textcolor{comment}{// Open KDB}
+        Key * key = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"/sw/myorg/myapp/#0/current"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+        KDB * kdb = \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdbOpen} (key);
+
+        \textcolor{comment}{// Create libuv event loop}
+        uv\_loop\_t * loop = uv\_default\_loop ();
+
+        \textcolor{comment}{// Initialize I/O binding tied to event loop}
+        \hyperlink{kdbio_8h_aabcd87b8c09d4d4c1033fc1baa417391}{ElektraIoInterface} * binding = \hyperlink{uv_8h_a45e8a50dca7d8097bc2c38c54b49958b}{elektraIoUvNew} (loop);
+
+        \textcolor{comment}{// Use I/O binding for our kdb instance}
+        \hyperlink{group__kdbio_ga187345483bdfbb404919c6797bc2db77}{elektraIoSetBinding} (kdb, binding);
+
+        \textcolor{comment}{// Normal application setup code ...}
+
+        \textcolor{comment}{// Start the event loop}
+        uv\_run (loop, UV\_RUN\_DEFAULT);
+
+        \textcolor{comment}{// Cleanup}
+        \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose} (kdb, key);
+        \hyperlink{io_8c_a062e9d7d5305201dfe5ba437f3f03224}{elektraIoBindingCleanup} (binding);
+        uv\_loop\_close (loop);
+\}
+\end{DoxyCode}
+
+
+\subsection*{How to receive notifications}
+
+Since many different I/O management libraries exist (e.\+g. libuv, glib or libev) the transport plugins use the I/O interface for their I/O operations. Each I/O management library needs its own I/O binding. Developers can also create their own I/O binding for the I/O management library of their choice. This is described in the last section.
+
+Each I/O binding has its own initialization function that creates a new I/O binding and connects it to the I/O management library. For this tutorial we will assume that libuv 1.\+x is used. For details on how to use a specific binding please look at available I/O bindings on the \href{https://www.libelektra.org/bindings/readme}{\tt bindings page}.
+
+In order to handle change notifications a developer can either register a variable or a callback.
+
+\subsubsection*{Register a variable}
+
+Values of registered variables are automatically updated when the value of the assigned key has changed. In the following example we will register an integer variable.
+
+The following examples are shortened for tangibility. The complete code is available in \href{https://www.libelektra.org/examples/notificationasync}{\tt \char`\"{}notification\+Async\char`\"{} example}.
+
+
+\begin{DoxyCode}
+\textcolor{preprocessor}{#include <elektra/kdb.h>}
+\textcolor{preprocessor}{#include <elektra/kdbio.h>}
+\textcolor{preprocessor}{#include <elektra/kdbio/uv.h>}
+\textcolor{preprocessor}{#include <elektra/kdbnotification.h>}
+
+\textcolor{preprocessor}{#include <\hyperlink{uv_8h}{uv.h}>}
+
+\textcolor{keyword}{static} \textcolor{keywordtype}{void} printVariable (\hyperlink{kdbio_8h_a09c40c890207a8244fc39bb930fee1fa}{ElektraIoTimerOperation} * timerOp)
+\{
+        \textcolor{keywordtype}{int} value = *(\textcolor{keywordtype}{int} *) \hyperlink{io_8c_aa5e164c1d42f58d27babd0f55c1a68a0}{elektraIoTimerGetData} (timerOp);
+        printf (\textcolor{stringliteral}{"\(\backslash\)nMy integer value is %d\(\backslash\)n"}, value);
+\}
+
+\textcolor{keywordtype}{void} \hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main} (\textcolor{keywordtype}{void})
+\{
+        KDB* repo;
+
+        \textcolor{comment}{// Open KDB}
+        Key * key = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"/sw/myorg/myapp/#0/current"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+        KDB * kdb = \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdbOpen} (key);
+
+        \textcolor{comment}{// Create libuv event loop}
+        uv\_loop\_t * loop = uv\_default\_loop ();
+
+        \textcolor{comment}{// Initialize I/O binding tied to event loop}
+        \hyperlink{kdbio_8h_aabcd87b8c09d4d4c1033fc1baa417391}{ElektraIoInterface} * binding = \hyperlink{uv_8h_a45e8a50dca7d8097bc2c38c54b49958b}{elektraIoUvNew} (loop);
+
+        \textcolor{comment}{// Use I/O binding for our kdb instance}
+        \hyperlink{group__kdbio_ga187345483bdfbb404919c6797bc2db77}{elektraIoSetBinding} (kdb, binding);
+
+        \textcolor{comment}{// Initialize notification wrapper}
+        \hyperlink{group__kdbnotification_gaeae96154abdb5fdbf1b34a01e2b23e44}{elektraNotificationOpen} (kdb);
+
+        \textcolor{comment}{// Register "value" for updates}
+        Key * registeredKey = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"/sw/myorg/myapp/#0/current/value"}, 
+      \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+        \textcolor{keywordtype}{int} value;
+        \hyperlink{group__kdbnotification_ga362d557489c4199f6c765480a8a3cade}{elektraNotificationRegisterInt} (repo, registeredKey, &value);
+
+        \textcolor{comment}{// Create a timer to repeatedly print "value"}
+        \hyperlink{kdbio_8h_a09c40c890207a8244fc39bb930fee1fa}{ElektraIoTimerOperation} * timer = 
+      \hyperlink{io_8c_a67a0a81d263e0a7853809144c4ea5198}{elektraIoNewTimerOperation} (2000, 1, printVariable, &value);
+        \hyperlink{io_8c_a1d61dca5ec35900c33224d82711c0bdb}{elektraIoBindingAddTimer} (binding, timer);
+
+        \textcolor{comment}{// Get configuration}
+        KeySet * config = \hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}(0, \hyperlink{kdbenum_8c_a7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END});
+        \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet} (kdb, config, key);
+        printVariable (timer);   \textcolor{comment}{// "value" was automatically updated}
+
+        \textcolor{comment}{// Start the event loop}
+        uv\_run (loop, UV\_RUN\_DEFAULT);
+
+        \textcolor{comment}{// Cleanup}
+        \hyperlink{group__kdbnotification_ga5685dafbd4131011365628d6d9213594}{elektraNotificationClose} (kdb);
+        \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose} (kdb, key);
+        \hyperlink{io_8c_aeab10975f6a3f62b6697449b6024c2bd}{elektraIoBindingRemoveTimer} (timer);
+        \hyperlink{io_8c_a062e9d7d5305201dfe5ba437f3f03224}{elektraIoBindingCleanup} (binding);
+        uv\_loop\_close (loop);
+\}
+\end{DoxyCode}
+
+
+After calling {\ttfamily \hyperlink{group__kdbnotification_ga362d557489c4199f6c765480a8a3cade}{elektra\+Notification\+Register\+Int()}} the variable {\ttfamily value} will be automatically updated if the key in the program above is changed by another program (e.\+g. by using the {\ttfamily kdb} C\+LI command). For automatic updates to work transport plugins have to be mounted globally.
+
+\subsubsection*{Callbacks}
+
+Registering a variable is suitable for programs where the key\textquotesingle{}s value is simply displayed or used repeatedly (e.\+g. by a timer or in a loop). If an initialization code needs to be redone after configuration changes (e.\+g. a value sets the number of worker threads) updating a registered variable will not suffice. For these situations a callback should be used.
+
+The following snippet shows how a callback can be used if the value of the changed key needs further processing.
+
+
+\begin{DoxyCode}
+\textcolor{preprocessor}{#include <signal.h>}
+\textcolor{preprocessor}{#include <stdio.h>}
+\textcolor{preprocessor}{#include <string.h>}
+
+\textcolor{comment}{// from https://en.wikipedia.org/wiki/ANSI\_escape\_code#Colors}
+\textcolor{preprocessor}{#define ANSI\_COLOR\_RED                  "\(\backslash\)x1b[31m"}
+\textcolor{preprocessor}{#define ANSI\_COLOR\_GREEN                "\(\backslash\)x1b[32m"}
+
+\textcolor{keywordtype}{void} setTerminalColor (Key * color, \textcolor{keywordtype}{void} * context ELEKTRA\_UNUSED)
+\{
+        \textcolor{comment}{// context contains whatever was passed as 4th parameter}
+        \textcolor{comment}{// to elektraNotificationRegisterCallback()}
+        \textcolor{keywordtype}{char} * value = \hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString} (color);
+
+        \textcolor{keywordflow}{if} (strcmp (value, \textcolor{stringliteral}{"red"}) == 0)
+        \{
+                printf (ANSI\_COLOR\_RED);
+        \}
+        \textcolor{keywordflow}{if} (strcmp (value, \textcolor{stringliteral}{"green"}) == 0)
+        \{
+                printf (ANSI\_COLOR\_GREEN);
+        \}
+\}
+
+\textcolor{keywordtype}{int} \hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main} (\textcolor{keywordtype}{void})
+\{
+        KDB * repo;
+
+        \textcolor{comment}{// ... initialization of KDB, I/O binding and notifications}
+
+        Key * color = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"/sw/myorg/myapp/#0/current/color"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+
+        \textcolor{comment}{// Re-Initialize on key changes}
+        \hyperlink{group__kdbnotification_gab42738703162b3769b1336dcade47b18}{elektraNotificationRegisterCallback}(repo, color, &
+      setTerminalColor, NULL);
+
+        \textcolor{comment}{// ... start loop, etc.}
+\}
+\end{DoxyCode}
+
+
+\subsubsection*{How-\/\+To\+: Reload K\+DB when Elektra\textquotesingle{}s configuration has changed}
+
+This section shows how the notification feature is used to reload an application\textquotesingle{}s K\+DB instance when Elektra\textquotesingle{}s configuration has changed. This enables applications to apply changes to mount points or globally mounted plugins without restarting.
+
+{\bfseries Step 1\+: Register for changes to Elektra\textquotesingle{}s configuration}
+
+To achieve reloading on Elektra configuration changes we register for changes below the key {\ttfamily /elektra} using {\ttfamily \hyperlink{group__kdbnotification_ga374edd4f4fff527d6511ce4d0df62681}{elektra\+Notification\+Register\+Callback\+Same\+Or\+Below()}}.
+
+
+\begin{DoxyCode}
+Key * elektraKey = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"/elektra"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+\hyperlink{group__kdbnotification_ga374edd4f4fff527d6511ce4d0df62681}{elektraNotificationRegisterCallbackSameOrBelow} (kdb, 
+      elektraKey, elektraChangedCallback, NULL))
+\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel} (elektraKey);
+\end{DoxyCode}
+
+
+{\bfseries Step 2\+: Create a function for reloading K\+DB}
+
+Since our application needs to repeatedly initialize K\+DB on configuration changes we need to create a function which cleans up and reinitializes K\+DB.
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{void} initKdb (\hyperlink{kdbio_8h_a09c40c890207a8244fc39bb930fee1fa}{ElektraIoTimerOperation} * timerOp ELEKTRA\_UNUSED)
+\{
+        \textcolor{keywordflow}{if} (kdb != NULL)
+        \{
+                \textcolor{comment}{// Cleanup notifications and close KDB}
+                \hyperlink{group__kdbnotification_ga5685dafbd4131011365628d6d9213594}{elektraNotificationClose} (kdb);
+                \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose} (kdb, parentKey);
+        \}
+
+        kdb = \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdbOpen} (parentKey);
+        \hyperlink{group__kdbio_ga187345483bdfbb404919c6797bc2db77}{elektraIoSetBinding} (kdb, binding);
+        \hyperlink{group__kdbnotification_gaeae96154abdb5fdbf1b34a01e2b23e44}{elektraNotificationOpen} (kdb);
+
+        \textcolor{comment}{// Code for registration from snippet before}
+        Key * elektraKey = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"/elektra"}, \hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+        \hyperlink{group__kdbnotification_ga374edd4f4fff527d6511ce4d0df62681}{elektraNotificationRegisterCallbackSameOrBelow} (kdb, 
+      elektraKey, elektraChangedCallback, NULL);
+        \hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel} (elektraKey);
+
+        \textcolor{comment}{// TODO: add application specific registrations}
+
+        \textcolor{comment}{// Get configuration}
+        \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet} (kdb, config, parentKey);
+\}
+\end{DoxyCode}
+
+
+{\bfseries Step 3\+: Handle configuration changes}
+
+The last step is to connect the registration for changes to the (re-\/)initialization function. Directly calling the function is discouraged due to tight coupling (see guidelines in the next section) and also results in an application crash since the notification A\+PI is closed while processing notification callbacks. Therefore we suggest to add a timer operation with a sufficiently small interval which is enabled only on configuration changes. This timer will then call the initialization function.
+
+First, we create the timer in the main loop setup of the application.
+
+
+\begin{DoxyCode}
+\textcolor{comment}{// (global declaration)}
+\hyperlink{kdbio_8h_a09c40c890207a8244fc39bb930fee1fa}{ElektraIoTimerOperation} * reload;
+
+\textcolor{comment}{// main loop setup (e.g. main())}
+\textcolor{comment}{// the timer operation is disabled for now and}
+\textcolor{comment}{// will reload KDB after 100 milliseconds}
+reload = \hyperlink{io_8c_a67a0a81d263e0a7853809144c4ea5198}{elektraIoNewTimerOperation} (100, 0, initKdb, NULL);
+\hyperlink{io_8c_a1d61dca5ec35900c33224d82711c0bdb}{elektraIoBindingAddTimer} (binding, reload);
+\end{DoxyCode}
+
+
+Now we add the callback function for the registration from step 1\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{void} elektraChangedCallback (Key * changedKey, \textcolor{keywordtype}{void} * context)
+\{
+        \textcolor{comment}{// Enable operation to reload KDB as soon as possible}
+        \hyperlink{io_8c_a301cebc4da212bdb3aac0ad84f70ad85}{elektraIoTimerSetEnabled} (reload, 1);
+        \hyperlink{io_8c_add5679a2ff842d88435938d629497e27}{elektraIoBindingUpdateTimer} (reload);
+\}
+\end{DoxyCode}
+
+
+Finally we disable the timer in the initialization function\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{void} initKdb (\textcolor{keywordtype}{void})
+\{
+        \textcolor{comment}{// Stop reload task}
+        \hyperlink{io_8c_a301cebc4da212bdb3aac0ad84f70ad85}{elektraIoTimerSetEnabled} (reload, 0);
+        \hyperlink{io_8c_add5679a2ff842d88435938d629497e27}{elektraIoBindingUpdateTimer} (reload);
+
+        \textcolor{keywordflow}{if} (kdb != NULL)
+        \{
+                \textcolor{comment}{// Cleanup notifications and close KDB}
+                \hyperlink{group__kdbnotification_ga5685dafbd4131011365628d6d9213594}{elektraNotificationClose} (kdb);
+                \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose} (kdb, parentKey);
+        \}
+
+        \textcolor{comment}{// ...}
+\}
+\end{DoxyCode}
+
+
+By correct application of these three steps any application can react to changes to Elektra\textquotesingle{}s configuration. The snippets above omit error handling for brevity. The complete code including error handling is available in the \href{https://www.libelektra.org/examples/notificationreload}{\tt \char`\"{}notification reload\char`\"{} example}. This example also omits globals by passing them as user data using the {\ttfamily elektra\+Io$\ast$\+Get\+Data()} functions.
+
+\subsection*{Emergent Behavior Guidelines}
+
+When applications react to configuration changes made by other applications this can lead to {\itshape emergent behavior}. We speak of emergent behavior when the parts of a system are functioning as designed but an unintended, unexpected or unanticipated behavior at system level occurs.
+
+For example, take the following sequence of events\+:
+
+
+\begin{DoxyEnumerate}
+\item application {\ttfamily A} changes its configuration
+\item application {\ttfamily B} receives a notification about the change from {\ttfamily A} and updates its configuration
+\end{DoxyEnumerate}
+
+Given these two steps the sequence could be a case of {\itshape wanted} emergent behavior\+: Maybe application {\ttfamily B} keeps track of the number of global configuration changes. Now consider adding the following events to the sequence\+:
+
+
+\begin{DoxyEnumerate}
+\item application {\ttfamily A} receives a notification about the change from {\ttfamily B} and changes its configuration
+\item {\itshape continue at step 2}
+\end{DoxyEnumerate}
+
+The additional step causes an infinite cycle of configuration updates which introduces {\itshape unwanted} behavior.
+
+When designing a system it is desirable to use components with predictable and well-\/defined behavior. As a system grows larger and gets more {\itshape complex} unpredictable behavior emerges that was neither intended by the system designer nor by the designer of the components. This system behavior is called {\itshape emergent behavior} if it cannot be explained from its components but only from analysis of the whole system.
+
+Emergent behavior can be beneficial for a system, for example, useful cooperation in an ant colony but it also has disadvantages. Systems that bear {\itshape unwanted} emergent behavior are difficult to manage and experience failures in the worst case. This kind of unwanted emergent behavior is called \href{http://www.hpl.hp.com/techreports/2006/HPL-2006-2.html}{\tt {\itshape emergent misbehavior}}. Examples of emergent misbehavior are traffic jams or the \href{https://researchcourse.pbworks.com/f/structural+engineering.pdf}{\tt Millenium Footbridge} \href{https://www.sciencedaily.com/releases/2005/11/051103080801.htm}{\tt incident in London}.
+
+An evaluation of Elektra\textquotesingle{}s notification feature shows that it can exhibit the following symptoms\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries Synchronization} occurs due to the shared notification medium. Multiple applications receive a notification at the same time and execute their configuration update logic. In turn shared resources like hard disk or C\+PU become overutilized.
+\item {\bfseries Oscillation} occurs when applications are reacting to configuration changes by other applications.
+\item In the worst case oscillation results in {\bfseries livelock} when the frequency of configuration updates becomes so high that applications are only executing configuration update logic.
+\item {\bfseries Phase change} is a sudden change of the system behavior in reaction to a minor change (e.\+g. incremental change of a configuration setting). Phase change is introduced by application logic.
+\end{DoxyItemize}
+
+Building on these findings we will now present guidelines for preventing emergent misbehavior when using the notification A\+PI and callbacks in particular.
+
+\subsubsection*{Guideline 1\+: Avoid callbacks}
+
+\begin{quote}
+Most of the guidelines are related to callbacks. With normal use of the notification A\+PI emergent behavior should not occur. \end{quote}
+
+
+Callbacks couple an application temporally to configuration changes of other applications or instances of the same application. This observation is the basis for \href{#guideline-1-avoid-callbacks}{\tt Guidelines 1}, \href{#guideline-2-wait-before-reacting-to-changes}{\tt 2} and \href{#guideline-3-avoid-updates-as-reaction-to-change}{\tt 3}. While it is possible with registered variables to check for configuration changes at regular time intervals and react to changes the coupling is not as tight as with callbacks.
+
+\subsubsection*{Guideline 2\+: Wait before reacting to changes}
+
+\begin{quote}
+Waiting after receiving a notification decouples an application from changes and reduces the risk for unwanted $\ast$$\ast$\+\_\+synchronization\+\_\+$\ast$$\ast$. \end{quote}
+
+
+In applications where applying changes has impact on resource usage (e.\+g. C\+PU or disk) applying a time delay as suggested by this Guideline is a sensible choice. But this guideline is not only limited to these applications.
+
+Generally waiting before reacting to changes reduces the risk for unwanted synchronization by decoupling the application temporally. Waiting can be implemented using random time delays which further promotes decoupling since applications react at different points in time to changes. Waiting can also be implemented using a flag\+: Callbacks set the flag and when the control flow is in the main loop again, the pending updates are applied and the flag is cleared.
+
+\subsubsection*{Guideline 3\+: Avoid updates as reaction to change}
+
+\begin{quote}
+Avoid changing the configuration as reaction to a change. This reduces the risk for unwanted $\ast$$\ast$\+\_\+oscillation\+\_\+$\ast$$\ast$. \end{quote}
+
+
+While this guideline does not forbid updating the key database using {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} in a callback it advises to avoid it. If we recall the example from before we see how updating as reaction to change leads to unwanted oscillation. If necessary, the function {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} should be temporally decoupled as suggested in \href{#guideline-2-wait-before-reacting-to-changes}{\tt Guideline 2}.
+
+This guideline applies especially to callbacks but is also relevant when variables are polled for changes by the application.
+
+\subsubsection*{Guideline 4\+: Do not use notifications for synchronization}
+
+\begin{quote}
+Applications should not use notifications for synchronization as this can lead to $\ast$$\ast$\+\_\+phase change\+\_\+$\ast$$\ast$. \end{quote}
+
+
+This guideline limits the use of the notification A\+PI to notifications about configuration changes. There are better suited techiques for different use cases. Applications should not keep track of changes and change their behavior on certain conditions.
+
+For example, this happens when applications synchronize themselves at startup by incrementing a counter in the key database. When a certain limit of application instances is reached the applications proceed with different behavior. If this behavior affects other applications phase change has occurred.
+
+\subsubsection*{Guideline 5\+: Apply changes immediately}
+
+\begin{quote}
+Call {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} to save updated configuration immediately after a change occurred. This reduces conflicting changes in the key database. \end{quote}
+
+
+When a configuration setting is updated within an application this guideline suggests to write the change immediately to the key database using {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. This ensures that other applications have the same view of the key database and operate on current settings.
+
+\subsubsection*{Guideline 6\+: Be careful on what to call inside callbacks}
+
+\begin{quote}
+Notification callbacks are called from within Elektra. Calling {\ttfamily \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}, {\ttfamily \hyperlink{group__kdbnotification_ga5685dafbd4131011365628d6d9213594}{elektra\+Notification\+Close()}} or {\ttfamily elektra\+Set\+Io\+Binding()} in a callback will lead to undefined behavior or an application crash. \end{quote}
+
+
+Closing and cleaning up the K\+DB handle will cause an application crash because the control flow returns from the callback to now removed code. While this can be considered an implementation detail it aligns with \href{#guidline-2-wait-before-reacting-to-changes}{\tt Guideline 2} since reinitialization of K\+DB uses more resources than other operations like {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} or {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}.
+
+\subsection*{Logging}
+
+In order to analyze application behavior the \href{https://www.libelektra.org/plugins/readme#notification-and-logging}{\tt logging plugins} can be used with the {\ttfamily get=on} option when mounting\+:
+
+
+\begin{DoxyCode}
+kdb global-mount syslog get=on
+\end{DoxyCode}
+
+
+Now both reading from and writing to Elektra\textquotesingle{}s key database is logged.
+
+\subsection*{How to create your own I/O Binding}
+
+Developers can create their own bindings if the I/O management library of their choice is not supported by an existing I/O binding.
+
+For details on see the \hyperlink{md_src_bindings_io_doc_README_src_bindings_io_doc_README_md}{example }doc\char`\"{} binding\char`\"{} or the \href{https://doc.libelektra.org/api/current/html/group__kdbio.html}{\tt A\+PI documentation}. Existing I/O bindings provide a good inspiration on how to implement a custom binding. Since a binding is generic and not application specific it is much appreciated if you contribute your I/O binding back to the Elektra project.
+
+\subsection*{Logging}
+
+In order to log and analyze application behavior the logging plugins \href{https://www.libelektra.org/plugins/syslog}{\tt \char`\"{}syslog\char`\"{}}, \href{https://www.libelektra.org/plugins/journald}{\tt \char`\"{}journald\char`\"{}} or \href{https://www.libelektra.org/plugins/logchange}{\tt \char`\"{}logchange\char`\"{}} can be used. In order to log not only {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} but also {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} the option {\ttfamily log/get=1} should be used when mounting these plugins.
+
+For example\+:
+
+
+\begin{DoxyCode}
+$ kdb global-mount syslog log/get=1
+\end{DoxyCode}
+ 
