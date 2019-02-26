@@ -1,0 +1,122 @@
+.TH "md_src_plugins_profile_README" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_profile_READMEPlugin: profile 
+ \- 
+.IP "\(bu" 2
+infos = Information about the profile plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = maintained libc nodep global preview unfinished
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = helps switching between configuration profiles
+.PP
+.PP
+Following the elektra keyname convention application configurations are stored under \fC/sw/org/myapp/#\fP and \fC/sw/org/myapp/#0/current\fPis the profile to be used\&. The \fCprofile\fP plugin provides an easy way to switch configuration profiles\&.
+.PP
+The key \fC/sw/org/myapp/#0/profile\fP defines what profile should be used as \fCcurrent\fP, e\&.g\&. \fC/sw/org/myapp/#0/profile = myprofile\fP\&. If a key \fC/sw/org/myapp/#0/myprofile/key\fP is found and no key \fC/sw/org/myapp/#0/current/key\fP exists an override key will be created linking \fC/sw/org/myapp/#0/currrent/key\fP to \fC/sw/org/myapp/#0/myapp/key\fP If neither \fC/sw/org/myapp/#0/current/key\fP nor \fC/sw/org/myapp/#0/myprofile/key\fP is found, but \fC/sw/org/myapp/#0/%/key\fP, \fC/sw/org/myapp/#0/current/key\fP will be linked to \fC/sw/org/myapp/#0/%/key\fP\&.
+.PP
+So a cascading lookup will automatically implement following preferences (next to the namespace preferences):
+.PP
+.IP "1." 4
+Usage of key in \fCcurrent\fP
+.IP "2." 4
+Usage of key in the profile set with \fCprofile\fP
+.IP "3." 4
+Usage of key in the \fC%\fP fallback profile
+.PP
+.PP
+.SS "Example"
+.PP
+Suppose we have the configuration file \fCprofile\&.ini\fP in \fC~/\&.config\fP: 
+.PP
+.nf
+% cat profile.ini
+[]
+profile = myprofile
+
+[current]
+key2 = will win
+
+[myprofile]
+key1 = test1
+key2 = test2
+
+[%]
+key2 = failed?
+key3 = test3
+
+.fi
+.PP
+.PP
+Then we simply mount it \fIwithout\fP the profile plugin: 
+.PP
+.nf
+% kdb mount profile.ini /sw/org/myapp/#0 ini
+
+.fi
+.PP
+.PP
+But we have to make sure that the profile plugin is mounted globally: 
+.PP
+.nf
+% kdb global-mount profile
+
+.fi
+.PP
+.PP
+Then we can access \fC/sw/org/myapp/#0\fP in a profile-aware way: 
+.PP
+.nf
+% kdb ls /sw
+spec/sw/org/myapp/#0/current/key1
+spec/sw/org/myapp/#0/current/key3
+user/sw/org/myapp/#0
+user/sw/org/myapp/#0/%
+user/sw/org/myapp/#0/%/key2
+user/sw/org/myapp/#0/%/key3
+user/sw/org/myapp/#0/current
+user/sw/org/myapp/#0/current/key2
+user/sw/org/myapp/#0/profile
+user/sw/org/myapp/#0/myprofile
+user/sw/org/myapp/#0/myprofile/key1
+user/sw/org/myapp/#0/myprofile/key2
+
+.fi
+.PP
+.PP
+As we can see with the \fC-v\fP option, we will fetch keys from our \fCmyprofile\fP even though we request \fCcurrent\fP: 
+.PP
+.nf
+% kdb get -v /sw/org/myapp/#0/current/key1
+got 25 keys
+searching spec/sw/org/myapp/#0/current/key1, found: spec/sw/org/myapp/#0/current/key1, options: KDB_O_CALLBACK
+The resulting keyname is user/sw/org/myapp/#0/myprofile/key1
+test1
+
+.fi
+.PP
+.PP
+To switch profile we simply have to set one key: 
+.PP
+.nf
+kdb set user/sw/org/myapp/#0/profile newprofile
+
+.fi
+.PP
+.PP
+Usually, this will be done via commandline by setting \fCproc/sw/org/myapp/#0/profile\fP\&. 

@@ -1,0 +1,80 @@
+Since version {\bfseries \hyperlink{doc_decisions_library_split_md}{0.8.15}} {\bfseries \hyperlink{md_src_libs_elektra_README_src_libs_elektra_README_md}{libelektra}} is split into following libraries\+:
+
+ \subsubsection*{Loader}
+
+{\bfseries loader} contains source files that implement the plugin loader functionality. The files are linked to {\bfseries \hyperlink{md_src_libs_elektra_README_src_libs_elektra_README_md}{libelektra}}.
+
+\subsubsection*{Libease}
+
+\begin{DoxyVerb}libelektra-ease.so
+\end{DoxyVerb}
+
+
+{\bfseries libease} contains data-\/structure operations on top of libcore which do not depend on internals. Applications and plugins can choose to not link against it if they want to stay minimal.
+
+\subsubsection*{Libplugin}
+
+\begin{DoxyVerb}libelektra-plugin.so
+\end{DoxyVerb}
+
+
+{\bfseries libplugin} contains {\ttfamily elektra\+Plugin$\ast$} symbols and plugins should link against it.
+
+\subsubsection*{Libpluginprocess}
+
+\begin{DoxyVerb}libelektra-pluginprocess.so
+\end{DoxyVerb}
+
+
+{\bfseries libpluginprocess} contains functions aiding in executing plugins in a separate process and communicating with those child processes. This child process is forked from Elektra\textquotesingle{}s main process each time such plugin is used and gets closed again afterwards. It uses a simple communication protocol based on a Key\+Set that gets serialized through a pipe via the dump plugin to orchestrate the processes.
+
+This is useful for plugins which cause memory leaks to be isolated in an own process. Furthermore this is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used.
+
+\subsubsection*{Libproposal}
+
+\begin{DoxyVerb}libelektra-proposal.so
+\end{DoxyVerb}
+
+
+{\bfseries libproposal} contains functions that are proposed for libcore. Depends on internas of libcore and as such must always fit to the exact same version.
+
+\subsubsection*{Libmeta}
+
+\begin{DoxyVerb}libelektra-meta.so
+\end{DoxyVerb}
+
+
+{\bfseries \href{/home/markus/Projekte/Elektra/current/src/libs/meta/meta.c}{\tt libmeta}} contains metadata operations as described in {\bfseries \href{/home/markus/Projekte/Elektra/current/doc/METADATA.ini}{\tt M\+E\+T\+A\+D\+A\+T\+A.\+ini}}. Will be code-\/generated in the future, so methods should be mechanical reflections of the contents in {\bfseries \href{/home/markus/Projekte/Elektra/current/doc/METADATA.ini}{\tt M\+E\+T\+A\+D\+A\+T\+A.\+ini}}.
+
+\subsubsection*{Libcore}
+
+\begin{DoxyVerb}libelektra-core.so
+<kdbhelper.h>
+<kdb.h> (key* and ks*)
+\end{DoxyVerb}
+
+
+Contains the fundamental data-\/structures every participant of Elektra needs to link against. It should be the only part that access the internal data structures.
+
+\subsubsection*{Libtools}
+
+{\bfseries libtools} is a high-\/level C++ shared-\/code for tools. It includes\+:
+
+
+\begin{DoxyItemize}
+\item plugin interface
+\item backend interface
+\item 3-\/way merge
+\end{DoxyItemize}
+
+\subsubsection*{Utility}
+
+{\bfseries libutility} provides utility functions to be used in plugins.
+
+\subsubsection*{Libinvoke}
+
+\begin{DoxyVerb}libelektra-invoke.so
+\end{DoxyVerb}
+
+
+{\bfseries libinvoke} provides a simple A\+PI allowing us to call functions exported by plugins. 

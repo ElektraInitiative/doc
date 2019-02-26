@@ -1,0 +1,61 @@
+.TH "doc_BIGPICTURE_md" 3elektra "Fri Dec 22 2017" "Version 0.8.21" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_BIGPICTURE_mdBig Picture 
+ \- Elektra solves a non-trivial issue: how to abstract configuration in a way that software can be integrated and reconfiguration can be automated\&. Elektra solves this problem in a holistic way\&. Read \fBwhy Elektra\fP for an explanation of why such a solution is necessary\&.
+.PP
+.SS "Virtual File System Analogy"
+.PP
+If you know virtual file systems, you already know a very similar solution to a very similar problem (otherwise first read about what a virtual file system is \fChere\fP)\&.
+.PP
+Before file systems (or for devices without operating system) software simply wrote at discs (think of \fCdd of=/dev/sda\fP) to persistently store data\&. This obviously does not work with multiple applications\&. To allow multiple applications to access data in \fC/dev/sda\fP, a file system structures them in a way that every application knows where its bits are\&. In analogy configuration files are application-specific initialization that cannot be shared with other applications\&. So as first steps we need to have a 'file system' that describes the content of a configuration file in a uniform way\&. In Elektra \fBplugins\fP represent file systems: they know how the data in configuration files should be interpreted\&.
+.PP
+For file systems, the API is \fCopen\fP, \fCread\fP, \fCwrite\fP, and then \fCclose\fP\&. For configuration key-value access is more suitable because values are so small that a single read/write always suffices\&. Thus Elektra \fChas a key-value API\fP with \fCkdbOpen\fP, \fCkdbGet\fP, \fCkdbSet\fP and \fCkdbClose\fP\&. Not every application is written in C, thus many \fCbindings\fP where written to access file systems\&. For example, in C++ you have \fCfstream\fP, and in Java \fCFileReader\fP\&. Also Elektra provides different \fBbindings\fP: In C++ you have a class \fCKDB\fP and can use \fCkdb\&.get\fP or \fCkdb\&.set\fP\&. Furthermore, every language has native support for the language's iterators which make Elektra easier to use\&.
+.PP
+Furthermore, command-line tools like \fCcat\fP and \fCls\fP provide an additional interface to the content of file systems for users and administrators\&. In Elektra also \fBcommand-line tools\fP for the analog purpose exist: With \fCkdb cp\fP, \fCkdb mv\fP, and \fCkdb ls\fP some command-line tools operating on file systems are mimicked\&.
+.PP
+There is not one file system satisfying every need, e\&.g\&., \fCproc\fP, \fCtmpfs\fP, \fCnfs\fP and \fCext4\fP have quite different use cases and are needed at the same time in parallel\&. In analogy, different configuration file format (parsers) have different advantages and disadvantages\&. For example, \fC/etc/passwd\fP or \fC/etc/hosts\fP are structured and very compact, while many other configuration files are semi-structured\&.
+.PP
+To have multiple file systems present at the same time a virtual file system is able to mount (2) concrete file systems and thus give applications a way to uniformly access them\&. Similarly, Elektra also implements a \fBmount\fP functionality in its core\&. In Elektra a \fCcontract\fP specifies the obligations between plugins\&.
+.PP
+Sometimes, it is even useful to have multiple file systems at the same mountpoint, so called \fCstacked\fP file systems\&. They allow you to combine features of different file systems\&. For example, \fCeCryptfs\fP allows you to encrypt directories or files\&. In Elektra, stacking plugins is a core feature and heavily used to avoid feature-bloated plugins\&. For example, the \fBcrypto plugin\fP allows you to encrypt individual keys or the \fBiconv plugin\fP to change the character encoding\&.
+.PP
+In file systems metadata describes information about files, e\&.g\&. when they were last accessed and who they are owned by (\fCls -l\fP)\&. In the same way Elektra has metadata that describe individual key-value pairs\&. In Elektra metadata is \fCdefined globally\fP but implemented in many \fBplugins\fP\&.
+.PP
+Implementations of file systems is not an easy task\&. The idea of FUSE (Filesystem in Userspace) is to make file system development easier by having the conveniences of userspace together with a helper library \fClibfuse\fP\&. In particular this allowed developers to use any programming language and easier abstractions\&. Elektra also tries hard to make plugin development simple\&. For example, special \fBinterpreter plugins\fP enable developers to also write plugins in different languages\&. Furthermore, \fBother libraries\fP also assist in creating plugins\&.
+.PP
+Of course not every feature of virtual file systems or Elektra has an analogy in the other system\&. If they would solve the same problem, one of them would be useless\&. Main differences are:
+.PP
+.IP "\(bu" 2
+API (get/set vs\&. read/write)
+.IP "\(bu" 2
+commit semantics: one \fCkdbSet\fP can change many configuration files atomically\&. This is important if you want, e\&.g\&., a new host in \fC/etc/hosts\fP and use this host in some other configuration files\&.
+.IP "\(bu" 2
+\fBnamespaces\fP there are many places where the same configuration is stored\&. All of these configuration files have the same semantics and they override each other (think of command-line arguments, \fC/etc\fP, \fC$HOME/\&.config\fP, \&.\&.\&.)
+.IP "\(bu" 2
+Elektra interacts closely with the program execution environment such as command-line parsing\&. The namespace \fCproc\fP is specifically reserved for this purpose\&.
+.IP "\(bu" 2
+in Elektra it is possible to create holes (files without directories above them) which are needed because of these override semantics: we want to be able to override a single value without duplicating the whole skeleton\&.
+.IP "\(bu" 2
+validation: in Elektra you can describe how valid configuration should look like and reject invalid configuration\&.
+.IP "\(bu" 2
+and much more\&.\&.\&.
+.PP
+.PP
+.SS "Further pointers"
+.PP
+.IP "\(bu" 2
+Continue reading the \fBtutorials\fP
+.IP "\(bu" 2
+Read about \fBbindings\fP
+.IP "\(bu" 2
+Read about \fBtools\fP
+.IP "\(bu" 2
+Look into \fBthe glossary\fP\&.
+.IP "\(bu" 2
+Start reading about \fBcommand-line tools\fP
+.IP "\(bu" 2
+\fBCompile\fP and \fBInstall\fP Elektra 
+.PP
+

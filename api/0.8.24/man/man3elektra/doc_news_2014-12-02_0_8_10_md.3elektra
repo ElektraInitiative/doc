@@ -1,0 +1,404 @@
+.TH "doc_news_2014-12-02_0_8_10_md" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2014-12-02_0_8_10_md0\&.8\&.10 Release 
+ \- 
+.IP "\(bu" 2
+guid: 6ce57ecf-420a-4a31-821e-1c5fe5532eb4
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Tue, 02 Dec 2014 18:37:51 +0100
+.IP "\(bu" 2
+shortDesc: adds XDG/OpenICC compatibility & java binding
+.PP
+.PP
+Hello,
+.PP
+we are delighted to announce our latest feature release providing major updates in:
+.PP
+.IP "\(bu" 2
+compatibility with standards,
+.IP "\(bu" 2
+tooling,
+.IP "\(bu" 2
+plugins (hosts, rename),
+.IP "\(bu" 2
+Qt-Gui and
+.IP "\(bu" 2
+a new Java binding
+.PP
+.PP
+.SS "XDG Compatibility"
+.PP
+Elektra now is \fCfully XDG 0\&.8\fP compliant\&. Following changes were necessary:
+.PP
+.IP "\(bu" 2
+newly created configuration files for user/ now have the permissions 0600
+.IP "\(bu" 2
+newly created configuration directories for user/ now have the permissions 0700
+.IP "\(bu" 2
+existing configuration files will retain their permissions\&.
+.IP "\(bu" 2
+The default path to store user configuration is now ~/\&.config
+.IP "\(bu" 2
+A new resolver variant x (for user and system) is introduced
+.IP "  \(bu" 4
+implements handling of XDG environment variables
+.IP "  \(bu" 4
+ignores empty dirs and absolute paths in envvar
+.PP
+
+.IP "\(bu" 2
+add new shell based test suite for (xdg)-resolver
+.PP
+.PP
+For example, we could use resolver_fm_xhp_x: 
+.PP
+.nf
+kdb mount --resolver=resolver_fm_xhp_x file.dump /example dump
+kdb file user/example
+kdb file system/example
+
+.fi
+.PP
+.PP
+Will show you that for both user+system the resolver respects XDG environment variables, e\&.g\&. above lines will print: 
+.PP
+.nf
+/home/m/.config/file.dump
+/etc/xdg/file.dump
+
+.fi
+.PP
+.PP
+Of course, any attempts to get and set keys below user/example and system/example will also be in these files\&.
+.PP
+The letters after _ describe the variant of the resolver:
+.PP
+.IP "\(bu" 2
+f \&.\&. file based locking
+.IP "\(bu" 2
+m \&.\&. mutex based locking (for multiple KDB per process)
+.IP "\(bu" 2
+for user configuration (after next _)
+.IP "  \(bu" 4
+x \&.\&. first check XDG_CONFIG_HOME environment
+.IP "  \(bu" 4
+h \&.\&. then check HOME environment
+.IP "  \(bu" 4
+p \&.\&. then fall back to passwd
+.PP
+
+.IP "\(bu" 2
+for system configuration (after next _)
+.IP "  \(bu" 4
+x \&.\&. check all paths in XDG_CONFIG_DIRS and falls back to /etc/xdg
+.PP
+
+.PP
+.PP
+A lot of such resolver variants are added when -DPLUGINS=ALL is used\&. Of course you can create new variants with different behaviour by adding them to PLUGINS\&.
+.PP
+To make your application (that uses Elektra) XDG aware, you have nothing to do: you get it to free\&. Make sure to always use cascading lookup\&. Additionally, an XDG conforming application should not write system/ keys\&.
+.PP
+.SS "OpenICC Compatibility"
+.PP
+Based on that, Elektra now also implements the draft for \fCthe OpenICC specification\fP\&.
+.PP
+The mount command looks like quite complicated, but it consists of simple parts: 
+.PP
+.nf
+kdb mount --resolver=resolver_fm_xhp_x \
+  color/settings/openicc-devices.json /org/freedesktop/openicc \
+  yajl rename cut=org/freedesktop/openicc
+
+.fi
+.PP
+.PP
+We already know the first two lines: we use the XDG resolver already introduced above\&. Only the file name and the path where it should be mounted differs\&.
+.PP
+The plugin yajl is a storage plugin that reads/writes json\&. The plugin rename was the missing link to support OpenICC (thanks to Felix Berlakovich for closing this gap)\&. It is needed, because every OpenICC file starts like this: 
+.PP
+.nf
+{ "org": { "freedesktop": { "openicc": {
+
+.fi
+.PP
+.PP
+Because the backend is mounted at /org/freedesktop/openicc, it would lead to keys below /org/freedesktop/openicc/org/freedesktop/openicc which we obviously do not want\&. So we simply get rid of the common prefix by cutting it out using the rename plugin\&.
+.PP
+Of course this renaming functionality can be used in every situation and is not limited to OpenICC\&.
+.PP
+.SS "Tools"
+.PP
+A large number of old and new tools were added, mostly for convenience e\&.g\&.: 
+.PP
+.nf
+kdb mount-openicc
+
+.fi
+.PP
+.PP
+saves you from writing the long mount command we had in the previous section\&.
+.PP
+To get a list of all tools that are installed, now the command (which is also an external tool and as such currently not displayed in kdb --help): 
+.PP
+.nf
+kdb list-tools
+
+.fi
+.PP
+.PP
+is available\&. Do not be surprised: on typical installations this will be a large list\&. You can run each of these tools by using kdb <command>\&. Most of the tools, however, are part of the test suite, which you can run using: 
+.PP
+.nf
+kdb run_all
+
+.fi
+.PP
+.PP
+Other tools are 'old friends', e\&.g\&. convert-fstab written in 2006 by Avi Alkalay still works: 
+.PP
+.nf
+kdb convert-fstab | kdb import system/filesystems xmltool
+
+.fi
+.PP
+.PP
+It will parse your /etc/fstab and generate a XML\&. This XML then can be imported\&. Other convert tools directly produce kdb commands, though\&.
+.PP
+kdb now uses KDB itself for many commands:
+.PP
+.IP "\(bu" 2
+/sw/kdb/current/resolver \&.\&. You always want a different default resolver than that was compiled in as default when mounting backends?
+.IP "\(bu" 2
+/sw/kdb/current/format \&.\&. If you are annoyed by the default format dump format for import/export\&.
+.IP "\(bu" 2
+/sw/kdb/current/plugins \&.\&. If you always forget to add some plugins when mounting something\&.
+.PP
+.PP
+By default the plugin 'sync' is added automatically (it makes sure that fsync is executed on config files, the directory is already done by the resolver), you should not remove it from /sw/kdb/current/plugins otherwise the next mount command will not add it\&. To preserve it use a space separated list, e\&.g\&.: 
+.PP
+.nf
+kdb set user/sw/kdb/current/plugins "sync syslog"
+
+.fi
+.PP
+.PP
+Last, but not least, kdb get now supports cascading get: 
+.PP
+.nf
+kdb get /sw/kdb/current/plugins
+
+.fi
+.PP
+.PP
+This feature allows you to see the configuration exactly as seen by the application\&.
+.PP
+Other options:
+.PP
+.IP "\(bu" 2
+-123 options for hiding nth column in \fCkdb mount\fP
+.IP "\(bu" 2
+hide warnings during script usage of \fCkdb mount\fP
+.IP "\(bu" 2
+-0 option accepted in some tools (null termination)
+.IP "\(bu" 2
+Mount got a new -c option for backend configuration\&. For example -c cut=org/freedesktop/openicc would be the parameter cut for all plugins\&. Have a look at #146 if you want to use it\&.
+.PP
+.PP
+.SS "Compatibility"
+.PP
+The core API (kdb\&.h), as always, stayed API/ABI compatible\&. The only changes in kdb\&.h is the addition of KEY_CASCADING_NAME and KEY_META_NAME\&. So applications compiled against 0\&.8\&.10 and using these constants, will not work with Elektra 0\&.8\&.9\&.
+.PP
+The constants allow us to create following kinds of keys:
+.PP
+.IP "\(bu" 2
+empty names: this was always possible, because invalid names (including empty names) did not cause keyNew to abort
+.IP "\(bu" 2
+metanames: this is a new feature that allows us to compare key names with metakeys
+.IP "\(bu" 2
+cascading names: names starting with / have the special meaning that they do not specify which namespace they have\&. When such names are used for
+.IP "  \(bu" 4
+\fBkdbGet()\fP and \fBkdbSet()\fP keys are retrieved from all namespaces
+.IP "  \(bu" 4
+\fBksLookup()\fP keys are searched in all namespaces
+.IP "  \(bu" 4
+\fBksLookupByName()\fP is now just a wrapper for \fBksLookup()\fP\&. The method does not do much except creating a key and passing them to \fBksLookup()\fP\&.
+.PP
+
+.PP
+.PP
+Usage in C is: 
+.PP
+.nf
+Key *c = keyNew("/org/freedesktop", KEY_CASCADING_NAME, KEY_END);
+Key *m = keyNew("comment/#0", KEY_META_NAME, KEY_END);
+
+.fi
+.PP
+.PP
+The same functionality exists, of course, in available in all bindings, too\&.
+.PP
+Changes in non-core API are:
+.PP
+.IP "\(bu" 2
+xmltool now does not output default (unchanged) uid,gid and mode
+.IP "\(bu" 2
+ksLookupBySpec from \fBkdbproposal\&.h\fP was removed, is now integrated into ksLookup
+.IP "\(bu" 2
+extension keyNameGetNamespace was removed
+.IP "\(bu" 2
+the hosts comment format has changed
+.IP "\(bu" 2
+the default resolver has changed (uses passwd)
+.IP "\(bu" 2
+\fBkdb::tools::Backend::Backend\fP constructor, tryPlugin and addPlugin have changed:
+.IP "  \(bu" 4
+mountname is now automatically calculated
+.IP "  \(bu" 4
+addPlugin allows us to add a KeySet to validate plugins with different contracts correctly
+.PP
+
+.IP "\(bu" 2
+C++ binding now throws std::bad_alloc on allocation problems (and not InvalidName)
+.PP
+.PP
+.SS "CMake"
+.PP
+It is now possible to remove a plugin/binding/tools by prefixing a name with '-'\&. The new '-element' syntax is accepted by TOOLS, BINDINGS and PLUGINS\&. It is very handy in combination with ALL, e\&.g\&.: 
+.PP
+.nf
+-DPLUGINS="ALL;-xmltool"
+
+.fi
+.PP
+.PP
+will include all plugins except xmltool\&.
+.PP
+.SS "Improved comments"
+.PP
+Comment preserving was improved a lot\&. Especially, the hosts plugin was rewritten completely\&. Now multiple different comment styles can be intermixed without losing information\&. E\&.g\&. some INI formats support both ; and # for comments\&. With the new comments it is possible to preserve that information and even better: applications can iterate over that information (metadata)\&.
+.PP
+To mount the new hosts plugin use (if you already have mounted it, you have nothing to do): 
+.PP
+.nf
+kdb mount /etc/hosts system/hosts hosts
+
+.fi
+.PP
+.PP
+The hosts plugin now seperates from ipv4 and ipv6 which makes the host names canonical again, e\&.g\&.: 
+.PP
+.nf
+kdb get system/hosts/ipv4/localhost
+kdb get system/hosts/ipv6/localhost
+
+.fi
+.PP
+.PP
+To access the inline-comment, use: 
+.PP
+.nf
+kdb getmeta system/hosts/ipv4/localhost "comment/#0"
+
+.fi
+.PP
+.PP
+For other meta information, see: 
+.PP
+.nf
+kdb lsmeta system/hosts/ipv4/localhost
+
+.fi
+.PP
+.PP
+Additionally, a small API for specific metadata operations emerges\&. These operations will be moved to a separate library and will not stay in Elektra’s core library\&.
+.PP
+.SS "Proposal"
+.PP
+.IP "\(bu" 2
+lookup options:
+.IP "  \(bu" 4
+KDB_O_SPEC uses the lookup key as specification
+.IP "  \(bu" 4
+KDB_O_CREATE creates a key if it could not be found
+.PP
+
+.IP "\(bu" 2
+elektraKeyGetMetaKeySet creates a KeySet from metadata
+.IP "\(bu" 2
+elektraKsFilter allows us to filter a KeySet arbitrarily (not only keyIsBelow in case of ksCut)\&. It reintroduces more functional programming\&.
+.IP "\(bu" 2
+keyGetNamespace was reintroduced\&. In one of the next versions of Elektra we will introduce new namespaces\&. keyGetNamespace allows the compiler to output a warning when some namespaces are not handled in your C/C++ code\&.
+.PP
+.PP
+.SS "Java binding"
+.PP
+Elektra now fully supports applications written in Java and also Plugins written in the same language\&.
+.PP
+The \fCnew binding was developed using jna\&.\fP For the \fCplugin interface JNI\fP was used\&. We developed already \fCsome plugins\fP\&.
+.PP
+.SS "Qt-Gui"
+.PP
+Raffael Pancheri released the version 0\&.0\&.2 of the Qt-Gui:
+.PP
+.IP "\(bu" 2
+added Backend Wizard for mounting
+.IP "\(bu" 2
+user can hover over TreeView items and quickly see key name, key value and metakeys
+.IP "\(bu" 2
+it is now easily possible to create and edit arrays
+.IP "\(bu" 2
+added header to MetaArea for better clarity
+.IP "\(bu" 2
+many small layout and view update fixes
+.PP
+.PP
+.SS "Further stuff and small fixes"
+.PP
+.IP "\(bu" 2
+Two new error/warnings information: mountpoint and configfile\&. It is added automatically and all tools will print it\&.
+.IP "\(bu" 2
+C++ I/O for key(s) now allows null terminator next to new-line terminator
+.IP "\(bu" 2
+fix error plugin: now use on_open/trigger_warnings to be consistent
+.IP "\(bu" 2
+fix metaset: now correctly append new key
+.IP "\(bu" 2
+arrays are also available when compiled with mingw (but tests still have to be excluded for successful compilation)
+.IP "\(bu" 2
+fix #136
+.IP "\(bu" 2
+fix long help text in \fCkdb check\fP
+.IP "\(bu" 2
+signed release tags are now used
+.PP
+.PP
+.SS "Get It!"
+.PP
+You can download the release from \fChere\fP
+.PP
+.IP "\(bu" 2
+size: 1915277
+.IP "\(bu" 2
+md5sum: 2b16a4b555bc187562a0b38919d822a1
+.IP "\(bu" 2
+sha1: 08b1d0139fc5eb0d03c52408478e68b91b1825dc
+.IP "\(bu" 2
+sha256: 526e2ed61e87d89966eb36ddad78d8139b976e01ce18aab340d8a1df47132355
+.PP
+.PP
+already built API-Docu can be found \fChere\fP
+.PP
+.SS "Stay tuned!"
+.PP
+Subscribe to the \fCnew RSS feed\fP to always get the release notifications\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see https://www.libelektra.org
+.PP
+Best regards, Markus 

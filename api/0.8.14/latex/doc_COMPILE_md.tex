@@ -1,0 +1,268 @@
+\subsection*{D\+E\+P\+E\+N\+D\+E\+N\+C\+I\+E\+S}
+
+For the base system you only need cmake and build-\/essential (make, gcc, some unix tools).
+
+To build documentation you need doxygen and graphviz.
+
+To build pdf documentation you need pdflatex with \begin{DoxyVerb}    texlive-fonts-recommended
+    texlive-latex-recommended
+\end{DoxyVerb}
+
+
+For the debian package, please refer to debian/control (in the debian branch).
+
+For the plugins, please refer to the R\+E\+A\+D\+M\+E.\+md of the respective plugin.
+
+\subsection*{P\+R\+E\+P\+A\+R\+A\+T\+I\+O\+N}
+
+Elektra is using cmake. Tested are cmake version 2.\+8.\+9 and version 3.\+0.\+2.
+
+To configure Elektra graphically (with curses) run (.. belongs to command)\+: \begin{DoxyVerb}    mkdir build && cd build && ccmake ..
+\end{DoxyVerb}
+
+
+and press 'c'\+:
+
+All options described here, can also be used with cmake rather then ccmake (.. belongs to the command!)\+: \begin{DoxyVerb}    mkdir build && cd build && cmake -D<OPTION1>=<VAR1> -D<OPTION2>=<VAR2> ..
+\end{DoxyVerb}
+
+
+For information what you can use as O\+P\+T\+I\+O\+N1 and O\+P\+T\+I\+O\+N2 see above. Note to pass \char`\"{}\char`\"{} to V\+A\+R if it contains ;. E.\+g.\+: \begin{DoxyVerb}    cmake -DPLUGINS="dump;resolver;yajl" ..
+\end{DoxyVerb}
+
+
+Some scripts in the folder of the same name may help you running cmake.
+
+\subsubsection*{C\+O\+M\+P\+I\+L\+E\+R\+S}
+
+For supported compilers see the automatic build farm on \href{http://build.libelektra.org:8080/}{\tt http\+://build.\+libelektra.\+org\+:8080/}
+
+Additional gcc 4.\+6 armhf is tested regularly.
+
+\begin{TabularC}{3}
+\hline
+\rowcolor{lightgray}{\bf Compiler }&{\bf Version }&{\bf Target  }\\\cline{1-3}
+gcc &gcc (Debian 4.\+7.\+2-\/5) 4.\+7.\+2 &i386 \\\cline{1-3}
+gcc &gcc (Debian 4.\+7.\+2-\/5) 4.\+7.\+2 &amd64 \\\cline{1-3}
+gcc &gcc 4.\+8 &amd64 \\\cline{1-3}
+gcc &gcc 4.\+9 &amd64 \\\cline{1-3}
+gcc &(Debian 4.\+4.\+5-\/8) 4.\+4.\+5 &amd64 \\\cline{1-3}
+gcc &(Debian 4.\+4.\+5-\/8) 4.\+3 &amd64 \\\cline{1-3}
+gcc &4.\+6 &armhf \\\cline{1-3}
+mingw &4.\+6 &i386 \\\cline{1-3}
+clang &version 3.\+5.\+0-\/1$\sim$exp1 &x86\+\_\+64-\/pc-\/linux-\/gnu \\\cline{1-3}
+icc &14.\+0.\+2 20140120 &x86\+\_\+64-\/pc-\/linux-\/gnu \\\cline{1-3}
+\end{TabularC}
+
+
+To change the compiler, use \begin{DoxyVerb}    CMAKE_C_COMPILER and CMAKE_CXX_COMPILER.
+\end{DoxyVerb}
+
+
+for example to use gcc-\/4.\+3 \begin{DoxyVerb}    cmake -DCMAKE_C_COMPILER=gcc-4.3 -DCMAKE_CXX_COMPILER=g++-4.3 ..
+\end{DoxyVerb}
+
+
+\subsubsection*{O\+P\+T\+I\+O\+N\+S}
+
+Some options, i.\+e. P\+L\+U\+G\+I\+N\+S, B\+I\+N\+D\+I\+N\+G\+S and T\+O\+O\+L\+S are either\+:
+
+
+\begin{DoxyItemize}
+\item a list of elements separated with ; (note that shells typically need ; to be escaped)
+\item a special uppercase element that gets replaced by a list of elements, that are\+:
+\begin{DoxyItemize}
+\item A\+L\+L to include all elements (except elements with unfulfilled dependencies)
+\item N\+O\+D\+E\+P to include all elements without dependencies
+\item D\+E\+F\+A\+U\+L\+T to go back to the situation that was there when nothing was changed
+\end{DoxyItemize}
+\item elements prefixed with a minus symbol (-\/) to exclude an element
+\end{DoxyItemize}
+
+Examples for this are especially in the subsection P\+L\+U\+G\+I\+N\+S below, but they work in the same fashion for B\+I\+N\+D\+I\+N\+G\+S and T\+O\+O\+L\+S.
+
+\paragraph*{P\+L\+U\+G\+I\+N\+S}
+
+Read about available plugins \hyperlink{md_src_plugins_README_src_plugins_README_md}{here}.
+
+Because the core of elektra is minimal, plugins are needed to actually read and write to configuration files (storage plugins), commit the changes (resolver plugin, also takes care about how the configuration files are named) and also do many other tasks related to configuration.
+
+The default is also the minimal set of plugins you should add\+:
+\begin{DoxyItemize}
+\item dump is the default storage. If you remove it, make sure you add another one and set {\ttfamily K\+D\+B\+\_\+\+D\+E\+F\+A\+U\+L\+T\+\_\+\+S\+T\+O\+R\+A\+G\+E} to it.
+\item resolver is the default resolver. If you remove it, make sure you add another one and set {\ttfamily K\+D\+B\+\_\+\+D\+E\+F\+A\+U\+L\+T\+\_\+\+R\+E\+S\+O\+L\+V\+E\+R} to it.
+\item sync is very useful to not lose any data. If you do not want to include it, make sure to set {\ttfamily /sw/kdb/current/plugins} to a value not containing sync. See \hyperlink{md_doc_help_kdb-mount_doc_help_kdb-mount_md}{kdb-\/mount(1)}.
+\end{DoxyItemize}
+
+To add all plugins, you can use\+: \begin{DoxyVerb}    -DPLUGINS=ALL
+\end{DoxyVerb}
+
+
+Note that plugins get dropped when dependencies are not satisfied. To add all plugins except some plugins you can use\+: \begin{DoxyVerb}    -DPLUGINS="ALL;-plugin1;-plugin2"
+\end{DoxyVerb}
+
+
+E.\+g. if you want all plugins except the jni plugin you would use\+: \begin{DoxyVerb}    -DPLUGINS="ALL;-jni"
+\end{DoxyVerb}
+
+
+To add all plugins not having additional dependencies (they need only P\+O\+S\+I\+X), you can use \begin{DoxyVerb}    -DPLUGINS=NODEP
+\end{DoxyVerb}
+
+
+To manually set the default (same as not setting P\+L\+U\+G\+I\+N\+S), you can use \begin{DoxyVerb}    -DPLUGINS=DEFAULT
+\end{DoxyVerb}
+
+
+This only states the list of the plugins are the default list and does not mean that a different default is used after Elektra was installed. For this endeavour you need to change\+: \begin{DoxyVerb}    -DKDB_DEFAULT_RESOLVER=resolver
+\end{DoxyVerb}
+
+
+and \begin{DoxyVerb}    -DKDB_DEFAULT_STORAGE=dump
+\end{DoxyVerb}
+
+
+Alternatively, you can pass the list of plugins you want, e.\+g.\+: \begin{DoxyVerb}    -DPLUGINS="resolver;sync;dump"
+\end{DoxyVerb}
+
+
+Some plugins are compile-\/time configureable. Then you can choose which features are compiled in or out. This is especially important in the bootstrapping phase, because then only the compiled in configuration applies. To compile-\/time-\/configure a plugin, you just pass a underscore (\+\_\+) and flags after the name of the plugin.
+
+Note that the base-\/plugin itself need to be part of P\+L\+U\+G\+I\+N\+S, so that the variants will work.
+
+The resolver even distinguish between 3 different kind of flags\+: \begin{DoxyVerb}    -DPLUGINS="resolver_baseflags_userflags_systemflags"
+\end{DoxyVerb}
+
+
+Following baseflags are available\+:
+
+
+\begin{DoxyItemize}
+\item 'c' for debugging conflicts
+\item 'l' for enabling file locking
+\item 'm' for enabling mutex locking
+\end{DoxyItemize}
+
+The user flags are (the order matters!)\+:
+
+
+\begin{DoxyItemize}
+\item 'p' use passwd/ldap to lookup home directory using getpwuid\+\_\+r
+\item 'h' use the environment variable H\+O\+M\+E
+\item 'u' use the environment variable U\+S\+E\+R
+\item 'b' use the built-\/in default C\+M\+A\+K\+E variable K\+D\+B\+\_\+\+D\+B\+\_\+\+H\+O\+M\+E
+\end{DoxyItemize}
+
+The system flags are (the order matters!)\+:
+
+
+\begin{DoxyItemize}
+\item if a path that begins with / is chosen the system flags are irrelevant and the path is taken as-\/is.
+\item 'x' use the environment variable X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+R\+S (\+: are interpreted as part of filename, no searching is done!) This option is not recommended (unless for testing), because it allows users to fake system configuration.
+\item 'b' use the built-\/in default C\+M\+A\+K\+E variable K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+E\+M
+\end{DoxyItemize}
+
+E.\+g. one may use\+: \begin{DoxyVerb}    -DPLUGINS="resolver;resolver_lm_uhpb_b"
+\end{DoxyVerb}
+
+
+\paragraph*{T\+O\+O\+L\+S}
+
+Tools are used to add extra functionality to Elektra. The flag used to specify which tools are compiled is {\ttfamily -\/\+D\+T\+O\+O\+L\+S}, thus flag works similarly to the {\ttfamily -\/\+D\+P\+L\+U\+G\+I\+N\+S} flag.
+
+To add all tools, you can use\+:\+: \begin{DoxyVerb}    -DTOOLS=ALL
+\end{DoxyVerb}
+
+
+To add all plugins not having additional dependencies (they need only P\+O\+S\+I\+X), you can use\+: \begin{DoxyVerb}    -DTOOLS=NODEP
+\end{DoxyVerb}
+
+
+To build only the default tools, you can use\+: \begin{DoxyVerb}    -DTOOLS=DEFAULT
+\end{DoxyVerb}
+
+
+To specify specific tools you can use, e.\+g.\+: \begin{DoxyVerb}    -DTOOLS=qt-gui;kdb
+\end{DoxyVerb}
+
+
+\paragraph*{B\+I\+N\+D\+I\+N\+G\+S}
+
+Bindings are used in the same way as P\+L\+U\+G\+I\+N\+S and T\+O\+O\+L\+S. For example you can use\+: \begin{DoxyVerb}    -DBINDINGS=ALL
+\end{DoxyVerb}
+
+
+Note that the same languages are sometimes available over G\+I and S\+W\+I\+G. In this case, the S\+W\+I\+G bindings are preferred. To add all swig bindings (and also cpp), you can use\+: \begin{DoxyVerb}    -DBINDINGS=SWIG;cpp
+\end{DoxyVerb}
+
+
+The S\+W\+I\+G executable my be specified with\+: \begin{DoxyVerb}    -DSWIG_EXECUTABLE=...
+\end{DoxyVerb}
+
+
+If this option is not used, cmake will find the first occurrence of {\ttfamily swig} in your environment's path.
+
+\paragraph*{C\+M\+A\+K\+E\+\_\+\+B\+U\+I\+L\+D\+\_\+\+T\+Y\+P\+E}
+
+Debug, Release or Rel\+With\+Deb\+Info See help bar at bottom of ccmake for that option or\+: \href{http://www.cmake.org/Wiki/CMake_Useful_Variables}{\tt http\+://www.\+cmake.\+org/\+Wiki/\+C\+Make\+\_\+\+Useful\+\_\+\+Variables}
+
+\paragraph*{E\+L\+E\+K\+T\+R\+A\+\_\+\+D\+E\+B\+U\+G\+\_\+\+B\+U\+I\+L\+D and E\+L\+E\+K\+T\+R\+A\+\_\+\+V\+E\+R\+B\+O\+S\+E\+\_\+\+B\+U\+I\+L\+D}
+
+Only needed by Elektra developers. Make the library to output logging information. It is not recommended to use these options.
+
+\paragraph*{B\+U\+I\+L\+D\+\_\+\+D\+O\+C\+U\+M\+E\+N\+T\+A\+T\+I\+O\+N}
+
+build documentation with doxygen the kdb tool does only have the integrated docu at the moment
+
+\paragraph*{C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+I\+X}
+
+By default all files will installed below /usr/local. Edit that cache entry to change that behaviour. Also called system prefix within the documentation.
+
+If you want to create a package afterwards it is ok to use pathes that you can write to (e.\+g. C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+I\+X /home/markus/bin)
+
+\paragraph*{L\+I\+B\+\_\+\+S\+U\+F\+F\+I\+X}
+
+Lets you install libraries into architecture specific folder. E.\+g. for 32/64 bit systems you might install libraries under lib64. Set L\+I\+B\+\_\+\+S\+U\+F\+F\+I\+X to 64 to achieve exactly that. So the system library folder will be C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+I\+X/lib64 then.
+
+\paragraph*{T\+A\+R\+G\+E\+T\+\_\+\+I\+N\+C\+L\+U\+D\+E\+\_\+\+F\+O\+L\+D\+E\+R}
+
+By default include folders will be installed below C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+I\+X/include/elektra This entry let you change the elektra. If the entry is empty, the include files will be installed directly to C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+I\+X/include.
+
+\paragraph*{T\+A\+R\+G\+E\+T\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+F\+O\+L\+D\+E\+R}
+
+Similar to above, but with the plugins. Default is\+: C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+I\+X/lib\$\{L\+I\+B\+\_\+\+S\+U\+F\+F\+I\+X\}/elektra It can be also left empty to install plugins next to other libraries.
+
+\paragraph*{G\+T\+E\+S\+T\+\_\+\+R\+O\+O\+T}
+
+Specifies the root of the Google\+Test sources, to be used for some of the tests. A C\+Make\+Lists.\+txt inside G\+T\+E\+S\+T\+\_\+\+R\+O\+O\+T will be searched as way to detect a valid Google\+Test source directory. If it is \char`\"{}\char`\"{}, an internal version of gtest will be used.
+
+It is recommended that you browse through all of the options. Afterwards press c again (maybe multiple times until all variables are resolved) and then g to generate. Finally press e to exit.
+
+\subsection*{B\+U\+I\+L\+D\+I\+N\+G}
+
+\subsubsection*{N\+O I\+D\+E}
+
+To build the source use\+: \begin{DoxyVerb}make
+\end{DoxyVerb}
+
+
+You can pass\+: -\/j for parallel builds V\+E\+R\+B\+O\+S\+E=1 to see the invocations of the compiler
+
+\subsubsection*{Code\+Blocks}
+
+You can build Elektra using Code\+::\+Blocks under Gentoo\+:
+
+Precondition\+: Make sure you have a compiler, xml2 (for kdb tool) and xsl (see later) installed. cmake configure will help you with that, it will make sure you don't forget something essential.
+
+For Most Linux system all you have to do is open up a console and \begin{DoxyVerb}    mkdir build 
+    cd build 
+    cmake .. -G 'CodeBlocks - Unix Makefiles' 
+    make package
+\end{DoxyVerb}
+
+
+Note 1\+: You can use other editor if you like just type cmake at the console to get a list of option you can pass to cmake as long as well as a list of what code editor project cmake can create.
+
+Note 2\+: For Unix if you have n\+Curses install you can run ccmake to set important option after running cmake like to enable debug symbol.
+
+Note 3\+: for Gentoo is recommend to emerge sys-\/apps/lsb-\/release to name the package right even thou not required. 

@@ -1,0 +1,77 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the regexstore plugin is in keys below
+\item infos/author = Name \href{mailto:name@libelektra.org}{\tt name@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/needs =
+\item infos/provides = storage
+\item infos/placements = getstorage setstorage
+\item infos/status = difficult preview unfinished
+\item infos/description =
+\end{DoxyItemize}
+
+Allows regular expressions to be applied as storage plugin. The idea is to have something like \char`\"{}lazy lenses\char`\"{} with regex only on relevant parts of a file. It is unclear if this is a good idea and we do not encourage you to use this plugin. Currently it can only read and the potential harm is limited.
+
+In the configuration, below the key (that must also exist) \begin{DoxyVerb}regexstore
+\end{DoxyVerb}
+
+
+other keys define which regex are applied on a text file.
+
+The name of these config keys (with .../regexstore/ stripped of) will be used to build up the names of the keys\+:
+\begin{DoxyItemize}
+\item \#\mbox{[}0-\/9\mbox{]} will be replaced what the regex matched
+\item If no or the wrong placeholder occurs in the name, the keys will overwrite themselves, the last wins then.
+\end{DoxyItemize}
+
+The value of the config key is as follows\+:
+\begin{DoxyItemize}
+\item the first three letters need to be '\#\mbox{[}0-\/9 '. According to this number the value of the key will be set.
+\end{DoxyItemize}
+
+The key also might contain meta data.
+\begin{DoxyItemize}
+\item the only characters allowed in meta values are '\#\mbox{[}0-\/9\mbox{]}'. the meta data will be replaced by the regex match then.
+\end{DoxyItemize}
+
+\subsection*{Limitations}
+
+The semantics of how the regex works is unsteady and the plugin should be avoided in productive use.
+
+Currently the storage plugin does not have write support. When writing is added, overlapping regex need to be disallowed.
+
+\subsection*{Usage}
+
+\subsubsection*{vim config}
+
+First mount the regexstore with some at least one config key\+: \begin{DoxyVerb}kdb mount vimrc /vim regexstore "regexstore=root,regexstore/map/#2=#1 map ([^ 
+]*) ([^ 
+]*)"
+\end{DoxyVerb}
+
+
+(the character classes contain a space and a newline)
+
+So lets say we have a .vimrc with the content\+: \begin{DoxyVerb}something else...
+map map Q :qa<CR>
+something else...
+map <C-Q> :qa<CR>
+something else...
+\end{DoxyVerb}
+
+
+then we will get two keys with\+: \begin{DoxyVerb}user/vim/map/:qa<CR>
+\end{DoxyVerb}
+
+
+\subsubsection*{emacs config}
+
+\begin{DoxyVerb}kdb mount emacs /emacs
+\end{DoxyVerb}
+
+
+Suppose we want to match\+: \begin{DoxyVerb}(global-set-key (kbd "<escape>")      'keyboard-escape-quit)
+\end{DoxyVerb}
+
+
+T\+O\+D\+O.. not finished 

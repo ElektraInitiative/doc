@@ -1,0 +1,43 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the timeofday plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides = tracing
+\item infos/needs =
+\item infos/placements = pregetstorage postgetstorage presetstorage precommit postcommit prerollback postrollback
+\item infos/status = maintained tested
+\item infos/description = Prints timestamps during execution of backend
+\end{DoxyItemize}
+
+This plugin is a logging plugin which prints a timestamp during all placements of backend.
+
+\subsection*{Usage}
+
+If you want to measure how long your storage plugin needs to do the read and write you mount the plugin using\+: \begin{DoxyVerb}kdb mount file.ysp user/trace_point your_storage_plugin timeofday
+\end{DoxyVerb}
+
+
+Then you can benchmark your storage plugin in the get path\+: \begin{DoxyVerb}kdb get user/benchmark
+get     0000000356      di      0000000356      pos     pregetstorage
+get     0000000530      di      0000000174      pos     postgetstorage
+hello
+\end{DoxyVerb}
+
+
+and in the set path\+: \begin{DoxyVerb}kdb set user/benchmark
+get     0000000342      di      0000000342      pos     pregetstorage
+get     0000000532      di      0000000190      pos     postgetstorage
+Set null value
+set     0000000766      di      0000000234      pos     presetstorage
+set     0000001002      di      0000000236      pos     precommit
+set     0000008944      di      0000007942      pos     postcommit
+\end{DoxyVerb}
+
+
+The first digit column shows the complete time passed, the second column shows the time from invocation to invocation.
+
+\subsection*{Module Loading}
+
+Will not log when loaded as module (config {\ttfamily /module} present), unless {\ttfamily /logmodule} is set\+: \begin{DoxyVerb}kdb check -c "logmodule=" timeofday\end{DoxyVerb}
+ 

@@ -1,0 +1,155 @@
+.TH "kdb::tools::Backend" 3elektra "Sat Sep 17 2016" "Version 0.8.18" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdb::tools::Backend \- 
+.PP
+A low-level representation of the backend (= set of plugins) that can be mounted\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <backend\&.hpp>\fP
+.PP
+Inherits \fBkdb::tools::MountBackendInterface\fP\&.
+.SS "Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBBackend\fP ()"
+.br
+.RI "\fICreates a new empty backend\&. \fP"
+.ti -1c
+.RI "void \fBsetMountpoint\fP (\fBKey\fP mountpoint, \fBKeySet\fP mountConf)"
+.br
+.RI "\fISets the mountpoint for the backend\&. \fP"
+.ti -1c
+.RI "void \fBsetBackendConfig\fP (\fBKeySet\fP const &ks)"
+.br
+.RI "\fI\fBBackend\fP Config to add to\&. \fP"
+.ti -1c
+.RI "void \fBaddPlugin\fP (\fBPluginSpec\fP const &spec)"
+.br
+.RI "\fIAdd a plugin that can be loaded, meets all constraints\&. \fP"
+.ti -1c
+.RI "void \fBuseConfigFile\fP (std::string file)"
+.br
+.ti -1c
+.RI "bool \fBvalidated\fP () const "
+.br
+.ti -1c
+.RI "void \fBserialize\fP (\fBkdb::KeySet\fP &ret)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+A low-level representation of the backend (= set of plugins) that can be mounted\&. 
+
+To build a backend, you should prefer \fBBackendBuilder\fP, which automatically fixes ordering and allows us to remove plugins\&. 
+.SH "Member Function Documentation"
+.PP 
+.SS "void kdb::tools::Backend::addPlugin (\fBPluginSpec\fP const &plugin)\fC [virtual]\fP"
+
+.PP
+Add a plugin that can be loaded, meets all constraints\&. 
+.PP
+\fBNote:\fP
+.RS 4
+that this does not mean that the backend validates after it is added\&. It only means that the situation is not getting worse\&.
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIPluginCheckException\fP or its subclasses if it was not possible to load the plugin
+.RE
+.PP
+For validation 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBvalidated()\fP\&. 
+.RE
+.PP
+
+.PP
+Implements \fBkdb::tools::BackendInterface\fP\&.
+.SS "void kdb::tools::Backend::serialize (\fBkdb::KeySet\fP &ret)\fC [virtual]\fP"
+
+.PP
+\fBPrecondition:\fP
+.RS 4
+name and mountpoint set Add plugin serialization into keyset ret\&.
+.RE
+.PP
+Only can be done once! (see firstRef in \fBPlugin\fP) 
+.PP
+Implements \fBkdb::tools::SerializeInterface\fP\&.
+.SS "void kdb::tools::Backend::setBackendConfig (\fBKeySet\fP const &ks)\fC [virtual]\fP"
+
+.PP
+\fBBackend\fP Config to add to\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the config to add, should be below system/ 
+.RE
+.PP
+
+.PP
+Implements \fBkdb::tools::MountBackendInterface\fP\&.
+.SS "void kdb::tools::Backend::setMountpoint (\fBKey\fPmountpoint, \fBKeySet\fPmountConf)\fC [virtual]\fP"
+
+.PP
+Sets the mountpoint for the backend\&. 
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIMountpointInvalidException\fP 
+.br
+\fIMountpointAlreadyInUseException\fP 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fImountpoint\fP the key name will be used as mountpoint\&. It is allowed to pass a key with a KEY_CASCADING_NAME
+.br
+\fImountConf\fP needs to include the keys below system/elektra/mountpoints 
+.RE
+.PP
+
+.PP
+Implements \fBkdb::tools::MountBackendInterface\fP\&.
+.SS "void kdb::tools::Backend::useConfigFile (std::stringfile)\fC [virtual]\fP"
+
+.PP
+\fBPrecondition:\fP
+.RS 4
+: resolver needs to be loaded first Will check the filename and use it as configFile for this backend\&. 
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIFileNotValidException\fP if filename is not valid 
+.RE
+.PP
+
+.PP
+Implements \fBkdb::tools::MountBackendInterface\fP\&.
+.SS "bool kdb::tools::Backend::validated () const\fC [virtual]\fP"
+
+.PP
+\fBReturns:\fP
+.RS 4
+true if backend is validated 
+.PP
+false if more plugins are needed to be valided 
+.RE
+.PP
+
+.PP
+Implements \fBkdb::tools::MountBackendInterface\fP\&.
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

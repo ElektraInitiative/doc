@@ -1,0 +1,55 @@
+.TH "md_src_plugins_conditionals_README" 3elektra "Thu Nov 19 2015" "Version 0.8.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_conditionals_README \- README 
+
+.IP "\(bu" 2
+infos = Information about the conditionals plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/description =
+.PP
+.PP
+This plugin uses if-then-else like conditions stored in the metakey \fCcheck/condition\fP to validate data\&.
+.PP
+.SS "Syntax"
+.PP
+\fC(IF-condition) ? (THEN-condition) : (ELSE-condition)\fP where the ELSE-condition is optional
+.PP
+Condition: \fCKey\fP \fIOperation\fP `('String' | '1234\&.56' | Key | '')`
+.PP
+Operations: \fC!=, ==, <, <=, =>, >, :=\fP, where:
+.PP
+.IP "\(bu" 2
+\fC:=\fP is used to set a key value
+.IP "\(bu" 2
+others are for comparison as in C
+.PP
+.PP
+.SS "Example"
+.PP
+`(this/key != 'value') ? (then/key == some/other/key) : (or/key <= '125')`
+.PP
+Meaning: IF \fCthis/key\fP NOT EQUAL TO \fC'value'\fP THEN \fCthen/key\fP MUST EQUAL \fCsome/other/key\fP ELSE \fCor/key\fP MUST BE LESS THAN \fC125\fP
+.PP
+Another full example: 
+.PP
+.nf
+kdb mount conditionals.dump /tmount/conditionals conditionals dump
+kdb set user/tmount/conditionals/fkey 3.0
+kdb set user/tmount/conditionals/hkey hello
+kdb setmeta user/tmount/conditionals/key check/condition "(hkey == 'hello') ? (fkey == '3.0')" # success
+kdb setmeta user/tmount/conditionals/key check/condition "(hkey == 'hello') ? (fkey == '5.0')" # fail
+.fi
+.PP
+ 

@@ -1,0 +1,192 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the dbus plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = notification
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage postcommit
+\item infos/status = maintained unittest libc global
+\item infos/description = Sends notifications for every change via D-\/\+Bus
+\end{DoxyItemize}
+
+This plugin is a notification plugin, which sends a signal to D-\/\+Bus when the key database (K\+DB) has been modified.
+
+\subsection*{Dependencies}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libdbus-\/1-\/dev}
+\end{DoxyItemize}
+
+\subsection*{Dbus}
+
+A preferred way to interconnect desktop applications and even embedded system applications on mobile devices running Linux is D-\/\+Bus. The idea of D-\/\+Bus accords to that of Elektra\+: to provide standards to let software work together more tightly. D-\/\+Bus provides a simple and lightweight I\+PC (Inter-\/\+Process Communication) system to be used within desktop systems. Next to R\+PC (Remote Procedure Call), which is not used in this plugin, it supports signals which can notify an arbitrary number of other applications about changes. Given software like a D-\/\+Bus library, notification itself is a rather easy task, but it involves additional library dependences. So it is the perfect task to be implemented as a plugin. The information about the channels to be used can be stored in the global key database.
+
+D-\/\+Bus supports a {\bfseries system-\/wide bus} and a {\bfseries session bus}. The system configuration can be accessed by each user and the user configuration is limited to a single user. Both buses can immediately be used for the system and user configuration notification updates to get pleasing results. But, there is a problem with the session bus\+: It is possible within D-\/\+Bus that a user starts several sessions. The user configuration should be global to the user and is not aware of these sessions. So if several sessions are started, some of the user\textquotesingle{}s processes will miss notification updates.
+
+The namespaces are mapped to the buses the following way\+:
+
+
+\begin{DoxyItemize}
+\item system\+: system-\/wide bus
+\item user\+: session bus
+\end{DoxyItemize}
+
+Following signal names are used to notify about changes in the Elektra’s Key\+Set\+:
+
+
+\begin{DoxyItemize}
+\item Key\+Added\+: a key has been added
+\item Key\+Changed\+: a key has been changed
+\item Key\+Deleted\+: a key has been deleted
+\end{DoxyItemize}
+
+Alternatively, (with the option announce=once) only a single message is send\+:
+
+
+\begin{DoxyItemize}
+\item Commit\+: a key has been added, changed or deleted
+\end{DoxyItemize}
+
+\subsection*{Usage}
+
+The recommended way is to globally mount the plugin\+: \begin{DoxyVerb}    kdb global-mount dbus
+\end{DoxyVerb}
+
+
+Alternatively one can mount the plugin additionally to a storage plugin, e.\+g.\+: \begin{DoxyVerb}    kdb mount file.dump / dump dbus
+\end{DoxyVerb}
+
+
+For openicc one would use (mounts with announce=once)\+: \begin{DoxyVerb}    kdb mount-openicc
+\end{DoxyVerb}
+
+
+\subsubsection*{Shell}
+
+Then we can receive the notification events using\+: \begin{DoxyVerb}    dbus-monitor type='signal',interface='org.libelektra',path='/org/libelektra/configuration'
+\end{DoxyVerb}
+
+
+Or via the supplied test program\+: \begin{DoxyVerb}    kdb testmod_dbus receive_session
+\end{DoxyVerb}
+
+
+We can trigger a message with\+: \begin{DoxyVerb}    kdb set user/dbus/x b
+\end{DoxyVerb}
+
+
+Note that changes in {\ttfamily user} fire on the dbus {\ttfamily session}, and changes in namespace {\ttfamily system} in the dbus {\ttfamily system} bus. To receive {\ttfamily system} changes we will use\+: \begin{DoxyVerb}    kdb testmod_dbus receive_system
+    dbus-monitor --system type='signal',interface='org.libelektra',path='/org/libelektra/configuration'
+\end{DoxyVerb}
+
+
+And then fire it with\+: \begin{DoxyVerb}    kdb set system/dbus/y a
+\end{DoxyVerb}
+
+
+\subsubsection*{C}
+
+
+\begin{DoxyCode}
+dbus\_bus\_add\_match (connection, \textcolor{stringliteral}{"
+      type='signal',interface='org.libelektra',path='/org/libelektra/configuration'"}, &error);
+\end{DoxyCode}
+
+
+See the full example \href{/home/markus/Projekte/Elektra/current/src/plugins/dbus/receivemessage.c}{\tt here}.
+
+\subsubsection*{Qt}
+
+Here a small example for Q\+D\+Bus\+Connection\+:
+
+Place this in your Qt class header\+: \begin{DoxyVerb}public slots:
+  void configChanged( QString msg );
+\end{DoxyVerb}
+
+
+Put this in your Qt class, e.\+g. the constructor\+: \begin{DoxyVerb}if( QDBusConnection::sessionBus().connect( QString(), "/org/libelektra/configuration", "org.libelektra", QString(),
+                                       this, SLOT( configChanged( QString ) )) )
+    fprintf(stderr, "=================== Done connect\n" );
+\end{DoxyVerb}
+
+
+Here comes the org.\+libelektra signals\+: \begin{DoxyVerb}void SynnefoApp::configChanged( QString msg )
+{
+  fprintf( stdout, "config changed: %s\n", msg.toLocal8Bit().data() );
+};
+\end{DoxyVerb}
+
+
+\subsubsection*{Python}
+
+In Python the D\+Bus notifications can be used as follows
+
+
+\begin{DoxyCode}
+import dbus
+import gobject
+gobject.threads\_init()  # important: initialize threads if gobject main loop is used
+from dbus.mainloop.glib import DBusGMainLoop
+
+class DBusTest():
+    def \_\_init\_\_(self):
+        DBusGMainLoop(set\_as\_default=True)
+        bus = dbus.SystemBus()  # may use session bus for user db
+        bus.add\_signal\_receiver(self.elektra\_dbus\_key\_changed\_cb,
+            signal\_name="KeyChanged",
+            dbus\_interface="org.libelektra",
+            path="/org/libelektra/configuration")
+
+    def elektra\_dbus\_key\_changed\_cb(self, key):
+        print('key changed %s' % key)
+
+test = DBusTest()
+loop = gobject.MainLoop()
+try:
+    loop.run()
+except KeyboardInterrupt:
+    loop.quit()
+\end{DoxyCode}
+
+
+\subsection*{Background}
+
+Today, programs are often interconnected in a dense way. Such applications should always be informed when something in their environment changes. For user interactive software, notification about configuration changes is expected. The only alternative is polling, which wastes resources. It additionally is no option for interactive software, where the latency needs to be low. Instead, the software which changes the configuration has to notify all other interested applications that can reread their configuration without significant delay. In Elektra, a notification plugin ensures that a notification is actually sent on each change.
+
+Applications can wait for such a notification with hand-\/written code. Bindings, however, allow for better integration. It is a common approach for toolkits to provide a main loop. Applications using such toolkits can integrate notification services into this main loop.
+
+The actions that occur in such events are application or toolkit specific because of the non-\/invasive nature of Elektra. Software reacts in many different ways to update events. Hence, the frequency of update events should be kept at a minimum. Changes are kept atomic with a single attempt to write out configuration. Notification callbacks shall not change configuration because this can lead to a longer chain of unwanted modifications. That might not be true, however, if a programmer of the whole system knows that a chain of reactions will terminate. When doing such event-\/driven programming, care is needed to avoid infinite loops. Elektra guarantees consistency of the key database even in such cases.
+
+\section*{Transport Plugin}
+
+Mount this plugin globally with default settings to use it as {\itshape sending} transport plugin for Elektra\textquotesingle{}s notification feature\+:
+
+\begin{quote}
+kdb global-\/mount dbus announce=once \end{quote}
+
+
+\section*{Notification Format}
+
+This plugin uses D-\/\+Bus signal messages as notifications. Notifications have the path {\ttfamily /org/libelektra/configuration} and the D-\/\+Bus interface {\ttfamily org.\+libelektra}. The following signal names are used\+:
+
+
+\begin{DoxyItemize}
+\item Commit\+: preferred, keys below the changed key have changed
+\item Key\+Added\+: a key has been added
+\item Key\+Changed\+: a key has been changed
+\end{DoxyItemize}
+
+The first argument contains the name of the changed key. The system bus is used if the affected keys is below the {\ttfamily system} namespace. If the key is below the {\ttfamily user} namespace the session bus is used.
+
+Example output from {\ttfamily dbus-\/monitor}\+:
+
+
+\begin{DoxyCode}
+signal time=1520805003.227723 sender=:1.8 -> destination=(null destination) serial=15
+       path=/org/libelektra/configuration; interface=org.libelektra; member=Commit
+   string "system/tests/foo"
+\end{DoxyCode}
+ 

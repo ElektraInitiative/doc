@@ -1,0 +1,37 @@
+{\bfseries Cascading} is the triggering of secondary actions. For configuration it means that first the user configuration is read and if this attempt fails, the system configuration is used as fallback.
+
+The idea is that the application installs a configuration storage with default settings that can only be changed by the administrator. But every user has the possibility to override parts of this {\itshape system configuration} regarding the user's needs in the {\itshape user configuration}. To sum up, besides system configuration, users have their own key databases that can override the settings according to their preferences.
+
+Thus when a key starts with {\ttfamily /} such cascading will automatically performed.
+
+Keys in {\ttfamily spec} allow us to specify which keys are read by the application, which fallback it might have and which is the default value using meta data. The implementation of these features happened in {\ttfamily ks\+Lookup}. When cascading keys (those starting with {\ttfamily /}) are used following features are available (in the meta data of respective {\ttfamily spec}-\/keys)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily override/\#}\+: use these keys {\itshape in favour} of the key itself (note that {\ttfamily \#} is the syntax for arrays, e.\+g. {\ttfamily \#0} for the first element, {\ttfamily \#\+\_\+10} for the 11th and so on)
+\item {\ttfamily namespace/\#}\+: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+\item {\ttfamily fallback/\#}\+: when no key was found in any of the (specified) namespaces the {\ttfamily fallback}-\/keys will be searched
+\item {\ttfamily default}\+: this value will be used if nothing else was found
+\end{DoxyItemize}
+
+They can be used like this\+: \begin{DoxyVerb}    kdb set /overrides/test "example override"
+    sudo kdb setmeta spec/test override/#0 /overrides/test
+\end{DoxyVerb}
+
+
+\subsection*{C\+A\+S\+C\+A\+D\+I\+N\+G}
+
+When cascading keys (those starting with {\ttfamily /}) the lookup will work in the following way (it can be debugged with {\ttfamily kdb get -\/v})\+:
+
+
+\begin{DoxyEnumerate}
+\item In the {\ttfamily spec}-\/key the {\ttfamily override/\#} keys will be considered.
+\item If, in the {\ttfamily spec}-\/key, a {\ttfamily namespace/\#} exist, those namespaces will be used.
+\item Otherwise, all namespaces will be considered, see \hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{here.}
+\item In the {\ttfamily spec}-\/key the {\ttfamily fallback/\#} keys will be considered.
+\item In the {\ttfamily spec}-\/key the {\ttfamily default} value will be returned.
+\end{DoxyEnumerate}
+
+See \hyperlink{doc_tutorials_application-integration_md}{application integration} for how to use cascading names in the context of applications.
+
+\hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{Read more about namespaces.} 

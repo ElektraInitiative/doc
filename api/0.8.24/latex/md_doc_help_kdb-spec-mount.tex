@@ -1,0 +1,83 @@
+{\ttfamily kdb spec-\/mount \mbox{[}/$<$mountpoint$>$\mbox{]} \mbox{[}$<$plugin$>$ \mbox{[}$<$config$>$\mbox{]} \mbox{[}..\mbox{]}\mbox{]}}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily mountpoint} is where in the key database the new backend should be mounted to. It must be a cascading mountpoint, i.\+e., {\ttfamily mountpoint} must start with {\ttfamily /}.
+\item {\ttfamily plugin} are extra Elektra plugins to be used (next to the one specified in {\ttfamily spec/}).
+\item Plugins may be followed by a {\ttfamily ,} separated list of {\ttfamily keys=values} pairs which will be used as plugin configuration.
+\end{DoxyItemize}
+
+{\ttfamily kdb smount} is an alias and can be used in the same way as {\ttfamily kdb spec-\/mount}.
+
+\subsection*{D\+E\+S\+C\+R\+I\+P\+T\+I\+ON}
+
+This command allows a user to mount a new {\itshape backend} described by a previously mounted specification. To mount a specification file to {\ttfamily spec}-\/\hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{namespace} first use \hyperlink{md_doc_help_kdb-mount_doc_help_kdb-mount_md}{kdb-\/mount(7)}\+: \begin{DoxyVerb}    kdb mount some-spec-file.ini spec/example/mountpoint ni
+\end{DoxyVerb}
+
+
+The idea of mounting is explained \hyperlink{md_doc_help_elektra-mounting_doc_help_elektra-mounting_md}{in elektra-\/mounting(7)}. The {\ttfamily spec} \hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{namespace} contains metaconfiguration that describes the configuration in all other namespaces. The metadata used for the specification is described in \href{/home/markus/Projekte/Elektra/current/doc/METADATA.ini}{\tt M\+E\+T\+A\+D\+A\+T\+A.\+ini}.
+
+During {\ttfamily spec-\/mount} the {\ttfamily spec} keys are searched for relevant metadata\+:
+
+
+\begin{DoxyItemize}
+\item For every metadata {\ttfamily mountpoint} an additional cascading mountpoint will be mounted.
+\item The {\ttfamily infos/$\ast$} and {\ttfamily config/needs} from \href{/home/markus/Projekte/Elektra/current/doc/CONTRACT.ini}{\tt C\+O\+N\+T\+R\+A\+C\+T.\+ini}, that are tagged by {\ttfamily usedby = spec}, will work as described there.
+\item For other metadata suitable plugins are searched and mounted additionally.
+\end{DoxyItemize}
+
+For example\+: \begin{DoxyVerb}    kdb getmeta spec/example/mountpoint mountpoint  # verify that we have a mountpoint here
+    kdb spec-mount /example/mountpoint  # mounts /example/mountpoint according to specification
+            # found at spec/example/mountpoint
+\end{DoxyVerb}
+
+
+\subsection*{I\+M\+P\+O\+R\+T\+A\+NT}
+
+This command writes into the {\ttfamily /etc} directory and as such it requires root permissions. Use {\ttfamily kdb file system/elektra/mountpoints} to find out where exactly it will write to.
+
+Note that many specifications have globs like {\ttfamily \+\_\+} and {\ttfamily \#}. They will only work if the {\ttfamily spec} plugin is present\+: \begin{DoxyVerb}    kdb global-mount
+\end{DoxyVerb}
+
+
+\subsection*{O\+P\+T\+I\+O\+NS}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening.
+\item {\ttfamily -\/q}, {\ttfamily -\/-\/quiet}\+: Suppress non-\/error messages.
+\item {\ttfamily -\/R}, {\ttfamily -\/-\/resolver $<$resolver$>$}\+: Specify the resolver plugin to use if no resolver is given, the default resolver is used. See also \href{#KDB}{\tt below in K\+DB}. Note that the resolver will only added as dependency, but not directly added.
+\item {\ttfamily -\/c}, {\ttfamily -\/-\/plugins-\/config $<$plugins-\/config$>$}\+: Add a plugin configuration for all plugins.
+\item {\ttfamily -\/W}, {\ttfamily -\/-\/with-\/recommends}\+: Also add recommended plugins and warn if they are not available.
+\end{DoxyItemize}
+
+\subsection*{K\+DB}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily /sw/elektra/kdb/\#0/current/verbose}\+: Same as {\ttfamily -\/v}\+: Explain what is happening.
+\item {\ttfamily /sw/elektra/kdb/\#0/current/quiet}\+: Same as {\ttfamily -\/q}\+: Suppress default messages.
+\item {\ttfamily /sw/elektra/kdb/\#0/current/resolver}\+: The resolver that will be added automatically, if {\ttfamily -\/R} is not given.
+\item {\ttfamily /sw/elektra/kdb/\#0/current/plugins}\+: It contains a space-\/separated list of plugins and their configs which are added automatically (by default sync). The plugin-\/configuration syntax is as described above in the \href{#SYNOPSIS}{\tt synopsis}.
+\end{DoxyItemize}
+
+\subsection*{E\+X\+A\+M\+P\+L\+ES}
+
+To mount /example as described in {\ttfamily spec/example}\+:~\newline
+ {\ttfamily kdb spec-\/mount /example}
+
+Additionally, add {\ttfamily ini} plugin (instead of some default resolver) with {\ttfamily some} as config\+:~\newline
+ {\ttfamily kdb spec-\/mount /example ini some=value}
+
+\subsection*{S\+EE A\+L\+SO}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{md_doc_help_elektra-glossary_doc_help_elektra-glossary_md}{elektra-\/glossary(7)}.
+\item \hyperlink{md_doc_help_kdb-umount_doc_help_kdb-umount_md}{kdb-\/umount(7)}.
+\item \hyperlink{md_doc_help_elektra-mounting_doc_help_elektra-mounting_md}{elektra-\/mounting(7)}. 
+\end{DoxyItemize}

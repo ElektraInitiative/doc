@@ -1,0 +1,56 @@
+
+\begin{DoxyItemize}
+\item infos = Information about S\+I\+M\+P\+L\+E\+I\+NI plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/ini
+\item infos/needs = code null
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained nodep concept obsolete 3000
+\item infos/description = Very simple storage which writes out in a basic ini format.
+\end{DoxyItemize}
+
+This plugin reads and writes files written in a basic line-\/oriented ini-\/like format. It is very simplistic without sections, the \hyperlink{md_src_plugins_ini_README_src_plugins_ini_README_md}{ini} plugin and for specifications the \hyperlink{md_src_plugins_ni_README_src_plugins_ni_README_md}{ni} plugin should be preferred in most cases. Since the {\ttfamily simpleini} plugin requires the G\+NU C library it {\bfseries will not work} on operating systems that use another C library such as mac\+OS.
+
+\subsection*{Usage}
+
+It is quite suitable to export configuration if you want line-\/by-\/line key, value pairs without sections or metadata. (Thus +3000 in status) \begin{DoxyVerb}$ kdb export system/samba simpleini
+\end{DoxyVerb}
+
+
+\subsection*{Configuration}
+
+The only parameter simpleini supports is {\ttfamily format} which allows you to change the syntax of individual lines. The {\ttfamily format} is a string with any characters where only {\ttfamily \%} has special meaning\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \%} in an even number N are escaped and represent N/2 {\ttfamily \%}, e.\+g. {\ttfamily \%\%\%\%} are actually {\ttfamily \%\%} in the resulting format.
+\item The first unescaped {\ttfamily \%} represents the key.
+\item The second unescaped {\ttfamily \%} represents the value.
+\end{DoxyItemize}
+
+The default is {\ttfamily \% = \%}.
+
+For example, if you want every key to be marked {\ttfamily \%\+:key value} you would use\+: \begin{DoxyVerb}$ kdb export -c "format=%%:% %" system/samba simpleini
+%:key value
+%:key2 value2
+\end{DoxyVerb}
+
+
+\subsection*{Restrictions}
+
+
+\begin{DoxyItemize}
+\item Lines in a different format (e.\+g. comments) are discarded.
+\item The order per line must be key and then value\+: the plugin cannot be used if the value is first
+\item Whitespace before and after keynames are trimmed (but not for value)
+\item Delimiting symbols cannot be part of the key.
+\item The last occurrence of the same key wins (others are discarded).
+\item The parent Key cannot be used.
+\item This plugin needs the code and null plugins. A code plugin is used for the escape character for some symbols (but does not respect user-\/defined {\ttfamily format}) and the null plugin is used to handle null values.
+\end{DoxyItemize}
+
+\subsection*{Examples}
+
+Mount the plugin\+: \begin{DoxyVerb}$ kdb mount -d /etc/samba/smb.conf system/samba ccode null simpleini\end{DoxyVerb}
+ 

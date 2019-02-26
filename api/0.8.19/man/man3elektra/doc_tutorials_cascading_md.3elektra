@@ -1,0 +1,142 @@
+.TH "doc_tutorials_cascading_md" 3elektra "Tue Nov 22 2016" "Version 0.8.19" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_cascading_md \- Order of namespaces 
+This tutorial assumes that you know what \fBnamespaces\fP are\&. We will only be talking about \fBcascading lookup\fP here\&.
+.PP
+When Elektra looks up a key, the namespaces are searched in this order:
+.PP
+.IP "\(bu" 2
+\fCspec\fP (contains metadata, e\&.g\&. to modify elektra lookup behaviour)
+.IP "\(bu" 2
+\fCproc\fP (process-related information)
+.IP "\(bu" 2
+\fCdir\fP (directory-related information, e\&.g\&. \fC\&.git\fP or \fC\&.htaccess\fP)
+.IP "\(bu" 2
+\fCuser\fP (user configuration)
+.IP "\(bu" 2
+\fCsystem\fP (system configuration)
+.PP
+.PP
+Looking at this order, we can see that if a configuration option is specified by the user (in the \fBuser\fP namespace) as well as in the \fBsystem\fP namespace, then the key in the \fBuser\fP namespace takes precedence over the one in the \fBsystem\fP namespace\&. If there is no such key in the \fBuser\fP namespace the key in the \fBsystem\fP namespace acts as a fallback\&.
+.PP
+But lets demonstrate this with an example:
+.PP
+.SS "Add a key to the system namespace"
+.PP
+Configuration in the \fBsystem\fP namespace is readable for all users and the same for all users\&. Therefore this namespace provides a default or fallback configuration\&.
+.PP
+In the default Elektra installation only an administrator can update configuration here: ``` $ kdb get /sw/tutorial/cascading/#0/current/test Did not find key
+.PP
+.SH "Now add the key \&.\&.\&."
+.PP
+.PP
+$ sudo kdb set system/sw/tutorial/cascading/#0/current/test 'hello world' create a new key system/sw/tutorial/cascading/#0/current/test with string hello world
+.PP
+.SH "\&.\&.\&. and verify that it exists"
+.PP
+.PP
+$ kdb get /sw/tutorial/cascading/#0/current/test hello world ```
+.PP
+.SS "Add a key to the user namespace"
+.PP
+A user may now want to override the configuration in \fBsystem\fP, so he sets a key in the \fBuser\fP namespace:
+.PP
+``` $ kdb set user/sw/tutorial/cascading/#0/current/test 'hello galaxy' Create a new key user/sw/tutorial/cascading/#0/current/test with string hello galaxy
+.PP
+.SH "This key masks the key in the system namespace"
+.PP
+.PP
+$ kdb get /sw/tutorial/cascading/#0/current/test hello galaxy ``` Note that configuration in the \fBuser\fP namespace only affects \fIthis\fP user\&. Other users would still get the key from the \fBsystem\fP namespace\&.
+.PP
+.SS "Add a key to the dir namespace"
+.PP
+The \fBdir\fP namespace is associated with a directory\&. The configuration in the \fBdir\fP namespace applies to the associated directory and all its subdirectories\&. This is useful if you have project specific settings (e\&.g\&. your git configuration or a \&.htaccess file)\&.
+.PP
+As \fBdir\fP precedes the \fBuser\fP namespace, configuration in \fBdir\fP can overwrite user configuration:
+.PP
+``` 
+.SH "create and change to a new directory \&.\&.\&."
+.PP
+.PP
+$ mkdir kdbtutorial && cd $_
+.PP
+.SH "\&.\&.\&. and create a key in this directories dir-namespace"
+.PP
+.PP
+$ kdb set dir/sw/tutorial/cascading/#0/current/test 'hello universe' Create a new key dir/sw/tutorial/cascading/#0/current/test with string hello universe
+.PP
+.SH "This key masks the key in the system namespace"
+.PP
+.PP
+$ kdb get /sw/tutorial/cascading/#0/current/test hello universe
+.PP
+.SH "But is only present in the associated directory"
+.PP
+.PP
+$ cd \&.\&. $ kdb get /sw/tutorial/cascading/#0/current/test hello galaxy ```
+.PP
+.SS "Add a key to the proc namespace"
+.PP
+The \fBproc\fP namespace is not accessible from the commandline, but only from within applications\&. So we have to omit an example for that at this point\&. \fBElektrified\fP applications can use this namespace to override configuration from other namespaces internally\&.
+.PP
+.SS "Add a key to the spec namespcae"
+.PP
+Because the \fBspec\fP namespace does not contain values of keys but their metadata, Elektra handles the \fBspec\fP namespace differently to other namespaces\&. The followin part of the tutorial is dedicated to the impact of the \fBspec\fP namespace on cascading lookups\&.
+.PP
+.SS "Cascading"
+.PP
+Cascading triggers actions when, for example, the key isn't found\&. This concept is used for our previous example of using \fCsystem\fP configuration when the \fCuser\fP configuration is not defined\&. When a key starts with \fC/\fP, \fIcascading lookup\fP will automatically be performed\&. e\&.g\&. using \fC/test\fP instead of \fCsystem/test\fP will do a cascading lookup\&.
+.PP
+.SS "Override links"
+.PP
+The \fCspec\fP namespace is special as it can completely change how the cascading lookup works\&.
+.PP
+For example, in the metadata of the respective \fCspec\fP-keys, \fIoverride links\fP can be specified to use other keys in favor of the key itself\&. This way, even config from current folders (\fCdir\fP) can be overwritten\&.
+.PP
+In the cascading lookup, metadata of \fCspec\fP-keys comes in as follows:
+.PP
+.IP "1." 4
+\fCoverride/#\fP keys will be considered
+.IP "2." 4
+namespaces specified in the \fCnamespaces/#\fP keys are considered
+.IP "3." 4
+Otherwise, all namespaces will be considered, see \fBhere\fP\&.
+.IP "4." 4
+\fCfallback/#\fP keys will be considered
+.IP "5." 4
+\fCdefault\fP value will be returned
+.PP
+.PP
+\fBNote:\fP \fCoverride/#\fP means an array of \fCoverride\fP keys, the array can be filled by setting \fC#\fP followed by the position, e\&.g\&. \fC#0\fP, \fC#1\fP, etc
+.PP
+As you can see, override links are considered before everything else, which makes them really powerful\&.
+.PP
+To create an override link, first you need to create a key to link the override to:
+.PP
+``` $ sudo kdb set system/overrides/test 'hello override' Create a new key system/overrides/test with string hello override ```
+.PP
+Override links can be defined by adding them to the \fCoverride/#\fP array:
+.PP
+``` $ sudo kdb setmeta spec/sw/tutorial/cascading/#0/current/test override/#0 /overrides/test $ kdb get /sw/tutorial/cascading/#0/current/test hello override ```
+.PP
+Furthermore, you can specify a custom order for the namespaces, set fallback keys and more\&. For more information, read the \fB`elektra-spec` help page\fP\&.
+.PP
+.SS "User defaults"
+.PP
+Override links can also be used to define default values\&. It's similar to defining default values via the \fCsystem\fP namespace, but uses overrides, which means it will be preferred over the configuration in the current folder (\fCdir\fP)\&.
+.PP
+This means that user defaults overwrite values specified in the \fC\&.configuration\fP file we created and mounted earlier in this tutorial\&.
+.PP
+First you need to create the system default value to link the override to if the user hasn't defined it:
+.PP
+``` $ sudo kdb set system/overrides/test 'hello default' Create a new key system/overrides/test with string hello default ```
+.PP
+Then we can create the link:
+.PP
+``` $ sudo kdb setmeta spec/sw/tutorial/cascading/#0/current/test override/#0 /overrides/test $ kdb get /sw/tutorial/cascading/#0/current/test hello default ```
+.PP
+Now the user overrides the system default:
+.PP
+``` $ kdb set /overrides/test 'hello user' Using name user/overrides/test Create a new key user/overrides/test with string hello user $ kdb get /sw/tutorial/cascading/#0/current/test hello user ``` 

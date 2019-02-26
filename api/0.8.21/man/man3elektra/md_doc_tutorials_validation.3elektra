@@ -1,0 +1,363 @@
+.TH "md_doc_tutorials_validation" 3elektra "Fri Dec 22 2017" "Version 0.8.21" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_doc_tutorials_validationvalidation 
+ \- 
+.PP
+ author: Markus Raab elektra@markus-raab.org brief: Describes validation capabilities of Elektra\&. tags: validation, spec, metadata 
+.SS "review: pending "
+.SH "Validation"
+.PP
+.SS "Introduction"
+.PP
+Configuration in <abbr title='Free/Libre and Open Source Software'>FLOSS</abbr> unfortunately is often stored completely without validation\&. Notable exceptions are sudo (\fCvisudo\fP), or user accounts (\fCadduser\fP) but in most cases you only get feedback of non-validating configuration when the application fails to start\&.
+.PP
+Elektra provides a generic way to validate any configuration before it is written to disc\&.
+.PP
+.SS "User Interfaces"
+.PP
+Any of Elektra's user interfaces will work with the technique described in this tutorial, e\&.g\&.:
+.PP
+.IP "1." 4
+\fCkdb qt-gui\fP: graphical user interface
+.IP "2." 4
+\fCkdb editor\fP: starts up your favorite text editor and allows you to edit configuration in any syntax\&. (generalization of \fCvisudo\fP)
+.IP "3." 4
+\fCkdb set\fP: manipulate or add individual configuration entries\&. (generalization of \fCadduser\fP)
+.IP "4." 4
+Any other tool using Elektra to store configuration (e\&.g\&. if the application itself has capabilities to modify its configuration)
+.PP
+.PP
+.SS "Metadata Together With Keys"
+.PP
+The most direct way to validate keys is
+.PP
+.PP
+.nf
+sudo kdb mount validation\&.dump user/tutorial/together dump validation
+kdb vset user/tutorial/together/test 123 "[1-9][0-9]*" "Not a number"
+kdb set user/tutorial/together/test abc
+# STDERR: The command kdb\&.* set failed while accessing the key database \&.*
+# ERROR:  42
+# RET:5
+.fi
+.PP
+.PP
+For all other plugins (except \fCvalidation\fP) the convenience tool \fCkdb vset\fP is missing\&. Let us see what \fCkdb vset\fP actually did:
+.PP
+.PP
+.nf
+kdb lsmeta user/tutorial/together/test
+#> check/validation
+#> check/validation/match
+#> check/validation/message
+.fi
+.PP
+.PP
+So it only appended some metadata (data describing the data) next to the key, which we also could do by:
+.PP
+.PP
+.nf
+# Following lines are (except for error conditions) identical to
+# kdb vset user/tutorial/together/test 123 "[1-9][0-9]*" "Not a number"
+kdb setmeta user/tutorial/together/test check/validation "[1-9][0-9]*"
+kdb setmeta user/tutorial/together/test check/validation/match LINE
+kdb setmeta user/tutorial/together/test check/validation/message "Not a number"
+kdb set user/tutorial/together/test 123
+#> Set string to "123"
+
+# Undo modifications
+kdb rm -r user/tutorial/together
+sudo kdb umount user/tutorial/together
+.fi
+.PP
+.PP
+The approach is not limited to validation via regular expressions, but any values-validation plugin can be used, e\&.g\&. \fBenum\fP\&. For a full list refer to the section 'Value Validation' in the \fBlist of all plugins\fP\&.
+.PP
+Note that it also easy \fBto write your own (value validation) plugin\fP\&.
+.PP
+The drawbacks of this approach are:
+.PP
+.IP "\(bu" 2
+The administrator needs to take care that the validation plugins are available where needed\&.
+.IP "\(bu" 2
+Some metadata (in this case \fCcheck/validation\fP) needs to be stored next to the key which won't work with most configuration files\&. This is the reason why we explicitly used \fCdump\fP as storage in \fCkdb mount\fP\&.
+.IP "\(bu" 2
+After the key is removed, the validation information is gone, too\&.
+.IP "\(bu" 2
+It only works for the \fBnamespace\fP where \fCvset\fP was used\&. In the example above we could override the cascading key \fC/tutorial/together/test\fP with the unvalidated key \fCdir/tutorial/together/test\fP\&.
+.IP "\(bu" 2
+You cannot validate structure of which keys must be present or absent\&.
+.PP
+.PP
+.SS "Get Started with \fCspec\fP"
+.PP
+These issues are resolved straightforward by separating the configuration from its configuration specification (often called schemata in XML or JSON)\&. The purpose of the \fBspec namespace\fP is to hold the configuration specification, i\&.e\&., the description of how to validate the keys of all other namespaces\&.
+.PP
+To make this work, we need a plugin that applies all metadata found in the \fCspec\fP-namespace to all other namespaces\&. This plugin is called \fCspec\fP and needs to be mounted globally (will be added by default and also with any \fCkdb global-mount\fP call)\&.
+.PP
+We write metadata to the namespace \fCspec\fP and the plugin \fCspec\fP applies it to every cascading key:
+.PP
+.PP
+.nf
+kdb setmeta spec/tutorial/spec/test hello world
+kdb set /tutorial/spec/test value
+#> Using name user/tutorial/spec/test
+#> Create a new key user/tutorial/spec/test with string "value"
+kdb lsmeta spec/tutorial/spec/test | grep -v '^internal/ini'
+#> hello
+kdb lsmeta /tutorial/spec/test | grep -v '^internal/ini'
+#> hello
+kdb getmeta /tutorial/spec/test hello
+#> world
+kdb getmeta user/tutorial/spec/test hello
+#> world
+.fi
+.PP
+.PP
+But it also supports globbing (\fC_\fP for any key, \fC?\fP for any char, \fC[]\fP for character classes):
+.PP
+.PP
+.nf
+kdb setmeta "spec/tutorial/spec/_" new metaval
+kdb set /tutorial/spec/test value
+#> Using name user/tutorial/spec/test
+#> Set string to "value"
+kdb lsmeta /tutorial/spec/test | grep -v '^internal/ini'
+#> hello
+#> new
+
+# Remove keys and metadata from the commands above
+kdb rm -r spec/tutorial/spec
+kdb rm -r user/tutorial/spec
+.fi
+.PP
+.PP
+So let us combine this functionality with validation plugins\&. So we would specify:
+.PP
+.PP
+.nf
+kdb setmeta spec/tutorial/spec/test check/validation "[1-9][0-9]*"
+kdb setmeta spec/tutorial/spec/test check/validation/match LINE
+kdb setmeta spec/tutorial/spec/test check/validation/message "Not a number"
+.fi
+.PP
+.PP
+If we now set a new key with 
+.PP
+.nf
+kdb set /tutorial/spec/test "not a number"
+#> Using name user/tutorial/spec/test
+#> Create a new key user/tutorial/spec/test with string "not a number"
+
+.fi
+.PP
+ this key has adopted all metadata from the spec namespace: 
+.PP
+.nf
+kdb lsmeta /tutorial/spec/test | grep -v '^internal/ini'
+#> check/validation
+#> check/validation/match
+#> check/validation/message
+
+.fi
+.PP
+ Note that this key should not have passed the validation that we defined in the spec namespace\&. Nonetheless we were able to set this key, because the validation plugin was not active for this key\&. On that behalf we have to make sure that the validation plugin is loaded for this key with: 
+.PP
+.nf
+kdb mount tutorial\&.dump user/tutorial dump validation
+
+.fi
+.PP
+ This \fBmounts\fP the backend \fCtutorial\&.dump\fP to the mountpoint \fBuser/tutorial\fP and activates the validation plugin for the keys below the mountpoint\&. The validation plugin now uses the metadata of the keys below \fBuser/tutorial\fP to validate values before storing them in \fCtutorial\&.dump\fP\&.
+.PP
+Although this is better than defining metadata in the same place as the data itself, we can still do better\&. The reason for that is that one of the aims of Elektra is to remove the trouble of validation and finding the files that hold your configuration from the users\&. At the moment a user still has to know which files should hold the configuration and which plugins must be loaded when he mounts configuration files\&.
+.PP
+This problem can be addressed by recognizing that the location of the configuration files and the plugins that must be loaded is part of the \fIschema\fP of our configuration and therefore should be stored in the spec namespace\&.
+.PP
+.PP
+.nf
+# Undo modifications
+kdb rm -r spec/tutorial/spec/test
+kdb rm -r user/tutorial/spec/test
+.fi
+.PP
+.PP
+.SS "Specfiles"
+.PP
+We call the files, that contain a complete schema for configuration below a specific path in form of metadata, \fISpecfiles\fP\&.
+.PP
+Particularly a \fISpecfile\fP contains metadata that defines
+.IP "\(bu" 2
+the mountpoints of paths,
+.IP "\(bu" 2
+the plugins to load and
+.IP "\(bu" 2
+the behavior of these plugins\&.
+.PP
+.PP
+Let us create an example \fISpecfile\fP in the dump format, which supports metadata (altough the specfile is stored in the dump format, we can still create it using the human readable \fBni format\fP by using \fCkdb import\fP): 
+.PP
+.nf
+sudo kdb mount tutorial\&.dump spec/tutorial dump
+cat << HERE | kdb import spec/tutorial ni  \
+[]                                         \
+ mountpoint = tutorial\&.dump                \
+ infos/plugins = dump validation           \
+                                           \
+[/links/_]                                 \
+check/validation = https?://\&.*\\&.\&.*         \
+check/validation/match = LINE              \
+check/validation/message = not a valid URL \
+description = A link to some website       \
+HERE
+kdb lsmeta spec/tutorial
+#> infos/plugins
+#> mountpoint
+
+.fi
+.PP
+ We now have all the metadata that we need to mount and validate the data below \fC/tutorial\fP in one file\&.
+.PP
+Now we apply this \fISpecfile\fP to the key database to all keys below \fCtutorial\fP\&. 
+.PP
+.nf
+kdb spec-mount /tutorial
+
+.fi
+.PP
+ This command automatically mounts \fC/tutorial\fP to the backend \fCtutorial\&.dump\fP and loads the validation plugin\&.
+.PP
+.PP
+.nf
+kdb set /tutorial/links/url "invalid url"
+#> Using name user/tutorial/links/url
+# STDERR: \&.*key value failed to validate\&.*not a valid URL\&.*
+# ERROR:  42
+# RET:    5
+.fi
+.PP
+.PP
+Note that the backend \fCtutorial\&.dump\fP is mounted for all namespaces: 
+.PP
+.nf
+kdb file user/tutorial
+# STDOUT-REGEX: /(home|Users)/\&.*/\\&.config/tutorial\\&.dump
+kdb file system/tutorial
+# STDOUT-REGEX: \&.*/tutorial\\&.dump
+kdb file dir/tutorial
+# STDOUT-REGEX: /\&.*/\\&.dir/tutorial\\&.dump
+
+.fi
+.PP
+.PP
+If you want to set a key for another namespace and do not want to go without validation, consider that the spec plugin works only when you use cascading keys\&. You can work around that by setting the keys with the \fC-N\fP option: 
+.PP
+.nf
+kdb set -N system /tutorial/links/elektra https://www\&.libelektra\&.org
+#> Using name system/tutorial/links/elektra
+#> Create a new key system/tutorial/links/elektra with string "https://www\&.libelektra\&.org"
+
+.fi
+.PP
+.PP
+.SS "Rejecting Configuration Keys"
+.PP
+Up to now we only discussed how to reject keys that have unwanted values\&. Sometimes, however, applications require the presence or absence of keys\&. There are many ways to do so directly supported by \fBthe spec plugin\fP\&. Another way is to trigger errors with the \fBerror plugin\fP:
+.PP
+.PP
+.nf
+kdb setmeta /tutorial/spec/should_not_be_here trigger/error 10
+#> Using keyname spec/tutorial/spec/should_not_be_here
+kdb spec-mount /tutorial
+kdb set /tutorial/spec/should_not_be_here abc
+#> Using name user/tutorial/spec/should_not_be_here
+# RET:    5
+# STDERR: \&.*error\&.*10\&.*occurred\&.*
+kdb get /tutorial/spec/should_not_be_here
+# RET: 1
+# STDERR: Did not find key
+.fi
+.PP
+.PP
+If we want to reject every optional key (and only want to allow required keys) we can use the plugin \fCrequired\fP as further discussed below\&.
+.PP
+Before we look further let us undo the modifications to the key database\&.
+.PP
+.PP
+.nf
+kdb rm -r spec/tutorial
+kdb rm -r system/tutorial
+kdb umount spec/tutorial
+kdb umount /tutorial
+.fi
+.PP
+.PP
+.SS "Customized Schemas"
+.PP
+Sometimes we already have configuration specifications given in some other format which is more compact and more directed to the needs of an individual application\&. We can write a plugin that parses that format and transform the content to key-value \fIand\fP metadata (describing how to validate)\&.
+.PP
+For example, let us assume we have enum validations in the file \fCschema\&.txt\fP:
+.PP
+.PP
+.nf
+cat > "$PWD/schema\&.txt" << HERE           \
+%: notation TBD ? graph text semi         \
+%: tool-support* TBD ? none compiler ide  \
+%: applied-to TBD ? none small real-world \
+mountpoint file\&.txt                       \
+plugins required                          \
+HERE
+.fi
+.PP
+.PP
+And by convention for keys ending with \fC*\fP, multiple values are allowed\&. So we want to transform above syntax to:
+.PP
+.PP
+.nf
+%:notation TBD ? graph text semi
+%:tool-support* TBD ? none compiler ide
+%:applied-to TBD ? none small real-world
+.fi
+.PP
+.PP
+Lucky, we already have a plugin which allows us to so:
+.PP
+.PP
+.nf
+kdb mount "$PWD/schema\&.txt" spec/tutorial/schema simplespeclang keyword/enum=%:,keyword/assign=TBD
+kdb spec-mount /tutorial/schema
+.fi
+.PP
+.PP
+We configure the plugin \fCsimplespeclang\fP so that it conforms to our 'weird' syntax\&. Because in \fCschema\&.txt\fP we have the line \fCmountpoint file\&.txt\fP we can also mount the schema using \fCspec-mount\fP\&.
+.PP
+Now we have enforced that the 3 configuration options \fCnotation tool-support* applied-to\fP need to be present (and no other)\&. For example we can import:
+.PP
+.PP
+.nf
+kdb import -s validate -c "format=% : %" /tutorial/schema simpleini << HERE \
+notation : graph                                                            \
+tool-support : ? none                                                       \
+applied-to : small                                                          \
+HERE                                                                        \
+.fi
+.PP
+.PP
+Or (afterwards) setting individual values:
+.PP
+.PP
+.nf
+kdb set /tutorial/schema/applied-to smal # fails, not a valid enum
+.fi
+.PP
+.PP
+Or (in \fCvisudo\fP fashion):
+.PP
+.PP
+.nf
+kdb editor -s validate /tutorial/schema simpleini
+.fi
+.PP
+ 

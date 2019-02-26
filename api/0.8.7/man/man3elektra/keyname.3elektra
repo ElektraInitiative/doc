@@ -1,0 +1,654 @@
+.TH "Name Manipulation Methods" 3elektra "Mon Jul 28 2014" "Version 0.8.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Name Manipulation Methods \- 
+.PP
+Methods to do various operations on Key names\&.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBkeyName\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetNameSize\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetName\fP (const Key *key, char *returnedName, size_t maxSize)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeySetName\fP (Key *key, const char *newName)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetFullNameSize\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetFullName\fP (const Key *key, char *returnedName, size_t maxSize)"
+.br
+.ti -1c
+.RI "const char * \fBkeyBaseName\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetBaseNameSize\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetBaseName\fP (const Key *key, char *returned, size_t maxSize)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyAddBaseName\fP (Key *key, const char *baseName)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeySetBaseName\fP (Key *key, const char *baseName)"
+.br
+.ti -1c
+.RI "const char * \fBkeyOwner\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetOwnerSize\fP (const Key *key)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeyGetOwner\fP (const Key *key, char *returnedOwner, size_t maxSize)"
+.br
+.ti -1c
+.RI "ssize_t \fBkeySetOwner\fP (Key *key, const char *newOwner)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to do various operations on Key names\&. 
+
+To use them: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+.PP
+These functions make it easier for c programmers to work with key names\&. Everything here can also be done with keySetName, described in key\&.
+.PP
+\fBRules for Key Names\fP
+.RS 4
+
+.RE
+.PP
+When using Elektra to store your application's configuration and state, please keep in mind the following rules:
+.IP "\(bu" 2
+You are not allowed to create keys right under \fCsystem\fP or \fCuser\fP\&.
+.IP "\(bu" 2
+You are not allowed to create folder keys right under \fCsystem\fP or \fCuser\fP\&. They are reserved for very essential OS subsystems\&.
+.IP "\(bu" 2
+The keys for your application, called say \fIMyApp\fP, should be created under \fCsystem/sw/MyApp\fP and/or \fCuser/sw/MyApp\fP\&.
+.IP "\(bu" 2
+It is suggested to make your application look for default keys under \fCsystem/sw/MyApp/current\fP and/or \fCuser/sw/MyApp/current\fP\&. This way, from a sysadmin perspective, it will be possible to copy the \fCsystem/sw/MyApp/current\fP tree to something like \fCsystem/sw/MyApp/old\fP, and keep system clean and organized\&.
+.IP "\(bu" 2
+\\0 must not occur in names\&.
+.IP "\(bu" 2
+/ is the seperator\&. 
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "ssize_t keyAddBaseName (Key *key, const char *baseName)"
+Adds \fCbaseName\fP to the current key name\&.
+.PP
+Assumes that \fCkey\fP is a directory\&. \fCbaseName\fP is appended to it\&. The function adds \fC'/'\fP if needed while concatenating\&.
+.PP
+So if \fCkey\fP has name \fC'system/dir1/dir2'\fP and this method is called with \fCbaseName\fP \fC'mykey'\fP, the resulting key will have name \fC'system/dir1/dir2/mykey'\fP\&.
+.PP
+When baseName is 0 or '' nothing will happen and the size of the name is returned\&.
+.PP
+\fBWarning:\fP
+.RS 4
+You should not change a keys name once it belongs to a keyset because it would destroy the order\&.
+.RE
+.PP
+TODO: does not recognice \&.\&. and \&. in the string!
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIbaseName\fP the string to append to the name 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the size in bytes of the new key name including the ending NULL 
+.PP
+-1 if the key had no name 
+.PP
+-1 on NULL pointers 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeySetBaseName()\fP 
+.PP
+\fBkeySetName()\fP to set a new name\&. 
+.RE
+.PP
+
+.SS "const char* keyBaseName (const Key *key)"
+Returns a pointer to the real internal key name where the \fCbasename\fP starts\&.
+.PP
+This is a much more efficient version of \fBkeyGetBaseName()\fP and you should use it if you are responsible enough to not mess up things\&. The name might change or even point to a wrong place after a \fBkeySetName()\fP\&. If you need a copy of the basename consider to use \fBkeyGetBaseName()\fP\&.
+.PP
+\fBkeyBaseName()\fP returns '' when there is no keyBaseName\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetName(key,'');
+keyBaseName(key); // you would expect '' here
+keySetName(key,'user');
+keyBaseName(key); // you would expect '' here
+keyDel(key);
+
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyBaseName()\fP method to set a new value\&. Use \fBkeySetBaseName()\fP instead\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the object to obtain the basename from 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to the basename 
+.PP
+'' when the key has no (base)name 
+.PP
+0 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetBaseName()\fP, \fBkeyGetBaseNameSize()\fP 
+.PP
+\fBkeyName()\fP to get a pointer to the name 
+.PP
+\fBkeyOwner()\fP to get a pointer to the owner 
+.RE
+.PP
+
+.SS "ssize_t keyGetBaseName (const Key *key, char *returned, size_tmaxSize)"
+Calculate the basename of a key name and put it in \fCreturned\fP finalizing the string with NULL\&.
+.PP
+Some examples:
+.IP "\(bu" 2
+basename of \fCsystem/some/keyname\fP is \fCkeyname\fP 
+.IP "\(bu" 2
+basename of \fC'user/tmp/some key'\fP is \fC'some key'\fP 
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key to extract basename from 
+.br
+\fIreturned\fP a pre-allocated buffer to store the basename 
+.br
+\fImaxSize\fP size of the \fCreturned\fP buffer 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes copied to \fCreturned\fP 
+.PP
+1 on empty name 
+.PP
+-1 on NULL pointers 
+.PP
+-1 when maxSize is 0 or larger than SSIZE_MAX 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyBaseName()\fP, \fBkeyGetBaseNameSize()\fP 
+.PP
+\fBkeyName()\fP, \fBkeyGetName()\fP, \fBkeySetName()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetBaseNameSize (const Key *key)"
+Calculates number of bytes needed to store basename of \fCkey\fP\&.
+.PP
+Key names that have only root names (e\&.g\&. \fC'system'\fP or \fC'user'\fP or \fC'user:domain'\fP ) does not have basenames, thus the function will return 1 bytes to store ''\&.
+.PP
+Basenames are denoted as:
+.IP "\(bu" 2
+\fCsystem/some/thing/basename\fP -> \fCbasename\fP 
+.IP "\(bu" 2
+\fCuser:domain/some/thing/base\\/name\fP > \fCbase\\/name\fP 
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+size in bytes of \fCkey's\fP basename including ending NULL 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyBaseName()\fP, \fBkeyGetBaseName()\fP 
+.PP
+\fBkeyName()\fP, \fBkeyGetName()\fP, \fBkeySetName()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetFullName (const Key *key, char *returnedName, size_tmaxSize)"
+Get key full name, including the user domain name\&.
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes written 
+.PP
+1 on empty name 
+.PP
+-1 on NULL pointers 
+.PP
+-1 if maxSize is 0 or larger than SSIZE_MAX 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object 
+.br
+\fIreturnedName\fP pre-allocated memory to write the key name 
+.br
+\fImaxSize\fP maximum number of bytes that will fit in returnedName, including the final NULL 
+.RE
+.PP
+
+.SS "ssize_t keyGetFullNameSize (const Key *key)"
+Bytes needed to store the key name including user domain and ending NULL\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes needed to store key name including user domain 
+.PP
+1 on empty name 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetFullName()\fP, \fBkeyGetNameSize()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetName (const Key *key, char *returnedName, size_tmaxSize)"
+Get abbreviated key name (without owner name)\&.
+.PP
+When there is not enough space to write the name, nothing will be written and -1 will be returned\&.
+.PP
+maxSize is limited to SSIZE_MAX\&. When this value is exceeded -1 will be returned\&. The reason for that is that any value higher is just a negative return value passed by accident\&. Of course malloc is not as failure tolerant and will try to allocate\&.
+.PP
+.PP
+.nf
+char *getBack = malloc (keyGetNameSize(key));
+keyGetName(key, getBack, keyGetNameSize(key));
+.fi
+.PP
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes written to \fCreturnedName\fP 
+.PP
+1 when only a null was written 
+.PP
+-1 when keyname is longer then maxSize or 0 or any NULL pointer 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIreturnedName\fP pre-allocated memory to write the key name 
+.br
+\fImaxSize\fP maximum number of bytes that will fit in returnedName, including the final NULL 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetNameSize()\fP, \fBkeyGetFullName()\fP, \fBkeyGetFullNameSize()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetNameSize (const Key *key)"
+Bytes needed to store the key name without owner\&.
+.PP
+For an empty key name you need one byte to store the ending NULL\&. For that reason 1 is returned\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes needed, including ending NULL, to store key name without owner 
+.PP
+1 if there is is no key Name 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetName()\fP, \fBkeyGetFullNameSize()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetOwner (const Key *key, char *returnedOwner, size_tmaxSize)"
+Return the owner of the key\&.
+.IP "\(bu" 2
+Given \fCuser:someuser/\fP\&.\&.\&.\&.\&. return \fCsomeuser\fP 
+.IP "\(bu" 2
+Given \fCuser:some\&.user/\fP\&.\&.\&.\&. return \fCsome\&.user\fP 
+.IP "\(bu" 2
+Given \fCuser/\fP\&.\&.\&.\&. return the current user
+.PP
+.PP
+Only \fCuser/\fP\&.\&.\&. keys have a owner\&. For \fCsystem/\fP\&.\&.\&. keys (that doesn't have a key owner) an empty string ('') is returned\&.
+.PP
+Although usually the same, the owner of a key is not related to its UID\&. Owner are related to WHERE the key is stored on disk, while UIDs are related to mode controls of a key\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the object to work with 
+.br
+\fIreturnedOwner\fP a pre-allocated space to store the owner 
+.br
+\fImaxSize\fP maximum number of bytes that fit returned 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes written to buffer 
+.PP
+1 if there is no owner 
+.PP
+-1 on NULL pointers 
+.PP
+-1 when maxSize is 0, larger than SSIZE_MAX or too small for ownername 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeySetName()\fP, \fBkeySetOwner()\fP, \fBkeyOwner()\fP, \fBkeyGetFullName()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetOwnerSize (const Key *key)"
+Return the size of the owner of the Key with concluding 0\&.
+.PP
+The returned number can be used to allocate a string\&. 1 will returned on an empty owner to store the concluding 0 on using \fBkeyGetOwner()\fP\&.
+.PP
+.PP
+.nf
+char * buffer;
+buffer = malloc (keyGetOwnerSize (key));
+// use buffer and keyGetOwnerSize (key) for maxSize
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+that -1 might be returned on null pointer, so when you directly allocate afterwards its best to check if you will pass a null pointer before\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes 
+.PP
+1 if there is no owner 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetOwner()\fP 
+.RE
+.PP
+
+.SS "const char* keyName (const Key *key)"
+Returns a pointer to the abbreviated real internal \fCkey\fP name\&.
+.PP
+This is a much more efficient version of \fBkeyGetName()\fP and can use it if you are responsible enough to not mess up things\&. You are not allowed to change anything in the returned array\&. The content of that string may change after \fBkeySetName()\fP and similar functions\&. If you need a copy of the name, consider using \fBkeyGetName()\fP\&.
+.PP
+The name will be without owner, see \fBkeyGetFullName()\fP if you need the name with its owner\&.
+.PP
+\fBkeyName()\fP returns '' when there is no keyName\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetName(key,'');
+keyName(key); // you would expect '' here
+keyDel(key);
+
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyName()\fP method to set a new value\&. Use \fBkeySetName()\fP instead\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to the keyname which must not be changed\&. 
+.PP
+'' when there is no (a empty) keyname 
+.PP
+0 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetNameSize()\fP for the string length 
+.PP
+\fBkeyGetFullName()\fP, \fBkeyGetFullNameSize()\fP to get the full name 
+.PP
+\fBkeyGetName()\fP as alternative to get a copy 
+.PP
+\fBkeyOwner()\fP to get a pointer to owner 
+.RE
+.PP
+
+.SS "const char* keyOwner (const Key *key)"
+Return a pointer to the real internal \fCkey\fP owner\&.
+.PP
+This is a much more efficient version of \fBkeyGetOwner()\fP and you should use it if you are responsible enough to not mess up things\&. You are not allowed to modify the returned string in any way\&. If you need a copy of the string, consider to use \fBkeyGetOwner()\fP instead\&.
+.PP
+\fBkeyOwner()\fP returns '' when there is no keyOwner\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetOwner(key,'');
+keyOwner(key); // you would expect '' here
+keySetOwner(key,'system');
+keyOwner(key); // you would expect '' here
+
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyOwner()\fP method to set a new value\&. Use \fBkeySetOwner()\fP instead\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to internal owner 
+.PP
+'' when there is no (a empty) owner 
+.PP
+0 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetOwnerSize()\fP for the size of the string with concluding 0 
+.PP
+\fBkeyGetOwner()\fP, \fBkeySetOwner()\fP 
+.PP
+\fBkeyName()\fP for name without owner 
+.PP
+\fBkeyGetFullName()\fP for name with owner 
+.RE
+.PP
+
+.SS "ssize_t keySetBaseName (Key *key, const char *baseName)"
+Sets \fCbaseName\fP as the new basename for \fCkey\fP\&.
+.PP
+All text after the last \fC'/'\fP in the \fCkey\fP keyname is erased and \fCbaseName\fP is appended\&.
+.PP
+So lets suppose \fCkey\fP has name \fC'system/dir1/dir2/key1'\fP\&. If \fCbaseName\fP is \fC'key2'\fP, the resulting key name will be \fC'system/dir1/dir2/key2'\fP\&. If \fCbaseName\fP is empty or NULL, the resulting key name will be \fC'system/dir1/dir2'\fP\&.
+.PP
+\fBWarning:\fP
+.RS 4
+You should not change a keys name once it belongs to a keyset because it would destroy the order\&.
+.RE
+.PP
+TODO: does not work with \&.\&. and \&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIbaseName\fP the string used to overwrite the basename of the key 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the size in bytes of the new key name 
+.PP
+-1 on NULL pointers 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyAddBaseName()\fP 
+.PP
+\fBkeySetName()\fP to set a new name 
+.RE
+.PP
+
+.SS "ssize_t keySetName (Key *key, const char *newName)"
+Set a new name to a key\&.
+.PP
+A valid name is of the forms:
+.IP "\(bu" 2
+\fCsystem/something\fP 
+.IP "\(bu" 2
+\fCuser/something\fP 
+.IP "\(bu" 2
+\fCuser:username/something\fP 
+.PP
+.PP
+The last form has explicitly set the owner, to let the library know in which user folder to save the key\&. A owner is a user name\&. If it is not defined (the second form) current user is used\&.
+.PP
+You should always follow the guidelines for key tree structure creation\&.
+.PP
+A private copy of the key name will be stored, and the \fCnewName\fP parameter can be freed after this call\&.
+.PP
+\&.\&., \&. and / will be handled correctly\&. A valid name will be build out of the (valid) name what you pass, e\&.g\&. user///sw/\&.\&./sw//\&./\&./MyApp -> user/sw/MyApp
+.PP
+On invalid names, NULL or '' the name will be '' afterwards\&.
+.PP
+\fBWarning:\fP
+.RS 4
+You shall not change a key name once it belongs to a keyset\&.
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIsize\fP in bytes of this new key name including ending NULL 
+.br
+\fI0\fP if newName is an empty string or a NULL pointer (name will be empty afterwards) 
+.br
+\fI-1\fP if newName is invalid (name will be empty afterwards) 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fInewName\fP the new key name 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyNew()\fP, \fBkeySetOwner()\fP 
+.PP
+\fBkeyGetName()\fP, \fBkeyGetFullName()\fP, \fBkeyName()\fP 
+.PP
+\fBkeySetBaseName()\fP, \fBkeyAddBaseName()\fP to manipulate a name 
+.RE
+.PP
+
+.SS "ssize_t keySetOwner (Key *key, const char *newOwner)"
+Set the owner of a key\&.
+.PP
+A owner is a name of a system user related to a UID\&. The owner decides on which location on the disc the key goes\&.
+.PP
+A private copy is stored, so the passed parameter can be freed after the call\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fInewOwner\fP the string which describes the owner of the key 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the number of bytes actually saved including final NULL 
+.PP
+1 when owner is freed (by setting 0 or '') 
+.PP
+-1 on null pointer or memory problems 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeySetName()\fP, \fBkeyGetOwner()\fP, \fBkeyGetFullName()\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

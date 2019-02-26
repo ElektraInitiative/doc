@@ -1,0 +1,111 @@
+.TH "md_doc_help_kdb-spec-mount" 3elektra "Tue Feb 27 2018" "Version 0.8.22" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_doc_help_kdb-spec-mountkdb-spec-mount(1) - Mount a spec file to the key database 
+ \- \fCkdb spec-mount [/<mountpoint>] [<plugin> [<config>] [\&.\&.]]\fP
+.PP
+.IP "\(bu" 2
+\fCmountpoint\fP is where in the key database the new backend should be mounted to\&. It must be a cascading mountpoint, i\&.e\&., \fCmountpoint\fP must start with \fC/\fP\&.
+.IP "\(bu" 2
+\fCplugin\fP are extra Elektra plugins to be used (next to the one specified in \fCspec/\fP)\&.
+.IP "\(bu" 2
+Plugins may be followed by a \fC,\fP separated list of \fCkeys=values\fP pairs which will be used as plugin configuration\&.
+.PP
+.PP
+\fCkdb smount\fP is an alias and can be used in the same way as \fCkdb spec-mount\fP\&.
+.PP
+.SS "DESCRIPTION"
+.PP
+This command allows a user to mount a new \fIbackend\fP described by a previously mounted specification\&. To mount a specification file to \fCspec\fP-\fBnamespace\fP first use \fBkdb-mount(7)\fP: 
+.PP
+.nf
+    kdb mount some-spec-file.ini spec/example/mountpoint ni
+
+.fi
+.PP
+.PP
+The idea of mounting is explained \fBin elektra-mounting(7)\fP\&. The \fCspec\fP \fBnamespace\fP contains metaconfiguration that describes the configuration in all other namespaces\&. The metadata used for the specification is described in \fCMETADATA\&.ini\fP\&.
+.PP
+During \fCspec-mount\fP the \fCspec\fP keys are searched for relevant metadata:
+.PP
+.IP "\(bu" 2
+For every metadata \fCmountpoint\fP an additional cascading mountpoint will be mounted\&.
+.IP "\(bu" 2
+The \fCinfos/*\fP and \fCconfig/needs\fP from \fCCONTRACT\&.ini\fP, that are tagged by \fCusedby = spec\fP, will work as described there\&.
+.IP "\(bu" 2
+For other metadata suitable plugins are searched and mounted additionally\&.
+.PP
+.PP
+For example: 
+.PP
+.nf
+    kdb getmeta spec/example/mountpoint mountpoint  # verify that we have a mountpoint here
+    kdb spec-mount /example/mountpoint  # mounts /example/mountpoint according to specification
+            # found at spec/example/mountpoint
+
+.fi
+.PP
+.PP
+.SS "IMPORTANT"
+.PP
+This command writes into the \fC/etc\fP directory and as such it requires root permissions\&. Use \fCkdb file system/elektra/mountpoints\fP to find out where exactly it will write to\&.
+.PP
+Note that many specifications have globs like \fC_\fP and \fC#\fP\&. They will only work if the \fCspec\fP plugin is present: 
+.PP
+.nf
+    kdb global-mount
+
+.fi
+.PP
+.PP
+.SS "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&.
+.IP "\(bu" 2
+\fC-q\fP, \fC--quiet\fP: Suppress non-error messages\&.
+.IP "\(bu" 2
+\fC-R\fP, \fC--resolver <resolver>\fP: Specify the resolver plugin to use if no resolver is given, the default resolver is used\&. See also \fCbelow in KDB\fP\&. Note that the resolver will only added as dependency, but not directly added\&.
+.IP "\(bu" 2
+\fC-c\fP, \fC--plugins-config <plugins-config>\fP: Add a plugin configuration for all plugins\&.
+.IP "\(bu" 2
+\fC-W\fP, \fC--with-recommends\fP: Also add recommended plugins and warn if they are not available\&.
+.PP
+.PP
+.SS "KDB"
+.PP
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/verbose\fP: Same as \fC-v\fP: Explain what is happening\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/quiet\fP: Same as \fC-q\fP: Suppress default messages\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/resolver\fP: The resolver that will be added automatically, if \fC-R\fP is not given\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/plugins\fP: It contains a space-separated list of plugins and their configs which are added automatically (by default sync)\&. The plugin-configuration syntax is as described above in the \fCsynopsis\fP\&.
+.PP
+.PP
+.SS "EXAMPLES"
+.PP
+To mount /example as described in \fCspec/example\fP: \fCkdb spec-mount /example\fP
+.PP
+Additionally, add \fCini\fP plugin (instead of some default resolver) with \fCsome\fP as config: \fCkdb spec-mount /example ini some=value\fP
+.PP
+.SS "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBelektra-glossary(7)\fP\&.
+.IP "\(bu" 2
+\fBkdb-umount(7)\fP\&.
+.IP "\(bu" 2
+\fBelektra-mounting(7)\fP\&. 
+.PP
+

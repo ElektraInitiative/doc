@@ -1,0 +1,68 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the list plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/placements = presetstorage pregetstorage postgetstorage precommit postcommit prerollback postrollback
+\item infos/status = maintained unittest nodep libc configurable global
+\item infos/description = delegates work to a list of plugins
+\end{DoxyItemize}
+
+The List plugin can be used everywhere a list of plugins is required. It takes a list of plugins + configurations for every placement it\textquotesingle{}s placed in and loads them.
+
+\subsection*{Configuration}
+
+{\ttfamily placements/set}
+
+Specifies the set-\/placements for the list plugin, e.\+g. \char`\"{}presetstorage precommit\char`\"{}
+
+{\ttfamily placements/get}
+
+Specifies the get-\/placements for the list plugin.
+
+{\ttfamily placements/error}
+
+Specifies the error-\/placements for the list plugin.
+
+{\ttfamily plugins/\#}
+
+The name of the plugin to load.
+
+{\ttfamily plugins/\#/placements/set}
+
+A list of set-\/placements for the plugin. Same for \char`\"{}get\char`\"{} and \char`\"{}error\char`\"{}
+
+{\ttfamily plugins/\#/config/}
+
+Plugin specific config.
+
+\subsection*{Example}
+
+\begin{DoxyVerb}placements/get = "postgetstorage"
+plugins/#0 = "rename"
+plugins/#0/placements   plugin placements
+plugins/#0/placements/get = "postgetstorage"
+plugins/#0/config   pluginconfig goes here
+plugins/#0/config/cut = "will/be/stripped"
+plugins/#1 = "keytometa"
+plugins/#1/placements
+plugins/#1/placements/get = "postgetstorage"
+plugins/#2 = "enum"
+plugins/#2/placements
+plugins/#2/placements/get = "postgetstorage"
+\end{DoxyVerb}
+
+
+would have the callstack\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily list-\/$>$kdb\+Get}
+\begin{DoxyEnumerate}
+\item {\ttfamily rename-\/$>$kdb\+Get}
+\item {\ttfamily keytometa-\/$>$kdb\+Get}
+\item {\ttfamily enum-\/$>$kdb\+Get} 
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}

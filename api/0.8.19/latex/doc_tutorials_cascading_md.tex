@@ -1,0 +1,123 @@
+This tutorial assumes that you know what \hyperlink{doc_tutorials_namespaces_md}{namespaces} are. We will only be talking about \hyperlink{md_doc_help_elektra-cascading_doc_help_elektra-cascading_md}{cascading lookup} here.
+
+When Elektra looks up a key, the namespaces are searched in this order\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md#spec}{\tt spec} (contains metadata, e.\+g. to modify elektra lookup behaviour)
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md#proc}{\tt proc} (process-\/related information)
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md#dir}{\tt dir} (directory-\/related information, e.\+g. {\ttfamily .git} or {\ttfamily .htaccess})
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md#user}{\tt user} (user configuration)
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md#system}{\tt system} (system configuration)
+\end{DoxyItemize}
+
+Looking at this order, we can see that if a configuration option is specified by the user (in the {\bfseries user} namespace) as well as in the {\bfseries system} namespace, then the key in the {\bfseries user} namespace takes precedence over the one in the {\bfseries system} namespace. If there is no such key in the {\bfseries user} namespace the key in the {\bfseries system} namespace acts as a fallback.
+
+But lets demonstrate this with an example\+:
+
+\subparagraph*{Add a key to the system namespace}
+
+Configuration in the {\bfseries system} namespace is readable for all users and the same for all users. Therefore this namespace provides a default or fallback configuration.
+
+In the default Elektra installation only an administrator can update configuration here\+: ``` \$ kdb get /sw/tutorial/cascading/\#0/current/test Did not find key
+
+\section*{Now add the key ...}
+
+\$ sudo kdb set system/sw/tutorial/cascading/\#0/current/test \char`\"{}hello world\char`\"{} create a new key system/sw/tutorial/cascading/\#0/current/test with string hello world
+
+\section*{... and verify that it exists}
+
+\$ kdb get /sw/tutorial/cascading/\#0/current/test hello world ```
+
+\subparagraph*{Add a key to the user namespace}
+
+A user may now want to override the configuration in {\bfseries system}, so he sets a key in the {\bfseries user} namespace\+:
+
+``` \$ kdb set user/sw/tutorial/cascading/\#0/current/test \char`\"{}hello galaxy\char`\"{} Create a new key user/sw/tutorial/cascading/\#0/current/test with string hello galaxy
+
+\section*{This key masks the key in the system namespace}
+
+\$ kdb get /sw/tutorial/cascading/\#0/current/test hello galaxy ``` Note that configuration in the {\bfseries user} namespace only affects {\itshape this} user. Other users would still get the key from the {\bfseries system} namespace.
+
+\subparagraph*{Add a key to the dir namespace}
+
+The {\bfseries dir} namespace is associated with a directory. The configuration in the {\bfseries dir} namespace applies to the associated directory and all its subdirectories. This is useful if you have project specific settings (e.\+g. your git configuration or a .htaccess file).
+
+As {\bfseries dir} precedes the {\bfseries user} namespace, configuration in {\bfseries dir} can overwrite user configuration\+:
+
+``` \section*{create and change to a new directory ...}
+
+\$ mkdir kdbtutorial \&\& cd \$\+\_\+
+
+\section*{... and create a key in this directories dir-\/namespace}
+
+\$ kdb set dir/sw/tutorial/cascading/\#0/current/test \char`\"{}hello universe\char`\"{} Create a new key dir/sw/tutorial/cascading/\#0/current/test with string hello universe
+
+\section*{This key masks the key in the system namespace}
+
+\$ kdb get /sw/tutorial/cascading/\#0/current/test hello universe
+
+\section*{But is only present in the associated directory}
+
+\$ cd .. \$ kdb get /sw/tutorial/cascading/\#0/current/test hello galaxy ```
+
+\subparagraph*{Add a key to the proc namespace}
+
+The {\bfseries proc} namespace is not accessible from the commandline, but only from within applications. So we have to omit an example for that at this point. \hyperlink{md_doc_help_elektra-glossary_doc_help_elektra-glossary_md}{Elektrified} applications can use this namespace to override configuration from other namespaces internally.
+
+\subparagraph*{Add a key to the spec namespcae}
+
+Because the {\bfseries spec} namespace does not contain values of keys but their metadata, Elektra handles the {\bfseries spec} namespace differently to other namespaces. The followin part of the tutorial is dedicated to the impact of the {\bfseries spec} namespace on cascading lookups.
+
+\subsection*{Cascading}
+
+Cascading triggers actions when, for example, the key isn't found. This concept is used for our previous example of using {\ttfamily system} configuration when the {\ttfamily user} configuration is not defined. When a key starts with {\ttfamily /}, {\itshape cascading lookup} will automatically be performed. e.\+g. using {\ttfamily /test} instead of {\ttfamily system/test} will do a cascading lookup.
+
+\subsection*{Override links}
+
+The {\ttfamily spec} namespace is special as it can completely change how the cascading lookup works.
+
+For example, in the metadata of the respective {\ttfamily spec}-\/keys, {\itshape override links} can be specified to use other keys in favor of the key itself. This way, even config from current folders ({\ttfamily dir}) can be overwritten.
+
+In the cascading lookup, metadata of {\ttfamily spec}-\/keys comes in as follows\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily override/\#} keys will be considered
+\item namespaces specified in the {\ttfamily namespaces/\#} keys are considered
+\item Otherwise, all namespaces will be considered, see \hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{here}.
+\item {\ttfamily fallback/\#} keys will be considered
+\item {\ttfamily default} value will be returned
+\end{DoxyEnumerate}
+
+{\bfseries Note\+:} {\ttfamily override/\#} means an array of {\ttfamily override} keys, the array can be filled by setting {\ttfamily \#} followed by the position, e.\+g. {\ttfamily \#0}, {\ttfamily \#1}, etc
+
+As you can see, override links are considered before everything else, which makes them really powerful.
+
+To create an override link, first you need to create a key to link the override to\+:
+
+``` \$ sudo kdb set system/overrides/test \char`\"{}hello override\char`\"{} Create a new key system/overrides/test with string hello override ```
+
+Override links can be defined by adding them to the {\ttfamily override/\#} array\+:
+
+``` \$ sudo kdb setmeta spec/sw/tutorial/cascading/\#0/current/test override/\#0 /overrides/test \$ kdb get /sw/tutorial/cascading/\#0/current/test hello override ```
+
+Furthermore, you can specify a custom order for the namespaces, set fallback keys and more. For more information, read the \hyperlink{md_doc_help_elektra-spec_doc_help_elektra-spec_md}{`elektra-\/spec` help page}.
+
+\subsection*{User defaults}
+
+Override links can also be used to define default values. It's similar to defining default values via the {\ttfamily system} namespace, but uses overrides, which means it will be preferred over the configuration in the current folder ({\ttfamily dir}).
+
+This means that user defaults overwrite values specified in the {\ttfamily .configuration} file we created and mounted earlier in this tutorial.
+
+First you need to create the system default value to link the override to if the user hasn't defined it\+:
+
+``` \$ sudo kdb set system/overrides/test \char`\"{}hello default\char`\"{} Create a new key system/overrides/test with string hello default ```
+
+Then we can create the link\+:
+
+``` \$ sudo kdb setmeta spec/sw/tutorial/cascading/\#0/current/test override/\#0 /overrides/test \$ kdb get /sw/tutorial/cascading/\#0/current/test hello default ```
+
+Now the user overrides the system default\+:
+
+``` \$ kdb set /overrides/test \char`\"{}hello user\char`\"{} Using name user/overrides/test Create a new key user/overrides/test with string hello user \$ kdb get /sw/tutorial/cascading/\#0/current/test hello user ``` 

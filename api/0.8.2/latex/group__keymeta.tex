@@ -1,0 +1,861 @@
+\hypertarget{group__keymeta}{
+\section{Key :: Meta Info Manipulation Methods}
+\label{group__keymeta}\index{Key :: Meta Info Manipulation Methods@{Key :: Meta Info Manipulation Methods}}
+}
+
+
+Methods to do various operations on Key metainfo.  
+
+
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{keyRewindMeta} (\hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+const \hyperlink{struct__Key}{Key} $\ast$ \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta} (\hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+const \hyperlink{struct__Key}{Key} $\ast$ \hyperlink{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{keyCurrentMeta} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{keyCopyMeta} (\hyperlink{struct__Key}{Key} $\ast$dest, const \hyperlink{struct__Key}{Key} $\ast$source, const char $\ast$metaName)
+\item 
+int \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{keyCopyAllMeta} (\hyperlink{struct__Key}{Key} $\ast$dest, const \hyperlink{struct__Key}{Key} $\ast$source)
+\item 
+const \hyperlink{struct__Key}{Key} $\ast$ \hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta} (const \hyperlink{struct__Key}{Key} $\ast$key, const char $\ast$metaName)
+\item 
+ssize\_\-t \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta} (\hyperlink{struct__Key}{Key} $\ast$key, const char $\ast$metaName, const char $\ast$newMetaString)
+\item 
+uid\_\-t \hyperlink{group__keymeta_gacaa5060e67b03f50ae49a3620c54bc46}{keyGetUID} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_gab5f284f5ecd261e0a290095f50ba1af7}{keySetUID} (\hyperlink{struct__Key}{Key} $\ast$key, uid\_\-t uid)
+\item 
+gid\_\-t \hyperlink{group__keymeta_ga46a95e81d7d7f4e3eb59e60e5f3738c0}{keyGetGID} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_ga9e3d0fb3f7ba906e067727b9155d22e3}{keySetGID} (\hyperlink{struct__Key}{Key} $\ast$key, gid\_\-t gid)
+\item 
+int \hyperlink{group__keymeta_gaae575bd86a628a15ee45baa860522e75}{keySetDir} (\hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+mode\_\-t \hyperlink{group__keymeta_gabc0cec592ce3b77e9bc33dbc8e8f6bdc}{keyGetMode} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_ga8803037e35b9da1ce492323a88ff6bc3}{keySetMode} (\hyperlink{struct__Key}{Key} $\ast$key, mode\_\-t mode)
+\item 
+time\_\-t \hyperlink{group__keymeta_ga6b05da399c3c78904969ef39f191b0eb}{keyGetATime} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_ga995d8b84731673c88c7c01f3fed538b9}{keySetATime} (\hyperlink{struct__Key}{Key} $\ast$key, time\_\-t atime)
+\item 
+time\_\-t \hyperlink{group__keymeta_ga57689eb5691679071463b777ae786ae9}{keyGetMTime} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_ga481d8997187992fe4bbf288bc8ef4db7}{keySetMTime} (\hyperlink{struct__Key}{Key} $\ast$key, time\_\-t mtime)
+\item 
+time\_\-t \hyperlink{group__keymeta_ga2c213c120cbe02201278ef7fb8cd94be}{keyGetCTime} (const \hyperlink{struct__Key}{Key} $\ast$key)
+\item 
+int \hyperlink{group__keymeta_ga9f502ecab8ab43f0b17220fcc95f3fa5}{keySetCTime} (\hyperlink{struct__Key}{Key} $\ast$key, time\_\-t ctime)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Methods to do various operations on Key metainfo. To use them: 
+\begin{DoxyCode}
+#include <kdb.h>
+\end{DoxyCode}
+
+
+Next to \hyperlink{group__keyname}{Name (key and owner) } and \hyperlink{group__keyvalue}{Value (data and comment) } there is the so called meta information inside every key.
+
+Key meta information are an unlimited number of key/value pairs strongly related to a key. It main purpose is to give keys special semantics, so that plugins can treat them differently.
+
+File system information (see stat(2) for more information):
+\begin{DoxyItemize}
+\item uid: the user id (positive number)
+\item gid: the group id (positive number)
+\item mode: filesystem-\/like mode permissions (positive octal number)
+\item atime: When was the key accessed the last time.
+\item mtime: When was the key modified the last time.
+\item ctime: When the uid, gid or mode of a key changes. (times are represented through a positive number as unix timestamp)
+\end{DoxyItemize}
+
+The comment can contain userdata which directly belong to that key. The name of the meta information is \char`\"{}comment\char`\"{} for a general purpose comment about the key. Multi-\/Language comments are also supported by appending \mbox{[}LANG\mbox{]} to the name.
+
+Validators are regular expressions which are tested against the key value. The metakey \char`\"{}validator\char`\"{} can hold a regular expression which will be matched against.
+
+Types can be expressed with the meta information \char`\"{}type\char`\"{}.
+
+The relevance of the key can be tagged with a value from -\/20 to 20. Negative numbers are the more important and must be present in order to start the program.
+
+A version of a key may be stored with \char`\"{}version\char`\"{}. Its format is full.major.minor where all of these are integers.
+
+The order inside a persistent storage can be described with the tag \char`\"{}order\char`\"{} which contains a positive number.
+
+The meta key \char`\"{}app\char`\"{} describes to which application a key belongs. It can be used to remove keys from an application no longer installed.
+
+The meta key \char`\"{}path\char`\"{} describes where the key is physically stored.
+
+The \char`\"{}owner\char`\"{} is the user that owns the key. It only works for the user/ hierarchy. It rather says where the key is stored and says nothing about the filesystem properties. 
+
+\subsection{Function Documentation}
+\hypertarget{group__keymeta_ga8e63720a65610a29597494d0671f9401}{
+\index{keymeta@{keymeta}!keyCopyAllMeta@{keyCopyAllMeta}}
+\index{keyCopyAllMeta@{keyCopyAllMeta}!keymeta@{keymeta}}
+\subsubsection[{keyCopyAllMeta}]{\setlength{\rightskip}{0pt plus 5cm}int keyCopyAllMeta (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ dest, }
+\item[{const {\bf Key} $\ast$}]{ source}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga8e63720a65610a29597494d0671f9401}
+Do a shallow copy of all meta data from source to dest.
+
+The key dest will additionally have all meta data source had. Meta data not present in source will not be changed. Meta data which was present in source and dest will be overwritten.
+
+For example the meta data type is copied into the Key k.
+
+
+\begin{DoxyCode}
+void l(Key *k)
+{
+        // receive c
+        keyCopyMeta(k, c);
+        // the caller will see the changed key k
+        // with all the metadata from c
+}
+\end{DoxyCode}
+
+
+The main purpose of this function is for plugins or applications which want to add the same meta data to n keys. When you do that with \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta()} it will take n times the memory for the key. This can be considerable amount of memory for many keys with some meta data for each.
+
+To avoid that problem you can use \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{keyCopyAllMeta()} or \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{keyCopyMeta()}.
+
+
+\begin{DoxyCode}
+void o(KeySet *ks)
+{
+        Key *current;
+        Key *shared = keyNew (0);
+        keySetMeta(shared, "shared1", "this meta data should be shared among many
+       keys");
+        keySetMeta(shared, "shared2", "this meta data should be shared among many
+       keys also");
+        keySetMeta(shared, "shared3", "this meta data should be shared among many
+       keys too");
+
+        ksRewind(ks);
+        while ((current = ksNext(ks)) != 0)
+        {
+                if (needs_shared_data(current)) keyCopyAllMeta(current, shared);
+        }
+}
+\end{DoxyCode}
+
+
+\begin{DoxyPostcond}{Postcondition}
+for every metaName present in source: keyGetMeta(source, metaName) == keyGetMeta(dest, metaName)
+\end{DoxyPostcond}
+\begin{DoxyReturn}{Returns}
+1 if was successfully copied 
+
+0 if source did not have any meta data 
+
+-\/1 on null pointers (source or dest) 
+
+-\/1 on memory problems 
+\end{DoxyReturn}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em dest}]the destination where the meta data should be copied too \item[{\em source}]the key where the meta data should be copied from \end{DoxyParams}
+\hypertarget{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{
+\index{keymeta@{keymeta}!keyCopyMeta@{keyCopyMeta}}
+\index{keyCopyMeta@{keyCopyMeta}!keymeta@{keymeta}}
+\subsubsection[{keyCopyMeta}]{\setlength{\rightskip}{0pt plus 5cm}int keyCopyMeta (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ dest, }
+\item[{const {\bf Key} $\ast$}]{ source, }
+\item[{const char $\ast$}]{ metaName}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}
+Do a shallow copy of meta data from source to dest.
+
+The key dest will have the same meta data referred with metaName afterwards then source.
+
+For example the meta data type is copied into the Key k.
+
+
+\begin{DoxyCode}
+void l(Key *k)
+{
+        // receive c
+        keyCopyMeta(k, c, "type");
+        // the caller will see the changed key k
+        // with the metadata "type" from c
+}
+\end{DoxyCode}
+
+
+The main purpose of this function is for plugins or applications which want to add the same meta data to n keys. When you do that with \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta()} it will take n times the memory for the key. This can be considerable amount of memory for many keys with some meta data for each.
+
+To avoid that problem you can use \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{keyCopyAllMeta()} or \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{keyCopyMeta()}.
+
+
+\begin{DoxyCode}
+void o(KeySet *ks)
+{
+        Key *current;
+        Key *shared = keyNew (0);
+        keySetMeta(shared, "shared", "this meta data should be shared among many 
+      keys");
+
+        ksRewind(ks);
+        while ((current = ksNext(ks)) != 0)
+        {
+                if (needs_shared_data(current)) keyCopyMeta(current, shared, "sha
+      red");
+        }
+}
+\end{DoxyCode}
+
+
+\begin{DoxyPostcond}{Postcondition}
+keyGetMeta(source, metaName) == keyGetMeta(dest, metaName)
+\end{DoxyPostcond}
+\begin{DoxyReturn}{Returns}
+1 if was successfully copied 
+
+0 if the meta data in dest was removed too 
+
+-\/1 on null pointers (source or dest) 
+
+-\/1 on memory problems 
+\end{DoxyReturn}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em dest}]the destination where the meta data should be copied too \item[{\em source}]the key where the meta data should be copied from \item[{\em metaName}]the name of the meta data which should be copied \end{DoxyParams}
+\hypertarget{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{
+\index{keymeta@{keymeta}!keyCurrentMeta@{keyCurrentMeta}}
+\index{keyCurrentMeta@{keyCurrentMeta}!keymeta@{keymeta}}
+\subsubsection[{keyCurrentMeta}]{\setlength{\rightskip}{0pt plus 5cm}const {\bf Key}$\ast$ keyCurrentMeta (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga74a273f529030f4947df52e14fdd2869}
+Returns the Value of a Meta-\/Information which is current.
+
+The pointer is NULL if you reached the end or after \hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind()}.
+
+\begin{DoxyNote}{Note}
+You must not delete or change the returned key, use \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta()} if you want to delete or change it.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a buffer to the value pointed by {\ttfamily key's} cursor 
+
+0 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta()}, \hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{keyRewindMeta()}
+
+\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ksCurrent()} for pedant in iterator interface of KeySet 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga6b05da399c3c78904969ef39f191b0eb}{
+\index{keymeta@{keymeta}!keyGetATime@{keyGetATime}}
+\index{keyGetATime@{keyGetATime}!keymeta@{keymeta}}
+\subsubsection[{keyGetATime}]{\setlength{\rightskip}{0pt plus 5cm}time\_\-t keyGetATime (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga6b05da399c3c78904969ef39f191b0eb}
+Get last time the key data was read from disk.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000009}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+Every \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} might update the access time of a key. You get information when the key was read the last time from the database.
+
+You will get 0 when the key was not read already.
+
+Beware that multiple copies of keys with \hyperlink{group__key_gae6ec6a60cc4b8c1463fa08623d056ce3}{keyDup()} might have different atimes because you \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} one, but not the other. You can use this information to decide which key is the latest.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]Key to get information from. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the time you got the key with \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} 
+
+0 on key that was never \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} 
+
+(time\_\-t)-\/1 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga995d8b84731673c88c7c01f3fed538b9}{keySetATime()} 
+
+\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga2c213c120cbe02201278ef7fb8cd94be}{
+\index{keymeta@{keymeta}!keyGetCTime@{keyGetCTime}}
+\index{keyGetCTime@{keyGetCTime}!keymeta@{keymeta}}
+\subsubsection[{keyGetCTime}]{\setlength{\rightskip}{0pt plus 5cm}time\_\-t keyGetCTime (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga2c213c120cbe02201278ef7fb8cd94be}
+Get last time the key metadata was changed from disk.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000013}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+You will get 0 when the key was not read already.
+
+Any changed field in metadata will influence the ctime of a key.
+
+This time is not updated if only value or comment are changed.
+
+Not changed keys will not update this time, even after \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet()}.
+
+It is possible that other keys written to disc influence this time if the backend is not grained enough.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]Key to get information from. \end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga9f502ecab8ab43f0b17220fcc95f3fa5}{keySetCTime()} 
+\end{DoxySeeAlso}
+\begin{DoxyReturn}{Returns}
+(time\_\-t)-\/1 on NULL pointer 
+
+the metadata change time 
+\end{DoxyReturn}
+\hypertarget{group__keymeta_ga46a95e81d7d7f4e3eb59e60e5f3738c0}{
+\index{keymeta@{keymeta}!keyGetGID@{keyGetGID}}
+\index{keyGetGID@{keyGetGID}!keymeta@{keymeta}}
+\subsubsection[{keyGetGID}]{\setlength{\rightskip}{0pt plus 5cm}gid\_\-t keyGetGID (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga46a95e81d7d7f4e3eb59e60e5f3738c0}
+Get the group ID of a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000004}{Deprecated}]This API is obsolete.\end{Desc}
+\hypertarget{group__keymeta_GID}{}\subsection{GID}\label{group__keymeta_GID}
+The group ID is a unique identification for every group present on a system. Keys will belong to root (0) as long as you did not get their real GID with \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()}.
+
+Unlike UID users might change their group. This makes it possible to share configuration between some users.
+
+A fresh key will have (gid\_\-t)-\/1 also known as the group nogroup. It means that the key is not related to a group ID at the moment.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the system's GID of the key 
+
+(gid\_\-t)-\/1 on NULL key or currently unknown ID 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga9e3d0fb3f7ba906e067727b9155d22e3}{keySetGID()}, \hyperlink{group__keymeta_gacaa5060e67b03f50ae49a3620c54bc46}{keyGetUID()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{
+\index{keymeta@{keymeta}!keyGetMeta@{keyGetMeta}}
+\index{keyGetMeta@{keyGetMeta}!keymeta@{keymeta}}
+\subsubsection[{keyGetMeta}]{\setlength{\rightskip}{0pt plus 5cm}const {\bf Key}$\ast$ keyGetMeta (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key, }
+\item[{const char $\ast$}]{ metaName}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}
+Returns the Value of a Meta-\/Information given by name.
+
+This is a much more efficient version of \hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta()}. But unlike with keyGetMeta you are not allowed to modify the resulting string.
+
+
+\begin{DoxyCode}
+int f(Key *k)
+{
+        if (!strcmp(keyValue(keyGetMeta(k, "type")), "boolean"))
+        {
+                // the type of the key is boolean
+        }
+}
+\end{DoxyCode}
+
+
+\begin{DoxyNote}{Note}
+You must not delete or change the returned key, use \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta()} if you want to delete or change it.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \item[{\em metaName}]the name of the meta information you want the value from \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 if the key or metaName is 0 
+
+0 if no such metaName is found 
+
+value of Meta-\/Information if Meta-\/Information is found 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+keyGetMetaSize(), \hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta()}, \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_gabc0cec592ce3b77e9bc33dbc8e8f6bdc}{
+\index{keymeta@{keymeta}!keyGetMode@{keyGetMode}}
+\index{keyGetMode@{keyGetMode}!keymeta@{keymeta}}
+\subsubsection[{keyGetMode}]{\setlength{\rightskip}{0pt plus 5cm}mode\_\-t keyGetMode (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_gabc0cec592ce3b77e9bc33dbc8e8f6bdc}
+Return the key mode permissions.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000007}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+Default is 0664 (octal) for keys and 0775 for directory keys which used \hyperlink{group__keymeta_gaae575bd86a628a15ee45baa860522e75}{keySetDir()}.
+
+The defaults are defined with the macros KDB\_\-FILE\_\-MODE and KDB\_\-DIR\_\-MODE.
+
+For more information about the mode permissions see \hyperlink{group__keymeta_mode}{Modes}.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+mode permissions of the key 
+
+KDB\_\-FILE\_\-MODE as defaults 
+
+(mode\_\-t)-\/1 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga8803037e35b9da1ce492323a88ff6bc3}{keySetMode()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga57689eb5691679071463b777ae786ae9}{
+\index{keymeta@{keymeta}!keyGetMTime@{keyGetMTime}}
+\index{keyGetMTime@{keyGetMTime}!keymeta@{keymeta}}
+\subsubsection[{keyGetMTime}]{\setlength{\rightskip}{0pt plus 5cm}time\_\-t keyGetMTime (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga57689eb5691679071463b777ae786ae9}
+Get last modification time of the key on disk.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000011}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+You will get 0 when the key was not read already.
+
+Everytime you change value or comment and \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet()} the key the mtime will be updated. When you \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} the key, the atime is set appropriate.
+
+Not changed keys may not even passed to kdbSet\_\-backend() so it will not update this time, even after \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet()}.
+
+It is possible that other keys written to disc influence this time if the backend is not grained enough.
+
+If you add or remove a key the key thereunder in the hierarchy will update the mtime if written with \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet()} to disc.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]Key to get information from. \end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga481d8997187992fe4bbf288bc8ef4db7}{keySetMTime()} 
+\end{DoxySeeAlso}
+\begin{DoxyReturn}{Returns}
+the last modification time 
+
+(time\_\-t)-\/1 on NULL pointer 
+\end{DoxyReturn}
+\hypertarget{group__keymeta_gacaa5060e67b03f50ae49a3620c54bc46}{
+\index{keymeta@{keymeta}!keyGetUID@{keyGetUID}}
+\index{keyGetUID@{keyGetUID}!keymeta@{keymeta}}
+\subsubsection[{keyGetUID}]{\setlength{\rightskip}{0pt plus 5cm}uid\_\-t keyGetUID (
+\begin{DoxyParamCaption}
+\item[{const {\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_gacaa5060e67b03f50ae49a3620c54bc46}
+Get the user ID of a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000002}{Deprecated}]This API is obsolete.\end{Desc}
+\hypertarget{group__keymeta_UID}{}\subsection{UID}\label{group__keymeta_UID}
+The user ID is a unique identification for every user present on a system. Keys will belong to root (0) as long as you did not get their real UID with \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()}.
+
+Although usually the same, the UID of a key is not related to its owner.
+
+A fresh key will have no UID.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the system's UID of the key 
+
+(uid\_\-t)-\/1 on NULL key 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga46a95e81d7d7f4e3eb59e60e5f3738c0}{keyGetGID()}, \hyperlink{group__keymeta_gab5f284f5ecd261e0a290095f50ba1af7}{keySetUID()}, \hyperlink{group__keyname_ga35922a017bee8b4bcb493bbdfad9d6f5}{keyGetOwner()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga4c88342f580a4291455a801af71ce048}{
+\index{keymeta@{keymeta}!keyNextMeta@{keyNextMeta}}
+\index{keyNextMeta@{keyNextMeta}!keymeta@{keymeta}}
+\subsubsection[{keyNextMeta}]{\setlength{\rightskip}{0pt plus 5cm}const {\bf Key}$\ast$ keyNextMeta (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga4c88342f580a4291455a801af71ce048}
+Iterate to the next meta information.
+
+Keys have an internal cursor that can be reset with \hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{keyRewindMeta()}. Every time \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta()} is called the cursor is incremented and the new current Name of Meta Information is returned.
+
+You'll get a NULL pointer if the meta information after the end of the Key was reached. On subsequent calls of \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta()} it will still return the NULL pointer.
+
+The {\ttfamily key} internal cursor will be changed, so it is not const.
+
+\begin{DoxyNote}{Note}
+That the resulting key is guaranteed to have a value, because meta information has no binary or null pointer semantics.
+
+You must not delete or change the returned key, use \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta()} if you want to delete or change it.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a key representing meta information 
+
+0 when the end is reached 
+
+0 on NULL pointer
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ksNext()} for pedant in iterator interface of KeySet 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{
+\index{keymeta@{keymeta}!keyRewindMeta@{keyRewindMeta}}
+\index{keyRewindMeta@{keyRewindMeta}!keymeta@{keymeta}}
+\subsubsection[{keyRewindMeta}]{\setlength{\rightskip}{0pt plus 5cm}int keyRewindMeta (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}
+Rewind the internal iterator to first meta data.
+
+Use it to set the cursor to the beginning of the Key Meta Infos. \hyperlink{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{keyCurrentMeta()} will then always return NULL afterwards. So you want to \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta()} first.
+
+
+\begin{DoxyCode}
+Key *key;
+const Key *meta;
+
+keyRewindMeta (key);
+while ((meta = keyNextMeta (key))!=0)
+{
+        printf ("name: %s, value: %s", keyName(meta), (const char*)keyValue(meta)
+      );
+}
+\end{DoxyCode}
+
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+0 if there is no meta information for that key (\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta()} will always return 0 in that case) 
+
+-\/1 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta()}, \hyperlink{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{keyCurrentMeta()} 
+
+\hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind()} for pedant in iterator interface of KeySet 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga995d8b84731673c88c7c01f3fed538b9}{
+\index{keymeta@{keymeta}!keySetATime@{keySetATime}}
+\index{keySetATime@{keySetATime}!keymeta@{keymeta}}
+\subsubsection[{keySetATime}]{\setlength{\rightskip}{0pt plus 5cm}int keySetATime (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{time\_\-t}]{ atime}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga995d8b84731673c88c7c01f3fed538b9}
+Update the atime information for a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000010}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+When you do manual sync of keys you might also update the atime to make them indistinguishable.
+
+It can also be useful if you work with keys not using a keydatabase.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]The Key object to work with \item[{\em atime}]The new access time for the key \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+-\/1 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga6b05da399c3c78904969ef39f191b0eb}{keyGetATime()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga9f502ecab8ab43f0b17220fcc95f3fa5}{
+\index{keymeta@{keymeta}!keySetCTime@{keySetCTime}}
+\index{keySetCTime@{keySetCTime}!keymeta@{keymeta}}
+\subsubsection[{keySetCTime}]{\setlength{\rightskip}{0pt plus 5cm}int keySetCTime (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{time\_\-t}]{ ctime}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga9f502ecab8ab43f0b17220fcc95f3fa5}
+Update the ctime information for a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000014}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]The Key object to work with \item[{\em ctime}]The new change metadata time for the key \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+-\/1 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga2c213c120cbe02201278ef7fb8cd94be}{keyGetCTime()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_gaae575bd86a628a15ee45baa860522e75}{
+\index{keymeta@{keymeta}!keySetDir@{keySetDir}}
+\index{keySetDir@{keySetDir}!keymeta@{keymeta}}
+\subsubsection[{keySetDir}]{\setlength{\rightskip}{0pt plus 5cm}int keySetDir (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_gaae575bd86a628a15ee45baa860522e75}
+Set mode so that key will be recognized as directory.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000006}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+The function will add all executable bits.
+
+
+\begin{DoxyItemize}
+\item Mode 0200 will be translated to 0311
+\item Mode 0400 will be translated to 0711
+\item Mode 0664 will be translated to 0775
+\end{DoxyItemize}
+
+The macro KDB\_\-DIR\_\-MODE (defined to 0111) will be used for that.
+
+The executable bits show that child keys are allowed and listable. There is no way to have child keys which are not listable for anyone, but it is possible to restrict listing the keys to the owner only.
+
+
+\begin{DoxyItemize}
+\item Mode 0000 means that it is a key not read or writable to anyone.
+\item Mode 0111 means that it is a directory not read or writable to anyone. But it is recognized as directory to anyone.
+\end{DoxyItemize}
+
+For more about mode see \hyperlink{group__keymeta_ga8803037e35b9da1ce492323a88ff6bc3}{keySetMode()}.
+
+It is not possible to access keys below a not executable key. If a key is not writeable and executable \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet()} will fail to access the keys below. If a key is not readable and executable \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()} will fail to access the keys below.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key to set permissions to be recognized as directory. \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+-\/1 on NULL pointer 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga8803037e35b9da1ce492323a88ff6bc3}{keySetMode()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga9e3d0fb3f7ba906e067727b9155d22e3}{
+\index{keymeta@{keymeta}!keySetGID@{keySetGID}}
+\index{keySetGID@{keySetGID}!keymeta@{keymeta}}
+\subsubsection[{keySetGID}]{\setlength{\rightskip}{0pt plus 5cm}int keySetGID (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{gid\_\-t}]{ gid}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga9e3d0fb3f7ba906e067727b9155d22e3}
+Set the group ID of a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000005}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+See \hyperlink{group__keymeta_GID}{GID} for more information about group IDs.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \item[{\em gid}]is the group ID \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+-\/1 on NULL key 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga46a95e81d7d7f4e3eb59e60e5f3738c0}{keyGetGID()}, \hyperlink{group__keymeta_gab5f284f5ecd261e0a290095f50ba1af7}{keySetUID()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{
+\index{keymeta@{keymeta}!keySetMeta@{keySetMeta}}
+\index{keySetMeta@{keySetMeta}!keymeta@{keymeta}}
+\subsubsection[{keySetMeta}]{\setlength{\rightskip}{0pt plus 5cm}ssize\_\-t keySetMeta (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{const char $\ast$}]{ metaName, }
+\item[{const char $\ast$}]{ newMetaString}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}
+Set a new Meta-\/Information.
+
+Will set a new Meta-\/Information pair consisting of metaName and newMetaString.
+
+Will add a new Pair for Meta-\/Information if metaName was not added up to now.
+
+It will modify a existing Pair of Meta-\/Information if the the metaName was inserted already.
+
+It will remove a meta information if newMetaString is 0.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \item[{\em metaName}]the name of the meta information where you want to change the value \item[{\em newMetaString}]the new value for the meta information \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+-\/1 on error if key or metaName is 0, out of memory or names are not valid 
+
+0 if the Meta-\/Information for metaName was removed 
+
+size ($>$0) of newMetaString if Meta-\/Information was successfully added 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga8803037e35b9da1ce492323a88ff6bc3}{
+\index{keymeta@{keymeta}!keySetMode@{keySetMode}}
+\index{keySetMode@{keySetMode}!keymeta@{keymeta}}
+\subsubsection[{keySetMode}]{\setlength{\rightskip}{0pt plus 5cm}int keySetMode (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{mode\_\-t}]{ mode}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga8803037e35b9da1ce492323a88ff6bc3}
+Set the key mode permissions.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000008}{Deprecated}]This API is obsolete. It is only a mapping to keySetMeta(key, \char`\"{}mode\char`\"{}, str) which should be prefered.\end{Desc}
+
+
+The mode consists of 9 individual bits for mode permissions. In the following explanation the octal notation with leading zero will be used.
+
+Default is 0664 (octal) for keys and 0775 for directory keys which used \hyperlink{group__keymeta_gaae575bd86a628a15ee45baa860522e75}{keySetDir()}.
+
+The defaults are defined with the macros KDB\_\-FILE\_\-MODE and KDB\_\-DIR\_\-MODE.
+
+\begin{DoxyNote}{Note}
+libelektra 0.7.0 only allows 0775 (directory keys) and 0664 (other keys). More will be added later in a sense of the description below.
+\end{DoxyNote}
+\hypertarget{group__keymeta_mode}{}\subsection{Modes}\label{group__keymeta_mode}
+0000 is the most restrictive mode. No user might read, write or execute the key.
+
+Reading the key means to get the value by \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet()}.
+
+Writing the key means to set the value by \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet()}.
+
+Execute the key means to make a step deeper in the hierarchy. But you must be able to read the key to be able to list the keys below. See also \hyperlink{group__keymeta_gaae575bd86a628a15ee45baa860522e75}{keySetDir()} in that context. But you must be able to write the key to be able to add or remove keys below.
+
+0777 is the most relaxing mode. Every user is allowed to read, write and execute the key, if he is allowed to execute and read all keys below.
+
+0700 allows every action for the current user, identified by the uid. See \hyperlink{group__keymeta_gacaa5060e67b03f50ae49a3620c54bc46}{keyGetUID()} and \hyperlink{group__keymeta_gab5f284f5ecd261e0a290095f50ba1af7}{keySetUID()}.
+
+To be more specific for the user the single bits can elect the mode for read, write and execute. 0100 only allows executing which gives the information that it is a directory for that user, but not accessable. 0200 only allows reading. This information may be combined to 0300, which allows execute and reading of the directory. Last 0400 decides about the writing permissions.
+
+The same as above is also valid for the 2 other octal digits. 0070 decides about the group permissions, in that case full access. Groups are identified by the gid. See \hyperlink{group__keymeta_ga46a95e81d7d7f4e3eb59e60e5f3738c0}{keyGetGID()} and \hyperlink{group__keymeta_ga9e3d0fb3f7ba906e067727b9155d22e3}{keySetGID()}. In that example everyone with a different uid, but the gid of the the key, has full access.
+
+0007 decides about the world permissions. This is taken into account when neighter the uid nor the gid matches. So that example would allow everyone with a different uid and gid of that key gains full access.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key to set mode permissions \item[{\em mode}]the mode permissions \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+-\/1 on NULL key 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_gabc0cec592ce3b77e9bc33dbc8e8f6bdc}{keyGetMode()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_ga481d8997187992fe4bbf288bc8ef4db7}{
+\index{keymeta@{keymeta}!keySetMTime@{keySetMTime}}
+\index{keySetMTime@{keySetMTime}!keymeta@{keymeta}}
+\subsubsection[{keySetMTime}]{\setlength{\rightskip}{0pt plus 5cm}int keySetMTime (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{time\_\-t}]{ mtime}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_ga481d8997187992fe4bbf288bc8ef4db7}
+Update the mtime information for a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000012}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]The Key object to work with \item[{\em mtime}]The new modification time for the key \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga57689eb5691679071463b777ae786ae9}{keyGetMTime()} 
+\end{DoxySeeAlso}
+\hypertarget{group__keymeta_gab5f284f5ecd261e0a290095f50ba1af7}{
+\index{keymeta@{keymeta}!keySetUID@{keySetUID}}
+\index{keySetUID@{keySetUID}!keymeta@{keymeta}}
+\subsubsection[{keySetUID}]{\setlength{\rightskip}{0pt plus 5cm}int keySetUID (
+\begin{DoxyParamCaption}
+\item[{{\bf Key} $\ast$}]{ key, }
+\item[{uid\_\-t}]{ uid}
+\end{DoxyParamCaption}
+)}}
+\label{group__keymeta_gab5f284f5ecd261e0a290095f50ba1af7}
+Set the user ID of a key.
+
+\begin{Desc}
+\item[\hyperlink{deprecated__deprecated000003}{Deprecated}]This API is obsolete.\end{Desc}
+
+
+See \hyperlink{group__keymeta_UID}{UID} for more information about user IDs.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]the key object to work with \item[{\em uid}]the user ID to set \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success 
+
+-\/1 on NULL key or conversion error 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga9e3d0fb3f7ba906e067727b9155d22e3}{keySetGID()}, \hyperlink{group__keymeta_gacaa5060e67b03f50ae49a3620c54bc46}{keyGetUID()}, \hyperlink{group__keyname_ga35922a017bee8b4bcb493bbdfad9d6f5}{keyGetOwner()} 
+\end{DoxySeeAlso}

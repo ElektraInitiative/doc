@@ -1,0 +1,1044 @@
+.TH "kdb::KDB" 3elektra "Thu Sep 17 2015" "Version 0.8.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdb::KDB \- 
+.PP
+Constructs a class \fBKDB\fP\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <kdb\&.hpp>\fP
+.SS "Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBKDB\fP ()"
+.br
+.RI "\fIConstructs a class \fBKDB\fP\&. \fP"
+.ti -1c
+.RI "\fBKDB\fP (\fBKey\fP &errorKey)"
+.br
+.RI "\fIConstructs a class \fBKDB\fP\&. \fP"
+.ti -1c
+.RI "\fB~KDB\fP ()  throw ()"
+.br
+.RI "\fIThe destructor closes the database\&. \fP"
+.ti -1c
+.RI "void \fBopen\fP (\fBKey\fP &errorKey)"
+.br
+.RI "\fIOpen the database\&. \fP"
+.ti -1c
+.RI "void \fBclose\fP (\fBKey\fP &errorKey)  throw ()"
+.br
+.RI "\fIOpen the database\&. \fP"
+.ti -1c
+.RI "int \fBget\fP (\fBKeySet\fP &returned, std::string const &keyname)"
+.br
+.RI "\fIGet all keys below keyname inside returned\&. \fP"
+.ti -1c
+.RI "int \fBget\fP (\fBKeySet\fP &returned, \fBKey\fP &parentKey)"
+.br
+.RI "\fIGet all keys below parentKey inside returned\&. \fP"
+.ti -1c
+.RI "int \fBset\fP (\fBKeySet\fP &returned, std::string const &keyname)"
+.br
+.RI "\fISet all keys below keyname\&. \fP"
+.ti -1c
+.RI "int \fBset\fP (\fBKeySet\fP &returned, \fBKey\fP &parentKey)"
+.br
+.RI "\fISet all keys below parentKey\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Constructs a class \fBKDB\fP\&. 
+
+
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if database could not be opened
+.RE
+.PP
+Opens the session with the \fBKey\fP database\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+The method will bootstrap itself the following way\&. The first step is to open the default backend\&. With it system/elektra/mountpoints will be loaded and all needed libraries and mountpoints will be determined\&. These libraries for backends will be loaded and with it the \fC\fBKDB\fP\fP datastructure will be initialized\&.
+.PP
+You must always call this method before retrieving or committing any keys to the database\&. In the end of the program, after using the key database, you must not forget to \fBkdbClose()\fP\&.
+.PP
+The pointer to the \fC\fBKDB\fP\fP structure returned will be initialized like described above, and it must be passed along on any kdb*() method your application calls\&.
+.PP
+Get a \fC\fBKDB\fP\fP handle for every thread using elektra\&. Don't share the handle across threads, and also not the pointer accessing it:
+.PP
+.PP
+.nf
+void thread1()
+{
+        Key *parent = keyNew("/app/part1", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+void thread2()
+{
+        Key *parent = keyNew("/app/part2", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+.fi
+.PP
+ You don't need \fBkdbOpen()\fP if you only want to manipulate plain in-memory \fBKey\fP or \fBKeySet\fP objects\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP the key which holds errors and warnings which were issued 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP, \fBkdbClose()\fP to end all affairs to the \fBKey\fP database\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIhandle\fP on success 
+.br
+\fINULL\fP on failure
+.RE
+.PP
+Access to the key database\&.
+.PP
+\fBInvariant:\fP
+.RS 4
+the object holds an valid connection to the key database or is empty 
+.RE
+.PP
+
+.SH "Constructor & Destructor Documentation"
+.PP 
+.SS "kdb::KDB::KDB ()\fC [inline]\fP"
+
+.PP
+Constructs a class \fBKDB\fP\&. 
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if database could not be opened
+.RE
+.PP
+Opens the session with the \fBKey\fP database\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+The method will bootstrap itself the following way\&. The first step is to open the default backend\&. With it system/elektra/mountpoints will be loaded and all needed libraries and mountpoints will be determined\&. These libraries for backends will be loaded and with it the \fC\fBKDB\fP\fP datastructure will be initialized\&.
+.PP
+You must always call this method before retrieving or committing any keys to the database\&. In the end of the program, after using the key database, you must not forget to \fBkdbClose()\fP\&.
+.PP
+The pointer to the \fC\fBKDB\fP\fP structure returned will be initialized like described above, and it must be passed along on any kdb*() method your application calls\&.
+.PP
+Get a \fC\fBKDB\fP\fP handle for every thread using elektra\&. Don't share the handle across threads, and also not the pointer accessing it:
+.PP
+.PP
+.nf
+void thread1()
+{
+        Key *parent = keyNew("/app/part1", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+void thread2()
+{
+        Key *parent = keyNew("/app/part2", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+.fi
+.PP
+ You don't need \fBkdbOpen()\fP if you only want to manipulate plain in-memory \fBKey\fP or \fBKeySet\fP objects\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP the key which holds errors and warnings which were issued 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP, \fBkdbClose()\fP to end all affairs to the \fBKey\fP database\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIhandle\fP on success 
+.br
+\fINULL\fP on failure 
+.RE
+.PP
+
+.SS "kdb::KDB::KDB (\fBKey\fP &errorKey)\fC [inline]\fP"
+
+.PP
+Constructs a class \fBKDB\fP\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP is useful if you want to get the warnings in the successful case, when no exception is thrown\&.
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if database could not be opened
+.RE
+.PP
+Opens the session with the \fBKey\fP database\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+The method will bootstrap itself the following way\&. The first step is to open the default backend\&. With it system/elektra/mountpoints will be loaded and all needed libraries and mountpoints will be determined\&. These libraries for backends will be loaded and with it the \fC\fBKDB\fP\fP datastructure will be initialized\&.
+.PP
+You must always call this method before retrieving or committing any keys to the database\&. In the end of the program, after using the key database, you must not forget to \fBkdbClose()\fP\&.
+.PP
+The pointer to the \fC\fBKDB\fP\fP structure returned will be initialized like described above, and it must be passed along on any kdb*() method your application calls\&.
+.PP
+Get a \fC\fBKDB\fP\fP handle for every thread using elektra\&. Don't share the handle across threads, and also not the pointer accessing it:
+.PP
+.PP
+.nf
+void thread1()
+{
+        Key *parent = keyNew("/app/part1", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+void thread2()
+{
+        Key *parent = keyNew("/app/part2", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+.fi
+.PP
+ You don't need \fBkdbOpen()\fP if you only want to manipulate plain in-memory \fBKey\fP or \fBKeySet\fP objects\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP the key which holds errors and warnings which were issued 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP, \fBkdbClose()\fP to end all affairs to the \fBKey\fP database\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIhandle\fP on success 
+.br
+\fINULL\fP on failure 
+.RE
+.PP
+
+.SS "kdb::KDB::~KDB ()\fC [inline]\fP"
+
+.PP
+The destructor closes the database\&. Closes the session with the \fBKey\fP database\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+The handle must be a valid handle as returned from \fBkdbOpen()\fP
+.PP
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+This is the counterpart of \fBkdbOpen()\fP\&.
+.PP
+You must call this method when you finished your affairs with the key database\&. You can manipulate \fBKey\fP and \fBKeySet\fP objects also after \fBkdbClose()\fP, but you must not use any kdb*() call afterwards\&.
+.PP
+The \fChandle\fP parameter will be finalized and all resources associated to it will be freed\&. After a \fBkdbClose()\fP, the \fChandle\fP cannot be used anymore\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIerrorKey\fP the key which holds error/warning information 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+
+.SH "Member Function Documentation"
+.PP 
+.SS "void kdb::KDB::close (\fBKey\fP &errorKey)\fC [inline]\fP"
+
+.PP
+Open the database\&. The return value does not matter because its only a null pointer check\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP is useful if you want to get the warnings
+.RE
+.PP
+Closes the session with the \fBKey\fP database\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+The handle must be a valid handle as returned from \fBkdbOpen()\fP
+.PP
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+This is the counterpart of \fBkdbOpen()\fP\&.
+.PP
+You must call this method when you finished your affairs with the key database\&. You can manipulate \fBKey\fP and \fBKeySet\fP objects also after \fBkdbClose()\fP, but you must not use any kdb*() call afterwards\&.
+.PP
+The \fChandle\fP parameter will be finalized and all resources associated to it will be freed\&. After a \fBkdbClose()\fP, the \fChandle\fP cannot be used anymore\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIerrorKey\fP the key which holds error/warning information 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+
+.SS "int kdb::KDB::get (\fBKeySet\fP &returned, std::string const &keyname)\fC [inline]\fP"
+
+.PP
+Get all keys below keyname inside returned\&. Retrieve keys in an atomic and universal way\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+The \fChandle\fP must be passed as returned from \fBkdbOpen()\fP
+.PP
+The \fCreturned\fP \fBKeySet\fP must be a valid \fBKeySet\fP, e\&.g\&. constructed with \fBksNew()\fP\&.
+.PP
+The \fCparentKey\fP \fBKey\fP must be a valid \fBKey\fP, e\&.g\&. constructed with \fBkeyNew()\fP\&.
+.RE
+.PP
+If you pass NULL, which violates the preconditions, on any parameter \fBkdbGet()\fP will fail immediately without doing anything\&.
+.PP
+The \fCreturned\fP \fBKeySet\fP may already contain some keys, e\&.g\&. from previous \fBkdbGet()\fP calls\&. The new retrieved keys will be appended using \fBksAppendKey()\fP\&.
+.PP
+It will fully retrieve, at least, all keys under the \fCparentKey\fP folder, with all subfolders and their children\&.
+.PP
+\fBNote:\fP
+.RS 4
+\fBkdbGet()\fP might retrieve more keys then requested (that are not below parentKey)\&. These keys must be passed to calls of \fBkdbSet()\fP, otherwise they will be lost\&. This stems from the fact that the user has the only copy of the whole configuration and backends only write configuration that was passed to them\&. For example, if you \fBkdbGet()\fP 'system/mountpoint/interest' you will not only get all keys below system/mountpoint/interest, but also all keys below system/mountpoint (if system/mountpoint is a mountpoint as the name suggests, but system/mountpoint/interest is not a mountpoint)\&. Make sure to not touch or remove keys outside the keys of interest, because others may need them!
+.RE
+.PP
+\fBExample:\fP
+.RS 4
+This example demonstrates the typical usecase within an application (without error handling)\&.
+.RE
+.PP
+.PP
+.nf
+#include <kdb\&.h>
+#include <stdio\&.h>
+
+int main()
+{
+        KeySet *myConfig = ksNew(0, KS_END);
+        Key *key = keyNew("/sw/MyApp", KEY_CASCADING_NAME, KEY_END);
+        KDB *handle = kdbOpen(key);
+
+        kdbGet(handle, myConfig, key);
+        // to get an intention of proper error handling see kdbget_error\&.c
+
+        keyDel (key);
+
+        Key * result = ksLookupByName (myConfig,"/sw/MyApp/Tests/TestKey1", 0);
+
+        const char * key_name = keyName(result);
+        const char * key_value = keyString(result);
+        const char * key_comment = keyString(keyGetMeta(result, "comment"));
+        printf("key: %s value: %s comment: %s\n", key_name, key_value, key_comment);
+
+        ksDel (myConfig); // delete the in-memory configuration
+
+
+        // maybe you want kdbSet() myConfig here
+
+        kdbClose(handle, 0); // no more affairs with the key database\&.
+}
+.fi
+.PP
+.PP
+When a backend fails \fBkdbGet()\fP will return -1 with all error and warning information in the \fCparentKey\fP\&. The parameter \fCreturned\fP will not be changed\&.
+.PP
+\fBUpdates:\fP
+.RS 4
+In the first run of kdbGet all requested (or more) keys are retrieved\&. On subsequent calls only the keys are retrieved where something was changed inside the key database\&. The other keys stay unchanged in the keyset, even if they were manipulated\&.
+.RE
+.PP
+It is your responsibility to save the original keyset if you need it afterwards\&.
+.PP
+If you want to get the same keyset again, you need to open a second handle to the key database using \fBkdbOpen()\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIparentKey\fP is used to add warnings and set an error information\&. Additionally, its name is an hint which keys should be retrieved (it is possible that more are retrieved)\&.
+.IP "\(bu" 2
+cascading keys (starting with /) will retrieve the same path in all namespaces
+.IP "\(bu" 2
+/ will retrieve all keys 
+.PP
+.br
+\fIks\fP the (pre-initialized) \fBKeySet\fP returned with all keys found will not be changed on error or if no update is required 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP, \fBksLookupByName()\fP for powerful lookups after the \fBKeySet\fP was retrieved 
+.PP
+\fBkdbOpen()\fP which needs to be called before 
+.PP
+\fBkdbSet()\fP to save the configuration afterwards and \fBkdbClose()\fP to finish affairs with the \fBKey\fP database\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if the keys were retrieved successfully 
+.br
+\fI0\fP if there was no update - no changes are made to the keyset then 
+.br
+\fI-1\fP on failure - no changes are made to the keyset then
+.RE
+.PP
+.PP
+.nf
+#include <kdb\&.hpp>
+
+#include <keyio\&.hpp>
+
+using namespace kdb;
+
+int main()
+{
+        KeySet config;
+        KDB kdb;
+        kdb\&.get(config, "/sw/MyApp");
+
+        Key k = config\&.lookup("/sw/MyApp/mykey");
+        if (k)
+        {
+                std::cout << k << " is " << k\&.get<int>() << std::endl;
+        }
+        else
+        {
+                std::cerr << "No key found" << std::endl;
+                return 1;
+        }
+}
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreturned\fP the keyset where the keys will be in 
+.br
+\fIkeyname\fP the root keyname which should be used to get keys below it
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if no key was updated 
+.br
+\fI1\fP if user or system keys were updated 
+.br
+\fI2\fP if user and system keys were updated
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if there were problems with the database
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBKDB::get\fP (\fBKeySet\fP & returned, \fBKey\fP & parentKey) 
+.RE
+.PP
+
+.SS "int kdb::KDB::get (\fBKeySet\fP &returned, \fBKey\fP &parentKey)\fC [inline]\fP"
+
+.PP
+Get all keys below parentKey inside returned\&. Retrieve keys in an atomic and universal way\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+The \fChandle\fP must be passed as returned from \fBkdbOpen()\fP
+.PP
+The \fCreturned\fP \fBKeySet\fP must be a valid \fBKeySet\fP, e\&.g\&. constructed with \fBksNew()\fP\&.
+.PP
+The \fCparentKey\fP \fBKey\fP must be a valid \fBKey\fP, e\&.g\&. constructed with \fBkeyNew()\fP\&.
+.RE
+.PP
+If you pass NULL, which violates the preconditions, on any parameter \fBkdbGet()\fP will fail immediately without doing anything\&.
+.PP
+The \fCreturned\fP \fBKeySet\fP may already contain some keys, e\&.g\&. from previous \fBkdbGet()\fP calls\&. The new retrieved keys will be appended using \fBksAppendKey()\fP\&.
+.PP
+It will fully retrieve, at least, all keys under the \fCparentKey\fP folder, with all subfolders and their children\&.
+.PP
+\fBNote:\fP
+.RS 4
+\fBkdbGet()\fP might retrieve more keys then requested (that are not below parentKey)\&. These keys must be passed to calls of \fBkdbSet()\fP, otherwise they will be lost\&. This stems from the fact that the user has the only copy of the whole configuration and backends only write configuration that was passed to them\&. For example, if you \fBkdbGet()\fP 'system/mountpoint/interest' you will not only get all keys below system/mountpoint/interest, but also all keys below system/mountpoint (if system/mountpoint is a mountpoint as the name suggests, but system/mountpoint/interest is not a mountpoint)\&. Make sure to not touch or remove keys outside the keys of interest, because others may need them!
+.RE
+.PP
+\fBExample:\fP
+.RS 4
+This example demonstrates the typical usecase within an application (without error handling)\&.
+.RE
+.PP
+.PP
+.nf
+#include <kdb\&.h>
+#include <stdio\&.h>
+
+int main()
+{
+        KeySet *myConfig = ksNew(0, KS_END);
+        Key *key = keyNew("/sw/MyApp", KEY_CASCADING_NAME, KEY_END);
+        KDB *handle = kdbOpen(key);
+
+        kdbGet(handle, myConfig, key);
+        // to get an intention of proper error handling see kdbget_error\&.c
+
+        keyDel (key);
+
+        Key * result = ksLookupByName (myConfig,"/sw/MyApp/Tests/TestKey1", 0);
+
+        const char * key_name = keyName(result);
+        const char * key_value = keyString(result);
+        const char * key_comment = keyString(keyGetMeta(result, "comment"));
+        printf("key: %s value: %s comment: %s\n", key_name, key_value, key_comment);
+
+        ksDel (myConfig); // delete the in-memory configuration
+
+
+        // maybe you want kdbSet() myConfig here
+
+        kdbClose(handle, 0); // no more affairs with the key database\&.
+}
+.fi
+.PP
+.PP
+When a backend fails \fBkdbGet()\fP will return -1 with all error and warning information in the \fCparentKey\fP\&. The parameter \fCreturned\fP will not be changed\&.
+.PP
+\fBUpdates:\fP
+.RS 4
+In the first run of kdbGet all requested (or more) keys are retrieved\&. On subsequent calls only the keys are retrieved where something was changed inside the key database\&. The other keys stay unchanged in the keyset, even if they were manipulated\&.
+.RE
+.PP
+It is your responsibility to save the original keyset if you need it afterwards\&.
+.PP
+If you want to get the same keyset again, you need to open a second handle to the key database using \fBkdbOpen()\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIparentKey\fP is used to add warnings and set an error information\&. Additionally, its name is an hint which keys should be retrieved (it is possible that more are retrieved)\&.
+.IP "\(bu" 2
+cascading keys (starting with /) will retrieve the same path in all namespaces
+.IP "\(bu" 2
+/ will retrieve all keys 
+.PP
+.br
+\fIks\fP the (pre-initialized) \fBKeySet\fP returned with all keys found will not be changed on error or if no update is required 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP, \fBksLookupByName()\fP for powerful lookups after the \fBKeySet\fP was retrieved 
+.PP
+\fBkdbOpen()\fP which needs to be called before 
+.PP
+\fBkdbSet()\fP to save the configuration afterwards and \fBkdbClose()\fP to finish affairs with the \fBKey\fP database\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if the keys were retrieved successfully 
+.br
+\fI0\fP if there was no update - no changes are made to the keyset then 
+.br
+\fI-1\fP on failure - no changes are made to the keyset then
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreturned\fP the keyset where the keys will be in 
+.br
+\fIparentKey\fP the parentKey of returned
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if no key was updated 
+.br
+\fI1\fP if user or system keys were updated 
+.br
+\fI2\fP if user and system keys were updated
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if there were problems with the database 
+.RE
+.PP
+
+.SS "void kdb::KDB::open (\fBKey\fP &errorKey)\fC [inline]\fP"
+
+.PP
+Open the database\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP is useful if you want to get the warnings in the successful case, when no exception is thrown\&.
+.RE
+.PP
+Opens the session with the \fBKey\fP database\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+The method will bootstrap itself the following way\&. The first step is to open the default backend\&. With it system/elektra/mountpoints will be loaded and all needed libraries and mountpoints will be determined\&. These libraries for backends will be loaded and with it the \fC\fBKDB\fP\fP datastructure will be initialized\&.
+.PP
+You must always call this method before retrieving or committing any keys to the database\&. In the end of the program, after using the key database, you must not forget to \fBkdbClose()\fP\&.
+.PP
+The pointer to the \fC\fBKDB\fP\fP structure returned will be initialized like described above, and it must be passed along on any kdb*() method your application calls\&.
+.PP
+Get a \fC\fBKDB\fP\fP handle for every thread using elektra\&. Don't share the handle across threads, and also not the pointer accessing it:
+.PP
+.PP
+.nf
+void thread1()
+{
+        Key *parent = keyNew("/app/part1", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+void thread2()
+{
+        Key *parent = keyNew("/app/part2", KEY_CASCADING_NAME, KEY_END);
+        KDB * h = kdbOpen(parent);
+        // fetch keys and work with them
+        kdbClose(h, parent);
+}
+.fi
+.PP
+ You don't need \fBkdbOpen()\fP if you only want to manipulate plain in-memory \fBKey\fP or \fBKeySet\fP objects\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+errorKey must be a valid key, e\&.g\&. created with \fBkeyNew()\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP the key which holds errors and warnings which were issued 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP, \fBkdbClose()\fP to end all affairs to the \fBKey\fP database\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIhandle\fP on success 
+.br
+\fINULL\fP on failure 
+.RE
+.PP
+
+.SS "int kdb::KDB::set (\fBKeySet\fP &returned, std::string const &keyname)\fC [inline]\fP"
+
+.PP
+Set all keys below keyname\&. If the keyname of the parentKey is invalid (e\&.g\&. empty) all keys will be set\&.
+.PP
+Set keys in an atomic and universal way\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBkdbGet()\fP must be called before \fBkdbSet()\fP:
+.IP "\(bu" 2
+initially (after \fBkdbOpen()\fP)
+.IP "\(bu" 2
+after conflict errors in \fBkdbSet()\fP\&.
+.PP
+.PP
+The \fCreturned\fP \fBKeySet\fP must be a valid \fBKeySet\fP, e\&.g\&. constructed with \fBksNew()\fP\&.
+.PP
+The \fCparentKey\fP \fBKey\fP must be a valid \fBKey\fP, e\&.g\&. constructed with
+.RE
+.PP
+With \fCparentKey\fP you can give an hint which part of the given keyset is of interest for you\&. Then you promise, you only modified or removed keys below this key\&.
+.PP
+\fBErrors\fP
+.RS 4
+If some error occurs, \fBkdbSet()\fP will stop\&. In this situation the \fBKeySet\fP internal cursor will be set on the key that generated the error\&. None of the keys are actually committed in this situation (no configuration file will be modified)\&.
+.RE
+.PP
+In case of errors you should present the error message to the user and let the user decide what to do\&. Possible solutions are:
+.IP "\(bu" 2
+remove the problematic key and use \fBkdbSet()\fP again (for validation or type errors)
+.IP "\(bu" 2
+change the value of the problematic key and use \fBkdbSet()\fP again (for validation errors)
+.IP "\(bu" 2
+do a \fBkdbGet()\fP (for conflicts, i\&.e\&. error 30) and then
+.IP "  \(bu" 4
+set the same keyset again (in favour of what was set by this user)
+.IP "  \(bu" 4
+drop the old keyset (in favour of what was set from another application)
+.IP "  \(bu" 4
+merge the original, your own and the other keyset
+.PP
+
+.IP "\(bu" 2
+export the configuration into a file (for unresolvable errors)
+.IP "\(bu" 2
+repeat the same kdbSet might be of limited use if the operator does not explicitly request it, because temporary errors are rare and its unlikely that they fix themselves (e\&.g\&. disc full, permission problems)
+.PP
+.PP
+\fBOptimization\fP
+.RS 4
+Each key is checked with \fBkeyNeedSync()\fP before being actually committed\&. So only changed keys are updated\&. If no key of a backend needs to be synced any affairs to backends are omitted and 0 is returned\&.
+.RE
+.PP
+.PP
+.nf
+KeySet *myConfig = ksNew(0, KS_END);
+Key *parentKey = keyNew("system/sw/MyApp",KEY_END);
+KDB *handle = kdbOpen(parentKey);
+
+kdbGet(handle, myConfig, parentKey); // kdbGet needs to be called first!
+KeySet *base = ksDup(myConfig); // save a copy of original keyset
+
+// change the keys within myConfig
+
+KeySet *ours = ksDup(myConfig); // save a copy of our keyset
+int ret=kdbSet(handle, myConfig, parentKey);
+while (ret == -1) // as long as we have an error
+{
+        // We got an error\&. Warn user\&.
+        Key *problemKey = ksCurrent(myConfig);
+        // parentKey has the errorInformation
+        // problemKey is the faulty key (may be null)
+        int userInput = showElektraErrorDialog (parentKey, problemKey);
+        switch (userInput)
+        {
+        case INPUT_USE_OURS:
+                kdbGet(handle, myConfig, parentKey); // refresh key database
+                ksDel(myConfig);
+                myConfig = ours;
+                break;
+        case INPUT_DO_MERGE:
+                kdbGet(handle, myConfig, parentKey); // refresh key database
+                KeySet * res=doElektraMerge(ours, myConfig, base);
+                ksDel(myConfig);
+                myConfig = res;
+                break;
+        case INPUT_USE_THEIRS:
+                // should always work, we just write what we got
+                // but to be sure always give the user another way
+                // to exit the loop
+                kdbGet(handle, myConfig, parentKey); // refresh key database
+                break;
+        // other cases \&.\&.\&.
+        }
+        ret=kdbSet(handle, myConfig, parentKey);
+}
+
+ksDel (ours);
+ksDel (base);
+ksDel (myConfig); // delete the in-memory configuration
+
+kdbClose(handle, parentKey); // no more affairs with the key database\&.
+keyDel(parentKey);
+.fi
+.PP
+ showElektraErrorDialog() and doElektraMerge() need to be implemented by the user of Elektra\&. For doElektraMerge a 3-way merge algorithm exists in libelektra-tools\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIks\fP a \fBKeySet\fP which should contain changed keys, otherwise nothing is done 
+.br
+\fIparentKey\fP is used to add warnings and set an error information\&. Additionally, its name is an hint which keys should be committed (it is possible that more are changed)\&.
+.IP "\(bu" 2
+cascading keys (starting with /) will set the path in all namespaces
+.IP "\(bu" 2
+/ will commit all keys
+.IP "\(bu" 2
+meta-names will be rejected (error 104)
+.IP "\(bu" 2
+empty/invalid (error 105) 
+.PP
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP if nothing had to be done, no changes in \fBKDB\fP 
+.br
+\fI-1\fP on failure, no changes in \fBKDB\fP 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyNeedSync()\fP 
+.PP
+\fBksCurrent()\fP contains the error \fBKey\fP 
+.PP
+\fBkdbOpen()\fP and \fBkdbGet()\fP that must be called first 
+.PP
+\fBkdbClose()\fP that must be called afterwards
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if no key was updated 
+.br
+\fI1\fP if user or system keys were updated 
+.br
+\fI2\fP if user and system keys were updated
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreturned\fP the keyset where the keys will be in 
+.br
+\fIkeyname\fP the keyname below the names should be set
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if there were problems with the database 
+.RE
+.PP
+
+.SS "int kdb::KDB::set (\fBKeySet\fP &returned, \fBKey\fP &parentKey)\fC [inline]\fP"
+
+.PP
+Set all keys below parentKey\&. If the keyname of the parentKey is invalid (e\&.g\&. empty) all keys will be set\&.
+.PP
+Set keys in an atomic and universal way\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBkdbGet()\fP must be called before \fBkdbSet()\fP:
+.IP "\(bu" 2
+initially (after \fBkdbOpen()\fP)
+.IP "\(bu" 2
+after conflict errors in \fBkdbSet()\fP\&.
+.PP
+.PP
+The \fCreturned\fP \fBKeySet\fP must be a valid \fBKeySet\fP, e\&.g\&. constructed with \fBksNew()\fP\&.
+.PP
+The \fCparentKey\fP \fBKey\fP must be a valid \fBKey\fP, e\&.g\&. constructed with
+.RE
+.PP
+With \fCparentKey\fP you can give an hint which part of the given keyset is of interest for you\&. Then you promise, you only modified or removed keys below this key\&.
+.PP
+\fBErrors\fP
+.RS 4
+If some error occurs, \fBkdbSet()\fP will stop\&. In this situation the \fBKeySet\fP internal cursor will be set on the key that generated the error\&. None of the keys are actually committed in this situation (no configuration file will be modified)\&.
+.RE
+.PP
+In case of errors you should present the error message to the user and let the user decide what to do\&. Possible solutions are:
+.IP "\(bu" 2
+remove the problematic key and use \fBkdbSet()\fP again (for validation or type errors)
+.IP "\(bu" 2
+change the value of the problematic key and use \fBkdbSet()\fP again (for validation errors)
+.IP "\(bu" 2
+do a \fBkdbGet()\fP (for conflicts, i\&.e\&. error 30) and then
+.IP "  \(bu" 4
+set the same keyset again (in favour of what was set by this user)
+.IP "  \(bu" 4
+drop the old keyset (in favour of what was set from another application)
+.IP "  \(bu" 4
+merge the original, your own and the other keyset
+.PP
+
+.IP "\(bu" 2
+export the configuration into a file (for unresolvable errors)
+.IP "\(bu" 2
+repeat the same kdbSet might be of limited use if the operator does not explicitly request it, because temporary errors are rare and its unlikely that they fix themselves (e\&.g\&. disc full, permission problems)
+.PP
+.PP
+\fBOptimization\fP
+.RS 4
+Each key is checked with \fBkeyNeedSync()\fP before being actually committed\&. So only changed keys are updated\&. If no key of a backend needs to be synced any affairs to backends are omitted and 0 is returned\&.
+.RE
+.PP
+.PP
+.nf
+KeySet *myConfig = ksNew(0, KS_END);
+Key *parentKey = keyNew("system/sw/MyApp",KEY_END);
+KDB *handle = kdbOpen(parentKey);
+
+kdbGet(handle, myConfig, parentKey); // kdbGet needs to be called first!
+KeySet *base = ksDup(myConfig); // save a copy of original keyset
+
+// change the keys within myConfig
+
+KeySet *ours = ksDup(myConfig); // save a copy of our keyset
+int ret=kdbSet(handle, myConfig, parentKey);
+while (ret == -1) // as long as we have an error
+{
+        // We got an error\&. Warn user\&.
+        Key *problemKey = ksCurrent(myConfig);
+        // parentKey has the errorInformation
+        // problemKey is the faulty key (may be null)
+        int userInput = showElektraErrorDialog (parentKey, problemKey);
+        switch (userInput)
+        {
+        case INPUT_USE_OURS:
+                kdbGet(handle, myConfig, parentKey); // refresh key database
+                ksDel(myConfig);
+                myConfig = ours;
+                break;
+        case INPUT_DO_MERGE:
+                kdbGet(handle, myConfig, parentKey); // refresh key database
+                KeySet * res=doElektraMerge(ours, myConfig, base);
+                ksDel(myConfig);
+                myConfig = res;
+                break;
+        case INPUT_USE_THEIRS:
+                // should always work, we just write what we got
+                // but to be sure always give the user another way
+                // to exit the loop
+                kdbGet(handle, myConfig, parentKey); // refresh key database
+                break;
+        // other cases \&.\&.\&.
+        }
+        ret=kdbSet(handle, myConfig, parentKey);
+}
+
+ksDel (ours);
+ksDel (base);
+ksDel (myConfig); // delete the in-memory configuration
+
+kdbClose(handle, parentKey); // no more affairs with the key database\&.
+keyDel(parentKey);
+.fi
+.PP
+ showElektraErrorDialog() and doElektraMerge() need to be implemented by the user of Elektra\&. For doElektraMerge a 3-way merge algorithm exists in libelektra-tools\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP contains internal information of \fBopened \fP key database 
+.br
+\fIks\fP a \fBKeySet\fP which should contain changed keys, otherwise nothing is done 
+.br
+\fIparentKey\fP is used to add warnings and set an error information\&. Additionally, its name is an hint which keys should be committed (it is possible that more are changed)\&.
+.IP "\(bu" 2
+cascading keys (starting with /) will set the path in all namespaces
+.IP "\(bu" 2
+/ will commit all keys
+.IP "\(bu" 2
+meta-names will be rejected (error 104)
+.IP "\(bu" 2
+empty/invalid (error 105) 
+.PP
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP if nothing had to be done, no changes in \fBKDB\fP 
+.br
+\fI-1\fP on failure, no changes in \fBKDB\fP 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyNeedSync()\fP 
+.PP
+\fBksCurrent()\fP contains the error \fBKey\fP 
+.PP
+\fBkdbOpen()\fP and \fBkdbGet()\fP that must be called first 
+.PP
+\fBkdbClose()\fP that must be called afterwards
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if no key was updated 
+.br
+\fI1\fP if user or system keys were updated 
+.br
+\fI2\fP if user and system keys were updated
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreturned\fP the keyset where the keys are passed to the user 
+.br
+\fIparentKey\fP the parentKey of returned
+.RE
+.PP
+\fBExceptions:\fP
+.RS 4
+\fIKDBException\fP if there were problems with the database 
+.RE
+.PP
+
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

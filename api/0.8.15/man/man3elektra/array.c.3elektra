@@ -1,0 +1,141 @@
+.TH "array.c" 3elektra "Tue Feb 16 2016" "Version 0.8.15" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+array.c \- 
+Array methods\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbease\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <stdio\&.h>\fP
+.br
+\fC#include <limits\&.h>\fP
+.br
+\fC#include <errno\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include <ctype\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraArrayIncName\fP (Key *key)"
+.br
+.RI "\fIIncrement the name of the key by one\&. \fP"
+.ti -1c
+.RI "KeySet * \fBelektraArrayGet\fP (const Key *arrayParent, KeySet *keys)"
+.br
+.RI "\fIReturn all the array keys below the given arrayparent The arrayparent itself is not returned\&. \fP"
+.ti -1c
+.RI "Key * \fBelektraArrayGetNextKey\fP (KeySet *arrayKeys)"
+.br
+.RI "\fIReturn the next key in the given array\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Array methods\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see doc/COPYING or http://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "KeySet* elektraArrayGet (const Key *arrayParent, KeySet *keys)"
+
+.PP
+Return all the array keys below the given arrayparent The arrayparent itself is not returned\&. For example, if user/config/# is an array, user/config is the array parent\&. Only the direct array keys will be returned\&. This means that for example user/config/#1/key will not be included, but only user/config/#1\&.
+.PP
+A new keyset will be allocated for the resulting keys\&. This means that the caller must ksDel the resulting keyset\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIarrayParent\fP the parent of the array to be returned 
+.br
+\fIkeys\fP the keyset containing the array keys\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a keyset containing the arraykeys (if any) 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP on NULL pointers 
+.RE
+.PP
+
+.SS "Key* elektraArrayGetNextKey (KeySet *arrayKeys)"
+
+.PP
+Return the next key in the given array\&. The function will automatically allocate memory for a new key and name it accordingly\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+The supplied keyset must contain only valid array keys\&.
+.RE
+.PP
+The caller has to keyDel the resulting key\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIarrayKeys\fP the array where the new key will belong to
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the new array key on success 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP if the passed array is empty 
+.br
+\fINULL\fP on NULL pointers or if an error occurs 
+.RE
+.PP
+
+.SS "int elektraArrayIncName (Key *key)"
+
+.PP
+Increment the name of the key by one\&. Alphabetical order will remain
+.PP
+e\&.g\&. user/abc/#9 will be changed to user/abc/#_10
+.PP
+For the start: user/abc/# will be changed to user/abc/#0
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP which base name will be incremented
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on error (e\&.g\&. too large array, not validated array) 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

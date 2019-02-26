@@ -1,0 +1,168 @@
+.TH "zeromq.h" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+zeromq.h \- I/O Adapter for D-Bus\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include <zmq\&.h>\fP
+.br
+\fC#include <kdbio\&.h>\fP
+.br
+
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef void(* \fBElektraIoAdapterZeroMqCallback\fP) (void *socket, void *context)"
+.br
+.RI "Callback for ZeroMq adapter callbacks\&. "
+.ti -1c
+.RI "typedef struct _ElektraIoAdapterZeroMqHandle \fBElektraIoAdapterZeroMqHandle\fP"
+.br
+.RI "D-Bus Adapter Handle\&. "
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBElektraIoAdapterZeroMqCallbackType\fP { \fBELEKTRA_IO_ADAPTER_ZEROMQCB_READ\fP = 1 << 0, \fBELEKTRA_IO_ADAPTER_ZEROMQCB_WRITE\fP = 1 << 1 }
+.RI "callback types ""
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBElektraIoAdapterZeroMqHandle\fP * \fBelektraIoAdapterZeroMqAttach\fP (void *socket, \fBElektraIoInterface\fP *ioBinding, \fBElektraIoAdapterZeroMqCallbackType\fP type, \fBElektraIoAdapterZeroMqCallback\fP callback, void *context)"
+.br
+.RI "Attach to ZeroMq socket\&. "
+.ti -1c
+.RI "void \fBelektraIoAdapterZeroMqSetContext\fP (\fBElektraIoAdapterZeroMqHandle\fP *handle, void *context)"
+.br
+.RI "Set the callback context for a ZeroMq adapter handle\&. "
+.ti -1c
+.RI "int \fBelektraIoAdapterZeroMqDetach\fP (\fBElektraIoAdapterZeroMqHandle\fP *handle)"
+.br
+.RI "Remove ZeroMq socket from I/O binding\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+I/O Adapter for D-Bus\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef void(* ElektraIoAdapterZeroMqCallback) (void *socket, void *context)"
+
+.PP
+Callback for ZeroMq adapter callbacks\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsocket\fP zeromq socket 
+.br
+\fIcontext\fP callback context supplied to elektraIoZeroMqAdapterAttach() 
+.RE
+.PP
+
+.SS "typedef struct _ElektraIoAdapterZeroMqHandle \fBElektraIoAdapterZeroMqHandle\fP"
+
+.PP
+D-Bus Adapter Handle\&. Returned by \fBelektraIoAdapterDbusAttach()\fP\&. 
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBElektraIoAdapterZeroMqCallbackType\fP"
+
+.PP
+callback types 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIELEKTRA_IO_ADAPTER_ZEROMQCB_READ \fP\fP
+callback is called when socket is readable 
+.TP
+\fB\fIELEKTRA_IO_ADAPTER_ZEROMQCB_WRITE \fP\fP
+callback is called when socket is writable 
+.SH "Function Documentation"
+.PP 
+.SS "\fBElektraIoAdapterZeroMqHandle\fP* elektraIoAdapterZeroMqAttach (void * socket, \fBElektraIoInterface\fP * ioBinding, \fBElektraIoAdapterZeroMqCallbackType\fP type, \fBElektraIoAdapterZeroMqCallback\fP callback, void * context)"
+
+.PP
+Attach to ZeroMq socket\&. The callback is called whenever socket is readable or writable (depending on type) and data can be processed\&. The callback should not do blocking calls (e\&.g\&. use ZMQ_DONTWAIT for zmq_*recv())\&. Since ZeroMq guarantees that multipart messages arrive at once, data will be available\&. New adapter instances are enabled\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsocket\fP ZeroMq socket 
+.br
+\fIioBinding\fP I/O binding 
+.br
+\fItype\fP callback type (
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBElektraIoAdapterZeroMqCallbackType\fP) 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcallback\fP callback 
+.br
+\fIcontext\fP callback context (gets passed to callback) 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+handle to use with elektraIoZeroMqAdapterDetach() or NULL on error 
+.RE
+.PP
+
+.SS "int elektraIoAdapterZeroMqDetach (\fBElektraIoAdapterZeroMqHandle\fP * handle)"
+
+.PP
+Remove ZeroMq socket from I/O binding\&. This function frees the passed handle\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP adapter handle 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP on error 
+.RE
+.PP
+
+.SS "void elektraIoAdapterZeroMqSetContext (\fBElektraIoAdapterZeroMqHandle\fP * handle, void * context)"
+
+.PP
+Set the callback context for a ZeroMq adapter handle\&. The previous context is replaced and not freed\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP adapter handle 
+.br
+\fIcontext\fP new callback context 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

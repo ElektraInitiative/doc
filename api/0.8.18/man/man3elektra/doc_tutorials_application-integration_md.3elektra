@@ -1,0 +1,233 @@
+.TH "doc_tutorials_application-integration_md" 3elektra "Sat Sep 17 2016" "Version 0.8.18" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_application-integration_md \- Introduction 
+Applications should use Elektra to read (and store) configurations for a overall better integrated system\&. A light integration would be to write parsers for the configuration files of your application as Elektra plugin\&. This yields the following advantages:
+.PP
+.IP "\(bu" 2
+applications and administrators can easily change individual values
+.IP "\(bu" 2
+import/export of configuration
+.PP
+.PP
+For full integration, however, the application needs to be patched to directly access Elektra's key database\&. When the application is fully integrated in Elektra's ecosystem additional benefits arise:
+.PP
+.IP "\(bu" 2
+Benefits that shared libraries have, e\&.g\&.
+.IP "  \(bu" 4
+All applications profit from fixes, optimization and new features
+.IP "  \(bu" 4
+Less memory consumption, because the libraries executable instructions are only loaded once
+.IP "  \(bu" 4
+Faster development time, because many non-trivial problems (e\&.g\&. OS-dependent resolving of configuration file names with atomic updates) are already solved and tested properly
+.PP
+
+.IP "\(bu" 2
+The administrator can choose:
+.IP "  \(bu" 4
+the configuration file syntax (e\&.g\&. XML or JSON)
+.IP "  \(bu" 4
+notification and logging on configuration changes
+.IP "  \(bu" 4
+and all other features \fBthe plugins provide\fP
+.PP
+
+.IP "\(bu" 2
+Other applications can use your configuration as override or as fallback
+.PP
+.PP
+.SS "Elektrify"
+.PP
+The process to make applications aware of other's configuration is called 'to elektrify'\&. This tutorial is both for new and existing applications\&.
+.PP
+When a software starts to use Elektra, it is called to be elektrified\&. The places where configuration is parsed or generated must be located\&. Afterwards, Elektra's data structures must be used instead at these locations\&. In Elektra 0\&.7, that was nearly everything the software developer could do\&.
+.PP
+Now more optional possibilities are open\&. First, the parser and generator code can be moved to a storage plugin without having to rewrite additional parts\&. Doing this, the syntax of the configuration file stays exactly the same as it was before\&. The application immediately profits from Elektra's infrastructure solving basic issues like update and conflict detection and resolving of the file name\&.
+.PP
+Moreover, a huge variety of plugins can be utilised to extend the functionality of the configuration system and the programmer can write supplementary plugins\&. They can do syntactic checks, write out events in their log files and notify users if configuration has changed\&. So we get a bunch of plugins that are reusable, and we gain a lot because every other program can also access the configuration of this software\&.
+.PP
+For new software the situation is similar\&. Additionally, there is the option to reuse mature and well-tested plugins to achieve the optimal result for configuration\&. New applications simply do not have the burden to stay compatible with the configuration system they had to before\&. But they can also use self-written plugins for adding needed behaviour or cross-cutting concerns\&.
+.PP
+To sum up, if a developer wants to \fBelektrify\fP software, he or she can do that without any need for changes to the outside world regarding the format and semantics of the configuration\&. But in the interconnected world it is only a matter of time until other software also wants to access the configuration, and with elektrified software it is possible for every application to do so\&.
+.PP
+.SS "Get Started"
+.PP
+As first step in a C-application you need to create an in-memory \fCKey\fP\&. Such a \fCKey\fP is Elektra's atomic unit and consists of:
+.PP
+.IP "\(bu" 2
+a unique name
+.IP "\(bu" 2
+a value
+.IP "\(bu" 2
+meta data
+.PP
+.PP
+\fCKey\fPs are either associated with entries in configuration files or used as arguments in the API to transport some information\&.
+.PP
+Thus a key is only in-memory and does not need any of the other Elektra's objects\&. We always can create one: 
+.PP
+.nf
+    Key *parentKey = keyNew("/sw/org/myapp/#0/current",
+            KEY_CACADING_NAME,
+            KEY_END);
+
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+The first argument of \fCkeyNew\fP always is the name of the key\&.
+.IP "  \(bu" 4
+\fCsw\fP is for software
+.IP "  \(bu" 4
+\fCorg\fP is a URL/organisation name to avoid name clashes with other application names\&. Use only one part of the URL/organisation, so e\&.g\&. \fCkde\fP is enough\&.
+.IP "  \(bu" 4
+\fCmyapp\fP is the name of the most specific component that has its own configuration
+.IP "  \(bu" 4
+\fC#0\fP is the major version number of the configuration (to be incremented if you need to introduce incompatible changes)\&.
+.IP "  \(bu" 4
+\fCcurrent\fP is the profile to be used\&. This is needed by administrators if they want to start up multiple applications with different configurations\&.
+.PP
+
+.IP "\(bu" 2
+\fCKEY_CACADING_NAME\fP is needed to accept a name starting with \fC/\fP\&. Such a name cannot physically exist in configuration files, but they are the most important keys to actually work with configuration within applications as we will see in this tutorial\&.
+.IP "\(bu" 2
+\fCKEY_END\fP is needed because C needs a proper termination of variable length arguments\&.
+.IP "\(bu" 2
+\fCRead more about key-functions in API doc\&.\fP
+.IP "\(bu" 2
+\fBRead more about key names here\&.\fP
+.PP
+.PP
+Now we have the \fCKey\fP we will use to pass as argument\&. First we open our key database (KDB)\&. This is done by: 
+.PP
+.nf
+    KDB *repo = kdbOpen(parentKey);
+
+.fi
+.PP
+.PP
+A \fCKey\fP is seldom alone, but they are often found in groups, e\&.g\&. in configuration files\&. To represent many keys (a set of keys) Elektra has the data structure \fCKeySet\fP\&. Because the \fCKey\fP's name is unique we can easily lookup keys in a \fCKeySet\fP without ambiguity\&. Additionally, we can can iterate over all \fCKey\fPs in a \fCKeySet\fP without a hassle\&. To create an empty \fCKeySet\fP we use: 
+.PP
+.nf
+    KeySet *conf = ksNew(200,
+            KS_END);
+
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+200 is an approximation for how many \fCKey\fPs we think we will have in the \fCKeySet\fP conf
+.IP "\(bu" 2
+After the first argument we can list hardcoded keys\&.
+.IP "\(bu" 2
+The last argument needs to be \fCKS_END\fP\&.
+.PP
+.PP
+Now we have everything ready to fetch the latest configuration: 
+.PP
+.nf
+    kdbGet(repo, conf, parentKey);
+
+.fi
+.PP
+.PP
+.SS "Lookup"
+.PP
+To lookup a key, we simply use, e\&.g\&.: 
+.PP
+.nf
+    Key *k = ksLookupByName(conf,
+            "/sw/org/myapp/#0/current/section/subsection/key",
+            0);
+
+.fi
+.PP
+.PP
+We see in that example that only Elektra paths are hardcoded in the application, no configuration file or similar\&. Thus we are interested in the value we use: 
+.PP
+.nf
+    char *val = keyString(k);
+
+.fi
+.PP
+.PP
+Finally, we need to convert the configuration value to the datatype we need\&.
+.PP
+Obviously, to do this manually has severe drawbacks:
+.PP
+.IP "\(bu" 2
+names are hardcoded: might have typos or might be inconsistent
+.IP "\(bu" 2
+tedious handling if key or value might be absent
+.IP "\(bu" 2
+converting to needed data type is error prone
+.PP
+.PP
+So (larger) applications should not directly use \fCKeySet\fP, but instead use code generation to provide a type-safe front-end\&.
+.PP
+For more information about that, continue reading \fChere\fP\&.
+.PP
+.SS "Specification"
+.PP
+Now, we have a fully working configuration system without any hard-coded information (such as configuration files)\&. So we already gained something\&. But, we did not discuss how we can actually achieve application integration, the goal of Elektra\&.
+.PP
+Elektra 0\&.8\&.11 introduces the so called specification for the application's configuration\&. It is located below its own \fBnamespace\fP \fCspec\fP (next to user and system)\&.
+.PP
+Keys in \fCspec\fP allow us to specify which keys are read by the application, which fallback they might have and which is the default value using meta data\&. The implementation of these features happened in \fCksLookup\fP\&. When cascading keys (those starting with \fC/\fP) are used following features are now available (in the meta data of respective \fCspec\fP-keys):
+.PP
+.IP "\(bu" 2
+\fCoverride/#\fP: use these keys \fIin favour\fP of the key itself (note that \fC#\fP is the syntax for arrays, e\&.g\&. \fC#0\fP for the first element, \fC#_10\fP for the 11th and so on)
+.IP "\(bu" 2
+\fCnamespace/#\fP: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+.IP "\(bu" 2
+\fCfallback/#\fP: when no key was found in any of the (specified) namespaces the \fCfallback\fP-keys will be searched
+.IP "\(bu" 2
+\fCdefault\fP: this value will be used if nothing else was found
+.PP
+.PP
+They can be used like this: 
+.PP
+.nf
+    kdb set /overrides/test "example override"
+    sudo kdb setmeta spec/test override/#0 /overrides/test
+
+.fi
+.PP
+.PP
+This technique provides complete transparency how a program will fetch a configuration value\&. In practice that means that: 
+.PP
+.nf
+kdb get "/sw/org/myapp/#0/current/section/subsection/key",
+
+.fi
+.PP
+.PP
+will give you the \fIexact same value\fP as the application gets when it uses the above lookup C-code\&.
+.PP
+What we do not see in the program above are the default values and fallbacks\&. They are only present in the so specification (namespace \fCspec\fP)\&. Luckily, the specification consists of (meta) key/value pairs, too\&. So we do not have to learn something new\&.
+.PP
+So lets say, that another application \fCotherapp\fP exactly has the value we actually want\&. We want to better integrate the system, that in the case we do not have a value for \fC/sw/org/myapp/#0/current/section/subsection/key\fP we want to use \fC/sw/otherorg/otherapp/#0/current/section/subsection/key\fP\&.
+.PP
+So we specify: 
+.PP
+.nf
+kdb setmeta spec/sw/org/myapp/#0/current/section/subsection/key "fallback/#0" /sw/otherorg/otherapp/#0/current/section/subsection/key
+
+.fi
+.PP
+.PP
+Voila, we have done a system integration between \fCmyapp\fP and \fCotherapp\fP!
+.PP
+Note that the fallback, override and cascading works on \fIkey level\fP, and not like most other systems have implemented, on configuration \fIfile level\fP\&.
+.PP
+.SS "Conclusion"
+.PP
+Elektra does not hardcode any configuration data in your application\&. Using the \fCdefault\fP specification, we even can startup applications without any configuration file \fIat all\fP and still do not have anything hardcoded in the applications binary\&. Furthermore, by only using cascading keys for \fC\fBkdbGet()\fP\fP and \fC\fBksLookup()\fP\fP Elektra gives you the possibility to specify how configuration data should be retrieved\&. In this specification you can define, that configuration data from other applications or shared places should be considered or even preferred\&. Doing so, we can achieve configuration integration\&.
+.PP
+.SS "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fCfor advanced techniques e\&.g\&. transformations\fP 
+.PP
+

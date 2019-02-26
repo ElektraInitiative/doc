@@ -1,0 +1,198 @@
+.TH "Interface for mounting backends" 3 "Sat Jun 9 2012" "Version 0.8.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Interface for mounting backends \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraMountOpen\fP (\fBKDB\fP *kdb, \fBKeySet\fP *config, \fBKeySet\fP *modules, \fBKey\fP *errorKey)"
+.br
+.ti -1c
+.RI "int \fBelektraMountDefault\fP (\fBKDB\fP *kdb, \fBKeySet\fP *modules, \fBKey\fP *errorKey)"
+.br
+.ti -1c
+.RI "int \fBelektraMountModules\fP (\fBKDB\fP *kdb, \fBKeySet\fP *modules, \fBKey\fP *errorKey)"
+.br
+.ti -1c
+.RI "int \fBelektraMountVersion\fP (\fBKDB\fP *kdb, \fBKey\fP *errorKey)"
+.br
+.ti -1c
+.RI "int \fBelektraMountBackend\fP (\fBKDB\fP *kdb, \fBBackend\fP *backend, \fBKey\fP *errorKey)"
+.br
+.ti -1c
+.RI "\fBKey\fP * \fBelektraMountGetMountpoint\fP (\fBKDB\fP *handle, const \fBKey\fP *where)"
+.br
+.ti -1c
+.RI "\fBBackend\fP * \fBelektraMountGetBackend\fP (\fBKDB\fP *handle, const \fBKey\fP *key)"
+.br
+.in -1c
+.SH "Function Documentation"
+.PP 
+.SS "int elektraMountBackend (\fBKDB\fP * kdb, \fBBackend\fP * backend, \fBKey\fP * errorKey)"Mounts a backend into the trie.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fIbackend\fP the backend to mount 
+.br
+\fIerrorKey\fP the key used to report warnings 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+-1 on failure 
+.PP
+1 on success 
+.RE
+.PP
+
+.SS "int elektraMountDefault (\fBKDB\fP * kdb, \fBKeySet\fP * modules, \fBKey\fP * errorKey)"Reopens the default backend and mounts the default backend if needed.
+.PP
+\fBPrecondition:\fP
+.RS 4
+Default Backend is closed. elektraMountOpen was executed before.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIerrorKey\fP the key used to report warnings 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+-1 on error 
+.PP
+0 on success 
+.RE
+.PP
+
+.SS "\fBBackend\fP* elektraMountGetBackend (\fBKDB\fP * handle, const \fBKey\fP * key)"Lookup a backend handle for a specific key.
+.PP
+The required canonical name is ensured by using a key as parameter, which will transform the key to canonical representation.
+.PP
+Will return handle when no more specific KDB could be found.
+.PP
+If key is 0 or invalid the default backend will be returned.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP is the data structure, where the mounted directories are saved. 
+.br
+\fIkey\fP the key, that should be looked up. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the backend handle associated with the key 
+.RE
+.PP
+
+.SS "\fBKey\fP* elektraMountGetMountpoint (\fBKDB\fP * handle, const \fBKey\fP * where)"Lookup a mountpoint in a handle for a specific key.
+.PP
+Will return a key representing the mountpoint or null if there is no appropriate mountpoint e.g. its the root mountpoint.
+.PP
+\fBExample:\fP
+.RS 4
+
+.PP
+.nf
+Key * key = keyNew ('system/template');
+KDB * handle = kdbOpen();
+Key *mountpoint=0;
+mountpoint=kdbGetMountpoint(handle, key);
+
+printf('The backend I am using is %s mounted in %s\n',
+        keyValue(mountpoint),
+        keyName(mountpoint));
+kdbClose (handle);
+keyDel (key);
+
+.fi
+.PP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP is the data structure, where the mounted directories are saved. 
+.br
+\fIwhere\fP the key, that should be looked up. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the mountpoint associated with the key 
+.RE
+.PP
+
+.SS "int elektraMountModules (\fBKDB\fP * kdb, \fBKeySet\fP * modules, \fBKey\fP * errorKey)"Mount all module configurations.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIerrorKey\fP the key used to report warnings
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP if not rootkey was found 
+.br
+\fI0\fP otherwise 
+.RE
+.PP
+
+.SS "int elektraMountOpen (\fBKDB\fP * kdb, \fBKeySet\fP * config, \fBKeySet\fP * modules, \fBKey\fP * errorKey)"Creates a trie from a given configuration.
+.PP
+The config will be deleted within this function.
+.PP
+\fBNote:\fP
+.RS 4
+elektraMountDefault is not allowed to be executed before
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIconfig\fP the configuration which should be used to build up the trie. 
+.br
+\fIerrorKey\fP the key used to report warnings 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+-1 on failure 
+.PP
+0 on success 
+.RE
+.PP
+
+.SS "int elektraMountVersion (\fBKDB\fP * kdb, \fBKey\fP * errorKey)"Mount the version backend
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fIerrorKey\fP the key used to report warnings
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code.

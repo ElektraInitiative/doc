@@ -1,0 +1,291 @@
+
+\begin{DoxyItemize}
+\item guid\+: 3c00a5f1-\/c017-\/4555-\/92b5-\/a2cf6e0803e3
+\item author\+: Markus Raab
+\item pub\+Date\+: Thu, 17 Sep 2015 17\+:32\+:16 +0200
+\item short\+Desc\+: adds elektrify-\/getenv \& other improvements
+\end{DoxyItemize}
+
+Again we managed to release with many new features, many fixes and also other improvements.
+
+\subsection*{Elektrify-\/getenv}
+
+getenv(3) is one of the most popular ways to retrieve configuration, even though it has many known problems\+:
+
+
+\begin{DoxyItemize}
+\item no standard way to modify it
+\item relogin (or restart of shell) necessary
+\item names are flat (no hierarchical structure)
+\item cannot be set for individual applications
+\item different in at, cron and similar scripts
+\end{DoxyItemize}
+
+With elektrify-\/getenv we wrote a solution which solves most of the problems. We use the L\+D\+\_\+\+P\+R\+E\+L\+O\+AD technique to {\itshape additionally} retrieve values from Elektra, and not only the environment.
+
+You simply can do\+:
+
+
+\begin{DoxyCode}
+kdb set user/env/override/HTTP\_PROXY "http://my.proxy:8080"
+\end{DoxyCode}
+
+
+This will set the {\ttfamily H\+T\+T\+P\+\_\+\+P\+R\+O\+XY} environment variable to {\ttfamily \href{http://my.proxy:8080}{\tt http\+://my.\+proxy\+:8080}}. Configuration can be retrieved with {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}
+kdb get user/env/override/HTTP\_PROXY
+lynx   # or start another www-browser with the newly set HTTP\_PROXY
+\end{DoxyCode}
+
+
+Or using the man pages\+: \begin{DoxyVerb}kdb elektrify-getenv man man --elektra:MANWIDTH=40
+\end{DoxyVerb}
+
+
+Will use M\+A\+N\+W\+I\+D\+TH 40 for this invocation of man man. This feature is handy, if an option is only available by environment, but not by command-\/line arguments, because sometimes environment variables are not trivial to set (e.\+g. in Makefiles).
+
+Some more examples\+: \begin{DoxyVerb}kdb set user/env/override/MANOPT -- "--regex -LC"
+kdb elektrify-getenv getenv MANOPT   # to check if it is set as expected
+kdb getenv MANOPT   # if /etc/ld.so.preload is active
+\end{DoxyVerb}
+
+
+So is this the final solution for configuration and manual elektrification of applications is not needed anymore?
+
+The answer is\+: no and yes.
+
+It is quite satisfactory for configuration that is inherently sharable (not different from one application to another) {\itshape and} needs the environment semantics, i.\+e. some subprocesses should have different configuration than others, e.\+g. in a specific terminal.
+
+But it might not be a good solution for your own application, because libgetenv(3) implies many architectural decision, that other elektrified applications would decide differently, e.\+g.\+:
+
+
+\begin{DoxyItemize}
+\item it uses global variables (getenv(3) has no handle)
+\item it uses mutex for multi-\/threading safety
+\item the A\+PI getenv(3) only returns {\ttfamily char$\ast$} and has no support for other data types
+\end{DoxyItemize}
+
+For more information see https\+://git.libelektra.\+org/blob/master/src/libs/getenv/\+R\+E\+A\+D\+ME.md \char`\"{}src/libgetenv/\+R\+E\+A\+D\+M\+E.\+md\char`\"{}
+
+\subsection*{Compatibility}
+
+As always, the A\+PI and A\+PI is fully forward-\/compatible, i.\+e. programs compiled against an older 0.\+8 versions of Elektra will continue to work.
+
+Because {\ttfamily key\+Unescaped\+Name} and {\ttfamily key\+Get\+Unescaped\+Name\+Size} is added in this release, it is not backward-\/compatible, i.\+e. programs compiled against 0.\+8.\+13, might {\itshape not} work with older 0.\+8 libraries.
+
+The function {\ttfamily key\+Unescaped\+Name} provides access to an unescaped name, i.\+e. one where {\ttfamily /} and {\ttfamily \textbackslash{}\textbackslash{}} are literal symbols and do not have any special meaning. {\ttfamily N\+U\+LL} characters are used as path separators. This function makes it trivial and efficient to iterate over all path names, as already exploited in all bindings\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://git.libelektra.org/blob/master/src/bindings/jna/HelloElektra.java}{\tt jna (java)}
+\item \href{https://git.libelektra.org/blob/master/src/bindings/swig/lua/tests/test_key.lua}{\tt lua}
+\item \href{https://git.libelektra.org/blob/master/src/bindings/swig/python2/tests/testpy2_key.py}{\tt python2}
+\item \href{https://git.libelektra.org/blob/master/src/bindings/swig/python/tests/test_key.py}{\tt python3}
+\end{DoxyItemize}
+
+Other small changes/additions in bindings\+:
+
+
+\begin{DoxyItemize}
+\item fix key constructor, thanks to Manuel Mausz
+\item add copy and deepcopy in python (+examples,+testcases), thanks to Manuel Mausz
+\item dup() in python3 returned wrong type (S\+W\+IG wrapper), thanks to Toscano Pino for reporting, thanks to Manuel Mausz for fixing it
+\end{DoxyItemize}
+
+Doxygen 1.\+8.\+8 is preferred and the configfile was updated to this version.
+
+The symbols of nickel (for the ni plugin) do not longer leak from the Elektra library. As such, old versions of testmod\+\_\+ni won\textquotesingle{}t work with Elektra 0.\+8.\+13. A version-\/script is now in use to only export following symbols\+:
+
+
+\begin{DoxyItemize}
+\item kdb$\ast$
+\item key$\ast$
+\item ks$\ast$
+\item libelektra$\ast$ for module loading system
+\item elektra$\ast$ for proposed and other functions (no A\+B\+I/\+A\+PI compatibility here!)
+\end{DoxyItemize}
+
+In this release, E\+N\+A\+B\+L\+E\+\_\+\+C\+X\+X11 was changed to {\ttfamily ON} by default.
+
+Note that in the next release 0.\+8.\+14 there will be two changes\+:
+
+
+\begin{DoxyItemize}
+\item According to \href{https://git.libelektra.org/issues/262}{\tt issue \#262}, we plan to remove the option E\+N\+A\+B\+L\+E\+\_\+\+C\+X\+X11 and require the compiler to be C++11 compatible. If you have any system you are not able to build Elektra with -\/\+D\+E\+N\+A\+B\+L\+E\+\_\+\+C\+X\+X11=ON (which is the default for 0.\+8.\+13) please report that immediately.
+\item the python3 bindings will be renamed to python
+\end{DoxyItemize}
+
+By not having to care for pre-\/\+C++11 compilers, we hope to attract more developers. The core part is still in C99 so that Elektra can be used on systems where libc++ is not available. Many new plugins are still written in C99, also with the purpose of not depending on C++.
+
+\subsection*{Python Plugins}
+
+A technical preview of \href{https://git.libelektra.org/blob/master/src/plugins/python}{\tt python3} and \href{https://git.libelektra.org/blob/master/src/plugins/python2}{\tt python2} plugins has been added.
+
+With them its possible to write any plugin with python scripts.
+
+Note, they are a technical preview. They might have severe bugs and the A\+PI might change in the future. Nevertheless, it is already possible to, e.\+g. develop storage plugins with it.
+
+They are not included in {\ttfamily A\+LL} plugins. To use it, you have to specify it\+: \begin{DoxyVerb}-PLUGINS="ALL;python;python2"
+\end{DoxyVerb}
+
+
+Thanks to Manuel Mausz for to this work on the plugins and the patience in all the last minute fixes!
+
+\subsection*{Qt-\/gui 0.\+0.\+8}
+
+The G\+UI was improved and the most annoying bugs are fixed\+:
+
+
+\begin{DoxyItemize}
+\item only reload and write config files if something has changed
+\item use merging in a way that only a conflict free merge will be written, thanks to Felix Berlakovich
+\item made sure keys can only be renamed if the new name/value/metadata is different from the existing ones
+\item fixed 1) and 2) of \#233
+\item fixed \#235
+\item fixed qml warning when deleting key
+\item fixed qml typerror when accepting an edit
+\end{DoxyItemize}
+
+A big thanks to Raffael Pancheri!
+
+\subsection*{K\+DB Tool}
+
+The commandline tool {\ttfamily kdb} also got some improvements. Most noteworthy is that {\ttfamily kdb get -\/v} now gives a complete trace for every key that was tried. This is very handy if you have a complex specification with many fallback and override links.
+
+It also shows default values and warnings in the case of context-\/oriented features.
+
+Furthermore\+:
+
+
+\begin{DoxyItemize}
+\item Add {\ttfamily -\/v} for setmeta
+\item Copy will warn when it won\textquotesingle{}t overwrite another key (behaviour did not change)
+\item improve help text, thanks to Ian Donnelly
+\end{DoxyItemize}
+
+\subsection*{Documentation Initiative}
+
+As Michael Haberler from \href{http://www.machinekit.io/}{\tt machinekit} pointed out it was certainly not easy for someone to get started with Elektra. With the documentation initiative we are going to change that.
+
+
+\begin{DoxyItemize}
+\item The discussion in \href{https://git.libelektra.org/issues}{\tt github issues} should clarify many things
+\item We start writing man pages in ronn-\/format(7), thanks to Ian Donnelly for current work
+\item Kurt Micheli is woring on improved doxygen docu + pdf generation
+\item Daniel Bugl already restructed the main page
+\item Daniel Bugl also improved formatting
+\item doc\+: use 
+\begin{DoxyRetVals}{Return values}
+{\em more,thanks} & to Pino Toscano\\
+\hline
+\end{DoxyRetVals}
+
+\item doxygen\+: fix template to use {\ttfamily @} and not {\ttfamily \textbackslash{}\textbackslash{}}.
+\item S\+VG logo is preferred, thanks to Daniel Bugl
+\item doc\+: use 
+\begin{DoxyRetVals}{Return values}
+{\em more,thanks} & to Pino Toscano\\
+\hline
+\end{DoxyRetVals}
+
+\item many typo fixes, thanks to Pino Toscano
+\item fix broken links, thanks to Manuel Mausz, Daniel Bugl and Michael Haberler
+\end{DoxyItemize}
+
+Any further help is very welcome! This call is especially addressed to beginners in Elektra because they obviously know best which documentation is lacking and what they would need.
+
+\subsection*{Portability}
+
+{\ttfamily kdb-\/full} and {\ttfamily kdb-\/static} work fine now for Windows 64bit, thanks to Manuel Mausz. The wresolver is now more relaxed with unset environment.
+
+All issues for mac\+OS were resolved. With the exception of elektrify-\/getenv everything should work now, thanks to Mihael Pranjic\+:
+
+
+\begin{DoxyItemize}
+\item fix mktemp
+\item testscripts
+\item recursive mutex simplification
+\item clearenv ifdef
+\end{DoxyItemize}
+
+and thanks to Daniel Bugl\+:
+
+
+\begin{DoxyItemize}
+\item R\+P\+A\+TH fixed, so that {\ttfamily kdb} works
+\end{DoxyItemize}
+
+furthermore\+:
+
+
+\begin{DoxyItemize}
+\item fix {\ttfamily \+\_\+\+\_\+\+F\+U\+N\+C\+T\+I\+O\+N\+\_\+\+\_\+} to {\ttfamily \+\_\+\+\_\+func\+\_\+\+\_\+} (C99), thanks to Pino Toscano
+\item avoid compilation error when J\+N\+I\+\_\+\+V\+E\+R\+S\+I\+O\+N\+\_\+1\+\_\+8 is missing
+\item fix (twice, because of an accidental revert) the T\+A\+R\+G\+E\+T\+\_\+\+C\+M\+A\+K\+E\+\_\+\+F\+O\+L\+D\+ER, thanks to Pino Toscano
+\end{DoxyItemize}
+
+Thanks to Manuel Mausz for to testing and improving portability!
+
+\subsection*{Packaging and Build System}
+
+
+\begin{DoxyItemize}
+\item \href{https://packages.qa.debian.org/e/elektra/news/20150726T155000Z.html}{\tt 0.\+8.\+12 packaged+migrated to testing}, thanks to Pino Toscano
+\item fix build with external gtest, thanks to Pino Toscano
+\item switch from Find\+Elektra.\+cmake to Elektra\+Config.\+cmake, thanks to Pino Toscano
+\item use {\ttfamily cmake\+\_\+parse\+\_\+arguments} instead of {\ttfamily parse\+\_\+arguments}, thanks to Manuel Mausz
+\end{DoxyItemize}
+
+\subsection*{Further Fixes}
+
+
+\begin{DoxyItemize}
+\item Key\+::release() will also work when Key holds a null-\/pointer
+\item Key\+::get\+Name() avoids std\+::string exception
+\item support for copy module was introduced, thanks to Manuel Mausz
+\item be more P\+O\+S\+IX compatible in shell scripts ({\ttfamily type} to {\ttfamily command -\/v} and avoid {\ttfamily echo -\/e}) thanks to Pino Toscano
+\item fix vararg type for K\+E\+Y\+\_\+\+F\+L\+A\+GS, thanks to Pino Toscano
+\item fix crash of example, thanks to Pino Toscano
+\item add proper licence file for Modules (C\+O\+P\+Y\+I\+N\+G-\/\+C\+M\+A\+K\+E-\/\+S\+C\+R\+I\+P\+TS), thanks to Pino Toscano
+\item fix X\+DG resolver issue when no given path in X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+RS is valid
+\item make dbus example work again
+\item fix compiler warnings for gcc and clang
+\item fix Valgrind suppressions
+\item Installation of GI binding is fixed, thanks to Dāvis
+\item make uninstall is fixed and docu improved
+\end{DoxyItemize}
+
+\subsection*{Notes}
+
+There are some misconceptions about Elektra and semi structured data (like X\+ML, J\+S\+ON). Elektra is a key-\/value storage, that internally represents everything with key and values. Even though, Elektra can use X\+ML and J\+S\+ON files elegantly, there are limitations what X\+ML and J\+S\+ON can represent. X\+ML, e.\+g., cannot have holes within its structure, while this is obviously easily possible with key-\/value. And J\+S\+ON, e.\+g., cannot have non-\/array entries within an array. This is a more general issue of that configuration files in general are constrained in what they are able to express. The solution to this problem is validation, i.\+e. keys that does not fit in the underlying format are rejected. Note there is no issue the other way round\+: special characteristics of configuration files can always be captured in Elektra’s metadata.
+
+\subsection*{Get It!}
+
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.13.tar.gz}{\tt here} and now also \href{https://github.com/ElektraInitiative/ftp/tree/master/releases/elektra-0.8.13.tar.gz}{\tt here on github}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+13.\+tar.\+gz
+\item size\+: 2141758
+\item md5sum\+: 6e7640338f440e67aba91bd64b64f613
+\item sha1\+: ca58524d78e5d39a540a4db83ad527354524db5e
+\item sha256\+: f5c672ef9f7826023a577ca8643d0dcf20c3ad85720f36e39f98fe61ffe74637
+\end{DoxyItemize}
+
+This release tarball now is also available \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.13.tar.gz.gpg}{\tt signed by me using gpg}
+
+already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.13/html/}{\tt here}
+
+\subsection*{Stay tuned!}
+
+Subscribe to the \href{https://doc.libelektra.org/news/feed.rss}{\tt R\+SS feed} to always get the release notifications.
+
+For any questions and comments, please contact the \href{https://lists.sourceforge.net/lists/listinfo/registry-list}{\tt Mailing List} the issue tracker \href{https://git.libelektra.org/issues}{\tt on github} or by mail \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org}.
+
+\href{https://doc.libelektra.org/news/3c00a5f1-c017-4555-92b5-a2cf6e0803e3.html}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://libelektra.org}{\tt https\+://libelektra.\+org}
+
+Best regards, Markus 

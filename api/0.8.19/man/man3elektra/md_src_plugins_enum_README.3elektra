@@ -1,0 +1,143 @@
+.TH "md_src_plugins_enum_README" 3elektra "Tue Nov 22 2016" "Version 0.8.19" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_enum_README \- Plugin: enum 
+
+.IP "\(bu" 2
+infos = Information about the enum plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = productive maintained unittest tested nodep libc
+.IP "\(bu" 2
+infos/metadata = check/enum check/enum/# check/enum/multi
+.IP "\(bu" 2
+infos/description = validates values against enum
+.PP
+.PP
+The enum plugin checks string values of Keys by comparing it against a list of valid values\&.
+.PP
+.SS "Usage"
+.PP
+The plugin checks every Key in the Keyset for the Metakey \fCcheck/enum\fP containing a list with the syntax `'string1', 'string2', 'string3', \&.\&.\&., 'stringN'` and compares each value with the string value of the Key\&. If no match is found an error is returned\&.
+.PP
+Alternatively, if \fCcheck/enum\fP starts with \fC#\fP, a meta array \fCcheck/enum\fP is used\&. For example: 
+.PP
+.nf
+check/enum = #3
+check/enum/#0 = small
+check/enum/#1 = middle
+check/enum/#2 = large
+check/enum/#3 = huge
+
+.fi
+.PP
+.PP
+Furthermore \fCcheck/enum/multi\fP may contain a separator character, that separates multiple allowed occurrences\&. For example: 
+.PP
+.nf
+check/enum/multi = _
+
+.fi
+.PP
+.PP
+Then the value \fCmiddle_small\fP would validate\&. But \fCmiddle_small_small\fP would fail because every entry might only occur once\&.
+.PP
+.SS "Example"
+.PP
+``` 
+.SH "Backup-and-Restore:/examples/enum"
+.PP
+.PP
+sudo kdb mount enum\&.ecf /examples/enum enum dump # 
+.SH "valid initial value + setup valid enum list"
+.PP
+.PP
+# kdb set /examples/enum/value middle kdb setmeta user/examples/enum/value check/enum ''low', 'middle', 'high'' # 
+.SH "should succeed"
+.PP
+.PP
+# kdb set /examples/enum/value low # 
+.SH "should fail with error 121"
+.PP
+.PP
+# kdb set /examples/enum/value no 
+.SH "RET:5"
+.PP
+.PP
+.SH "ERRORS:121"
+.PP
+.PP
+.SH "The command set failed while accessing the key database with the info:"
+.PP
+.PP
+.SH "Error (#121) occurred!"
+.PP
+.PP
+.SH "Description: Validation failed"
+.PP
+.PP
+.SH "Ingroup: plugin"
+.PP
+.PP
+.SH "Module: enum"
+.PP
+.PP
+# 
+.SH "cleanup"
+.PP
+.PP
+# kdb rm -r /examples/enum sudo kdb umount /examples/enum ``` Or with multi-enums: ``` 
+.SH "Backup-and-Restore:/examples/enum"
+.PP
+.PP
+sudo kdb mount enum\&.ecf /examples/enum enum dump # 
+.SH "valid initial value + setup array with valid enums"
+.PP
+.PP
+# kdb set /examples/enum/value middle_small kdb setmeta user/examples/enum/value check/enum/#0 small kdb setmeta user/examples/enum/value check/enum/#1 middle kdb setmeta user/examples/enum/value check/enum/#2 large kdb setmeta user/examples/enum/value check/enum/#3 huge kdb setmeta user/examples/enum/value check/enum/multi _ kdb setmeta user/examples/enum/value check/enum '#3' # 
+.SH "should succeed"
+.PP
+.PP
+# kdb set /examples/enum/value ___small_middle__ # 
+.SH "should fail with error 121"
+.PP
+.PP
+# kdb set /examples/enum/value ___all_small__ 
+.SH "RET:5"
+.PP
+.PP
+.SH "ERRORS:121"
+.PP
+.PP
+.SH "The command set failed while accessing the key database with the info:"
+.PP
+.PP
+.SH "Error (#121) occurred!"
+.PP
+.PP
+.SH "Description: Validation failed"
+.PP
+.PP
+.SH "Ingroup: plugin"
+.PP
+.PP
+.SH "Module: enum"
+.PP
+.PP
+# 
+.SH "cleanup"
+.PP
+.PP
+# kdb rm -r /examples/enum sudo kdb umount /examples/enum ``` 

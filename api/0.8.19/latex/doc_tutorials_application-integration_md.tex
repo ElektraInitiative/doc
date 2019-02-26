@@ -1,0 +1,172 @@
+Applications should use Elektra to read (and store) configurations for a overall better integrated system. A light integration would be to write parsers for the configuration files of your application as Elektra plugin. This yields the following advantages\+:
+
+
+\begin{DoxyItemize}
+\item applications and administrators can easily change individual values
+\item import/export of configuration
+\end{DoxyItemize}
+
+For full integration, however, the application needs to be patched to directly access Elektra's key database. When the application is fully integrated in Elektra's ecosystem additional benefits arise\+:
+
+
+\begin{DoxyItemize}
+\item Benefits that shared libraries have, e.\+g.
+\begin{DoxyItemize}
+\item All applications profit from fixes, optimization and new features
+\item Less memory consumption, because the libraries executable instructions are only loaded once
+\item Faster development time, because many non-\/trivial problems (e.\+g. O\+S-\/dependent resolving of configuration file names with atomic updates) are already solved and tested properly
+\end{DoxyItemize}
+\item The administrator can choose\+:
+\begin{DoxyItemize}
+\item the configuration file syntax (e.\+g. X\+M\+L or J\+S\+O\+N)
+\item notification and logging on configuration changes
+\item and all other features \hyperlink{md_src_plugins_README_src_plugins_README_md}{the plugins provide}
+\end{DoxyItemize}
+\item Other applications can use your configuration as override or as fallback
+\end{DoxyItemize}
+
+\subsection*{Elektrify}
+
+The process to make applications aware of other's configuration is called \char`\"{}to elektrify\char`\"{}. This tutorial is both for new and existing applications.
+
+When a software starts to use Elektra, it is called to be elektrified. The places where configuration is parsed or generated must be located. Afterwards, Elektra's data structures must be used instead at these locations. In Elektra 0.\+7, that was nearly everything the software developer could do.
+
+Now more optional possibilities are open. First, the parser and generator code can be moved to a storage plugin without having to rewrite additional parts. Doing this, the syntax of the configuration file stays exactly the same as it was before. The application immediately profits from Elektra's infrastructure solving basic issues like update and conflict detection and resolving of the file name.
+
+Moreover, a huge variety of plugins can be utilised to extend the functionality of the configuration system and the programmer can write supplementary plugins. They can do syntactic checks, write out events in their log files and notify users if configuration has changed. So we get a bunch of plugins that are reusable, and we gain a lot because every other program can also access the configuration of this software.
+
+For new software the situation is similar. Additionally, there is the option to reuse mature and well-\/tested plugins to achieve the optimal result for configuration. New applications simply do not have the burden to stay compatible with the configuration system they had to before. But they can also use self-\/written plugins for adding needed behaviour or cross-\/cutting concerns.
+
+To sum up, if a developer wants to {\bfseries elektrify} software, he or she can do that without any need for changes to the outside world regarding the format and semantics of the configuration. But in the interconnected world it is only a matter of time until other software also wants to access the configuration, and with elektrified software it is possible for every application to do so.
+
+\subsection*{Get Started}
+
+As first step in a C-\/application you need to create an in-\/memory {\ttfamily Key}. Such a {\ttfamily Key} is Elektra's atomic unit and consists of\+:
+
+
+\begin{DoxyItemize}
+\item a unique name
+\item a value
+\item metadata
+\end{DoxyItemize}
+
+{\ttfamily Key}s are either associated with entries in configuration files or used as arguments in the A\+P\+I to transport some information.
+
+Thus a key is only in-\/memory and does not need any of the other Elektra's objects. We always can create one\+: \begin{DoxyVerb}    Key *parentKey = keyNew("/sw/org/myapp/#0/current",
+            KEY_CACADING_NAME,
+            KEY_END);
+\end{DoxyVerb}
+
+
+
+\begin{DoxyItemize}
+\item The first argument of {\ttfamily key\+New} always is the name of the key.
+\begin{DoxyItemize}
+\item {\ttfamily sw} is for software
+\item {\ttfamily org} is a U\+R\+L/organisation name to avoid name clashes with other application names. Use only one part of the U\+R\+L/organisation, so e.\+g. {\ttfamily kde} is enough.
+\item {\ttfamily myapp} is the name of the most specific component that has its own configuration
+\item {\ttfamily \#0} is the major version number of the configuration (to be incremented if you need to introduce incompatible changes).
+\item {\ttfamily current} is the profile to be used. This is needed by administrators if they want to start up multiple applications with different configurations.
+\end{DoxyItemize}
+\item {\ttfamily K\+E\+Y\+\_\+\+C\+A\+C\+A\+D\+I\+N\+G\+\_\+\+N\+A\+M\+E} is needed to accept a name starting with {\ttfamily /}. Such a name cannot physically exist in configuration files, but they are the most important keys to actually work with configuration within applications as we will see in this tutorial.
+\item {\ttfamily K\+E\+Y\+\_\+\+E\+N\+D} is needed because C needs a proper termination of variable length arguments.
+\item \href{http://doc.libelektra.org/api/current/html/group__key.html}{\tt Read more about key-\/functions in A\+P\+I doc.}
+\item \hyperlink{md_doc_help_elektra-key-names_doc_help_elektra-key-names_md}{Read more about key names here.}
+\end{DoxyItemize}
+
+Now we have the {\ttfamily Key} we will use to pass as argument. First we open our key database (K\+D\+B). This is done by\+: \begin{DoxyVerb}    KDB *repo = kdbOpen(parentKey);
+\end{DoxyVerb}
+
+
+A {\ttfamily Key} is seldom alone, but they are often found in groups, e.\+g. in configuration files. To represent many keys (a set of keys) Elektra has the data structure {\ttfamily Key\+Set}. Because the {\ttfamily Key}'s name is unique we can easily lookup keys in a {\ttfamily Key\+Set} without ambiguity. Additionally, we can can iterate over all {\ttfamily Key}s in a {\ttfamily Key\+Set} without a hassle. To create an empty {\ttfamily Key\+Set} we use\+: \begin{DoxyVerb}    KeySet *conf = ksNew(200,
+            KS_END);
+\end{DoxyVerb}
+
+
+
+\begin{DoxyItemize}
+\item 200 is an approximation for how many {\ttfamily Key}s we think we will have in the {\ttfamily Key\+Set} conf
+\item After the first argument we can list hardcoded keys.
+\item The last argument needs to be {\ttfamily K\+S\+\_\+\+E\+N\+D}.
+\end{DoxyItemize}
+
+Now we have everything ready to fetch the latest configuration\+: \begin{DoxyVerb}    kdbGet(repo, conf, parentKey);
+\end{DoxyVerb}
+
+
+\subsection*{Lookup}
+
+To lookup a key, we simply use, e.\+g.\+: \begin{DoxyVerb}    Key *k = ksLookupByName(conf,
+            "/sw/org/myapp/#0/current/section/subsection/key",
+            0);
+\end{DoxyVerb}
+
+
+We see in that example that only Elektra paths are hardcoded in the application, no configuration file or similar. Thus we are interested in the value we use\+: \begin{DoxyVerb}    char *val = keyString(k);
+\end{DoxyVerb}
+
+
+Finally, we need to convert the configuration value to the datatype we need.
+
+Obviously, to do this manually has severe drawbacks\+:
+
+
+\begin{DoxyItemize}
+\item names are hardcoded\+: might have typos or might be inconsistent
+\item tedious handling if key or value might be absent
+\item converting to needed data type is error prone
+\end{DoxyItemize}
+
+So (larger) applications should not directly use {\ttfamily Key\+Set}, but instead use code generation to provide a type-\/safe front-\/end.
+
+For more information about that, continue reading \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/tools/gen}{\tt here}.
+
+\subsection*{Specification}
+
+Now, we have a fully working configuration system without any hard-\/coded information (such as configuration files). So we already gained something. But, we did not discuss how we can actually achieve application integration, the goal of Elektra.
+
+Elektra 0.\+8.\+11 introduces the so called specification for the application's configuration. It is located below its own \hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{namespace} {\ttfamily spec} (next to user and system).
+
+Keys in {\ttfamily spec} allow us to specify which keys are read by the application, which fallback they might have and which is the default value using metadata. The implementation of these features happened in {\ttfamily ks\+Lookup}. When cascading keys (those starting with {\ttfamily /}) are used following features are now available (in the metadata of respective {\ttfamily spec}-\/keys)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily override/\#}\+: use these keys {\itshape in favour} of the key itself (note that {\ttfamily \#} is the syntax for arrays, e.\+g. {\ttfamily \#0} for the first element, {\ttfamily \#\+\_\+10} for the 11th and so on)
+\item {\ttfamily namespace/\#}\+: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+\item {\ttfamily fallback/\#}\+: when no key was found in any of the (specified) namespaces the {\ttfamily fallback}-\/keys will be searched
+\item {\ttfamily default}\+: this value will be used if nothing else was found
+\end{DoxyItemize}
+
+They can be used like this\+: \begin{DoxyVerb}    kdb set /overrides/test "example override"
+    sudo kdb setmeta spec/test override/#0 /overrides/test
+\end{DoxyVerb}
+
+
+This technique provides complete transparency how a program will fetch a configuration value. In practice that means that\+: \begin{DoxyVerb}kdb get "/sw/org/myapp/#0/current/section/subsection/key",
+\end{DoxyVerb}
+
+
+will give you the {\itshape exact same value} as the application gets when it uses the above lookup C-\/code.
+
+What we do not see in the program above are the default values and fallbacks. They are only present in the so specification (namespace {\ttfamily spec}). Luckily, the specification consists of (meta) key/value pairs, too. So we do not have to learn something new.
+
+So lets say, that another application {\ttfamily otherapp} exactly has the value we actually want. We want to better integrate the system, that in the case we do not have a value for {\ttfamily /sw/org/myapp/\#0/current/section/subsection/key} we want to use {\ttfamily /sw/otherorg/otherapp/\#0/current/section/subsection/key}.
+
+So we specify\+: \begin{DoxyVerb}kdb setmeta spec/sw/org/myapp/#0/current/section/subsection/key "fallback/#0" /sw/otherorg/otherapp/#0/current/section/subsection/key
+\end{DoxyVerb}
+
+
+Voila, we have done a system integration between {\ttfamily myapp} and {\ttfamily otherapp}!
+
+Note that the fallback, override and cascading works on {\itshape key level}, and not like most other systems have implemented, on configuration {\itshape file level}.
+
+\subsection*{Conclusion}
+
+Elektra does not hardcode any configuration data in your application. Using the {\ttfamily default} specification, we even can startup applications without any configuration file {\itshape at all} and still do not have anything hardcoded in the applications binary. Furthermore, by only using cascading keys for {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} and {\ttfamily \hyperlink{group__keyset_gaa34fc43a081e6b01e4120daa6c112004}{ks\+Lookup()}} Elektra gives you the possibility to specify how configuration data should be retrieved. In this specification you can define, that configuration data from other applications or shared places should be considered or even preferred. Doing so, we can achieve configuration integration.
+
+\subsection*{S\+E\+E A\+L\+S\+O}
+
+
+\begin{DoxyItemize}
+\item \href{http://www.libelektra.org/ftp/papers/kps2015sharing.pdf}{\tt for advanced techniques e.\+g. transformations} 
+\end{DoxyItemize}

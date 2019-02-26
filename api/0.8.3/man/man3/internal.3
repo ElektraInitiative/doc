@@ -1,0 +1,205 @@
+.TH "KDB Backends :: Internal Helper for Elektra" 3 "Mon Oct 1 2012" "Version 0.8.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+KDB Backends :: Internal Helper for Elektra \- 
+.PP
+Internal Methods for Elektra and Backends.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraStrCmp\fP (const char *s1, const char *s2)"
+.br
+.ti -1c
+.RI "int \fBelektraStrCaseCmp\fP (const char *s1, const char *s2)"
+.br
+.ti -1c
+.RI "int \fBelektraRealloc\fP (void **buffer, size_t size)"
+.br
+.ti -1c
+.RI "void \fBelektraFree\fP (void *ptr)"
+.br
+.ti -1c
+.RI "char * \fBelektraStrDup\fP (const char *s)"
+.br
+.ti -1c
+.RI "char * \fBelektraStrNDup\fP (const char *s, size_t l)"
+.br
+.ti -1c
+.RI "size_t \fBelektraStrLen\fP (const char *s)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Internal Methods for Elektra and Backends. 
+
+To use them: 
+.PP
+.nf
+ #include <kdbbackend.h>
+
+.fi
+.PP
+.PP
+There are some areas where libraries have to reimplement some basic functions to archive support for non-standard systems, for testing purposes or to provide a little more convenience. 
+.SH "Function Documentation"
+.PP 
+.SS "void elektraFree (void * ptr)"Free memory of elektra or its backends.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIptr\fP the pointer to free
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+elektraMalloc 
+.RE
+.PP
+
+.SS "int elektraRealloc (void ** buffer, size_t size)"Reallocate Storage in a save way.
+.PP
+.PP
+.nf
+if (elektraRealloc ((void **) & buffer, new_length) < 0) {
+        // here comes the failure handler
+        // you can still use the old buffer
+#if DEBUG
+        fprintf (stderr, 'Reallocation error\n');
+#endif
+        free (buffer);
+        buffer = 0;
+        // return with error
+}
+ *
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIbuffer\fP is a pointer to a malloc 
+.br
+\fIsize\fP is the new size for the memory 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+-1 on failure 
+.PP
+0 on success 
+.RE
+.PP
+
+.SS "int elektraStrCaseCmp (const char * s1, const char * s2)"Compare Strings ignoring case using kdb semantics.
+.PP
+TODO: semantics not correct Does not work with binary sort.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIs1\fP The first string to be compared 
+.br
+\fIs2\fP The second string to be compared
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a negative number if s1 is less than s2 
+.PP
+0 if s1 matches s2 
+.PP
+a positive number if s1 is greater than s2 
+.RE
+.PP
+
+.SS "int elektraStrCmp (const char * s1, const char * s2)"Compare Strings using kdb semantics.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIs1\fP The first string to be compared 
+.br
+\fIs2\fP The second string to be compared
+.RE
+.PP
+/ is handled special, it will always be prefered for any other character.
+.PP
+\fBReturns:\fP
+.RS 4
+a negative number if s1 is less than s2 
+.PP
+a number less than, equal to or greater than zero if s1 is found, respectively, to be less than, to match, or be greater than s2. 
+.RE
+.PP
+
+.SS "char* elektraStrDup (const char * s)"Copy string into new allocated memory.
+.PP
+You need to free the memory yourself.
+.PP
+\fBNote:\fP
+.RS 4
+that size is determined at runtime. So if you have a size information, don't use that function.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIs\fP the null-terminated string to duplicate
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if out of memory, a pointer otherwise 
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+s must be a c-string. 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraFree\fP 
+.PP
+\fBelektraStrLen\fP 
+.PP
+\fBelektraStrNDup\fP 
+.RE
+.PP
+
+.SS "size_t elektraStrLen (const char * s)"Calculates the length in bytes of a string.
+.PP
+This function differs from strlen() because it is Unicode and multibyte chars safe. While strlen() counts characters and ignores the final NULL, \fBelektraStrLen()\fP count bytes including the ending NULL.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIs\fP the string to get the length from 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+number of bytes used by the string, including the final NULL. 
+.RE
+.PP
+
+.SS "char* elektraStrNDup (const char * s, size_t l)"Copy buffer into new allocated memory.
+.PP
+You need to free the memory yourself.
+.PP
+This function also works with \\0 characters in the buffer. The length is taken as given, it must be correct.
+.PP
+\fBReturns:\fP
+.RS 4
+0 if out of memory, a pointer otherwise 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIs\fP must be a allocated buffer 
+.br
+\fIl\fP the length of s 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code.

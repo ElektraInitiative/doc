@@ -1,0 +1,258 @@
+.TH "pluginprocess.c" 3elektra "Sun May 13 2018" "Version 0.8.23" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+pluginprocess.c \- Source for the pluginprocess library\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'kdbpluginprocess\&.h'\fP
+.br
+\fC#include <kdberrors\&.h>\fP
+.br
+\fC#include <kdbinvoke\&.h>\fP
+.br
+\fC#include <kdblogger\&.h>\fP
+.br
+\fC#include <kdbprivate\&.h>\fP
+.br
+\fC#include <errno\&.h>\fP
+.br
+\fC#include <limits\&.h>\fP
+.br
+\fC#include <stdio\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <sys/stat\&.h>\fP
+.br
+\fC#include <sys/types\&.h>\fP
+.br
+\fC#include <unistd\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "void \fBelektraPluginProcessStart\fP (Plugin *handle, ElektraPluginProcess *pp)"
+.br
+.RI "Start the child process' command loop\&. "
+.ti -1c
+.RI "int \fBelektraPluginProcessSend\fP (const ElektraPluginProcess *pp, pluginprocess_t command, KeySet *originalKeySet, Key *key)"
+.br
+.RI "Call a plugin's function in a child process\&. "
+.ti -1c
+.RI "int \fBelektraPluginProcessIsParent\fP (const ElektraPluginProcess *pp)"
+.br
+.RI "Check if a given plugin process is the parent or the child process\&. "
+.ti -1c
+.RI "ElektraPluginProcess * \fBelektraPluginProcessInit\fP (Key *errorKey)"
+.br
+.RI "Initialize a plugin to be executed in its own process\&. "
+.ti -1c
+.RI "int \fBelektraPluginProcessOpen\fP (ElektraPluginProcess *pp, Key *errorKey)"
+.br
+.RI "Call a plugin's open function in a child process\&. "
+.ti -1c
+.RI "int \fBelektraPluginProcessClose\fP (ElektraPluginProcess *pp, Key *errorKey)"
+.br
+.RI "Cleanup a plugin process\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Source for the pluginprocess library\&. 
+
+Executes plugins in a separate process via fork and uses a simple communication protocol based on the dump plugin via named pipes\&.
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraPluginProcessClose (ElektraPluginProcess * pp, Key * errorKey)"
+
+.PP
+Cleanup a plugin process\&. This will decrease the internal counter how often open/close has been called, closing opened pipes when the counter reaches 0\&. This will not delete the plugin data associated with the handle as it may contain other data out of the scope of this library, so this has to be done manually like 
+.PP
+.nf
+int elektraPluginClose (Plugin * handle, Key * errorKey)
+{
+        ElektraPluginProcess * pp = elektraPluginGetData (handle);
+        if (elektraPluginProcessIsParent (pp)) {
+                int result = elektraPluginProcessSend (pp, ELEKTRA_PLUGIN_CLOSE, NULL, errorKey);
+                if (elektraPluginProcessClose (pp, errorKey)) elektraPluginSetData (handle, NULL);
+                return result;
+        }
+
+        // actual plugin functionality to be executed in a child process
+        return ELEKTRA_PLUGIN_STATUS_SUCCESS;
+}
+
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIpp\fP the data structure containing the plugin's process information 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if the data structure got cleaned up 
+.br
+\fI0\fP if the data structure is still used 
+.RE
+.PP
+
+.SS "ElektraPluginProcess* elektraPluginProcessInit (Key * errorKey)"
+
+.PP
+Initialize a plugin to be executed in its own process\&. This will prepare all the required resources and then fork the current process\&. After the initialization the child process will typically call the command loop while the parent starts to send commands to it\&. Also the resulting process information has to be stored for the plugin\&. In order to allow users to handle custom plugin data this will not automatically call elektraPluginSetData\&.
+.PP
+Typically called in a plugin's open function like (assuming no custom plugin data): 
+.PP
+.nf
+int elektraPluginOpen (Plugin * handle, Key * errorKey)
+{
+        ElektraPluginProcess * pp = elektraPluginGetData (handle);
+        if (pp == NULL)
+        {
+                if ((pp = elektraPluginProcessInit (handle, errorKey)) == NULL) return ELEKTRA_PLUGIN_STATUS_ERROR;
+                elektraPluginSetData (handle, pp);
+                if (!elektraPluginProcessIsParent (pp)) elektraPluginProcessStart (handle, pp);
+        }
+        if (elektraPluginProcessIsParent (pp)) return elektraPluginProcessOpen (pp, errorKey);
+
+        // actual plugin functionality to be executed in a child process
+        return ELEKTRA_PLUGIN_STATUS_SUCCESS;
+}
+
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP the plugin's handle 
+.br
+\fIerrorKey\fP a key where error messages will be set 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP if the initialization failed 
+.br
+\fIa\fP pointer to the information 
+.RE
+.PP
+
+.SS "int elektraPluginProcessIsParent (const ElektraPluginProcess * pp)"
+
+.PP
+Check if a given plugin process is the parent or the child process\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIpp\fP the data structure containing the plugin's process information 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if it's the child process 
+.br
+\fIthe\fP child process' pid otherwise 
+.RE
+.PP
+
+.SS "int elektraPluginProcessOpen (ElektraPluginProcess * pp, Key * errorKey)"
+
+.PP
+Call a plugin's open function in a child process\&. This will increase the internal counter how often open/close has been called, so the opened pipes and forks will not be closed too early\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIpp\fP the data structure containing the plugin's process information 
+.br
+\fIerrorKey\fP a key where error messages will be set 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIthe\fP return value of the plugin's open function 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraPluginProcessInit\fP for an example how and where this function is typically used 
+.RE
+.PP
+
+.SS "int elektraPluginProcessSend (const ElektraPluginProcess * pp, pluginprocess_t command, KeySet * originalKeySet, Key * key)"
+
+.PP
+Call a plugin's function in a child process\&. This will wrap all the required information to execute the given command in a keyset and send it over to the child process\&. Then it waits for the child process's answer and copies the result back into the original plugin keyset and plugin key\&.
+.PP
+Typically called like 
+.PP
+.nf
+int elektraPluginSet (Plugin * handle, KeySet * returned, Key * parentKey)
+{
+        ElektraPluginProcess * pp = elektraPluginGetData (handle);
+        if (elektraPluginProcessIsParent (pp)) return elektraPluginProcessSend (pp, ELEKTRA_PLUGIN_SET, returned, parentKey);
+
+        // actual plugin functionality to be executed in a child process
+        return ELEKTRA_PLUGIN_STATUS_SUCCESS;
+}
+
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIpp\fP the data structure containing the plugin's process information 
+.br
+\fIcommand\fP the plugin command that should be executed, e\&.g\&. ELEKTRA_PLUGIN_GET 
+.br
+\fIoriginalKeySet\fP the original key set that the parent process receives 
+.br
+\fIkey\fP the original key the parent process receives 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIELEKTRA_PLUGIN_STATUS_ERROR\fP if the child process communication failed 
+.br
+\fIthe\fP called plugin's return value otherwise 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraPluginProcessIsParent\fP for checking if we are in the parent or child process 
+.RE
+.PP
+
+.SS "void elektraPluginProcessStart (Plugin * handle, ElektraPluginProcess * pp)"
+
+.PP
+Start the child process' command loop\&. This will make the child process wait for plugin commands and execute them, returning the result to the parent\&. This is typically called in a plugin's open function\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP the plugin's handle 
+.br
+\fIpp\fP the data structure containing the plugin's process information 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraPluginProcessInit\fP how to use this function in a \fBPlugins\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

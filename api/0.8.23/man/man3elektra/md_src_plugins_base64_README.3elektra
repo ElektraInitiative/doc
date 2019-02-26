@@ -1,0 +1,159 @@
+.TH "md_src_plugins_base64_README" 3elektra "Sun May 13 2018" "Version 0.8.23" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_base64_READMEPlugin: base64 
+ \- 
+.IP "\(bu" 2
+infos = Information about base64 plugin is in keys below
+.IP "\(bu" 2
+infos/author = Peter Nirschl peter.nirschl@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = binary
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep libc final configurable
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = Base64 Encoding
+.PP
+.SH "Base64"
+.PP
+.SS "Introduction"
+.PP
+The Base64 Encoding (specified in \fCRFC4648\fP) is used to encode arbitrary binary data to ASCII strings\&.
+.PP
+This is useful for configuration files that must contain ASCII strings only\&.
+.PP
+The \fCbase64\fP plugin encodes binary values before \fCkdb set\fP writes the configuration to the file\&. The values are decoded back to their original value after \fCkdb get\fP has read from the configuration file\&.
+.PP
+.SS "Usage"
+.PP
+To mount a simple backend that uses the Base64 encoding, you can use:
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ecf /examples/base64/test base64
+.fi
+.PP
+.PP
+\&. To unmount the plugin use the following command:
+.PP
+.PP
+.nf
+sudo kdb umount /examples/base64/test
+.fi
+.PP
+.PP
+\&. All encoded binary values will look something like this: 
+.PP
+.nf
+@BASE64SGVsbG8gV29ybGQhCg==
+
+.fi
+.PP
+.PP
+.SS "Modes"
+.PP
+The plugin supports two different modes:
+.PP
+.IP "1." 4
+Escaping Mode
+.IP "2." 4
+Meta Mode
+.PP
+.PP
+\&. By default the plugin uses escaping mode which has the advantage that a storage plugin does not have to change its behavior at all to work in conjunction with Base64\&.
+.PP
+.SS "Escaping Mode"
+.PP
+In order to identify the base64 encoded content, the values are marked with the prefix \fC@BASE64\fP\&. To distinguish between the \fC@\fP as character and \fC@\fP as Base64 marker, all strings starting with \fC@\fP will be modified so that they begin with \fC@@\fP\&.
+.PP
+See the documentation of the \fBnull plugin\fP, as it uses the same pattern for masking \fC@\fP\&.
+.PP
+.SS "Example"
+.PP
+The following example shows how you can use this plugin together with the INI plugin to store binary data\&.
+.PP
+.PP
+.nf
+# Mount the INI and Base64 plugin
+kdb mount config\&.ini user/examples/base64 ini base64
+
+# Copy binary data
+kdb cp system/elektra/modules/base64/exports/get user/examples/base64/binary
+
+# Print binary data
+kdb get user/examples/base64/binary
+# STDOUT-REGEX: ^(\\x[0-9a-f]{1,2})+$
+
+# The value inside the configuration file is encoded by the Base64 plugin
+kdb file user/examples/base64 | xargs cat
+# STDOUT-REGEX: binary = "@BASE64[a-zA-Z0-9+/]+={0,2}"
+
+# Undo modifications
+kdb rm -r user/examples/base64
+kdb umount user/examples/base64
+.fi
+.PP
+.PP
+.SS "Meta Mode"
+.PP
+Some file formats such as \fCYAML\fP already support Base64 encoded data\&. In YAML \fCbinary data\fP starts with the tag \fC!!binary\fP followed by a Base64 encoded scalar:
+.PP
+.PP
+.nf
+!!binary SGVsbG8sIFlBTUwh # “Hello, YAML!”
+.fi
+.PP
+.PP
+\&. For YAML it would not make sense to use the format of the escaping mode:
+.PP
+.PP
+.nf
+# Another YAML implementation will not be able to decode this data
+# because of the prefix `@BASE64`!
+!!binary "@BASE64SGVsbG8sIFlBTUwh"
+.fi
+.PP
+.PP
+\&. Base64 supports another mode called “meta mode”\&. In this mode the Base64 plugin encodes the value, but does not add a prefix\&. To use the escaping mode a plugin must add the configuration key \fC/binary/meta\fP\&. Afterwards the Base64 plugin encodes and decodes all data that contains the metakey \fCtype\fP with the value \fCbinary\fP\&.
+.PP
+The diagram below shows how the Base64 conversion process works in conjunction with the YAML CPP plugin\&.
+.PP
+.PP
+.SS "Example"
+.PP
+The following example shows you how you can use the INI plugin together with Base64’s meta mode\&.
+.PP
+``\fC <h1>Mount Ni and Base64 plugin (provides\fPbinary\fC) with the configuration key\fPbinary/meta` kdb mount config\&.ini user/examples/base64 ini binary binary/meta=
+.PP
+.SH "Save base64 encoded data \fC'value'\fP (\fC0x76616c7565\fP)"
+.PP
+.PP
+kdb set user/examples/base64/encoded dmFsdWUA kdb file user/examples/base64/encoded | xargs cat | grep encoded #> encoded = dmFsdWUA
+.PP
+.SH "Tell Base64 plugin to decode and encode key value"
+.PP
+.PP
+kdb setmeta user/examples/base64/encoded type binary
+.PP
+.SH "Receive key data (the \fC\\x0\fP at the end marks the end of the string)"
+.PP
+.PP
+kdb get user/examples/base64/encoded #> 
+.PP
+.SH "Undo modifications"
+.PP
+.PP
+kdb rm -r user/examples/base64 kdb umount user/examples/base64 ```
+.PP
+For another usage example, please take a look at the ReadMe of the \fBYAML CPP plugin\fP\&. 

@@ -1,0 +1,99 @@
+.TH "doc_tutorials_namespaces_md" 3elektra "Tue Jun 14 2016" "Version 0.8.17" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_namespaces_md \- Namespaces 
+
+.SS "Definition"
+.PP
+In Elektra multiple keys may refer to the same part of the configuration\&. A \fInamespace\fP is the part of the key that refers to the key's origin (like a unique path)\&.
+.PP
+Possible sources are:
+.PP
+.IP "\(bu" 2
+\fBspec/something\fP for specification of other keys
+.IP "\(bu" 2
+\fBproc/something\fP for in-memory keys (e\&.g\&. command-line)
+.IP "\(bu" 2
+\fBdir/something\fP for dir keys in current working directory
+.IP "\(bu" 2
+\fBsystem/something\fP for system keys in /etc or /
+.IP "\(bu" 2
+\fBuser/something\fP for user keys in home directory
+.IP "\(bu" 2
+**/something** for cascading keys (actually refers to one of the above)
+.PP
+.PP
+Having namespaces enables both admins and users to set specific parts of the application's configuration\&.
+.PP
+.SS "How it works on the command line (kdb)"
+.PP
+Let's say your app requires the following configuration data:
+.PP
+.IP "\(bu" 2
+\fBsw/org/myapp/policy\fP - a security policy to be applied
+.IP "\(bu" 2
+\fBsw/org/myapp/default_dir\fP - a place where the application stores its data per default
+.PP
+.PP
+We now want to enter this configuration by using the \fBkdb\fP tool\&.
+.PP
+The security policy will most probably be set by your system administrator\&. So she enters 
+.PP
+.nf
+    sudo kdb set "system/sw/org/myapp/policy" "super-high-secure"
+
+.fi
+.PP
+.PP
+The key \fBsystem/app/policy\fP will be stored in the system namespace (probably at /etc/kdb on a Linux/UNIX system)\&.
+.PP
+Then the user sets his app directory by issuing: 
+.PP
+.nf
+    kdb set "user/sw/org/myapp/default_dir" "/home/user/.myapp"
+
+.fi
+.PP
+.PP
+This key will be stored in the user namespace (at the home directory) and thus may vary from user to user\&. Elektra loads the value for the current user and passes it to the application\&.
+.PP
+You can also retrieve the values in the command line by using the \fBkdb\fP tool: 
+.PP
+.nf
+    kdb get system/sw/org/maypp
+
+.fi
+.PP
+.PP
+\fICascading keys\fP are keys that start with **/** and are a way of making key lookups much easier\&. Let's say you want to load the configuration from the example above\&. You do not need to search every namespace by yourself\&. Just make a lookup for **/sw/org/myapp**, like this: 
+.PP
+.nf
+    kdb get /sw/org/myapp/policy
+    kdb get /sw/org/myapp/default_dir
+
+.fi
+.PP
+.PP
+When using cascading key the best key will be searched at runtime\&. If you are only interested in the system key, you would use: 
+.PP
+.nf
+    kdb get system/sw/org/myapp/policy
+
+.fi
+.PP
+.PP
+.SS "How it works in C"
+.PP
+The idea is to call \fB\fBkdbGet()\fP\fP to retrieve the root key for the application\&. Looking for a specific part of the configuration is done by \fB\fBksLookup()\fP\fP\&.
+.PP
+The documentation provides the following example to illustrate the intended usage\&. If you want to use a \fIcascading key\fP (starting with /), you use the \fB\fBksLookup()\fP\fP or \fB\fBksLookupByName()\fP\fP function (also see \fCdoxygen\fP ): 
+.PP
+.nf
+    if (kdbGet(handle, myConfig,  p=keyNew("/sw/org/myapp", KEY_END)) == -1)
+            errorHandler ("Could not get Keys", parentKey);
+    if ((myKey = ksLookupByName (myConfig, "/sw/org/myapp/mykey", 0)) == NULL)
+            errorHandler ("Could not Lookup Key");
+.fi
+.PP
+ 

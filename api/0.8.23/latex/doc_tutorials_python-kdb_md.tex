@@ -1,0 +1,220 @@
+\subsection*{Introduction}
+
+When programming in Python it is possible to access the kdb database, changing values of existing keys, adding and deleting keys and a few other things.
+
+\subsection*{First Steps}
+
+In order to being able to use {\ttfamily kdb}, you at first need to {\ttfamily import kdb}. You need access to a Python object of {\ttfamily K\+DB}. This is accomplished by calling {\ttfamily \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()}} and saving this to a variable because later on this object will be needed for various operations. The easiest way to do this would be\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    print(\textcolor{stringliteral}{"Hello world! I have a kdb-instance! :D"})
+    \textcolor{comment}{# do all kinds of operations explained below}
+\end{DoxyCode}
+
+
+\subsection*{Keyset}
+
+A keyset is basically a list of the keys that lie within the specified range of the database. When creating an empty keyset this range is obviously zero. It is possible to load the whole database into a keyset but in a lot of cases this is not needed and you can specify which keys exactly you need (which I mean with specified range). At first it is necessary to create a new keyset. When simply calling {\ttfamily \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()}} the keyset is of size 0. There is no restriction to the keyset\textquotesingle{}s size. It is possible to specify a certain (maximum) size for a keyset. To load keys into to keyset from the database you simply call the method {\ttfamily get} provided by the kdb-\/object.
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    \textcolor{comment}{# create empty keyset}
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    print(len(ks))  \textcolor{comment}{# should be 0}
+    \textcolor{comment}{# load an existing keyset}
+    k.get(ks, \textcolor{stringliteral}{'user'})
+\end{DoxyCode}
+
+
+It is also possible to iterate as expected over a keyset and use {\ttfamily len}, {\ttfamily reversed} and copying. The elements of a keyset can be accessed by indexes and a keyset can be sliced. Another way of accessing a key is by the key name (`keyset\+\_\+name\mbox{[}\textquotesingle{}/path/to/keys/key\+\_\+name\textquotesingle{}\mbox{]}{\ttfamily ). If a key with the given name does not exist within the keyset, a}Key\+Error` exception is thrown.
+
+An example that shows how to load an existing keyset and then access every key and value of the loaded keyset\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    \textcolor{comment}{# load an existing keyset}
+    k.get(ks, \textcolor{stringliteral}{'user'})
+    \textcolor{comment}{# if you for some reason want to loop through the keyset last key first}
+    \textcolor{comment}{# use: for key in reversed(ks):}
+    \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} ks:
+        \textcolor{comment}{# print for every key in the keyset the key and the value}
+        print(\textcolor{stringliteral}{"key: \{\} value: \{\}"}.format(key, key.value))
+\end{DoxyCode}
+
+
+Here an example of how you can easily check if a key exists\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    namespace = \textcolor{stringliteral}{"user"}
+    path = \textcolor{stringliteral}{'\{\}/test'}.format(namespace)
+
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    k.get(ks, namespace)
+
+    \textcolor{keywordflow}{try}:
+        print(\textcolor{stringliteral}{"The value of the key \{\} is \{\}!"}.format(ks[path], ks[path]
+                                                      .value))
+    \textcolor{keywordflow}{except} KeyError:
+        print(\textcolor{stringliteral}{"The key \{\} does not exist!"}.format(path))
+\end{DoxyCode}
+
+
+Ways of copying a keyset\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} copy, kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    k.get(ks, \textcolor{stringliteral}{'spec'})
+    \textcolor{comment}{# creating a deep copy}
+    ks\_deepcopy = copy.deepcopy(ks)
+    \textcolor{comment}{# creating a shallow copy}
+    ks\_shallowcopy = copy.copy(ks)
+\end{DoxyCode}
+
+
+Slicing works just like for normal lists in Python. But be careful\+: Afterwards the result will be a list -\/ not a keyset.
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    k.get(ks, \textcolor{stringliteral}{'system'})
+
+    \textcolor{comment}{# creating a shallow copy by slicing}
+    ks\_copy\_by\_slicing = ks[:]
+
+    \textcolor{comment}{# in the following examples start & end need to be replaced by integers}
+    start, end = 1, 3
+    \textcolor{comment}{# create keyset with keys from start to end-1}
+    a = ks[start:end]
+
+    \textcolor{comment}{# create keyset with keys from start to the end of the original keyset}
+    start = len(ks) - 3
+    b = ks[start:]
+
+    \textcolor{comment}{# create keyset with keys from the beginning of the keyset to end}
+    c = ks[:end]
+
+    \textcolor{keywordflow}{for} keyset \textcolor{keywordflow}{in} [a, b, c]:
+        \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} keyset:
+            \textcolor{keywordflow}{try}:
+                print(\textcolor{stringliteral}{'\{\}: \{\}'}.format(key, key.value))
+            \textcolor{keywordflow}{except} UnicodeDecodeError:
+                \textcolor{keywordflow}{pass}  \textcolor{comment}{# Ignore keys and values that store non-ASCII characters}
+        print(\textcolor{stringliteral}{''})
+\end{DoxyCode}
+
+
+If you have changed anything in the keyset and want those changes to be saved to the database, you need to call {\ttfamily set} which is just like {\ttfamily get} provided by the kdb-\/object.
+
+An example of everything up until now could look like this\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    k.get(ks, \textcolor{stringliteral}{'/path/to/keys'})
+
+    \textcolor{comment}{# Any number of operations that manipulate the keyset as explained above}
+
+    \textcolor{comment}{# Setting and by doing so saving the new keyset}
+    k.set(ks, \textcolor{stringliteral}{'/path/to/keys'})
+    \textcolor{comment}{# by changing the path here it is for instance possible to set the keyset}
+    \textcolor{comment}{# of one user identical to another users}
+\end{DoxyCode}
+
+
+If you have a key a very simple way to get its name and value\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    ks = \hyperlink{classkdb_1_1KeySet}{kdb.KeySet}()
+    k.get(ks, \textcolor{stringliteral}{'user'})
+    \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} ks:
+        print(\textcolor{stringliteral}{"key name:  \{\}"}.format(key.name))
+        print(\textcolor{stringliteral}{"\{0\}\{1\}\(\backslash\)n\{0\}\{2\}\(\backslash\)n"}.format(\textcolor{stringliteral}{"key value: "}, key.value,
+                                        ks.lookup(key).string))
+\end{DoxyCode}
+
+
+It is possible to create new keys\+:
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{import} kdb
+
+with \hyperlink{classkdb_1_1KDB}{kdb.KDB}() \textcolor{keyword}{as} k:
+    \textcolor{comment}{# the first argument is the path to the key,}
+    \textcolor{comment}{# the third argument is the key's value}
+    new\_key = \hyperlink{classkdb_1_1Key}{kdb.Key}(\textcolor{stringliteral}{'/user/sw/pk/key\_name'}, kdb.KEY\_VALUE, \textcolor{stringliteral}{'key\_value'})
+    print(\textcolor{stringliteral}{"\{\}: \{\}"}.format(new\_key, new\_key.value))
+\end{DoxyCode}
+
+
+Keys can be added to a keyset using {\ttfamily append}. If the key already exists, the value will be updated. Calling `keyset\+\_\+name\mbox{[}\textquotesingle{}/path/to/key\textquotesingle{}\mbox{]} = \textquotesingle{}new\+\_\+value` does not work for updating keys already in a keyset.
+
+
+\begin{DoxyCode}
+\textcolor{keyword}{from} kdb \textcolor{keyword}{import} KDB, KEY\_VALUE, Key, KeySet
+
+
+\textcolor{keyword}{class }KeySet(KeySet):
+    \textcolor{keyword}{def }\_\_repr\_\_(self):
+        \textcolor{stringliteral}{"""Return a textual representation of this keyset."""}
+        \textcolor{keywordflow}{return} \textcolor{stringliteral}{'\(\backslash\)n'}.join(
+            [\textcolor{stringliteral}{'\{\}: \{\}'}.format(key.name, key.value) \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} self])
+
+
+\textcolor{keyword}{def }key(name, value):
+    \textcolor{stringliteral}{"""Create a new key with the given name and value."""}
+    \textcolor{keywordflow}{return} Key(name, KEY\_VALUE, value)
+
+
+\textcolor{keyword}{def }describe(keyset, title, newline=True):
+    \textcolor{keywordflow}{return} \textcolor{stringliteral}{'\{\}\(\backslash\)n\{\}\(\backslash\)n\{\}\{\}'}.format(title, \textcolor{stringliteral}{'='} * len(title), keyset,
+                                 \textcolor{stringliteral}{'\(\backslash\)n'} \textcolor{keywordflow}{if} newline \textcolor{keywordflow}{else} \textcolor{stringliteral}{''})
+
+
+with KDB() \textcolor{keyword}{as} data:
+    keyset = KeySet()
+    data.get(keyset, \textcolor{stringliteral}{'user'})
+    print(describe(keyset, \textcolor{stringliteral}{"Initial Keyset"}))
+
+    new\_key = key(\textcolor{stringliteral}{'user/sw/pk/key\_name'}, \textcolor{stringliteral}{'key\_value'})
+    \textcolor{comment}{# adding new\_key to the existing key-set,}
+    \textcolor{comment}{# ks['/user/sw/pk/key\_name'].value == 'key\_value'}
+    keyset.append(new\_key)
+    print(describe(keyset, \textcolor{stringliteral}{"Add New Key"}))
+
+    newer\_key = key(\textcolor{stringliteral}{'user/sw/pk/key\_name'}, \textcolor{stringliteral}{'other\_key\_value'})
+    \textcolor{comment}{# adding newer\_key to the existing key-set, by doing so replacing new\_key,}
+    \textcolor{comment}{# ks['/user/sw/pk/key\_name'].value == 'other\_key\_value'}
+    keyset.append(newer\_key)
+    print(describe(keyset, \textcolor{stringliteral}{"Replace Key"}, newline=\textcolor{keyword}{False}))
+\end{DoxyCode}
+ 

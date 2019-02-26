@@ -1,0 +1,218 @@
+.TH "md_src_plugins_jni_README" 3elektra "Fri Dec 22 2017" "Version 0.8.21" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_jni_READMEPlugin: jni 
+ \- 
+.IP "\(bu" 2
+infos = Information about the jni plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = unittest configurable memleak experimental discouraged
+.IP "\(bu" 2
+infos/description = generic Java plugin
+.PP
+.PP
+Allows you to write plugins in Java\&.
+.PP
+This plugin needs the JNA bindings to work\&. Furthermore, it requires Java 8 or later\&.
+.PP
+While the plugin internally uses JNI (thus the name), the Java binding for your Java plugin may use something different, e\&.g\&. JNA\&. The requirements for the Java bindings are:
+.PP
+.IP "\(bu" 2
+needs to have the classes \fCelektra/Key\fP and \fCelektra/KeySet\fP with
+.IP "  \(bu" 4
+a constructor that takes a C-Pointer as long (J)
+.IP "  \(bu" 4
+a method 'release' that gives up ownership (set internal pointer to NULL)
+.PP
+
+.PP
+.PP
+The Java plugin itself needs to have the following methods:
+.PP
+.IP "\(bu" 2
+constructor without arguments (i\&.e\&. default constructor)
+.IP "\(bu" 2
+open with argument \fCelektra/KeySet\fP (the plugin's conf) and \fCelektra/Key\fP
+.IP "\(bu" 2
+close with argument \fCelektra/Key\fP
+.IP "\(bu" 2
+get with arguments \fCelektra/KeySet\fP and \fCelektra/Key\fP
+.IP "\(bu" 2
+set with arguments \fCelektra/KeySet\fP and \fCelektra/Key\fP
+.IP "\(bu" 2
+error with arguments \fCelektra/KeySet\fP and \fCelektra/Key\fP
+.PP
+.PP
+.SS "Installation"
+.PP
+.SS "Java prerequisites on Debian 9"
+.PP
+openjdk-8 and 9 do not work reliable: jvm crashes without usable backtrace\&.
+.PP
+When using non-standard paths, you have to set JAVA_HOME before invoking cmake\&. (For example when you unpack Oracle Java to \fC/usr/local\fP or \fC/opt\fP\&.) For example: 
+.PP
+.nf
+ JAVA_HOME=/usr/local/jdk-9.0.1
+
+.fi
+.PP
+.PP
+.SS "Java prerequisites on Debian 8"
+.PP
+Please install java8 as package, e\&.g\&. \fCfor debian\fP and then let cmake actually find jdk8: 
+.PP
+.nf
+cd /usr/lib/jvm/ && sudo rm -f default-java && sudo ln -s java-8-oracle default-java
+
+.fi
+.PP
+.PP
+and for the run-time, create the file \fC/etc/ld\&.so\&.conf\&.d/java-8-oracle\&.conf\fP with the content (for amd64): 
+.PP
+.nf
+/usr/lib/jvm/default-java/jre/lib/amd64
+/usr/lib/jvm/default-java/lib/amd64
+/usr/lib/jvm/default-java/jre/lib/amd64/server
+
+.fi
+.PP
+.PP
+and run: 
+.PP
+.nf
+sudo ldconfig
+
+.fi
+.PP
+.PP
+.SS "Java prerequisites on macOS"
+.PP
+macOS includes an old apple specific version of java, based on 1\&.6\&. However, for the jni plugin version 1\&.8 of Java is required, so either the openjdk or the oracle jdk has to be installed\&.
+.PP
+Please install oracle's jdk8 via their provided installer\&. After that, you have to set the JAVA_HOME environment variable to the folder where the jdk is installed, usually like 
+.PP
+.nf
+    export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/"
+
+.fi
+.PP
+.PP
+As macOS handles linked libraries differently, there is no ldconfig command\&. Instead you can export an environment variable to tell elektra the location of the java dynamic libraries\&. 
+.PP
+.nf
+    export DYLD_FALLBACK_LIBRARY_PATH="/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/jre/lib:/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/jre/lib/server/"
+
+.fi
+.PP
+.PP
+Afterwards, the jni plugin should be included in the build and compile successfully\&.
+.PP
+.SS "Troubleshooting"
+.PP
+If it should still not find the correct jni version, or says the jni version is not 1\&.8, then it most likely still searches in the wrong directory for the jni header file\&. It has been experienced that if the project has been built already without this environment variable set, the java location is cached\&. As a result, it will be resolved wrong in future builds, even though the environment variable is set\&. To resolve this, it should be enough to delete the CMakeCache\&.txt file in the build directory and reconfigure the build\&.
+.PP
+.SS "Enabling the plugin"
+.PP
+Then enable the plugin using (\fCALL;-EXPERIMENTAL\fP is default): 
+.PP
+.nf
+cmake -DPLUGINS="ALL;-EXPERIMENTAL;jni" /path/to/libelektra
+
+.fi
+.PP
+.PP
+Running 
+.PP
+.nf
+kdb-full
+
+.fi
+.PP
+.PP
+should work then (needs BUILD_FULL cmake option), if you get one of these: 
+.PP
+.nf
+kdb-full: error while loading shared libraries: libmawt.so: cannot open shared object file: No such file or directory
+kdb-full: error while loading shared libraries: libjawt.so: cannot open shared object file: No such file or directory
+
+.fi
+.PP
+.PP
+You missed one of the ldconfig steps\&.
+.PP
+.SS "Plugin Config"
+.PP
+You need to pass :
+.IP "\(bu" 2
+classname the classname to use as plugin, e\&.g\&. \fCelektra/plugin/Echo\fP
+.IP "\(bu" 2
+classpath the classpath where to find JNA, the package elektra and other classes needed
+.PP
+.PP
+Additionally, you can set:
+.PP
+.IP "\(bu" 2
+option allows you to pass a option to the jvm, default: \fC-verbose:gc,class,jni\fP
+.IP "\(bu" 2
+ignore allows you to ignore broken options, default: \fCfalse\fP
+.IP "\(bu" 2
+print allows you to print java exceptions for debugging purposes
+.PP
+.PP
+E\&.g\&. 
+.PP
+.nf
+kdb info -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print= jni
+kdb check -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print= jni
+kdb mount -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/src/bindings/jna,print= file.properties /jni jni classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print=
+
+.fi
+.PP
+.PP
+Or if \fC\&.jar\fP is already installed: 
+.PP
+.nf
+bin/kdb mount -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/elektra.jar,print= file.properties /jni jni classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/elektra.jar,print=
+
+.fi
+.PP
+.PP
+Additionally, the java implementation can request any other additional configuration, read about it below in the section (specific java plugin)\&. If you are reading this page on GitHub, you won't see it, because the plugins dynamically append text after the end of this page\&.
+.PP
+.SS "Development"
+.PP
+To know how the methods of your class are called, use: 
+.PP
+.nf
+javap -s YourClass
+
+.fi
+.PP
+.PP
+Also explained \fChere\fP
+.PP
+\fCJNI Functions\fP \fCInvocation\fP
+.PP
+.SS "Issues"
+.PP
+Argumentation for discouraged:
+.PP
+.IP "\(bu" 2
+You cannot use the plugin with openjdk: You get a linker error because of some missing private SUN symbols\&. In Debian9 it crashes with openjdk8/9\&.
+.IP "\(bu" 2
+Only a single java plugin can be loaded
+.IP "\(bu" 2
+When this plugin is enabled, valgrind detects memory problems even if the plugin is not mounted\&. 
+.PP
+

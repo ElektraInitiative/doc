@@ -1,0 +1,159 @@
+.TH "proposal.c" 3elektra "Fri Dec 22 2017" "Version 0.8.21" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+proposal.c \- Implementation of proposed API enhancements\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <string\&.h>\fP
+.br
+\fC#include <kdbprivate\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Key * \fBelektraKsPrev\fP (KeySet *ks)"
+.br
+.RI "Returns the previous Key in a KeySet\&. "
+.ti -1c
+.RI "KeySet * \fBelektraRenameKeys\fP (KeySet *config, const char *name)"
+.br
+.RI "Takes the first key and cuts off this common part for all other keys, instead name will be prepended\&. "
+.ti -1c
+.RI "int \fBelektraKeyLock\fP (Key *key, enum \fBelektraLockOptions\fP what)"
+.br
+.RI "Permanently locks a part of the key\&. "
+.ti -1c
+.RI "Key * \fBelektraKsPopAtCursor\fP (KeySet *ks, cursor_t pos)"
+.br
+.RI "Pop key at given cursor position\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Implementation of proposed API enhancements\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraKeyLock (Key * key, enum \fBelektraLockOptions\fP what)"
+
+.PP
+Permanently locks a part of the key\&. This can be:
+.IP "\(bu" 2
+KEY_FLAG_LOCK_NAME to lock the name
+.IP "\(bu" 2
+KEY_FLAG_LOCK_VALUE to lock the value
+.IP "\(bu" 2
+KEY_FLAG_LOCK_META to lock the metadata
+.PP
+.PP
+To unlock the key, duplicate it\&.
+.PP
+It is also possible to lock when the key is created with \fBkeyNew()\fP\&.
+.PP
+Some data structures need to lock the key (most likely its name), so that the ordering does not get confused\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP which name should be locked
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyNew()\fP, \fBkeyDup()\fP, \fBksAppendKey()\fP 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI>0\fP the bits that were successfully locked 
+.br
+\fI0\fP if everything was locked before 
+.br
+\fI-1\fP if it could not be locked (nullpointer) 
+.RE
+.PP
+
+.SS "Key* elektraKsPopAtCursor (KeySet * ks, cursor_t pos)"
+
+.PP
+Pop key at given cursor position\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset to pop key from 
+.br
+\fIc\fP where to pop
+.RE
+.PP
+The internal cursor will be rewinded using \fBksRewind()\fP\&. You can use \fBksGetCursor()\fP and \fBksSetCursor()\fP jump back to the previous position\&. e\&.g\&. to pop at current position within \fBksNext()\fP loop: 
+.PP
+.nf
+cursor_t c = ksGetCursor(ks);
+keyDel (ksPopAtCursor(ks, c));
+ksSetCursor(ks, c);
+ksPrev(ks); // to have correct key after next ksNext()
+
+.fi
+.PP
+.PP
+\fBWarning:\fP
+.RS 4
+do not use, will be superseded by external iterator API
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the popped key 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if ks is 0 
+.RE
+.PP
+
+.SS "Key* elektraKsPrev (KeySet * ks)"
+
+.PP
+Returns the previous Key in a KeySet\&. KeySets have an internal cursor that can be reset with \fBksRewind()\fP\&. Every time \fBksPrev()\fP is called the cursor is decremented and the new current Key is returned\&.
+.PP
+You'll get a NULL pointer if the key before begin of the KeySet was reached\&.
+.PP
+Don't delete the key, use \fBksPop()\fP if you want to delete it\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the new current Key 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksRewind()\fP, \fBksCurrent()\fP 
+.RE
+.PP
+
+.SS "KeySet* elektraRenameKeys (KeySet * config, const char * name)"
+
+.PP
+Takes the first key and cuts off this common part for all other keys, instead name will be prepended\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+a new allocated keyset with keys in user namespace\&.
+.RE
+.PP
+The first key is removed in the resulting keyset\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

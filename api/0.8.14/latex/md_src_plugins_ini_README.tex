@@ -1,0 +1,121 @@
+
+\begin{DoxyItemize}
+\item infos = Information about ini plugin is in keys below
+\item infos/author = Felix Berlakovich \href{mailto:elektra@berlakovich.net}{\tt elektra@berlakovich.\+net}
+\item infos/licence = B\+S\+D
+\item infos/needs =
+\item infos/provides = storage
+\item infos/placements = getstorage setstorage
+\item infos/description = ini file backend
+\end{DoxyItemize}
+
+This plugin allows read/write of I\+N\+I files. I\+N\+I files consist of simple key value pairs of the form \char`\"{}key = value\char`\"{}. Additionally keys can be categorised into different sections. Sections must be enclosed in \char`\"{}\mbox{[}$\,$\mbox{]}\char`\"{}, for example \char`\"{}\mbox{[}section\mbox{]}\char`\"{}. Each section is converted into a directory key (without value) and keys below the section are located below the section key. If the same section appears multiple times, the keys of all sections with the same name are merged together under the section key.
+
+\subsection*{U\+S\+A\+G\+E}
+
+If you want to add a ini file to the global key database, simply use mount\+: \begin{DoxyVerb}kdb mount file.ini /example ini
+\end{DoxyVerb}
+
+
+Then you can modify the contents of the ini file using set\+: \begin{DoxyVerb}kdb set user/example/key value
+kdb set user/example/section
+kdb set user/example/section/key value
+\end{DoxyVerb}
+
+
+Find out which file you modified\+: \begin{DoxyVerb}kdb file user/example
+\end{DoxyVerb}
+
+
+\subsection*{S\+E\+C\+T\+I\+O\+N\+S}
+
+When converting a Key\+Set to an I\+N\+I file it is important to differentiate between regular keys and section keys. The ini plugin treats all keys with a binary N\+U\+L\+L value as section key. Note that binary N\+U\+L\+L is not the same as an empty value (i.\+e. \char`\"{}\char`\"{}).
+
+For example consider the following ini file\+: \begin{DoxyVerb}                            [section1]
+                            key1 =
+                            key2 = value2
+\end{DoxyVerb}
+
+
+This would result in a Key\+Set containing three keys. The section key {\ttfamily section1} would be a binary key with value N\+U\+L\+L (i.\+e. 0). {\ttfamily section1/key1} would be a regular key with value \char`\"{}\char`\"{}. {\ttfamily section1/key2} would be a regular key with value \char`\"{}value2\char`\"{}. In the other direction this requires section keys to be manually created with a binary N\+U\+L\+L value.
+
+For example consider the following Key\+Set\+: \begin{DoxyVerb}                            section1 = ""
+                            section1/subkey = "value1"
+\end{DoxyVerb}
+
+
+Although section1 might look like a section, it would result in the following ini file\+: \begin{DoxyVerb}                            section1 =
+                            section1\/subkey = value1
+\end{DoxyVerb}
+
+
+\subsubsection*{A\+U\+T\+O\+S\+E\+C\+T\+I\+O\+N\+S}
+
+Creating the section keys manually can be cumbersome. This is especially true because Key\+Sets resulting in I\+N\+I files usually do not contain keys with a depth greater than 1 relative to the parent key. For that reason a good guess can be made what should be sections and what not. This is done by activanting the autosections option.
+
+The autosections feature can be enabled by creating a key named {\ttfamily autosections} in the configuration of the plugin. Note that only the existence of the key is relevant, not its value.
+
+As soon as this key exists, the plugin will automatically create section keys for keys with a depth greater than 1 relative to the parent key.
+
+For example consider the following ini file\+: \begin{DoxyVerb}                            [section1]
+                            key1 =
+                            key2 = value2
+                            [section2]
+                            key3 = value3
+\end{DoxyVerb}
+
+
+Without the autosections option the following Key\+Set is required to create this ini file\+: \begin{DoxyVerb}                            parent/section1 = NULL
+                            parent/section1/key1 = ""
+                            parent/section1/key2 = "value2"
+                            parent/section2 = NULL
+                            parent/section2/key3 = "value3"
+\end{DoxyVerb}
+
+
+The section keys have to be inserted manually. With the autosections option the Key\+Set can be reduced to the following\+: \begin{DoxyVerb}                            parent/section1/key1 = ""
+                            parent/section1/key2 = "value2"
+                            parent/section2/key3 = "value3"
+\end{DoxyVerb}
+
+
+All three keys have a depth greater than 1 relative to the parent key {\ttfamily parent}. Therefore the key name part directly below the parent key is considered to be the section name. For example, for the keys {\ttfamily parent/section1/key1} and {\ttfamily parent/section1/key2} {\ttfamily section1} is considered to be the section and is automatically created in the I\+N\+I file.
+
+\subsection*{C\+O\+M\+M\+E\+N\+T\+S}
+
+The ini plugin supports the use of comments. Comment lines start with a ';' or a '\#'. Adjacent comments are merged together (separated by \char`\"{}\textbackslash{}n\char`\"{}) and are put into the comment metadata of the key following the comment. This can be either a section key or a normal key.
+
+\subsection*{M\+U\+L\+T\+I\+L\+I\+N\+E S\+U\+P\+P\+O\+R\+T}
+
+The ini plugin supports multiline ini values. Continuations of previous values have to start with whitespace characters.
+
+For example consider the following ini file\+: \begin{DoxyVerb}                            key1 = value1
+                            key2 = value2
+                                    with continuation
+                                    lines
+\end{DoxyVerb}
+
+
+This would result in a Key\+Set containing two keys. One key named {\ttfamily key1} with the value {\ttfamily value1} and another key named {\ttfamily key2} with the value {\ttfamily value2\textbackslash{}nwith continuation\textbackslash{}nlines}.
+
+By default the support for multiline values is disabled because formatting (whitespaces before keynames) may be accidentially mixed with value continuations. The multiline support can be enabled by creating a key named {\ttfamily multiline} in the configuration of the plugin. Note that only the existence of the key is relevant, not its value. As soon as this key exists, the plugin treats lines starting with whitespaces as continuations of the previous key value. Keep in mind, that writing multiline values is also only supported if the multiline support is turned on. Otherwise the plugin will refuse to write key values with newlines.
+
+\subsection*{M\+E\+T\+A\+K\+E\+Y S\+U\+P\+P\+O\+R\+T}
+
+The ini plugin supports turning keys into \hyperlink{md_doc_help_elektra-meta-data_doc_help_elektra-meta-data_md}{metakeys} by adding the config key {\ttfamily meta}.
+
+\subsection*{P\+R\+E\+S\+E\+R\+V\+E O\+R\+D\+E\+R}
+
+If the {\ttfamily preserveorder} config key is set, the ini plugin preserves the original order of the file. Only use this option for editing existing key values.
+
+\subsection*{R\+E\+S\+T\+R\+I\+C\+T\+I\+O\+N\+S}
+
+Currently the plugin has the following shortcomings\+:
+
+
+\begin{DoxyItemize}
+\item formatting newlines are not restored on write
+\item regardless of which comment was used originally, it is always written back as ';'
+\end{DoxyItemize}
+
+The plugin is still work in progress. 

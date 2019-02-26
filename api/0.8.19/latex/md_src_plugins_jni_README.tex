@@ -1,0 +1,117 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the jni plugin is in keys below
+\item infos/author = Name \href{mailto:name@libelektra.org}{\tt name@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides =
+\item infos/needs =
+\item infos/placements =
+\item infos/status = maintained unittest configurable memleak experimental -\/500
+\item infos/description = generic java plugin
+\end{DoxyItemize}
+
+Allows you to write plugins in java.
+
+Needs Java 8 or later. While the plugin internally uses J\+N\+I, the Java binding for your java-\/plugin may use something different, e.\+g. J\+N\+A. The requirements for the java bindings are\+:
+
+
+\begin{DoxyItemize}
+\item needs to have the classes {\ttfamily elektra/\+Key} and {\ttfamily elektra/\+Key\+Set} with
+\begin{DoxyItemize}
+\item a constructor that takes a C-\/\+Pointer as long (J)
+\item a method \char`\"{}release\char`\"{} that gives up ownership (set internal pointer to N\+U\+L\+L)
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+The java plugin itself needs to have the following methods\+:
+
+
+\begin{DoxyItemize}
+\item constructor without arguments (i.\+e. default constructor)
+\item open with argument {\ttfamily elektra/\+Key\+Set} (the plugin's conf) and {\ttfamily elektra/\+Key}
+\item close with argument {\ttfamily elektra/\+Key}
+\item get with arguments {\ttfamily elektra/\+Key\+Set} and {\ttfamily elektra/\+Key}
+\item set with arguments {\ttfamily elektra/\+Key\+Set} and {\ttfamily elektra/\+Key}
+\item error with arguments {\ttfamily elektra/\+Key\+Set} and {\ttfamily elektra/\+Key}
+\end{DoxyItemize}
+
+\subsection*{Installation}
+
+Please install java8 as package, e.\+g. \href{http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html}{\tt for debian} and then let cmake actually find jdk8\+: \begin{DoxyVerb}cd /usr/lib/jvm/ && sudo rm -f default-java && sudo ln -s java-8-oracle default-java
+\end{DoxyVerb}
+
+
+and for the runtime, create the file {\ttfamily /etc/ld.so.\+conf.\+d/java-\/8-\/oracle.conf} with the content (for amd64)\+: \begin{DoxyVerb}/usr/lib/jvm/default-java/jre/lib/amd64
+/usr/lib/jvm/default-java/lib/amd64
+/usr/lib/jvm/default-java/jre/lib/amd64/server
+\end{DoxyVerb}
+
+
+and run\+: \begin{DoxyVerb}sudo ldconfig
+\end{DoxyVerb}
+
+
+Then enable the plugin using ({\ttfamily A\+L\+L;-\/\+E\+X\+P\+E\+R\+I\+M\+E\+N\+T\+A\+L} is default)\+: \begin{DoxyVerb}cmake -DPLUGINS="ALL;-EXPERIMENTAL;jni" /path/to/libelektra
+\end{DoxyVerb}
+
+
+Running \begin{DoxyVerb}kdb-full
+\end{DoxyVerb}
+
+
+should work then (needs B\+U\+I\+L\+D\+\_\+\+F\+U\+L\+L cmake option), if you get one of these\+: \begin{DoxyVerb}kdb-full: error while loading shared libraries: libmawt.so: cannot open shared object file: No such file or directory
+kdb-full: error while loading shared libraries: libjawt.so: cannot open shared object file: No such file or directory
+\end{DoxyVerb}
+
+
+You missed one of the ldconfig steps.
+
+\subsection*{Plugin Config}
+
+You need to pass \+:
+\begin{DoxyItemize}
+\item classname the classname to use as plugin, e.\+g. {\ttfamily elektra/plugin/\+Echo}
+\item classpath the classpath where to find J\+N\+A, the package elektra and other classes needed
+\end{DoxyItemize}
+
+Additionally, you can set\+:
+
+
+\begin{DoxyItemize}
+\item option allows you to pass a option to the jvm, default\+: {\ttfamily -\/verbose\+:gc,class,jni}
+\item ignore allows you to ignore broken options, default\+: {\ttfamily false}
+\item print allows you to print java exceptions for debugging purposes
+\end{DoxyItemize}
+
+E.\+g. \begin{DoxyVerb}kdb info -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print= jni
+kdb check -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print= jni
+kdb mount -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/src/bindings/jna,print= file.properties /jni jni classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/lib/java:/path/to/libelektra/src/bindings/jna,print=
+\end{DoxyVerb}
+
+
+Or if {\ttfamily .jar} is already installed\+: \begin{DoxyVerb}bin/kdb mount -c classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/elektra.jar,print= file.properties /jni jni classname=elektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/elektra.jar,print=
+\end{DoxyVerb}
+
+
+Additionally, the java implementation can request any other additional configuration, read about it below in the section (specific java plugin). If you are reading this page on github, you won't see it, because the plugins dynamically append text after the end of this page.
+
+\subsection*{Development}
+
+To know how the methods of your class are called, use\+: \begin{DoxyVerb}javap -s YourClass
+\end{DoxyVerb}
+
+
+Also explained \href{https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/types.html#wp15773}{\tt here}
+
+\href{https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/functions.html}{\tt J\+N\+I Functions} \href{https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/invocation.html}{\tt Invocation}
+
+\subsection*{Issues}
+
+(Argumentation for -\/500 in status)
+
+
+\begin{DoxyItemize}
+\item In Debian Wheezy you cannot use openjdk\+: you get a linker error because of some missing private S\+U\+N symbols. Maybe just the cmake mechanism to find java is broken.
+\item Only a single java plugin can be loaded
+\item when this plugin is enabled, valgrind detects memory problems even if the plugin is not mounted. 
+\end{DoxyItemize}

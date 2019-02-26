@@ -1,0 +1,96 @@
+.TH "md_src_plugins_glob_README" 3elektra "Tue Oct 31 2017" "Version 0.8.20" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_glob_READMEPlugin: glob 
+ \- 
+.IP "\(bu" 2
+infos = Information about glob plugin is in keys below
+.IP "\(bu" 2
+infos/author = Felix Berlakovich elektra@berlakovich.net
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = apply
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/ordering = check keytometa
+.IP "\(bu" 2
+infos/stacking = no
+.IP "\(bu" 2
+infos/placements = presetstorage postgetstorage
+.IP "\(bu" 2
+infos/status = unittest nodep libc configurable difficult
+.IP "\(bu" 2
+infos/description = copies metadata to keys with the help of globbing
+.PP
+.PP
+The glob plugin provides coping metadata given by the plugin's configuration to keys identified using \fIglob expressions\fP\&. Globbing resembles regular expressions\&. They do not have the same expressive power, but are easier to use\&. The semantics are more suitable to match path names:
+.PP
+.IP "\(bu" 2
+\fC*\fP matches any key name of just one hierarchy\&. This means it complies with any character except slash or null\&.
+.IP "\(bu" 2
+\fC?\fP satisfies single characters with the same exclusions\&.
+.IP "\(bu" 2
+Additionally, there are ranges and character classes\&. They can also be inverted\&.
+.PP
+.PP
+So this plugin adds metadata to keys identified by globbing expressions\&. The plugin copies the metadata of the corresponding globbing keys in its configuration\&. Globbing can be applied in get and set direction or both\&.
+.PP
+.SS "Globbing Keys"
+.PP
+The plugin is configured with globbing keys in its configuration\&. Each key below the configuration is interpreted as a globbing key\&. The value of the key contains the globbing expression\&. When a key matching the glob expression contained in one of the globbing keys is found, the metakeys of the corresponding globbing key are copied\&. Once a match is found, no further keys will be considered for globbing\&. The reason for this are catch all globbing keys that can be used to match all keys that have not been matched by a preceding globbing key\&.
+.PP
+.SS "Globbing Direction"
+.PP
+Globbing keys located directly below the configuration (e\&.g \fCconfig/glob/#1\fP) are applied in both directions (get and set)\&. Keys below 'get' (e\&.g\&. \fCconfig/glob/get/#1\fP) are applied only in the get direction and keys below set (e\&.g\&. \fCconfig/glob/set/#1\fP) are applied only in the set direction\&.
+.PP
+So the glob plugin iterates over a list of glob expressions for every key\&. Metadata is applied only for the first expression that matches\&. So later expressions can be used as default values\&.
+.PP
+.SS "Globbing Flags"
+.PP
+Globbing keys may contain a subkey named 'flags'\&. This optional key contains the flags to be passed to the globbing function (currently fnmatch) as a comma separated list\&. Unknown flag names will be ignored\&. The allowed flag names are
+.PP
+.IP "\(bu" 2
+'noescape' which enables the FNM_NOESCAPE flag
+.IP "\(bu" 2
+'pathname' which enables the FNM_PATHNAME flag
+.IP "\(bu" 2
+'period' which enables the FNM_PERIOD flag
+.PP
+.PP
+If the flag key does not exist, FNM_PATHNAME is used as a default (see fnmatch(3) for more details)\&. An empty string disables all flags (i\&.e\&. also the default flag)\&. 
+.SS "Contracts"
+.PP
+Glob statements are very useful together with contracts\&. Storage plugins can request the glob plugin to fill up metadata before they receive the keys in \fCelektraPluginSet()\fP\&. In \fCconfig/needs\fP, the plugin declares which keys should obtain which metadata\&. If the glob expression starts with a slash, the contract checker will automatically prepend the mountpoint\&.
+.PP
+For example, the hosts plugin contract contains:
+.PP
+.PP
+.nf
+keyNew ("system/elektra/modules/hosts/config/needs/glob/#1",
+    KEY_VALUE, "/*",
+    KEY_META, "check/ipaddr", "", /* Preferred way to check */
+        /* Can be checked additionally */
+    KEY_META, "check/validation", "^[0-9\&.:]+$",
+    KEY_META, "check/validation/message",
+        "Character present not suitable for ip address",
+    KEY_END),
+keyNew ("system/elektra/modules/hosts/config/needs/glob/#2",
+    KEY_VALUE, "/*/*",
+        /* Strict character validation */
+    KEY_META, "check/validation", "^[0-9a-zA-Z\&.:]+$",
+    KEY_META, "check/validation/message",
+        "Character present not suitable for host address",
+    KEY_END),
+.fi
+.PP
+.PP
+We see that the \fChosts\fP plugin adds two glob statements with the clause \fCconfig/needs\fP\&. The first one matches with hostnames, the second with aliases\&.
+.PP
+The glob plugin only fills the metadata in \fC\fBkdbSet()\fP\fP\&. This makes a difference compared with adding the metadata already in \fC\fBkdbGet()\fP\fP\&. Using the glob plugin, the user will not see the metadata, but later plugins in \fC\fBkdbSet()\fP\fP will\&.
+.PP
+To sum up, the glob plugin replenishes the keys with metadata\&. The plugin applies metadata in a flexible way\&. This metadata can be used for later checks\&. Limited configuration storage plugins, like the \fChosts\fP plugin, use this feature\&. They need it because they are not able to store metadata themselves\&. It is obviously not possible to apply values to non-existing keys\&. 

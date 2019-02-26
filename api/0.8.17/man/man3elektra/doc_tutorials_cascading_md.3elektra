@@ -1,0 +1,96 @@
+.TH "doc_tutorials_cascading_md" 3elektra "Tue Jun 14 2016" "Version 0.8.17" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_cascading_md \- Order of namespaces 
+This tutorial assumes that you know what \fBnamespaces\fP are\&. We will only be talking about \fBcascading lookup\fP here\&.
+.PP
+In Elektra, the default order of namespaces is as follows:
+.PP
+.IP "\(bu" 2
+\fCspec\fP (contains metadata, e\&.g\&. to modify elektra lookup behaviour)
+.IP "\(bu" 2
+\fCproc\fP (process-related information)
+.IP "\(bu" 2
+\fCdir\fP (directory-related information, e\&.g\&. \fC\&.git\fP or \fC\&.htaccess\fP)
+.IP "\(bu" 2
+\fCuser\fP (user configuration)
+.IP "\(bu" 2
+\fCsystem\fP (system configuration)
+.PP
+.PP
+Looking at this order, we can see that if a configuration option isn't specified by the user (then it would be in the \fCuser\fP namespace), it will be loaded from the \fCsystem\fP namespace\&. In this case, the option in the \fCsystem\fP namespace will be used if the key hasn't been defined by the user\&.
+.PP
+``` $ sudo kdb set system/sw/tutorial/cascading/#0/current/test 'hello world' create a new key system/sw/tutorial/cascading/#0/current/test with string hello world
+.PP
+$ kdb get /sw/tutorial/cascading/#0/current/test hello world
+.PP
+$ kdb set user/sw/tutorial/cascading/#0/current/test 'hello universe' Create a new key user/sw/tutorial/cascading/#0/current/test with string hello universe
+.PP
+$ kdb get /sw/tutorial/cascading/#0/current/test hello universe ```
+.PP
+Furthermore, in the order \fCdir\fP is even higher than \fCuser\fP, which means that configuration in the current folder can overwrite user configuration\&.
+.PP
+\fC\&.configuration\fP in your current directory:
+.PP
+``` test = hello dir ```
+.PP
+Then run:
+.PP
+``` $ sudo kdb mount /\&.configuration dir/sw/tutorial/cascading/#0/current ini $ kdb get /sw/tutorial/cascading/#0/current/test hello dir ```
+.PP
+.SS "Cascading"
+.PP
+Cascading triggers actions when, for example, the key isn't found\&. This concept is used for our previous example of using \fCsystem\fP configuration when the \fCuser\fP configuration is not defined\&. When a key starts with \fC/\fP, \fIcascading lookup\fP will automatically be performed\&. e\&.g\&. using \fC/test\fP instead of \fCsystem/test\fP will do a cascading lookup\&.
+.PP
+.SS "Override links"
+.PP
+The \fCspec\fP namespace is special as it can completely change how the cascading lookup works\&.
+.PP
+For example, in the meta data of the respective \fCspec\fP-keys, \fIoverride links\fP can be specified to use other keys in favor of the key itself\&. This way, even config from current folders (\fCdir\fP) can be overwritten\&.
+.PP
+In the cascading lookup, meta data of \fCspec\fP-keys comes in as follows:
+.PP
+.IP "1." 4
+\fCoverride/#\fP keys will be considered
+.IP "2." 4
+namespaces specified in the \fCnamespaces/#\fP keys are considered
+.IP "3." 4
+Otherwise, all namespaces will be considered, see \fBhere\fP\&.
+.IP "4." 4
+\fCfallback/#\fP keys will be considered
+.IP "5." 4
+\fCdefault\fP value will be returned
+.PP
+.PP
+\fBNote:\fP \fCoverride/#\fP means an array of \fCoverride\fP keys, the array can be filled by setting \fC#\fP followed by the position, e\&.g\&. \fC#0\fP, \fC#1\fP, etc
+.PP
+As you can see, override links are considered before everything else, which makes them really powerful\&.
+.PP
+To create an override link, first you need to create a key to link the override to:
+.PP
+``` $ sudo kdb set system/overrides/test 'hello override' Create a new key system/overrides/test with string hello override ```
+.PP
+Override links can be defined by adding them to the \fCoverride/#\fP array:
+.PP
+``` $ sudo kdb setmeta spec/sw/tutorial/cascading/#0/current/test override/#0 /overrides/test $ kdb get /sw/tutorial/cascading/#0/current/test hello system override ```
+.PP
+Furthermore, you can specify a custom order for the namespaces, set fallback keys and more\&. For more information, read the \fB`elektra-spec` help page\fP\&.
+.PP
+.SS "User defaults"
+.PP
+Override links can also be used to define default values\&. It's similar to defining default values via the \fCsystem\fP namespace, but uses overrides, which means it will be preferred over the configuration in the current folder (\fCdir\fP)\&.
+.PP
+This means that user defaults overwrite values specified in the \fC\&.configuration\fP file we created and mounted earlier in this tutorial\&.
+.PP
+First you need to create the system default value to link the override to if the user hasn't defined it:
+.PP
+``` $ sudo kdb set system/overrides/test 'hello default' Create a new key system/overrides/test with string hello default ```
+.PP
+Then we can create the link:
+.PP
+``` $ sudo kdb setmeta spec/sw/tutorial/cascading/#0/current/test override/#0 /overrides/test $ kdb get /sw/tutorial/cascading/#0/current/test hello default ```
+.PP
+Now the user overrides the system default:
+.PP
+``` $ kdb set /overrides/test 'hello user' Using name user/overrides/test Create a new key user/overrides/test with string hello user $ kdb get /sw/tutorial/cascading/#0/current/test hello user ``` 

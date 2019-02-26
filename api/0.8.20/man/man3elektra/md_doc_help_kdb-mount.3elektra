@@ -1,0 +1,103 @@
+.TH "md_doc_help_kdb-mount" 3elektra "Tue Oct 31 2017" "Version 0.8.20" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_doc_help_kdb-mountkdb-mount(1) - Mount a file to the key database 
+ \- \fCkdb mount [<path> <mountpoint>] [<plugin> [<config>] [\&.\&.]]\fP
+.PP
+.IP "\(bu" 2
+Where \fCpath\fP is the path to the file the user wants to mount\&. See \fCkdb info resolver\fP for details what an absolute and relative path means\&. See also IMPORTANT below\&.
+.IP "\(bu" 2
+\fCmountpoint\fP is where in the key database the new backend should be mounted\&. For a cascading mountpoint, \fCmountpoint\fP should start with \fC/\fP\&. See also IMPORTANT below\&.
+.IP "\(bu" 2
+A list of such plugins with a configuration for each of them can be given:
+.IP "  \(bu" 4
+\fCplugin\fP should be an Elektra plugin\&.
+.IP "  \(bu" 4
+Plugins may be followed by a \fC,\fP separated list of \fCkeys=values\fP pairs which will be used as plugin configuration\&.
+.PP
+
+.PP
+.PP
+.SS "DESCRIPTION"
+.PP
+This command allows a user to mount a new \fIbackend\fP\&. The idea of mounting is explained \fBin elektra-mounting(7)\fP\&.
+.PP
+Mounting in Elektra allows the user to mount a file into the current key database like a user may mount a partition into the current file system\&. This functionality is key to Elektra as it allows users to build a global key database comprised of many different configuration files\&. A backend acts as a worker to allow Elektra to interpret configuration files as keys in the central key database such that any edits to the keys are reflected in the file and vice versa\&. Additionally, the user can use this command to list the currently mounted backends by running the command with no arguments\&.
+.PP
+.SS "IMPORTANT"
+.PP
+This command writes into the \fC/etc\fP directory and as such it requires root permissions\&. Use \fCkdb file system/elektra/mountpoints\fP to find out where exactly it will write to\&.
+.PP
+Absolute paths are still relative to their namespace (see \fCkdb info resolver\fP)\&. Only system+spec mountpoints are actually absolute\&. Read \fBelektra-namespaces(7)\fP for further information\&.
+.PP
+For cascading mountpoints (starting with \fC/\fP) a mountpoint for the namespace \fCdir\fP, \fCuser\fP and \fCsystem\fP is created\&. Each of this mountpoint uses a different configuration file, either below current directory, below home directory or anywhere in the system\&. Use \fCkdb file <path>\fP to determine where the file(s) are\&.
+.PP
+.SS "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information or ask debug questions (in interactive mode)\&.
+.IP "\(bu" 2
+\fC-q\fP, \fC--quiet\fP: Suppress non-error messages\&.
+.IP "\(bu" 2
+\fC-i\fP, \fC--interactive\fP: Instead of passing all mounting information by parameters ask the user interactively\&.
+.IP "\(bu" 2
+\fC-R\fP, \fC--resolver <resolver>\fP Specify the resolver plugin to use if no resolver is given, the default resolver is used\&. See also \fCbelow in KDB\fP\&.
+.IP "\(bu" 2
+\fC-0\fP, \fC--null\fP: Use binary 0 termination\&.
+.IP "\(bu" 2
+\fC-1\fP, \fC--first\fP: Suppress the first column\&.
+.IP "\(bu" 2
+\fC-2\fP, \fC--second\fP: Suppress the second column\&.
+.IP "\(bu" 2
+\fC-3\fP, \fC--third\fP: Suppress the third column\&.
+.IP "\(bu" 2
+\fC-c\fP, \fC--plugins-config <plugins-config>\fP: Add a plugin configuration for all plugins\&.
+.IP "\(bu" 2
+\fC-W\fP, \fC--with-recommends\fP: Also add recommended plugins and warn if they are not available\&.
+.PP
+.PP
+.SS "KDB"
+.PP
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/quiet\fP: Same as \fC-q\fP: Suppress default messages\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/resolver\fP: The resolver that will be added automatically, if \fC-R\fP is not given\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/plugins\fP: It contains a space-separated list of plugins and their configs which are added automatically (by default sync)\&. The plugin-configuration syntax is as described above in the \fCsynopsis\fP\&.
+.PP
+.PP
+.SS "EXAMPLES"
+.PP
+To list the currently mounted backends: \fCkdb mount\fP
+.PP
+To mount a system configuration file using the ini format: \fCkdb mount /etc/configuration\&.ini system/example ini\fP
+.PP
+Print a null-terminated output of paths and backend names: \fCkdb mount -02 | xargs -0n 2 echo\fP
+.PP
+To mount the /etc/file system file with two plugins with a respective configuration option each: \fCkdb mount /etc/file system/file plugin1 plugin1config=config1 plugin2 plugin2config=config2\fP
+.PP
+To mount the /etc/file system file with two plugins and setting both to be verbose: \fCkdb mount -c verbose=1 /etc/file system/file plugin1 plugin2\fP
+.PP
+To recode and rename a configuration file using Elektra: \fCkdb mount recode\&.txt dir/recode ni rename cut=path iconv to=utf8,from=latin1\fP
+.PP
+.SS "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBelektra-glossary(7)\fP\&.
+.IP "\(bu" 2
+\fBkdb-spec-mount(7)\fP\&.
+.IP "\(bu" 2
+\fBkdb-umount(7)\fP\&.
+.IP "\(bu" 2
+\fBelektra-mounting(7)\fP\&. 
+.PP
+

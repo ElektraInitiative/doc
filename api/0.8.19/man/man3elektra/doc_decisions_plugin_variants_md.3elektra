@@ -1,0 +1,127 @@
+.TH "doc_decisions_plugin_variants_md" 3elektra "Tue Nov 22 2016" "Version 0.8.19" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_plugin_variants_md \- Plugin Variants 
+
+.SS "Issue"
+.PP
+Some plugins are generic in the sense that they cannot fully define their contract statically\&. (Note: if they can decide it statically, you should prefer \fBcompilation variants\fP\&.) Instead their contract is based on their configuration\&. We will call every combination of plugins+configuration where we get a different contract \fBplugin variant\fP\&.
+.PP
+The current issue is that there is no way to enumerate possible plugin variants as needed to list all functionality of Elektra\&.
+.PP
+.SS "Constraints"
+.PP
+.IP "\(bu" 2
+User Customizability:
+.IP "  \(bu" 4
+Users must be able to add new plugin variants
+.IP "  \(bu" 4
+Users should be able to suppress plugin variants
+.PP
+
+.IP "\(bu" 2
+Modularity:
+.IP "  \(bu" 4
+The plugins themselves yield a list of plugin variants
+.IP "  \(bu" 4
+The code defining variants is part of the plugin's code
+.IP "  \(bu" 4
+To get a full list of all variants of all plugins, one simply has to iterate over all plugins and ask the plugins for possible variants\&.
+.PP
+
+.IP "\(bu" 2
+libtool should provide a convenience layer for easy access of all plugin variants\&. In this case there should also be a performance optimization, that plugins do not need to be reopened required multiple times\&.
+.PP
+.PP
+.SS "Assumptions"
+.PP
+.IP "\(bu" 2
+The number of variants needs to be bounded: plugin variants need to be fully enumerable
+.PP
+.PP
+.SS "Considered Alternatives"
+.PP
+A specification of the plugin's configuration and a tool that can enumerate all possible essential configurations\&. Issues here are:
+.PP
+.IP "\(bu" 2
+Plugins might need to self-reference (a validation plugin might have plugin variants, too)
+.IP "\(bu" 2
+Elektra's specification language was not complete nor consistent at point of writing
+.IP "\(bu" 2
+Does not fit with the \fCcheckconf\fP (\fCsee here\fP) approach\&.
+.PP
+.PP
+.SS "Decision"
+.PP
+.IP "1." 4
+Provide a function \fCint genconf (KeySet * ks, Key * errorKey)\fP where \fCks\fP is filled with a list of all variants with the essential configuration (subkeys \fCconfig\fP) and the changed parts of the contract (subkeys \fCinfos\fP)\&.
+.IP "2." 4
+Keys defined in \fCsystem/elektra/plugins/variants\fP have the same content, but take precedence\&. If a variant with the same name is defined, only \fCconfig\fP or \fCinfos\fP from \fCgenconf\fP are considered if they are not mentioned in \fCsystem/elektra/plugins/variants\fP\&. If the keys \fCconfig\fP or \fCinfos\fP are present, it will be overwritten (deleted), if only subkeys thereof are present, it will be enhanced\&.
+.IP "3." 4
+Empty \fCconfig\fP and \fCinfos\fP mean:
+.IP "  \(bu" 4
+\fCconfig\fP: The 'default variant' (without any parameter) should be also available (has useful functionality)
+.IP "  \(bu" 4
+\fCinfos\fP: It is not possible to determine the changes of the contract, the user need to instantiate the plugin and enquiry the contract\&.
+.PP
+
+.PP
+.PP
+.SS "Example"
+.PP
+\fCgenconf\fP for augeas yields: ``` access access/config access/config/lens = Access\&.lns access/infos access/infos/format = access aliases aliases/config aliases/config/lens = Aliases\&.lns aliases/config/path = /etc/aliases aliases/infos aliases/infos/format = aliases ```
+.PP
+\fCgenconf\fP for python yields: ``` configparser/config configparser/config/script = python_configparser\&.py ```
+.PP
+the user specifies: ``` system/elektra/plugins/variants/access system/elektra/plugins/variants/aliases/infos/status = 10000 system/elektra/plugins/variants/configparser system/elektra/plugins/variants/configparser/config system/elektra/plugins/variants/configparser/config/script = mybetter_configparser\&.py ```
+.PP
+then the plugin variant:
+.PP
+.IP "1." 4
+\fCaccess\fP is not available (\fCsystem/elektra/plugins/variants/access\fP overrides \fCgenconf\fP)
+.IP "2." 4
+\fCaliases\fP as defined from \fCgenconf\fP, but with changes in contract (\fCinfos/status\fP)
+.IP "3." 4
+\fCconfigparser\fP is completely redefined (result from \fCgenconf\fP will not be considered)
+.PP
+.PP
+.SS "Argument"
+.PP
+.IP "\(bu" 2
+The \fCgenconf\fP API was chosen to be consistent with \fCcheckconf\fP\&. The pluginhandle might be missing for some scenarios\&. If it is needed, we should change both APIs for consistency reasons\&.
+.IP "\(bu" 2
+The very verbose (deeply nested) subkeys (and names instead of arrays) provide better customizability and extensibility\&.
+.PP
+.PP
+.SS "Implications"
+.PP
+.IP "\(bu" 2
+\fCgenconf\fP needs to be implemented for the plugins:
+.IP "  \(bu" 4
+augeas
+.IP "  \(bu" 4
+jni
+.IP "  \(bu" 4
+lua
+.IP "  \(bu" 4
+python
+.IP "  \(bu" 4
+python2
+.PP
+
+.IP "\(bu" 2
+\fCPluginDatabase\fP needs an extension to list all plugin variants
+.IP "\(bu" 2
+\fCkdb list\fP should be able to list all variants, e\&.g\&. like: \fCaugeas lens=Access\&.lns\fP \fCaugeas format=access\fP so that a user can copy and paste this for the \fCkdb mount\fP command\&.
+.PP
+.PP
+.SS "Related decisions"
+.PP
+.IP "\(bu" 2
+\fBGlobal Plugins\fP
+.PP
+.PP
+.SS "Notes"
+.PP
+Discussions took place \fChere\fP\&. 

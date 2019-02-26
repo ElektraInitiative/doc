@@ -1,0 +1,89 @@
+.TH "md_src_plugins_ipaddr_README" 3elektra "Tue Feb 27 2018" "Version 0.8.22" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_ipaddr_READMEPlugin: ipaddr 
+ \- 
+.IP "\(bu" 2
+infos = Information about the ipaddr plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep
+.IP "\(bu" 2
+infos/metadata = check/ipaddr
+.IP "\(bu" 2
+infos/description = Validation for IP addresses
+.PP
+.SH "IP Address Validation"
+.PP
+.SS "Introduction"
+.PP
+This plugin validates IP addresses using regular expressions\&.
+.PP
+.SS "Usage"
+.PP
+``\fC <h1>Mount\fPipaddr\fCplugin to cascading namespace\fP/examples/ipaddr` kdb mount config\&.dump /examples/ipaddr dump ipaddr
+.PP
+.SH "Check the validity of the IP stored in \fC/examples/ipaddr/ipv4\fP"
+.PP
+.PP
+kdb setmeta /examples/ipaddr/ipv4 check/ipaddr ipv4
+.PP
+.SH "Try to set an incorrect IP address"
+.PP
+.PP
+kdb set /examples/ipaddr/ipv4 127\&.0\&.0\&.1337 
+.SH "STDERR: \&.*value of key is not a valid IP Address\&.*"
+.PP
+.PP
+.SH "ERROR: 51"
+.PP
+.PP
+.SH "RET: 5"
+.PP
+.PP
+.SH "Set a correct IPv4 address"
+.PP
+.PP
+kdb set /examples/ipaddr/ipv4 127\&.0\&.0\&.1 kdb get /examples/ipaddr/ipv4 #> 127\&.0\&.0\&.1
+.PP
+.SH "By default the plugin allows both IPv4 and IPv6 addresses"
+.PP
+.PP
+kdb setmeta /examples/ipaddr/address check/ipaddr ''
+.PP
+.SH "Set correct IP addresses"
+.PP
+.PP
+kdb set /examples/ipaddr/address 1\&.2\&.3\&.4 kdb set /examples/ipaddr/address ::1
+.PP
+.SH "Try to set incorrect addresses"
+.PP
+.PP
+kdb set /examples/ipaddr/address bad::ip 
+.SH "RET: 5"
+.PP
+.PP
+kdb set /examples/ipaddr/address 1\&.2\&.-3\&.4 
+.SH "RET: 5"
+.PP
+.PP
+.SH "Undo modifications to the database"
+.PP
+.PP
+kdb rm -r /examples/ipaddr kdb umount /examples/ipaddr ```
+.PP
+.SS "Limitations"
+.PP
+The plugin only checks IP addresses for validity\&. It is not able to resolve hostnames\&. If you are looking for a plugin that supports hostnames, check out the \fBnetwork plugin\fP\&. 

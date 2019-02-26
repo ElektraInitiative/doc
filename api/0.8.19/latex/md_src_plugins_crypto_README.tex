@@ -1,0 +1,168 @@
+
+\begin{DoxyItemize}
+\item infos = Information about crypto plugin is in keys below
+\item infos/author = Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com}
+\item infos/licence = B\+S\+D
+\item infos/provides = filefilter crypto
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage \#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+C\+R\+Y\+P\+T\+O\+\_\+\+A\+P\+I\+\_\+\+G\+C\+R\+Y\+P\+T \{\#src\+\_\+plugins\+\_\+crypto\+\_\+\+R\+E\+A\+D\+M\+E\+\_\+md\}
+\item infos/status = unittest configurable memleak experimental unfinished discouraged \#else
+\item infos/status = unittest configurable memleak experimental unfinished discouraged \#endif
+\item infos/metadata = crypto/encrypt
+\item infos/description = Cryptographic operations
+\end{DoxyItemize}
+
+\subsection*{Introduction}
+
+This plugin is a filter plugin allowing Elektra to encrypt values before they are persisted and to decrypt values after they have been read from a backend.
+
+The idea is to provide protection of sensible values before they are persisted. This means the value of a key needs to be encrypted before it is written to a file or a database. It also needs to be decrypted whenever an admissible access (read) is being performed.
+
+The users of Elektra should not be bothered too much with the internals of the cryptographic operations. Also the cryptographic keys must never be exposed to the outside of the crypto module.
+
+The crypto plugin supports different libraries as provider for the cryptographic operations. At the moment the following crypto A\+P\+Is are supported\+:
+
+
+\begin{DoxyItemize}
+\item Open\+S\+S\+L ({\ttfamily libcrypto})
+\item libgcrypt
+\item Botan
+\end{DoxyItemize}
+
+\subsection*{Dependencies}
+
+\#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+C\+R\+Y\+P\+T\+O\+\_\+\+A\+P\+I\+\_\+\+G\+C\+R\+Y\+P\+T
+\begin{DoxyItemize}
+\item {\ttfamily libgcrypt20-\/dev} or {\ttfamily libgcrypt-\/devel} \#endif \#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+C\+R\+Y\+P\+T\+O\+\_\+\+A\+P\+I\+\_\+\+O\+P\+E\+N\+S\+S\+L
+\item {\ttfamily libssl-\/dev} or {\ttfamily openssl-\/devel} \#endif \#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+C\+R\+Y\+P\+T\+O\+\_\+\+A\+P\+I\+\_\+\+B\+O\+T\+A\+N
+\item {\ttfamily libbotan1.\+10-\/dev} or {\ttfamily botan-\/devel} \#endif
+\end{DoxyItemize}
+
+\subsubsection*{Gnu\+P\+G (G\+P\+G)}
+
+G\+P\+G is a runtime dependency for all crypto plugin variants. Either the {\ttfamily gpg} or the {\ttfamily gpg2} binary should be installed when using the plugin. Note that {\ttfamily gpg2} will be prefered if both versions are available. The G\+P\+G binary can be configured in the plugin configuration as {\ttfamily /gpg/bin} (see {\itshape G\+P\+G Configuration} below). If no such configuration is provided, the plugin will look at the P\+A\+T\+H environment variable to find the G\+P\+G binaries.
+
+\subsection*{How to compile}
+
+The following compile variants are available\+:
+
+
+\begin{DoxyEnumerate}
+\item crypto\+\_\+gcrypt
+\item crypto\+\_\+openssl
+\item crypto\+\_\+botan
+\end{DoxyEnumerate}
+
+Add \char`\"{}crypto\char`\"{} and the variants, that you want (you can add one of them or all), to the {\ttfamily P\+L\+U\+G\+I\+N\+S} variable in {\ttfamily C\+Make\+Cache.\+txt} and re-\/run {\ttfamily cmake}.
+
+In order to add all compile variants you can add \char`\"{}\+C\+R\+Y\+P\+T\+O\char`\"{} to the {\ttfamily P\+L\+U\+G\+I\+N\+S} variable.
+
+An example {\ttfamily C\+Make\+Cache.\+txt} may contain the following variable\+: \begin{DoxyVerb}PLUGINS=crypto;crypto_gcrypt;crypto_openssl;crypto_botan
+\end{DoxyVerb}
+
+
+or it may look like\+: \begin{DoxyVerb}PLUGINS=CRYPTO
+\end{DoxyVerb}
+
+
+\subsubsection*{Manual Library Setup}
+
+If you have a custom built Open\+S\+S\+L or libgcrypt on your system, you can tell C\+Make to use those by setting the following C\+Make variables.
+
+For a custom Open\+S\+S\+L location set\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape O\+P\+E\+N\+S\+S\+L\+\_\+\+I\+N\+C\+L\+U\+D\+E\+\_\+\+D\+I\+R} to the library's header files
+\item {\itshape O\+P\+E\+N\+S\+S\+L\+\_\+\+L\+I\+B\+R\+A\+R\+I\+E\+S} to the library's binary file
+\end{DoxyItemize}
+
+For a custom libgcrypt location set\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape L\+I\+B\+G\+C\+R\+Y\+P\+T\+\_\+\+I\+N\+C\+L\+U\+D\+E\+\_\+\+D\+I\+R} to the library's header files
+\item {\itshape L\+I\+B\+G\+C\+R\+Y\+P\+T\+\_\+\+L\+I\+B\+R\+A\+R\+I\+E\+S} to the library's binary file
+\end{DoxyItemize}
+
+For a custom Botan development file location set\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape B\+O\+T\+A\+N\+\_\+\+I\+N\+C\+L\+U\+D\+E\+\_\+\+D\+I\+R\+S} to Botan's header files (includes)
+\item {\itshape B\+O\+T\+A\+N\+\_\+\+L\+I\+B\+R\+A\+R\+I\+E\+S} to Botan's binary file
+\end{DoxyItemize}
+
+\subsubsection*{Mac O\+S X}
+
+Both variants of the plugin compile under Mac O\+S X \char`\"{}\+El Capitan\char`\"{} (Version 10.\+11.\+3 (15\+D21)).
+
+For the {\ttfamily crypto\+\_\+gcrypt} variant download and install either \href{https://www.macports.org/}{\tt Mac\+Ports} or \href{http://brew.sh/}{\tt Homebrew}. Use one of those tools to download and install {\ttfamily libgcrypt}. If you choose Mac\+Ports, you can set the C\+Make variables like this\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape L\+I\+B\+G\+C\+R\+Y\+P\+T\+\_\+\+I\+N\+C\+L\+U\+D\+E\+\_\+\+D\+I\+R} to {\ttfamily /opt/local/include/}
+\item {\itshape L\+I\+B\+G\+C\+R\+Y\+P\+T\+\_\+\+L\+I\+B\+R\+A\+R\+I\+E\+S} to {\ttfamily /opt/local/lib/libgcrypt.dylib}
+\end{DoxyItemize}
+
+The C\+Make command might look something like\+: \begin{DoxyVerb}cmake -DLIBGCRYPT_INCLUDE_DIR="/opt/local/include/" -DLIBGCRYPT_LIBRARIES="/opt/local/lib/libgcrypt.dylib" -DPLUGINS="crypto;crypto_gcrypt;" /path_to_elektra_src
+\end{DoxyVerb}
+
+
+For the {\ttfamily crypto\+\_\+openssl} variant a custom-\/built Open\+S\+S\+L library is neccessary as the Mac\+Ports or Homebrew variants do not seem to work. Download the latest version of the Open\+S\+S\+L library from the \href{https://www.openssl.org/source/}{\tt project homepage} and compile it. Copy the header files and the binary files to a location where all users can access them.
+
+Set the C\+Make variables {\ttfamily O\+P\+E\+N\+S\+S\+L\+\_\+\+I\+N\+C\+L\+U\+D\+E\+\_\+\+D\+I\+R} and {\ttfamily O\+P\+E\+N\+S\+S\+L\+\_\+\+L\+I\+B\+R\+A\+R\+I\+E\+S} to your desired location.
+
+\subsection*{Restrictions}
+
+At the moment the plugin will only run on U\+N\+I\+X/\+Linux-\/like systems, that provide implementations for {\ttfamily fork ()} and {\ttfamily execv ()}.
+
+\subsection*{Examples}
+
+To mount a backend with the gcrypt plugin variant that uses the G\+P\+G key 9\+C\+C\+C3\+B514\+E196\+C6308\+C\+C\+D230666260\+C14\+A525406, use\+: \begin{DoxyVerb}kdb mount test.ecf user/t crypto_gcrypt "crypto/key=9CCC3B514E196C6308CCD230666260C14A525406"
+\end{DoxyVerb}
+
+
+Now you can specify a key {\ttfamily user/t/a} and protect its content by using\+: \begin{DoxyVerb}kdb set user/t/a
+kdb setmeta user/t/a crypto/encrypt 1
+kdb set user/t/a "secret"
+\end{DoxyVerb}
+
+
+The value of {\ttfamily user/t/a} will be stored encrypted. But you can still access the original value using {\ttfamily kdb get}\+: \begin{DoxyVerb}kdb get user/t/a
+\end{DoxyVerb}
+
+
+\subsection*{Configuration}
+
+\subsubsection*{G\+P\+G Configuration}
+
+The path to the gpg binary can be specified in \begin{DoxyVerb}/gpg/bin
+\end{DoxyVerb}
+
+
+The G\+P\+G recipient keys can be specified as {\ttfamily /gpg/key} directly. If you want to use more than one key, just enumerate like\+: \begin{DoxyVerb}/gpg/key/#0
+/gpg/key/#1
+\end{DoxyVerb}
+
+
+If more than one key is defined, every owner of the corresponding private key can decrypt the values of the backend. This might be useful if applications run with their own user but the administrator has to update the configuration. The administrator then only needs the public key of the application user in her keyring, set the values and the application will be able to decrypt the values.
+
+\subsubsection*{Cryptographic Operations}
+
+The length of the master password that protects all the other keys can be set in\+: \begin{DoxyVerb}/crypto/masterpasswordlength
+\end{DoxyVerb}
+
+
+The number of iterations that are to be performed in the P\+B\+K\+D\+F2 call can be set in\+: \begin{DoxyVerb}/crypto/iterations
+\end{DoxyVerb}
+
+
+\subsubsection*{Library Shutdown}
+
+The following key must be set to {\ttfamily \char`\"{}1\char`\"{}} within the plugin configuration, if the plugin should shut down the crypto library\+: \begin{DoxyVerb}/shutdown
+\end{DoxyVerb}
+
+
+Per default shutdown is disabled to prevent applications like the qt-\/gui from crashing. Shutdown is enabled in the unit tests to prevent memory leaks. 

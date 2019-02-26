@@ -1,0 +1,90 @@
+
+\begin{DoxyItemize}
+\item Improve robustness of configuration systems by
+\begin{DoxyItemize}
+\item avoiding reimplementation of parsers for the same configuration settings.
+\item rejecting invalid configuration.
+\item avoiding common programming errors through the usage of better bindings.
+\item getting more guarantees when getting configuration.
+\end{DoxyItemize}
+\item Allow software to be better integrated on configuration level.
+\item Postpone some decisions from programmers to maintainers/administrators\+:
+\begin{DoxyItemize}
+\item Syntax of the configuration file(s)
+\item Side effects (e.\+g. logging, vcs commit, notifications)
+\item Flexible adoption to specific needs
+\item Adoption of standards (xdg, xml, J\+S\+ON)
+\end{DoxyItemize}
+\item Reduce duplication of code (a single parser/generator used by everyone accessing a specific part of the configuration).
+\end{DoxyItemize}
+
+\subsection*{Target}
+
+
+\begin{DoxyItemize}
+\item Embedded\+: Elektra is on the frontier for embedded systems because of its tiny core and the many possibilities with its plugins.
+\item Server\+: Elektra is ideal suited for a local configuration storage by mounting existing configuration files into the global tree. Nodes using Elektra can be connected by already existing configuration management tools.
+\item Desktop\+: Elektra allows applications to read and write from a global configuration tree. Missing is a description (schema) so that these values actually can be shared.
+\end{DoxyItemize}
+
+\subsection*{Quality Goals}
+
+1.) Simplicity
+
+An overly complex system cannot be managed nor understood. Extensibility brings some complex issues, which need to be solved -\/ but in a way so that the user sees either nothing of it or only needs to understand very simple concepts so that it works flawlessly. Special care for simplicity is taken for the users\+:
+
+
+\begin{DoxyItemize}
+\item Endusers when reconfiguring or upgrading should never take any notice of Elektra, except that it works more robust, better integrated and with less problems.
+\item Programmers should have multiple ways to take advantage of Elektra so that it flawlessly integrate with their system.
+\item Plugin Programmers\+: it should be simple to extend Elektra in any desired way.
+\item Application\textquotesingle{}s Maintainers to correctly setup and upgrade K\+DB
+\item Administrators that want to change the maintainers\textquotesingle{} setup according to their needs
+\item Key-\/value uniformity that allows introspection
+\end{DoxyItemize}
+
+2.) Robustness
+
+Configuration systems today suffer badly from\+:
+
+
+\begin{DoxyItemize}
+\item Different behavior on different systems
+\item Weak input validation
+\item Faulty transformations from strings to other types
+\item No error messages
+\item Undefined behavior
+\item Migration from one version to another
+\end{DoxyItemize}
+
+We want to tackle this problem by introducing an abstraction layer where all these problems can be dealt with. The goal is that code changes are necessary only within Elektra and not in the applications using Elektra! This makes your code not only portable towards more systems, but also enables global improvements in the configuration systems.
+
+3.) Extensibility
+
+There are so many variants of
+
+
+\begin{DoxyItemize}
+\item Storage formats
+\item Frontend integrations
+\item Bindings
+\end{DoxyItemize}
+
+Nearly every aspect of Elektra must be extremely extensible. On the other side semantics must be very clear and well defined so that this extensible system works reproducible and predictable.
+
+Only key-\/value pairs are the common factor and a way to get and set them, everything else is an extension.
+
+4.) Performance
+
+Configuration is the main impact for bootup and startup-\/time. Elektra needs to be similar fast then current solutions. Ideally it should get faster because of centralized optimization endeavours where everyone using Elektra can benefit from.
+
+Only pay for what you need.
+
+\subsection*{Non-\/\+Goals}
+
+
+\begin{DoxyItemize}
+\item Support semantics that do not fit into the Key\+Set (key-\/value pairs) with an {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}/{\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} interface.
+\item Support for non-\/configuration issues, e.\+g. storing any key-\/value data.
+\item Elektra is not a distributed CM, use Puppet, C\+F\+Engine on top or a distributed file system below Elektra. 
+\end{DoxyItemize}

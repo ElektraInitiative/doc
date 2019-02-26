@@ -1,0 +1,83 @@
+\subsection*{Issue}
+
+Currently the default backend (default.\+ecf) will also be used for bootstrapping. There are two problems with this approach\+:
+
+
+\begin{DoxyEnumerate}
+\item Thus the default backend first will be read with parent\+Key {\ttfamily system/elektra} and later with parent\+Key {\ttfamily system}, it needs to store absolute paths and thus won\textquotesingle{}t work with the current I\+NI plugin
+\item When {\ttfamily system} is large without mountpoints, everything is reread twice during bootstrapping.
+\end{DoxyEnumerate}
+
+\subsection*{Constraints}
+
+
+\begin{DoxyItemize}
+\item be compatible to mountpoints stored in {\ttfamily defaults.\+ecf}
+\item nice migration phase
+\item new setups should never bother about the compatibility mode
+\end{DoxyItemize}
+
+\subsection*{Assumptions}
+
+
+\begin{DoxyItemize}
+\item Bootstrap should be fast and not unnecessarily read large files
+\end{DoxyItemize}
+
+\subsection*{Considered Alternatives}
+
+
+\begin{DoxyItemize}
+\item Implement a hack so that {\ttfamily system/elektra} is actually read as {\ttfamily system}. (Will not solve problem 2.)
+\begin{DoxyItemize}
+\item Its a hack.
+\item Its confusing and does not play well with persistent data with relative key names.
+\end{DoxyItemize}
+\item Split up without compatibility mode\+: would need to migrate all mountpoints by exporting (with old version!) and then importing (with new version!)
+\begin{DoxyItemize}
+\item I consider this too error prone, people might easily forget to export with the old version and then discard their mountpoints unintentional.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\subsection*{Decision}
+
+Split up the concepts of default ({\ttfamily default.\+ecf}) and bootstrap ({\ttfamily elektra.\+ecf}) backend. During bootstrap only {\ttfamily elektra.\+ecf} is read. The default backend reading {\ttfamily default.\+ecf} is only relevant as long as no root backend is mounted.
+
+Algorithm\+:
+
+
+\begin{DoxyEnumerate}
+\item try to get system/elektra using the file elektra.\+ecf (K\+D\+B\+\_\+\+D\+B\+\_\+\+I\+N\+IT)
+\item if it works, mount the init backend to system/elektra (non-\/fallback mode)
+\item if it fails (== 0 or == -\/1), try default.\+ecf as fallback
+\item if the fallback works (i.\+e. keys are present in system/elektra), mount the default backend to system/elektra (fallback mode)
+\end{DoxyEnumerate}
+
+\subsection*{Argument}
+
+
+\begin{DoxyItemize}
+\item Solves both problems
+\item Is fully compatible with any existing setup
+\item People can decide if and how to migrate
+\end{DoxyItemize}
+
+\subsection*{Implications}
+
+
+\begin{DoxyItemize}
+\item Fallback mode should be removed with 1.\+0
+\item added scripts/upgrade-\/bootstrap
+\end{DoxyItemize}
+
+\subsection*{Related decisions}
+
+\subsection*{Notes}
+
+to upgrade to new system, either\+:
+
+
+\begin{DoxyItemize}
+\item touch /etc/kdb/elektra.ecf (loses old mountpoints)
+\item or do kdb export system/elektra/mountpoints, kdb rm -\/r system/elektra/mountpoints, kdb import system/elektra/mountpoints 
+\end{DoxyItemize}

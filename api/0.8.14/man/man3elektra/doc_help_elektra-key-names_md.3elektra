@@ -1,0 +1,40 @@
+.TH "doc_help_elektra-key-names_md" 3elektra "Thu Nov 19 2015" "Version 0.8.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_elektra-key-names_md \- elektra-key-names\&.md 
+
+.SH "elektra-key-names(7) -- the names of keys "
+.PP
+.PP
+Every \fCKey\fP object with the same name will receive the very same information from the global key database\&. The name locates a \fBunique key\fP in the key database\&. Key names are always absolute; so no parent or other information is needed\&. That makes a \fCKey\fP self-contained and independent both in memory and storage\&.
+.PP
+Every key name starts with a \fBnamespace\fP, for example \fCuser\fP or \fCsystem\fP\&. These prefixes spawn key hierarchies each\&.
+.PP
+The shared \fIsystem configuration\fP is identical for every user\&. It contains, for example, information about system daemons, network related preferences and default settings for software\&. These keys are created when software is installed, and removed when software is purged\&. Only the administrator can change system configuration\&.
+.PP
+Examples of valid system key names: 
+.PP
+.nf
+    system
+    system/hosts/hostname
+    system/sw/apache/httpd/num_processes
+    system/sw/apps/abc/current/default-setting
+
+.fi
+.PP
+.PP
+user configuration is empty until the user changes some preferences\&. User configuration affects only a single user\&. The user's settings can contain information about the user's environment, preferred applications and anything not useful for the rest of the system\&.
+.PP
+Examples of valid user key names: 
+.PP
+.nf
+    user
+    user/env/#1/LD_LIBRARY_PATH
+    user/sw/apps/abc/current/default-setting
+    user/sw/kde/kicker/preferred_applications/#1
+
+.fi
+.PP
+.PP
+The slash (\fC/\fP) separates key names and structures them hierarchically\&. If two keys start with the same key names, but one key name continues after a slash, this key is \fBbelow\fP the other and is called a \fIsubkey\fP\&. For example \fCuser/sw/apps/abc/current\fP is a subkey of the key \fCuser/sw/apps\fP\&. The key is not directly below but, for example, \fCuser/sw/apps/abc\fP is\&. \fC\fBkeyRel()\fP\fP implements a way to decide the relation between two keys\&. 

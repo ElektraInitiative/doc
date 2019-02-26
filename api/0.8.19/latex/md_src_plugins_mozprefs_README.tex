@@ -1,0 +1,54 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mozprefs plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/needs =
+\item infos/provides = storage
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained reviewed conformant compatible coverage specific unittest tested nodep libc preview experimental difficult limited unfinished concept
+\item infos/metadata =
+\item infos/description = storage plugin for mozilla preferences
+\end{DoxyItemize}
+
+This plugin works on \href{https://developer.mozilla.org/en-US/docs/Mozilla/Preferences/A_brief_guide_to_Mozilla_preferences}{\tt Mozilla preference files} and is used in Elektras \hyperlink{md_src_plugins_mozprefs_autoconfig_README_src_plugins_mozprefs_autoconfig_README_md}{Firefox autoconfig script}.
+
+\subsubsection*{Preference Types}
+
+
+\begin{DoxyItemize}
+\item Default preferences\+: {\ttfamily pref(....}, keys below {\ttfamily mountpoint/pref/}.
+\item User preferences\+: {\ttfamily user\+\_\+pref(....}, keys below {\ttfamily mountpoint/user/}.
+\item Lock preferences\+: {\ttfamily lock\+Pref(....}, keys below {\ttfamily mountpoint/lock/}.
+\item Sticky preferences\+: {\ttfamily sticky\+\_\+pref(....}, keys below {\ttfamily mountpoint/sticky/}.
+\end{DoxyItemize}
+
+Only Keys below one of these points are valid, everything else will be dropped
+
+\subsubsection*{Data Types}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily integer}
+\item {\ttfamily string}
+\item {\ttfamily boolean}
+\end{DoxyItemize}
+
+\subsubsection*{Hierarchy}
+
+In Mozilla preference files {\ttfamily .} is used to separate sections, while elektra uses {\ttfamily /}. For simplification, and because {\ttfamily /} isn't allowed in preference keys, the plugin treats {\ttfamily .} and {\ttfamily /} equally. \begin{DoxyVerb}kdb set system/prefs/lock/a/lock/key lock
+kdb set system/prefs/lock/a/lock.key lock
+kdb set system/prefs/lock/a.lock.key lock
+\end{DoxyVerb}
+
+
+will all result in {\ttfamily lock\+Pref(\char`\"{}a.\+lock.\+key\char`\"{}, \char`\"{}lock\char`\"{});}
+
+\subsection*{Example}
+
+``` \section*{Backup-\/and-\/\+Restor\+:/examples/examples/prefs}
+
+sudo kdb mount prefs.\+js /examples/prefs mozprefs kdb setmeta user/examples/prefs/lock/a/lock/key type boolean kdb set /examples/prefs/lock/a/lock/key true kdb setmeta user/examples/prefs/pref/a/default/key type string kdb set /examples/prefs/pref/a/default/key \char`\"{}i'm a default key\char`\"{} kdb setmeta user/examples/prefs/user/a/user/key type integer kdb set /examples/prefs/user/a/user/key 123 \# kdb export user/examples/prefs ini \mbox{[}lock/a/lock\mbox{]} key = true \mbox{[}pref/a/default\mbox{]} key = i'm a default key \mbox{[}user/a/user\mbox{]} key = 123 \# \# \$ cat {\ttfamily kdb file user/examples/prefs} lock\+Pref(\char`\"{}a.\+lock.\+key\char`\"{}, true); pref(\char`\"{}a.\+default.\+key\char`\"{}, \char`\"{}i'm a default key\char`\"{}); user\+\_\+pref(\char`\"{}a.\+user.\+key\char`\"{}, 123); \# \section*{cleanup}
+
+\# kdb rm -\/r /examples/prefs sudo kdb umount /examples/prefs ``` 

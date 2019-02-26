@@ -1,0 +1,89 @@
+\subsection*{Introduction}
+
+When programming in python it is possible to access the kdb database, changing values of existing keys, adding and deleting keys and a few other things.
+
+\subsection*{First Steps}
+
+In order to being able to use kdb, obviously, you at first need to {\ttfamily import kdb}. You need access to an python-\/object of kdb. This is accomplished by calling {\ttfamily \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()}} and saving this to a variable because later on this object will be needed for various operations. The easiest way to do this would be\+: ``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: print 'Hello world! I have a kdb-\/instance! \+:D' \section*{do all kinds of operations explained below}
+
+```
+
+\subsection*{Keyset}
+
+A keyset is basically a list of the keys that lie within the specified range of the databse. When creating an empty keyset this range is obviously zero. It is possible to load the whole database into a keyset but in a lot of cases this is not needed and you can specify which keys exactly you need (which I mean with specified range). At first it is necessary to create a new keyset. When simply calling {\ttfamily \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()}} the keyset is of size 0. There is no restriction to the keyset's size. It is possible to specify a certain (maximum) size for a keyset. To load keys into to keyset from the database you simply call the method {\ttfamily get} provided by the kdb-\/object.
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: \section*{create empty keyset}
+
+ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} print len(ks) \# should be 0 \section*{load an existing keyset}
+
+k.\+get(ks, '/path/to/keys') ```
+
+It is also possible to iterate as expected over a keyset and use len, reversed and copying. The elements of a keyset can be accessed by indexes and a keyset can be sliced. Another way of accessing a key is by the key-\/name (`keyset\+\_\+name\mbox{[}'/path/to/keys/key\+\_\+name'\mbox{]}`). If the key-\/name does not exist within the keyset, a Key\+Error exception is thrown.
+
+An example that shows how to load an existing keyset and then access every key and value of the loaded keyset\+:
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} \#loading an existing keyset k.\+get(ks, '/path/to/keys') \section*{if you for some reason want to loop through the keyset last key first use\+: for i in reversed(ks)\+:}
+
+for i in ks\+: \section*{print for every key in the keyset the key and the value}
+
+print 'key\+: '+ str(i) + 'value\+: ' + str(ks\mbox{[}i\mbox{]})
+
+```
+
+Here an example of how you can easily check if a key exists\+:
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} k.\+get(ks, '/path/to/keys') try\+: print 'The value to the key /user/sw/pk/key\+\_\+name is ' + str(ks\mbox{[}'/user/sw/pk/key\+\_\+name'\mbox{]}) + '!' except Key\+Error\+: print 'The key does not exist!' ```
+
+Ways of copying a keyset\+:
+
+``` import kdb import copy with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} k.\+get(ks, '/path/to/keys') \section*{creating a deep copy}
+
+ks\+\_\+deepcopy = copy.\+deepcopy(ks) \section*{creating a shallow copy}
+
+ks\+\_\+shallowcopy = copy.\+copy(ks)
+
+```
+
+Slicing works just like for normal lists in python. But be careful\+: Afterwards the result will be a list -\/ not a keyset.
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} k.\+get(ks, '/path/to/keys') \section*{creating a shallow copy by slicing}
+
+ks\+\_\+copy\+\_\+by\+\_\+slicing = ks\mbox{[}\+:\mbox{]} \section*{in the following examples start \& end need to be replaced by integers}
+
+\section*{create keyset with keys from start to end-\/1}
+
+a = ks\mbox{[}start\+:end\mbox{]} \section*{create keyset with keys from start to the end of the original keyset}
+
+b = ks\mbox{[}start\+:\mbox{]} \section*{create keyset with keys from the beginning of the keyset to end}
+
+c = ks\mbox{[}\+:end\mbox{]}
+
+```
+
+If you have changed anything in the keyset and want those changes to be saved to the database, you need to call {\ttfamily set} which is just like {\ttfamily get} provided by the kdb-\/object.
+
+An example of everything up until now could look like this\+: ``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} k.\+get(ks, '/path/to/keys') \section*{... any number of operations that manipulate the keyset as explained below}
+
+\section*{setting and by doing so saving the new keyset}
+
+k.\+set(ks, '/path/to/keys') \section*{by changing the path here it is for instance possible to set the keyset of one user identical to another users}
+
+```
+
+If you have a key a very simple way to get it's name and value\+:
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} k.\+get(ks, '/path/to/keys') for i in ks\+: print 'key-\/name\+: ' + i.\+name print 'key-\/value\+: ' + i.\+value print 'key-\/value\+: ' + ks.\+lookup(i).string ```
+
+It is possible to create new keys\+:
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: \section*{the first argument is the path to the key, the third argument is the key-\/value}
+
+new\+\_\+key = \hyperlink{classkdb_1_1Key}{kdb.\+Key}('/user/sw/pk/key\+\_\+name', kdb.\+K\+E\+Y\+\_\+\+V\+A\+L\+U\+E, 'key\+\_\+value') ```
+
+Keys can be added to a keyset using {\ttfamily append}. If the key already exists, the value will be updated. Calling `keyset\+\_\+name\mbox{[}'/path/to/key'\mbox{]} = 'new\+\_\+value` does not work for updating keys already in a keyset.
+
+``` import kdb with \hyperlink{classkdb_1_1KDB}{kdb.\+K\+D\+B()} as k\+: ks = \hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()} k.\+get(ks, '/path/to/keys') new\+\_\+key = \hyperlink{classkdb_1_1Key}{kdb.\+Key}('/user/sw/pk/key\+\_\+name', kdb.\+K\+E\+Y\+\_\+\+V\+A\+L\+U\+E, 'key\+\_\+value') \section*{adding new\+\_\+key to the existing key-\/set, ks\mbox{[}'/user/sw/pk/key\+\_\+name'\mbox{]}.value == 'key\+\_\+value'}
+
+ks.\+append(new\+\_\+key) newer\+\_\+key = \hyperlink{classkdb_1_1Key}{kdb.\+Key}('/user/sw/pk/key\+\_\+name', kdb.\+K\+E\+Y\+\_\+\+V\+A\+L\+U\+E, 'other\+\_\+key\+\_\+value') \section*{adding newer\+\_\+key to the existing key-\/set, by doing so replacing new\+\_\+key, ks\mbox{[}'/user/sw/pk/key\+\_\+name'\mbox{]}.value == 'other\+\_\+key\+\_\+value'}
+
+ks.\+append(newer\+\_\+key) ``` 

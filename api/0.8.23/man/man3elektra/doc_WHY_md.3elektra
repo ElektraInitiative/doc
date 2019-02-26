@@ -1,0 +1,141 @@
+.TH "doc_WHY_md" 3elektra "Sun May 13 2018" "Version 0.8.23" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_WHY_mdWhy should I use Elektra? 
+ \- The three main points relevant for most people are:
+.PP
+.IP "1." 4
+Even though Elektra provides a global key database, that allows \fIread- and write access\fP of every single parameter \fIfor any application\fP in an integrated fashion, configuration files stay human read- and writable\&.
+.IP "2." 4
+Flexible adoption on how the configuration is accessed via plugins: you can run arbitrary code in multiple languages or notify others when configuration files are changed\&. \fBPlugins\fP allow us to support hundreds of different configuration file formats\&.
+.IP "3." 4
+Elektra allows us to specify configuration values:
+.IP "  \(bu" 4
+use the value of other configuration values (symbolic links)
+.IP "  \(bu" 4
+calculate the values based on other configuration values
+.IP "  \(bu" 4
+\fBvalidate configuration files\fP
+.IP "  \(bu" 4
+\fBgenerate code based on specifications\fP
+.IP "  \(bu" 4
+\fBand much more\fP
+.PP
+
+.PP
+.PP
+.SS "Why not other solutions?"
+.PP
+Some might ask: isn't this solution overkill? Why not tackle these three issues separately? The answer is:
+.PP
+.IP "1." 4
+If we would only implement a configuration file library for applications, we would hinder the work of administrators and would not provide \fBexternal access\fP to configuration\&.
+.IP "2." 4
+If we only implement an administrator tool that can parse and generate configuration files, but is not used by the applications themselves, we create a gap that leads to inconsistent understanding of the configuration \fBsyntax\fP\&.
+.IP "3." 4
+If we only specify the meaning of configuration within applications but not in a form accessible for administrators, we would create a gap that leads to inconsistent understanding of the configuration \fBsemantics\fP\&.
+.PP
+.PP
+For common understanding of syntax and semantics of configuration files a full-stack solution like Elektra is required\&. We acknowledge, however, that such a change cannot be done overnight, thus we integrate as many configuration file formats as possible\&. This way, people can continue using files in \fC/etc\fP, regardless of whether or not Elektra is used\&.
+.PP
+To give one example, in OpenLDAP 2\&.4\&.39 the value of \fClistener-threads\fP will be reduced to the next number that is a power of 2\&. To correctly manipulate the setting we need not only know the \fIsyntax\fP of how to write listener-threads correctly in the configuration file, but also the knowledge how the value is transformed internally\&. Elektra solves all three issues, and then users can easily \fBexternally\fP manipulate \fClistener-threads\fP, without caring about the concrete \fBsyntax\fP of the file and getting feedback of the \fBsemantics\fP (you might get validation errors and you can receive the value exactly as the application will get it)\&.
+.PP
+.SS "Who should use Elektra?"
+.PP
+Elektra targets different kinds of users:
+.PP
+.IP "1." 4
+Developers to develop a better integrated free software ecosystem and plugins for better validation/notification\&. If you have an application that reads or writes configuration files, you are in the target group\&.
+.IP "2." 4
+System administrators to have a higher-level view of their configuration and enable them to better consider context\&. If you want to specify or automate configuration tasks, you are in the target group\&.
+.PP
+.PP
+.SS "Unique Features"
+.PP
+Features that rarely can be found elsewhere (at least in this combination):
+.PP
+.IP "\(bu" 2
+Bootstrap code and proper abstraction is included:
+.IP "  \(bu" 4
+You do not need to worry about the file names of configuration files in the application\&.
+.IP "  \(bu" 4
+Cascading between \fC/etc\fP, \fC$HOME\fP, \fCcwd\fP and so on\&.
+.IP "  \(bu" 4
+You can change which Elektra path is connected to which configuration file with \fBmounting\fP\&.
+.IP "  \(bu" 4
+Portable across OS (Linux, BSD, w64, macOS,\&.\&. ) and desktop systems (GNOME, KDE,\&.\&.\&.)\&.
+.PP
+
+.IP "\(bu" 2
+No daemon, so no single point of failure but still having guarantees of consistent, validated files with good performance\&.
+.IP "\(bu" 2
+Provides 3-way merging for configuration upgrades\&.
+.PP
+.PP
+.SS "Further Reasons"
+.PP
+.IP "\(bu" 2
+Links and automatic calculation of values: unlike with other solutions you do not need to duplicate configuration values for different applications but you can comfortably link between them which makes many inconsistencies impossible\&.
+.IP "\(bu" 2
+Allows us to easily create GUIs and web-UIs for the whole configuration on the system\&.
+.IP "\(bu" 2
+Allows you to import/export all parts of the configuration\&.
+.IP "\(bu" 2
+Syntax independence: you can consistently use your favorite syntax\&.
+.IP "\(bu" 2
+Configuration Management (such as Puppet) can be used on top of it without having to fiddle with specifics of every configuration file\&.
+.IP "\(bu" 2
+CLI-tool available
+.IP "\(bu" 2
+\fCkdb editor\fP allows you to edit any path of Elektra with your favorite syntax (independent of the actual syntax of the configuration files that store values of this path)\&.
+.IP "\(bu" 2
+Allows us to also \fBintegrate command-line arguments and environment\fP into a consistent place for configuration\&.
+.IP "\(bu" 2
+Reduces huge amount of code: Nearly every application has very similar code:
+.IP "  \(bu" 4
+finding the correct configuration file (for different OS)
+.IP "  \(bu" 4
+parsing configuration files
+.IP "  \(bu" 4
+validating configuration files
+.IP "  \(bu" 4
+replace configuration files on changes
+.PP
+
+.IP "\(bu" 2
+All advantages libraries have:
+.IP "  \(bu" 4
+Performance: Improvements in the library benefits all applications\&.
+.IP "  \(bu" 4
+The library only needs to be loaded once in the memory\&.
+.IP "  \(bu" 4
+On fixes not all binaries of all applications need to be replaced\&.
+.PP
+
+.IP "\(bu" 2
+All advantages maintained code with a community has:
+.IP "  \(bu" 4
+If something does not work, open an issue\&.
+.IP "  \(bu" 4
+If you have a question, open an issue\&.
+.IP "  \(bu" 4
+Regular releases\&.
+.PP
+
+.PP
+.PP
+.SS "Further Readings"
+.PP
+.IP "\(bu" 2
+Continue reading \fBbig picture\fP
+.IP "\(bu" 2
+Look into \fBthe glossary\fP\&.
+.IP "\(bu" 2
+For more about tools go on reading \fBhere\fP\&.
+.IP "\(bu" 2
+Another viewpoint \fBwhy to use Elektra is described here\fP
+.IP "\(bu" 2
+\fBCompile\fP and \fBInstall\fP Elektra 
+.PP
+

@@ -1,0 +1,808 @@
+.TH "Key" 3elektra "Thu Nov 19 2015" "Version 0.8.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Key \- 
+.PP
+Key is an essential class that encapsulates key \fBname \fP, \fBvalue \fP and \fBmetainfo \fP\&.  
+
+.SS "Modules"
+
+.in +1c
+.ti -1c
+.RI "\fBMeta Info Manipulation Methods\fP"
+.br
+.RI "\fIMethods to do various operations on Key metainfo\&. \fP"
+.ti -1c
+.RI "\fBMethods for Making Tests\fP"
+.br
+.RI "\fIMethods to do various tests on Keys\&. \fP"
+.ti -1c
+.RI "\fBName Manipulation Methods\fP"
+.br
+.RI "\fIMethods to do various operations on Key names\&. \fP"
+.ti -1c
+.RI "\fBValue Manipulation Methods\fP"
+.br
+.RI "\fIMethods to do various operations on Key values\&. \fP"
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBkeyswitch_t\fP { \fBKEY_NAME\fP =1, \fBKEY_VALUE\fP =1<<1, \fBKEY_OWNER\fP =1<<2, \fBKEY_COMMENT\fP =1<<3, \fBKEY_BINARY\fP =1<<4, \fBKEY_UID\fP =1<<5, \fBKEY_GID\fP =1<<6, \fBKEY_MODE\fP =1<<7, \fBKEY_ATIME\fP =1<<8, \fBKEY_MTIME\fP =1<<9, \fBKEY_CTIME\fP =1<<10, \fBKEY_SIZE\fP =1<<11, \fBKEY_DIR\fP =1<<14, \fBKEY_META\fP =1<<15, \fBKEY_END\fP =0 }"
+.br
+.RI "\fIAllows \fBkeyNew()\fP to determine which information comes next\&. \fP"
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Key * \fBkeyNew\fP (const char *name,\&.\&.\&.)"
+.br
+.RI "\fIA practical way to fully create a Key object in one step\&. \fP"
+.ti -1c
+.RI "Key * \fBkeyDup\fP (const Key *source)"
+.br
+.RI "\fIReturn a duplicate of a key\&. \fP"
+.ti -1c
+.RI "int \fBkeyCopy\fP (Key *dest, const Key *source)"
+.br
+.RI "\fICopy or Clear a key\&. \fP"
+.ti -1c
+.RI "int \fBkeyDel\fP (Key *key)"
+.br
+.RI "\fIA destructor for Key objects\&. \fP"
+.ti -1c
+.RI "int \fBkeyClear\fP (Key *key)"
+.br
+.RI "\fIKey Object Cleaner\&. \fP"
+.ti -1c
+.RI "ssize_t \fBkeyIncRef\fP (Key *key)"
+.br
+.RI "\fIIncrement the viability of a key object\&. \fP"
+.ti -1c
+.RI "ssize_t \fBkeyDecRef\fP (Key *key)"
+.br
+.RI "\fIDecrement the viability of a key object\&. \fP"
+.ti -1c
+.RI "ssize_t \fBkeyGetRef\fP (const Key *key)"
+.br
+.RI "\fIReturn how many references the key has\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Key is an essential class that encapsulates key \fBname \fP, \fBvalue \fP and \fBmetainfo \fP\&. 
+
+To use it include: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+.PP
+Key properties are:
+.IP "\(bu" 2
+\fBKey name \fP
+.IP "\(bu" 2
+\fBKey value \fP
+.IP "\(bu" 2
+\fBKey meta data \fP, including but not limited to:
+.IP "  \(bu" 4
+\fBKey comment \fP
+.IP "  \(bu" 4
+\fBKey owner \fP
+.IP "  \(bu" 4
+\fBUID, GID and filesystem-like mode permissions \fP
+.IP "  \(bu" 4
+\fBMode, change and modification times \fP
+.PP
+
+.PP
+.PP
+\fBABI\fP
+.RS 4
+Due to ABI compatibility, the \fCKey\fP structure is not defined in kdb\&.h, only declared\&. So you can only declare \fCpointers\fP to \fCKeys\fP in your program, and allocate and free memory for them with \fBkeyNew()\fP and \fBkeyDel()\fP respectively\&.
+.RE
+.PP
+\fBReference Counting\fP
+.RS 4
+Every key has its reference counter (see \fBkeyGetRef()\fP for longer explanation) that will be initialized with 0, that means a subsequent call of \fBkeyDel()\fP will delete the key\&. If you append the key to a keyset the reference counter will be incremented by one (see \fBkeyIncRef()\fP) and the key can't be be deleted by a \fBkeyDel()\fP\&.
+.RE
+.PP
+\fB\fP
+.RS 4
+As you can imagine this refcounting allows you to put the Key in your own datastructures\&. It can be a very powerful feature, e\&.g\&. if you need your own-defined ordering or different Models of your configuration\&. 
+.RE
+.PP
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBkeyswitch_t\fP"
+
+.PP
+Allows \fBkeyNew()\fP to determine which information comes next\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyNew()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKEY_NAME \fP\fP
+Flag for the key name 
+.TP
+\fB\fIKEY_VALUE \fP\fP
+Flag for the key data 
+.TP
+\fB\fIKEY_OWNER \fP\fP
+Flag for the key user domain 
+.TP
+\fB\fIKEY_COMMENT \fP\fP
+Flag for the key comment 
+.TP
+\fB\fIKEY_BINARY \fP\fP
+Flag if the key is binary 
+.TP
+\fB\fIKEY_UID \fP\fP
+Flag for the key UID
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_GID \fP\fP
+Flag for the key GID
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_MODE \fP\fP
+Flag for the key permissions
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_ATIME \fP\fP
+Flag for the key access time
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_MTIME \fP\fP
+Flag for the key change time
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_CTIME \fP\fP
+Flag for the key status change time
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_SIZE \fP\fP
+Flag for maximum size to limit value 
+.TP
+\fB\fIKEY_DIR \fP\fP
+Flag for the key directories
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_META \fP\fP
+Flag for meta data 
+.TP
+\fB\fIKEY_END \fP\fP
+Used as a parameter terminator to \fBkeyNew()\fP 
+.SH "Function Documentation"
+.PP 
+.SS "int keyClear (Key *key)"
+
+.PP
+Key Object Cleaner\&. Will reset all internal data\&.
+.PP
+After this call you will receive a fresh key\&.
+.PP
+The reference counter will stay unmodified\&.
+.PP
+\fBNote:\fP
+.RS 4
+that you might also clear() all aliases with this operation\&.
+.RE
+.PP
+.PP
+.nf
+1 int f (Key *k)
+2 {
+3         keyClear (k);
+4         // you have a fresh key k here
+5         keySetString (k, "value");
+6         // the caller will get an empty key k with an value
+7 }
+.fi
+.PP
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIreturns\fP 0 on success 
+.br
+\fI-1\fP on null pointer
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+
+.SS "int keyCopy (Key *dest, const Key *source)"
+
+.PP
+Copy or Clear a key\&. Most often you may prefer \fBkeyDup()\fP which allocates a new key and returns a duplication of another key\&.
+.PP
+But when you need to copy into an existing key, e\&.g\&. because it was passed by a pointer in a function you can do so:
+.PP
+.PP
+.nf
+void h (Key *k)
+{
+        // receive key c
+        keyCopy (k, c);
+        // the caller will see the changed key k
+}
+.fi
+.PP
+ The reference counter will not be changed for both keys\&. Affiliation to keysets are also not affected\&.
+.PP
+The meta data will be duplicated for the destination key\&. So it will not take much additional space, even with lots of metadata\&.
+.PP
+When you pass a NULL-pointer as source the data of dest will be cleaned completely (except reference counter, see \fBkeyClear()\fP) and you get a fresh dest key:
+.PP
+.PP
+.nf
+void g (Key *k)
+{
+        keyCopy (k, 0);
+        // k is now an empty and fresh key
+}
+.fi
+.PP
+ If you want to copy everything, except e\&.g\&. the value you can use \fBkeyCopy()\fP too:
+.PP
+.PP
+.nf
+void j (Key *k)
+{
+        size_t size = keyGetValueSize (k);
+        char *value = malloc (size);
+        int bstring = keyIsString (k);
+
+        // receive key c
+        memcpy (value, keyValue(k), size);
+        keyCopy (k, c);
+        if (bstring) keySetString (k, value);
+        else keySetBinary (k, value, size);
+        free (value);
+        // the caller will see the changed key k
+        // with the name and metadata from c (except
+        // metadata "binary", which stayed the same)
+}
+.fi
+.PP
+ Restrain from coping everything yourself, because it will lead to wrong metadata and is not able to copy empty or cascading names:
+.PP
+.PP
+.nf
+void i (Key *k)
+{
+        keySetName(k, keyName(c));
+        keySetString(k, keyString(c));
+        keyCopyAllMeta(k, c);
+        // k is not a copy of c even if everything was successfully,
+        // because it still contains meta data from k
+}
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIdest\fP the key which will be written to 
+.br
+\fIsource\fP the key which should be copied or NULL to clean the destination key
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on failure when a NULL pointer was passed for dest or a dynamic property could not be written\&. The content will be unmodified then\&. 
+.br
+\fI0\fP when dest was cleaned 
+.br
+\fI1\fP when source was successfully copied 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyDup()\fP to get a duplication of a \fBKey\fP 
+.RE
+.PP
+
+.SS "ssize_t keyDecRef (Key *key)"
+
+.PP
+Decrement the viability of a key object\&. The references will be decremented for \fBksPop()\fP or successful calls of \fBksLookup()\fP with the option KDB_O_POP\&. It will also be decremented with an following \fBkeyDel()\fP in the case that an old key is replaced with another key with the same name\&.
+.PP
+The reference counter can't be decremented once it reached 0\&. In that situation nothing will happen and 0 will be returned\&.
+.PP
+\fBNote:\fP
+.RS 4
+\fBkeyDup()\fP will reset the references for dupped key\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the value of the new reference counter 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on null pointer 
+.br
+\fI0\fP when the key is ready to be freed 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetRef()\fP for longer explanation, \fBkeyDel()\fP, \fBkeyIncRef()\fP 
+.RE
+.PP
+
+.SS "int keyDel (Key *key)"
+
+.PP
+A destructor for Key objects\&. Every key created by \fBkeyNew()\fP must be deleted with \fBkeyDel()\fP\&.
+.PP
+It is save to delete keys which are in a keyset, the number of references will be returned then\&.
+.PP
+It is save to delete a nullpointer, -1 will be returned then\&.
+.PP
+It is also save to delete a multiple referenced key, nothing will happen then and the reference counter will be returned\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to delete 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyNew()\fP, \fBkeyIncRef()\fP, \fBkeyGetRef()\fP 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the value of the reference counter if the key is within keyset(s) 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP when the key was freed 
+.br
+\fI-1\fP on null pointers 
+.RE
+.PP
+
+.SS "Key* keyDup (const Key *source)"
+
+.PP
+Return a duplicate of a key\&. Memory will be allocated as needed for dynamic properties\&.
+.PP
+The new key will not be member of any KeySet and will start with a new reference counter at 0\&. A subsequent \fBkeyDel()\fP will delete the key\&.
+.PP
+.PP
+.nf
+1 int f (const Key * source)
+2 {
+3         Key * dup = keyDup (source);
+4         // work with duplicate
+5         keyDel (dup);
+6         // everything related to dup is freed
+7         // and source is unchanged
+8 }
+.fi
+.PP
+.PP
+Like for a new key after \fBkeyNew()\fP a subsequent \fBksAppend()\fP makes a KeySet to take care of the lifecycle of the key\&.
+.PP
+.PP
+.nf
+1 int g (const Key * source, KeySet * ks)
+2 {
+3         Key * dup = keyDup (source);
+4         // work with duplicate
+5         ksAppendKey (ks, dup);
+6         // ksDel(ks) will also free the duplicate
+7         // source remains unchanged\&.
+8 }
+.fi
+.PP
+.PP
+Duplication of keys should be preferred to \fBkeyNew()\fP, because data like owner can be filled with a copy of the key instead of asking the environment\&. It can also be optimized in the checks, because the keyname is known to be valid\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsource\fP has to be an initialized source Key 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP failure or on NULL pointer 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a fully copy of source on success 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksAppend()\fP, \fBkeyDel()\fP, \fBkeyNew()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetRef (const Key *key)"
+
+.PP
+Return how many references the key has\&. The reference counting is the essential property of keys to make sure that they can be put safely into data structures\&. E\&.g\&. if you put a Key into a KeySet:
+.PP
+.PP
+.nf
+Key *k = keyNew("user/proper_name", KEY_END); // ref counter = 0
+KeySet *ks = ksNew (1, k, KS_END);
+keyDel(k); // key will not be deleted, because its in the keyset
+ksDel(ks); // now the key will be deleted
+.fi
+.PP
+ You can even add the key to more KeySets:
+.PP
+.PP
+.nf
+Key *k = keyNew("user/proper_name", KEY_END); // ref counter 0
+KeySet *ks1 = ksNew(1, k, KS_END); // ref counter of k 1
+KeySet *ks2 = ksNew(1, k, KS_END); // ref counter of k 2
+ksDel(ks1); // ref counter of k 1
+ksDel(ks2); // k is now deleted
+.fi
+.PP
+ If you increment only by one with \fBkeyIncRef()\fP the same as said above is valid:
+.PP
+.PP
+.nf
+Key *k = keyNew(0); // ref counter = 0
+keyIncRef(k); // ref counter = 1
+keyDel(k); // key will not be deleted
+keyDecRef(k);
+keyDel(k);
+.fi
+.PP
+ or use \fBkeyIncRef()\fP more than once:
+.PP
+.PP
+.nf
+Key *k = keyNew(0); // ref counter 0
+keyIncRef(k); // ref counter of key 1
+keyDel (k);   // has no effect
+keyIncRef(k); // ref counter of key 2
+keyDel (k);   // has no effect
+keyDecRef(k); // ref counter of key 1
+keyDel (k);   // has no effect
+keyDecRef(k); // ref counter is now 0
+keyDel (k); // k is now deleted
+.fi
+.PP
+ The key won't be deleted by a \fBkeyDel()\fP as long refcounter is not 0\&.
+.PP
+The references will be incremented on successful calls to \fBksAppendKey()\fP or \fBksAppend()\fP\&.
+.PP
+\fBNote:\fP
+.RS 4
+\fBkeyDup()\fP will reset the references for dupped key\&.
+.RE
+.PP
+For your own applications you can use \fBkeyIncRef()\fP and \fBkeyDecRef()\fP for reference counting, too\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the number of references 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on null pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyIncRef()\fP and \fBkeyDecRef()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyIncRef (Key *key)"
+
+.PP
+Increment the viability of a key object\&. This function is intended for applications using their own reference counter for key objects\&. With it you can increment the reference and thus avoid destruction of the object in a subsequent \fBkeyDel()\fP\&.
+.PP
+The reference counter can't be incremented once it reached SSIZE_MAX\&. In that situation nothing will happen and SSIZE_MAX will be returned\&.
+.PP
+\fBNote:\fP
+.RS 4
+\fBkeyDup()\fP will reset the references for dupped key\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the value of the new reference counter 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on null pointer 
+.br
+\fISSIZE_MAX\fP when maximum exceeded 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetRef()\fP for longer explanation, \fBkeyDecRef()\fP, \fBkeyDel()\fP 
+.RE
+.PP
+
+.SS "Key* keyNew (const char *name, \&.\&.\&.)"
+
+.PP
+A practical way to fully create a Key object in one step\&. To just get a key object, simple do:
+.PP
+.PP
+.nf
+Key *k = keyNew(0);
+// work with it
+keyDel (k);
+.fi
+.PP
+ If you want the key object to contain a name, value, comment and other meta info read on\&.
+.PP
+\fBNote:\fP
+.RS 4
+When you already have a key with similar properties its easier to \fBkeyDup()\fP the key\&.
+.RE
+.PP
+You can call it in many different ways depending on the attribute tags you pass as parameters\&. Tags are represented as the \fBkeyswitch_t\fP values, and tell \fBkeyNew()\fP which Key attribute comes next\&.
+.PP
+We can also give an empty key name and a KEY_END tag with the same effect as before:
+.PP
+.PP
+.nf
+Key *k =keyNew("", KEY_END); // Has the same effect as above
+// work with it
+keyDel (k);
+.fi
+.PP
+ But we can also give the key a proper name right from the start:
+.PP
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user/some/example", KEY_END);
+// work with it
+keyDel (k);
+.fi
+.PP
+ So, \fBkeyNew()\fP allocates memory for a key object and \fBkeyDel()\fP cleans everything up\&.
+.PP
+\fBkeyNew()\fP processes the given argument list even further\&. The Key attribute tags are the following:
+.IP "\(bu" 2
+\fBKEY_VALUE\fP 
+.br
+ Next parameter is a pointer to the value that will be used\&. If no \fBKEY_BINARY\fP was used before, a string is assumed\&. 
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user/tmp/ex0",
+        KEY_VALUE, "some data",    // set a string value
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_SIZE\fP 
+.br
+ Define a maximum length of the value\&. This is only used when setting a binary key\&. 
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user/tmp/ex1",
+        KEY_SIZE, 4,               // has no effect on strings
+        KEY_VALUE, "some data",    // set a string value
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_META\fP 
+.br
+ Next two parameter is a meta name and a meta value\&. See \fBkeySetMeta()\fP\&. 
+.PP
+.nf
+Key *k=keyNew("user/tmp/ex3",
+        KEY_META, "comment", "a comment",  // with a commet
+        KEY_META, "owner", "root",         // and an owner
+        KEY_META, "special", "yes",        // and any other meta data
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_END\fP 
+.br
+ Must be the last parameter passed to \fBkeyNew()\fP\&. It is always required, unless the \fCkeyName\fP is 0\&.
+.IP "\(bu" 2
+::KEY_FLAGS 
+.br
+ Bitwise disjunction of flags, which don't require one or more values\&. recommended way to set multiple flags\&. overrides previously defined flags\&. 
+.PP
+.nf
+Key *k=keyNew("user/tmp/ex3",
+        KEY_FLAGS, KEY_BINARY | KEY_CASCADING_NAME, // flags
+        KEY_SIZE, 7,                    // assume binary length 7
+        KEY_VALUE, "some data",         // value that will be truncated in 7 bytes
+        KEY_END);                       // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_BINARY\fP 
+.br
+ Allows one to change the key to a binary key\&. Make sure that you also pass \fBKEY_SIZE\fP before you set the value\&. Otherwise it will be cut off with first \\0 in the string\&. So this flag toggle from \fBkeySetString()\fP to \fBkeySetBinary()\fP\&. If no value (nor size) is given, it will be a NULL key\&. 
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user/tmp/ex2",
+        KEY_BINARY,
+        KEY_SIZE, 4,               // now the size is important
+        KEY_VALUE, "some data",    // sets the binary value ("some")
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+::KEY_CASCADING_NAME allow the name to start with / useful for \fBksLookup()\fP and \fBkdbGet()\fP parent/lookup keys
+.IP "\(bu" 2
+::KEY_META_NAME allow the name to start with arbitrary namespaces useful to compare with meta keys
+.PP
+.PP
+\fBDeprecated\fP
+.RS 4
+These other flags deprecated and \fBKEY_META\fP should be preferred\&. They remain some time, however, for compatibility:
+.IP "\(bu" 2
+\fBKEY_DIR\fP 
+.br
+ Define that the key is a directory rather than a ordinary key\&. This means its executable bits in its mode are set\&. But even without this option the key can have subkeys\&. See \fBkeySetDir()\fP\&.
+.IP "\(bu" 2
+\fBKEY_OWNER\fP 
+.br
+ Next parameter is the owner\&. See \fBkeySetOwner()\fP\&.
+.IP "\(bu" 2
+\fBKEY_UID\fP, \fBKEY_GID\fP 
+.br
+ Next parameter is taken as the UID (uid_t) or GID (gid_t) that will be defined on the key\&. See \fBkeySetUID()\fP and \fBkeySetGID()\fP\&.
+.IP "\(bu" 2
+\fBKEY_MODE\fP 
+.br
+ Next parameter is taken as mode permissions (int) to the key\&. See \fBkeySetMode()\fP\&. 
+.PP
+.nf
+Key *k=keyNew("user/tmp/ex3",
+        KEY_VALUE, "some data",    // with a simple value
+        KEY_MODE, 0777,            // permissions
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_COMMENT\fP 
+.br
+ Next parameter is a comment\&. See \fBkeySetComment()\fP\&. 
+.PP
+.nf
+Key *k=keyNew("user/tmp/ex4",
+        KEY_BINARY,                     // key type
+        KEY_SIZE, 7,                    // assume binary length 7
+        KEY_VALUE, "some data",         // value that will be truncated in 7 bytes
+        KEY_COMMENT, "value is truncated",
+        KEY_OWNER, "root",              // owner (not uid) is root
+        KEY_UID, 0,                     // root uid
+        KEY_END);                       // end of args
+
+.fi
+.PP
+
+.PP
+.RE
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIname\fP a valid name to the key, or NULL to get a simple initialized, but really empty, object 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyDel()\fP 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to a new allocated and initialized Key object\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP on malloc error or if an invalid \fCname\fP was passed (see \fBkeySetName()\fP)\&. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

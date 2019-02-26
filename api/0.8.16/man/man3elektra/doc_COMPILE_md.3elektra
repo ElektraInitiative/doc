@@ -1,0 +1,385 @@
+.TH "doc_COMPILE_md" 3elektra "Fri Apr 29 2016" "Version 0.8.16" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_COMPILE_md \- COMPILE 
+
+.SS "DEPENDENCIES"
+.PP
+For the base system you only need cmake and build-essential (make, gcc, some unix tools)\&.
+.PP
+To build documentation you need doxygen, graphviz and \fCronn\fP\&.
+.PP
+To build pdf documentation you need pdflatex with 
+.PP
+.nf
+    texlive-fonts-recommended
+    texlive-latex-recommended
+    texlive-latex-extra
+
+.fi
+.PP
+.PP
+For the debian package, please refer to debian/control (in the debian branch)\&.
+.PP
+For the plugins, please refer to the README\&.md of the respective plugin\&.
+.PP
+.SS "PREPARATION"
+.PP
+Elektra uses cmake\&. Tested are cmake version 2\&.8\&.9 and version 3\&.0\&.2\&.
+.PP
+To configure Elektra graphically (with curses) run (\&.\&. belongs to command): 
+.PP
+.nf
+    mkdir build && cd build && ccmake ..
+
+.fi
+.PP
+.PP
+and press 'c':
+.PP
+All options described here, can also be used with cmake rather than ccmake (\&.\&. belongs to the command!): 
+.PP
+.nf
+    mkdir build && cd build && cmake -D<OPTION1>=<VAR1> -D<OPTION2>=<VAR2> ..
+
+.fi
+.PP
+.PP
+For information what you can use as OPTION1 and OPTION2 see above\&. Note to pass '' to VAR if it contains ;\&. E\&.g\&.: 
+.PP
+.nf
+    cmake -DPLUGINS="dump;resolver;yajl" ..
+
+.fi
+.PP
+.PP
+Some scripts in the folder of the same name may help you running cmake\&.
+.PP
+.SS "COMPILERS"
+.PP
+For supported compilers see the automatic build farm on http://build.libelektra.org:8080/
+.PP
+Additional gcc 4\&.6 armhf is tested regularly\&.
+.PP
+Compiler Version Target  gcc gcc (Debian 4\&.7\&.2-5) 4\&.7\&.2 i386 gcc gcc (Debian 4\&.7\&.2-5) 4\&.7\&.2 amd64 gcc gcc 4\&.8 amd64 gcc gcc 4\&.9 amd64 gcc (Debian 4\&.4\&.5-8) 4\&.4\&.5 amd64 gcc (Debian 4\&.4\&.5-8) 4\&.3 amd64 gcc 4\&.6 armhf mingw 4\&.6 i386 clang version 3\&.5\&.0-1~exp1 x86_64-pc-linux-gnu icc 14\&.0\&.2 20140120 x86_64-pc-linux-gnu gcc/g++ openbsd 4\&.9\&.3 (*) 
+.PP
+To change the compiler, use 
+.PP
+.nf
+    CMAKE_C_COMPILER and CMAKE_CXX_COMPILER.
+
+.fi
+.PP
+.PP
+for example to use gcc-4\&.3 
+.PP
+.nf
+    cmake -DCMAKE_C_COMPILER=gcc-4.3 -DCMAKE_CXX_COMPILER=g++-4.3 ..
+
+.fi
+.PP
+.PP
+(*) OpenBSD ships an old version of GCC per default, which can not compile Elektra\&. A manual installation of egcc/eg++ is required\&. Note that not every OpenBSD mirror provides the eg++ package\&. Elektra builds are confirmed with egcc/eg++ 4\&.9\&.3 in OpenBSD 5\&.9\&. The packages are called gcc and g++\&. Compile with CC=/usr/local/bin/egcc CXX=/usr/local/bin/eg++
+.PP
+.SS "OPTIONS"
+.PP
+Some options, i\&.e\&. PLUGINS, BINDINGS and TOOLS are either:
+.PP
+.IP "\(bu" 2
+a list of elements separated with ; (note that shells typically need ; to be escaped)
+.IP "\(bu" 2
+a special uppercase element that gets replaced by a list of elements, that are:
+.IP "  \(bu" 4
+ALL to include all elements (except elements with unfulfilled dependencies)
+.IP "  \(bu" 4
+NODEP to include all elements without dependencies
+.PP
+
+.IP "\(bu" 2
+elements prefixed with a minus symbol (-) to exclude an element
+.PP
+.PP
+Examples for this are especially in the subsection PLUGINS below, but they work in the same fashion for BINDINGS and TOOLS\&.
+.PP
+.SS "PLUGINS"
+.PP
+Read about available plugins \fBhere\fP\&.
+.PP
+Because the core of elektra is minimal, plugins are needed to actually read and write to configuration files (storage plugins), commit the changes (resolver plugin, also takes care about how the configuration files are named) and also do many other tasks related to configuration\&.
+.PP
+The minimal set of plugins you should add:
+.IP "\(bu" 2
+dump is the default storage\&. If you remove it, make sure you add another one and set \fCKDB_DEFAULT_STORAGE\fP to it\&.
+.IP "\(bu" 2
+resolver is the default resolver\&. If you remove it, make sure you add another one and set \fCKDB_DEFAULT_RESOLVER\fP to it\&.
+.IP "\(bu" 2
+sync is very useful to not lose any data\&. If you do not want to include it, make sure to set \fC/sw/elektra/kdb/#0/current/plugins\fP to a value not containing sync (e\&.g\&. an empty value)\&. See \fBkdb-mount(1)\fP\&.
+.PP
+.PP
+By default nearly all plugins are added\&. Only experimental plugins will be omitted: 
+.PP
+.nf
+    -DPLUGINS="ALL;-EXPERIMENTAL"
+
+.fi
+.PP
+.PP
+To add also experimental plugins, you can use: 
+.PP
+.nf
+    -DPLUGINS=ALL
+
+.fi
+.PP
+.PP
+Note that plugins get dropped when dependencies are not satisfied\&. To add all plugins except some plugins you can use: 
+.PP
+.nf
+    -DPLUGINS="ALL;-plugin1;-plugin2"
+
+.fi
+.PP
+.PP
+E\&.g\&. if you want all plugins except the jni plugin you would use: 
+.PP
+.nf
+    -DPLUGINS="ALL;-jni"
+
+.fi
+.PP
+.PP
+To add all plugins not having additional dependencies (they need only POSIX), you can use 
+.PP
+.nf
+    -DPLUGINS=NODEP
+
+.fi
+.PP
+.PP
+Note, that every \fCinfos/provides\fP and \fCinfos/status\fP field written uppercase can be used to select plugins that way\&. You also can combine any of these fields and add/remove other plugins to/from it, e\&.g\&. to include all plugins without deps, that provide storage (except yajl) and are maintained, but not include all plugins that are experimental, you would use: 
+.PP
+.nf
+    -DPLUGINS="NODEP;STORAGE;-yajl;MAINTAINED;-EXPERIMENTAL"
+
+.fi
+.PP
+.PP
+Note, that changing \fCPLUGINS\fP will not modifiy the defaults used after Elektra was installed\&. For this endeavour you need to change: 
+.PP
+.nf
+    -DKDB_DEFAULT_RESOLVER=resolver
+
+.fi
+.PP
+.PP
+and 
+.PP
+.nf
+    -DKDB_DEFAULT_STORAGE=dump
+
+.fi
+.PP
+.PP
+The default resolver+storage will write to \fCKDB_DB_FILE\fP and \fCKDB_DB_INIT\fP (\fBfor bootstrapping\fP)\&.
+.PP
+Obviously, you can pass the exact list of plugins you want, e\&.g\&.: 
+.PP
+.nf
+    -DPLUGINS="resolver;sync;dump"
+
+.fi
+.PP
+.PP
+Some plugins are compile-time configureable\&. Then you can choose which features are compiled in or out\&. This is especially important in the bootstrapping phase, because then only the compiled in configuration applies\&. To compile-time-configure a plugin, you just pass a underscore (_) and flags after the name of the plugin\&.
+.PP
+The resolver distinguish between 3 different kind of flags: 
+.PP
+.nf
+    -DPLUGINS="resolver_baseflags_userflags_systemflags"
+
+.fi
+.PP
+.PP
+Following baseflags are available:
+.PP
+.IP "\(bu" 2
+'c' for debugging conflicts
+.IP "\(bu" 2
+'f' for enabling file locking
+.IP "\(bu" 2
+'m' for enabling mutex locking
+.PP
+.PP
+The user flags are (the order matters!):
+.PP
+.IP "\(bu" 2
+'p' use passwd/ldap to lookup home directory using getpwuid_r
+.IP "\(bu" 2
+'h' use the environment variable HOME
+.IP "\(bu" 2
+'u' use the environment variable USER
+.IP "\(bu" 2
+'b' use the built-in default CMAKE variable KDB_DB_HOME
+.PP
+.PP
+The system flags are (the order matters!):
+.PP
+.IP "\(bu" 2
+if a path that begins with / is chosen the system flags are irrelevant and the path is taken as-is\&.
+.IP "\(bu" 2
+'x' use the environment variable XDG_CONFIG_DIRS (: are interpreted as part of filename, no searching is done!) This option is not recommended (unless for testing), because it allows users to fake system configuration\&.
+.IP "\(bu" 2
+'b' use the built-in default CMAKE variable KDB_DB_SYSTEM
+.PP
+.PP
+E\&.g\&. one may use: 
+.PP
+.nf
+    -DPLUGINS="resolver_lm_uhpb_b"
+
+.fi
+.PP
+.PP
+To add resolver_l_h_b you need to specify 
+.PP
+.nf
+    -DPLUGINS="resolver;resolver_l_h_b"
+
+.fi
+.PP
+.PP
+You can add resolver with any combination of the flags, even if they are not available in \fCALL\fP\&.
+.PP
+.SS "TOOLS"
+.PP
+Tools are used to add extra functionality to Elektra\&. The flag used to specify which tools are compiled is \fC-DTOOLS\fP, thus flag works similarly to the \fC-DPLUGINS\fP flag, but is more limited in its functionality (which does not matter, because there are not so many tools)\&.
+.PP
+To add all tools, you can use:: 
+.PP
+.nf
+    -DTOOLS=ALL
+
+.fi
+.PP
+.PP
+To add all tools except of race, you can use: 
+.PP
+.nf
+    -DTOOLS="ALL;-race"
+
+.fi
+.PP
+.PP
+To specify specific tools you can use, e\&.g\&.: 
+.PP
+.nf
+    -DTOOLS=qt-gui;kdb
+
+.fi
+.PP
+.PP
+.SS "BINDINGS"
+.PP
+Bindings are used in the same way as TOOLS\&. For example you can use: 
+.PP
+.nf
+    -DBINDINGS=ALL
+
+.fi
+.PP
+.PP
+Note that the same languages are sometimes available over GI and SWIG\&. In this case, the SWIG bindings are preferred\&. To add all swig bindings (and also cpp), you can use: 
+.PP
+.nf
+    -DBINDINGS=SWIG;cpp
+
+.fi
+.PP
+.PP
+The SWIG executable my be specified with: 
+.PP
+.nf
+    -DSWIG_EXECUTABLE=...
+
+.fi
+.PP
+.PP
+If this option is not used, cmake will find the first occurrence of \fCswig\fP in your environment's path\&.
+.PP
+.SS "CMAKE_BUILD_TYPE"
+.PP
+Debug, Release or RelWithDebInfo See help bar at bottom of ccmake for that option or: http://www.cmake.org/Wiki/CMake_Useful_Variables
+.PP
+.SS "ELEKTRA_DEBUG_BUILD and ELEKTRA_VERBOSE_BUILD"
+.PP
+Only needed by Elektra developers\&. Make the library to output logging information\&. It is not recommended to use these options\&.
+.PP
+.SS "BUILD_DOCUMENTATION"
+.PP
+build documentation with doxygen the kdb tool does only have the integrated docu at the moment
+.PP
+.SS "CMAKE_INSTALL_PREFIX"
+.PP
+By default all files will installed below /usr/local\&. Edit that cache entry to change that behaviour\&. Also called system prefix within the documentation\&.
+.PP
+If you want to create a package afterwards it is ok to use paths that you can write to (e\&.g\&. CMAKE_INSTALL_PREFIX /home/markus/bin)
+.PP
+.SS "LIB_SUFFIX"
+.PP
+Lets you install libraries into architecture specific folder\&. E\&.g\&. for 32/64 bit systems you might install libraries under lib64\&. Set LIB_SUFFIX to 64 to achieve exactly that\&. So the system library folder will be CMAKE_INSTALL_PREFIX/lib64 then\&.
+.PP
+.SS "TARGET_INCLUDE_FOLDER"
+.PP
+By default include folders will be installed below CMAKE_INSTALL_PREFIX/include/elektra This entry let you change the elektra\&. If the entry is empty, the include files will be installed directly to CMAKE_INSTALL_PREFIX/include\&.
+.PP
+.SS "TARGET_PLUGIN_FOLDER"
+.PP
+Similar to above, but with the plugins\&. Default is: CMAKE_INSTALL_PREFIX/lib${LIB_SUFFIX}/elektra It can be also left empty to install plugins next to other libraries\&.
+.PP
+.SS "GTEST_ROOT"
+.PP
+Specifies the root of the GoogleTest sources, to be used for some of the tests\&. A CMakeLists\&.txt inside GTEST_ROOT will be searched as way to detect a valid GoogleTest source directory\&. If it is '', an internal version of gtest will be used\&.
+.PP
+It is recommended that you browse through all of the options\&. Afterwards press c again (maybe multiple times until all variables are resolved) and then g to generate\&. Finally press e to exit\&.
+.PP
+.SS "INSTALL_BUILD_TOOLS"
+.PP
+Specifies that the build tools, i\&.e\&. \fCelektra-export-symbols\fP and \fCelektra-export-symbols\fP are installed (by default off)\&. Is needed for cross-compilation\&.
+.PP
+.SS "BUILDING"
+.PP
+.SS "NO IDE"
+.PP
+To build the source use: 
+.PP
+.nf
+make
+
+.fi
+.PP
+.PP
+You can pass: -j for parallel builds VERBOSE=1 to see the invocations of the compiler
+.PP
+.SS "CodeBlocks"
+.PP
+You can build Elektra using Code::Blocks under Gentoo:
+.PP
+Precondition: Make sure you have a compiler, xml2 (for kdb tool) and xsl (see later) installed\&. cmake configure will help you with that, it will make sure you don't forget something essential\&.
+.PP
+For Most Linux system all you have to do is open up a console and 
+.PP
+.nf
+    mkdir build
+    cd build
+    cmake .. -G 'CodeBlocks - Unix Makefiles'
+    make package
+
+.fi
+.PP
+.PP
+Note 1: You can use other editor if you like just type cmake at the console to get a list of option you can pass to cmake as long as well as a list of what code editor project cmake can create\&.
+.PP
+Note 2: For Unix if you have nCurses install you can run ccmake to set important option after running cmake like to enable debug symbol\&.
+.PP
+Note 3: for Gentoo is recommend to emerge sys-apps/lsb-release to name the package right even thou not required\&. 

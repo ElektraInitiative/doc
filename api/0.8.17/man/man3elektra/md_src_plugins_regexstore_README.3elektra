@@ -1,0 +1,112 @@
+.TH "md_src_plugins_regexstore_README" 3elektra "Tue Jun 14 2016" "Version 0.8.17" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_regexstore_README \- Plugin: regexstore 
+
+.IP "\(bu" 2
+infos = Information about the regexstore plugin is in keys below
+.IP "\(bu" 2
+infos/author = Name name@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = difficult preview unfinished
+.IP "\(bu" 2
+infos/description =
+.PP
+.PP
+Allows regular expressions to be applied as storage plugin\&. The idea is to have something like 'lazy lenses' with regex only on relevant parts of a file\&. It is unclear if this is a good idea and we do not encourage you to use this plugin\&. Currently it can only read and the potential harm is limited\&.
+.PP
+In the configuration, below the key (that must also exist) 
+.PP
+.nf
+regexstore
+
+.fi
+.PP
+.PP
+other keys define which regex are applied on a text file\&.
+.PP
+The name of these config keys (with \&.\&.\&./regexstore/ stripped of) will be used to build up the names of the keys:
+.IP "\(bu" 2
+#[0-9] will be replaced what the regex matched
+.IP "\(bu" 2
+If no or the wrong placeholder occurs in the name, the keys will overwrite themselves, the last wins then\&.
+.PP
+.PP
+The value of the config key is as follows:
+.IP "\(bu" 2
+the first three letters need to be '#[0-9 '\&. According to this number the value of the key will be set\&.
+.PP
+.PP
+The key also might contain meta data\&.
+.IP "\(bu" 2
+the only characters allowed in meta values are '#[0-9]'\&. the meta data will be replaced by the regex match then\&.
+.PP
+.PP
+.SS "Limitations"
+.PP
+The semantics of how the regex works is unsteady and the plugin should be avoided in productive use\&.
+.PP
+Currently the storage plugin does not have write support\&. When writing is added, overlapping regex need to be disallowed\&.
+.PP
+.SS "Usage"
+.PP
+.SS "vim config"
+.PP
+First mount the regexstore with some at least one config key: 
+.PP
+.nf
+kdb mount vimrc /vim regexstore "regexstore=root,regexstore/map/#2=#1 map ([^ 
+]*) ([^ 
+]*)"
+
+.fi
+.PP
+.PP
+(the character classes contain a space and a newline)
+.PP
+So lets say we have a \&.vimrc with the content: 
+.PP
+.nf
+something else...
+map map Q :qa<CR>
+something else...
+map <C-Q> :qa<CR>
+something else...
+
+.fi
+.PP
+.PP
+then we will get two keys with: 
+.PP
+.nf
+user/vim/map/:qa<CR>
+
+.fi
+.PP
+.PP
+.SS "emacs config"
+.PP
+.PP
+.nf
+kdb mount emacs /emacs
+.fi
+.PP
+.PP
+Suppose we want to match: 
+.PP
+.nf
+(global-set-key (kbd "<escape>")      'keyboard-escape-quit)
+
+.fi
+.PP
+.PP
+TODO\&.\&. not finished 

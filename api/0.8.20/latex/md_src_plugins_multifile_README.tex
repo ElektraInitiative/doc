@@ -1,0 +1,131 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the multifile plugin is in keys below
+\item infos/author = Thomas \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = resolver storage
+\item infos/recommends =
+\item infos/placements = getresolver setresolver commit rollback getstorage setstorage
+\item infos/status = maintained conformant compatible specific shelltest tested configurable
+\item infos/metadata =
+\item infos/description = mounts multiple files within a directory
+\end{DoxyItemize}
+
+For some applications it is beneficially to have multiple configuration files. One way to achieve this, is to mount different files for the application.
+
+In some situations we are not able to specify every configuration file with separate mounts because new configuration files might be created any time. Instead we want to include every configuration file matching a given pattern.
+
+The multifile-\/resolver does so by calling resolver and storage plugins for each file matching a given pattern.
+
+\subsection*{Plugin Configuration}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily recursive}\+: If present, fts (3) will be used to traverse the directory tree and fnmatch to match {\ttfamily pattern} to the filename. If not present, glob (3) with {\ttfamily pattern} will be used on the directory
+\item {\ttfamily pattern}\+: The pattern to be used to match configuration files.
+\item {\ttfamily storage}\+: The storage plugin to use.
+\item {\ttfamily resolver}\+: The resolver plugin to use.
+\item \textquotesingle{}child/$<$configname$>$\textquotesingle{}\+: configuration passed to the child backends, {\ttfamily child/} part gets removed.
+\end{DoxyItemize}
+
+\subsection*{Usage}
+
+{\ttfamily kdb mount -\/R multifile -\/c storage=\char`\"{}ini\char`\"{},pattern=\char`\"{}$\ast$/$\ast$.\+ini\char`\"{},resolver=\char`\"{}resolver\char`\"{} /path /mountpoint}
+
+{\ttfamily kdb mount -\/R multifile -\/c storage=\char`\"{}ini\char`\"{},pattern=\char`\"{}$\ast$.\+ini\char`\"{},recursive=,resolver=\char`\"{}resolver\char`\"{} /path /mountpoint}
+
+\subsection*{Examples}
+
+
+\begin{DoxyCode}
+rm -rf ~/.config/multitest || $(exit 0)
+mkdir -p ~/.config/multitest || $(exit 0)
+
+echo '[lo]'             >  ~/.config/multitest/lo.ini
+echo 'addr = 127.0.0.1' >> ~/.config/multitest/lo.ini
+echo 'Link encap = Loopback' >> ~/.config/multitest/lo.ini
+
+echo '[eth0]'                >  ~/.config/multitest/lan.ini
+echo 'addr = 192.168.1.216'  >> ~/.config/multitest/lan.ini
+echo 'Link encap = Ethernet' >> ~/.config/multitest/lan.ini
+
+echo '[wlan0]'               >  ~/.config/multitest/wlan.ini
+echo 'addr = 192.168.1.125'  >> ~/.config/multitest/wlan.ini
+echo 'Link encap = Ethernet' >> ~/.config/multitest/wlan.ini
+
+sudo kdb mount -R multifile -c storage="ini",pattern="*.ini",resolver="resolver" multitest user/multi
+
+kdb ls user/multi
+#> user/multi/lan.ini/eth0
+#> user/multi/lan.ini/eth0/Link encap
+#> user/multi/lan.ini/eth0/addr
+#> user/multi/lo.ini/lo
+#> user/multi/lo.ini/lo/Link encap
+#> user/multi/lo.ini/lo/addr
+#> user/multi/wlan.ini/wlan0
+#> user/multi/wlan.ini/wlan0/Link encap
+#> user/multi/wlan.ini/wlan0/addr
+
+kdb set user/multi/lan.ini/eth0/addr 10.0.0.2
+
+kdb get user/multi/lan.ini/eth0/addr
+#> 10.0.0.2
+
+echo '[testsection]' >  ~/.config/multitest/test.ini
+echo 'key = val'     >> ~/.config/multitest/test.ini
+
+kdb ls user/multi
+#> user/multi/lan.ini/eth0
+#> user/multi/lan.ini/eth0/Link encap
+#> user/multi/lan.ini/eth0/addr
+#> user/multi/lo.ini/lo
+#> user/multi/lo.ini/lo/Link encap
+#> user/multi/lo.ini/lo/addr
+#> user/multi/test.ini/testsection
+#> user/multi/test.ini/testsection/key
+#> user/multi/wlan.ini/wlan0
+#> user/multi/wlan.ini/wlan0/Link encap
+#> user/multi/wlan.ini/wlan0/addr
+
+kdb rm -r user/multi/test.ini
+
+stat ~/.config/multifile/test.ini
+# RET:1
+
+sudo kdb umount user/multi
+\end{DoxyCode}
+
+
+Recursive\+:
+
+
+\begin{DoxyCode}
+rm -rf ~/.config/multitest || $(exit 0)
+mkdir -p ~/.config/multitest ~/.config/multitest/a/a1/a12 ~/.config/multitest/a/a2/a22
+       ~/.config/multitest/b/b1|| $(exit 0)
+
+echo "a1key = a1val" > ~/.config/multitest/a/a1/a12/testa1.file
+echo "a2key = a2val" > ~/.config/multitest/a/a2/a22/testa2.file
+echo "b1key = b1val" > ~/.config/multitest/b/b1/testb1.file
+
+sudo kdb mount -R multifile -c storage="ini",pattern="*.file",recursive=,resolver="resolver" multitest
+       user/multi
+
+kdb ls user/multi
+#> user/multi/a/a1/a12/testa1.file/a1key
+#> user/multi/a/a2/a22/testa2.file/a2key
+#> user/multi/b/b1/testb1.file/b1key
+
+rm -rf ~/.config/multitest
+
+sudo kdb umount user/multi
+\end{DoxyCode}
+
+
+\subsection*{Limitations}
+
+
+\begin{DoxyItemize}
+\item You cannot get rid of the configuration file name. 
+\end{DoxyItemize}

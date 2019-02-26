@@ -1,0 +1,313 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the ini plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/ini
+\item infos/recommends = binary
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest shelltest nodep libc configurable 1000
+\item infos/metadata = order
+\item infos/description = storage plugin for ini files
+\end{DoxyItemize}
+
+This plugin allows read/write of I\+NI files. I\+NI files consist of simple key value pairs of the form {\ttfamily key = value}. Additionally keys can be categorized into different sections. Sections must be enclosed in \char`\"{}\mbox{[}$\,$\mbox{]}\char`\"{}, for example \char`\"{}\mbox{[}section\mbox{]}\char`\"{}. Each section is converted into a directory key (without value) and keys below the section are located below the section key. If the same section appears multiple times, the keys of all sections with the same name are merged together under the section key.
+
+The plugin is feature rich and customizable (+1000 in status)
+
+\subsection*{Usage}
+
+If you want to add an ini file to the global key database, simply use mount\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount file.ini user/example ini
+\end{DoxyCode}
+
+
+Then you can modify the contents of the ini file using set\+:
+
+
+\begin{DoxyCode}
+kdb set user/example/key value
+#> Create a new key user/example/key with string "value"
+kdb set user/example/section
+#> Create a new key user/example/section with null value
+kdb set user/example/section/key value
+#> Create a new key user/example/section/key with string "value"
+\end{DoxyCode}
+
+
+Find out which file you modified\+:
+
+
+\begin{DoxyCode}
+kdb file user/example
+# STDOUT-REGEX: .+/file.ini
+
+# Undo modifications
+kdb rm -r user/example
+sudo kdb umount user/example
+\end{DoxyCode}
+
+
+\subsection*{Comments}
+
+The ini plugin supports the use of comments. Comment lines start with a \textquotesingle{};\textquotesingle{} or a \textquotesingle{}\#\textquotesingle{}. Comments are put into the comment metadata of the key following the comment. This can be either a section key or a normal key. When creating new comments (e.\+g. via {\ttfamily kdb setmeta}) you can prefix your comment with the comment indicator of your choice (\textquotesingle{};\textquotesingle{} or \textquotesingle{}\#\textquotesingle{}) which will be used when writing the comment to the file. If the comment is not prefixed with a comment indicator, the ini plugin will use the character defined by the {\ttfamily comment} option, or default to \textquotesingle{}\#\textquotesingle{}.
+
+\subsection*{Multi-\/\+Line Support}
+
+The ini plugin supports multiline ini values. Continuations of previous values have to start with whitespace characters.
+
+For example consider the following ini file\+:
+
+
+\begin{DoxyCode}
+key1 = value1
+key2 = value2
+        with continuation
+        lines
+\end{DoxyCode}
+
+
+This would result in a Key\+Set containing two keys. One key named {\ttfamily key1} with the value {\ttfamily value1} and another key named {\ttfamily key2} with the value {\ttfamily value2\textbackslash{}nwith continuation\textbackslash{}nlines}.
+
+By default this feature is enabled. The default continuation character is tab ({\ttfamily \textbackslash{}t}). If you want to use another character, then please specify the configuration option {\ttfamily linecont}.
+
+\subsection*{Arrays}
+
+The ini plugin handles repeating keys by turning them into an elektra array when the {\ttfamily array} config is set.
+
+For example a ini file looking like\+:
+
+
+\begin{DoxyCode}
+[sec]
+a = 1
+a = 2
+a = 3
+a = 4
+\end{DoxyCode}
+
+
+will be interpreted as
+
+
+\begin{DoxyCode}
+/sec
+/sec/a
+/sec/a/#0
+/sec/a/#1
+/sec/a/#2
+/sec/a/#3
+\end{DoxyCode}
+
+
+The following example shows how you can store and retrieve array values using the {\ttfamily ini} plugin.
+
+
+\begin{DoxyCode}
+# Mount the INI plugin with array support
+sudo kdb mount config.ini user/examples/ini ini array=true
+
+# Add an array storing song titles
+kdb set user/examples/ini/songs/#0 "Non-Zero Possibility"
+kdb set user/examples/ini/songs/#1 "Black Art Number One"
+kdb set user/examples/ini/songs/#2 "A Story Of Two Convicts"
+
+# Check if INI saved all array entries
+kdb ls user/examples/ini/songs
+#> user/examples/ini/songs
+#> user/examples/ini/songs/#0
+#> user/examples/ini/songs/#1
+#> user/examples/ini/songs/#2
+
+# Retrieve an array item
+kdb get user/examples/ini/songs/#2
+#> A Story Of Two Convicts
+
+# Check the file written by the INI plugin
+kdb file user/examples/ini | xargs cat
+#> songs = Non-Zero Possibility
+#> songs = Black Art Number One
+#> songs = A Story Of Two Convicts
+
+# Undo modifications
+kdb rm -r user/examples/ini
+sudo kdb umount user/examples/ini
+\end{DoxyCode}
+
+
+\subsection*{Binary Data}
+
+By default the I\+NI plugin does not support binary data. You can use the \hyperlink{md_src_plugins_base64_README_src_plugins_base64_README_md}{Base64 plugin} to remove this limitation.
+
+``` \section*{Mount I\+NI and recommended plugin Base64}
+
+sudo kdb mount --with-\/recommends config.\+ini user/examples/ini ini
+
+\section*{Add empty binary value}
+
+printf \textquotesingle{}nothing = \char`\"{}@\+B\+A\+S\+E64\char`\"{}~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/examples/ini} \section*{Copy binary data}
+
+kdb cp system/elektra/modules/ini/exports/get user/examples/ini/binary \section*{Add textual data}
+
+kdb set user/examples/ini/text \textquotesingle{}Na na na na na na na na na na na na na na na na Batman!\textquotesingle{}
+
+\section*{Print empty binary value}
+
+kdb get user/examples/ini/nothing \#$>$
+
+\section*{Print binary data}
+
+kdb get user/examples/ini/binary \section*{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+EX\+: $^\wedge$(\textbackslash{}x\mbox{[}0-\/9a-\/f\mbox{]}\{1,2\})+\$}
+
+\section*{Print textual data}
+
+kdb get user/examples/ini/text \#$>$ Na na na na na na na na na na na na na na na na Batman!
+
+kdb rm -\/r user/examples/ini sudo kdb umount user/examples/ini 
+\begin{DoxyCode}
+## Metadata
+
+The INI plugin also supports metadata.
+\end{DoxyCode}
+ sudo kdb mount config.\+ini user/examples/ini ini
+
+\section*{Add a new key and some metadata}
+
+kdb set user/examples/ini/brand new kdb setmeta user/examples/ini/brand description \char`\"{}\+The Devil And God Are Raging Inside Me\char`\"{} kdb setmeta user/examples/ini/brand rationale \char`\"{}\+Because I Love It\char`\"{}
+
+\section*{The plugin stores metadata as comments inside the I\+NI file}
+
+kdb file /examples/ini $\vert$ xargs cat \#$>$ \# description = The Devil And God Are Raging Inside Me \#$>$ \# rationale = Because I Love It \#$>$ brand = new
+
+\section*{Retrieve metadata}
+
+kdb lsmeta user/examples/ini/brand $\vert$ grep --invert-\/match \textquotesingle{}internal\textquotesingle{} \section*{rationale}
+
+\section*{description}
+
+kdb getmeta user/examples/ini/brand description \#$>$ The Devil And God Are Raging Inside Me kdb getmeta user/examples/ini/brand rationale \#$>$ Because I Love It
+
+\section*{The plugin ignores some metadata such as {\ttfamily comment}!}
+
+kdb setmeta user/examples/ini/brand comment \char`\"{}\+Where Art Thou?\char`\"{} kdb getmeta user/examples/ini/brand comment \section*{S\+T\+D\+E\+RR\+: Metakey not found}
+
+\section*{R\+ET\+: 2}
+
+kdb rm -\/r user/examples/ini sudo kdb umount user/examples/ini ```
+
+\subsection*{Sections}
+
+The ini plugin supports 3 different sectioning modes (via {\ttfamily section=})\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily N\+O\+NE} sections wont be printed as {\ttfamily \mbox{[}Section\mbox{]}} but as part of the key name {\ttfamily section/key}
+\item {\ttfamily N\+U\+LL} only empty keys will be printed as {\ttfamily \mbox{[}Section\mbox{]}}
+\item {\ttfamily A\+L\+W\+A\+YS} sections will be created automatically. This is the default setting\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+sudo kdb mount /empty.ini dir/empty ini
+kdb set dir/empty/a/b ab
+kdb get dir/empty/a       # <-- key is suddenly here
+cat empty.ini
+#> [a]
+#> b = ab
+
+# Undo modifications
+kdb rm -r dir/empty
+sudo kdb umount dir/empty
+\end{DoxyCode}
+
+
+By changing the option {\ttfamily section} you can suppress the automatic creation of keys. E.\+g., if you use {\ttfamily N\+U\+LL} instead you only get a section if you explicitly create it\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount /empty.ini dir/empty ini section=NULL
+kdb set dir/empty/a/b ab
+kdb get dir/empty/a       # no key here
+# RET: 11
+cat empty.ini
+#> a/b = ab
+kdb rm dir/empty/a/b
+kdb set dir/empty/a    # create section first
+kdb set dir/empty/a/b ab
+cat empty.ini
+#> [a]
+#> b = ab
+
+# Undo modifications
+kdb rm -r dir/empty
+sudo kdb umount dir/empty
+\end{DoxyCode}
+
+
+\subsubsection*{Merge Sections}
+
+The ini plugin supports merging duplicated section entries when the {\ttfamily mergesections} config is set. The keys will be appended to the first occurrence of the section key.
+
+\subsection*{Ordering}
+
+The ini plugin preserves the order. Inserted subsections get appended to the corresponding parent section and new sections by name.
+
+Example\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount test.ini /examples/ini ini
+
+cat > `kdb file /examples/ini` <<EOF \(\backslash\)
+[Section1]\(\backslash\)
+key1 = val1\(\backslash\)
+[Section3]\(\backslash\)
+key3 = val3\(\backslash\)
+EOF
+
+kdb file /examples/ini | xargs cat
+#> [Section1]
+#> key1 = val1
+#> [Section3]
+#> key3 = val3
+
+kdb set /examples/ini/Section1/Subsection1/subkey1 subval1
+kdb set /examples/ini/Section2/key2 val2
+kdb file /examples/ini | xargs cat
+#> [Section1]
+#> key1 = val1
+#> [Section1/Subsection1]
+#> subkey1 = subval1
+#> [Section2]
+#> key2 = val2
+#> [Section3]
+#> key3 = val3
+
+# Undo modifications
+kdb rm -r /examples/ini
+sudo kdb umount /examples/ini
+\end{DoxyCode}
+
+
+\subsection*{Special Characters}
+
+The I\+NI plugin also supports values and keys containing delimiter characters ({\ttfamily =}) properly.
+
+``` sudo kdb mount test.\+ini user/examples/ini ini
+
+printf \textquotesingle{}\mbox{[}section1\mbox{]}~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/examples/ini} printf \textquotesingle{}hello = world~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/examples/ini}
+
+kdb get user/examples/ini/section1/hello \#$>$ world
+
+kdb set user/examples/ini/section1/x=x \textquotesingle{}a + b = b + a\textquotesingle{} kdb get user/examples/ini/section1/x=x \#$>$ a + b = b + a
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/examples/ini sudo kdb umount user/examples/ini ``` 

@@ -1,0 +1,43 @@
+\hypertarget{group__kdbnotification}{}\section{Notification}
+\label{group__kdbnotification}\index{Notification@{Notification}}
+
+
+Notification feature.  
+
+
+\subsection*{Files}
+\begin{DoxyCompactItemize}
+\item 
+file \hyperlink{kdbnotification_8h}{kdbnotification.\+h}
+\begin{DoxyCompactList}\small\item\em Elektra-\/\+Notification structures and declarations for application developers. \end{DoxyCompactList}\item 
+file \hyperlink{kdbnotificationinternal_8h}{kdbnotificationinternal.\+h}
+\begin{DoxyCompactList}\small\item\em Elektra-\/\+Notification structures and declarations for developing notification and transport plugins. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Notification feature. 
+
+For an introduction to notifications please see the \href{doc_tutorials_notifications_md.html}{\tt Notification Tutorial}.
+
+\begin{DoxyParagraph}{Global Mounting}
+
+\end{DoxyParagraph}
+\hyperlink{kdbnotification_8h_aeae96154abdb5fdbf1b34a01e2b23e44}{elektra\+Notification\+Open()} loads and mounts the \href{https://www.libelektra.org/plugins/internalnotification}{\tt internalnotification plugin} globally at run-\/time. The key database is not altered permanently. \hyperlink{kdbnotification_8h_a5685dafbd4131011365628d6d9213594}{elektra\+Notification\+Close()} reverts the mounting.
+
+The internalnotification plugin is mounted at its defined positions (see \href{https://www.libelektra.org/plugins/internalnotification}{\tt its plugin docs}).
+
+
+\begin{DoxyItemize}
+\item If there is no plugin mounted at a required position the internalnotification plugin is mounted at this position.
+\item In the default configuration or when mounting a plugin globally using {\ttfamily kdb global-\/mount} the \href{https://www.libelektra.org/plugins/list}{\tt list plugin} is mounted at all positions. This plugin allows to mount multiple plugins at a position. If this plugin is present at a position the internalnotification plugin is added to the list plugin\textquotesingle{}s configuration at run-\/time.
+\item If another plugin is mounted at a desired position the configuration is considered broken and mounting is aborted. The list plugin requires to be mounted at all positions in order to keep track of the current position and call plugins accordingly.
+\end{DoxyItemize}
+
+\begin{DoxyParagraph}{Transport Plugins}
+
+\end{DoxyParagraph}
+Notification transport plugins (or simply transport plugins) export \char`\"{}open\+Notification\char`\"{} (\hyperlink{kdbnotificationinternal_8h_adf7cf73a2740a3852b73d607b911a254}{Elektra\+Notification\+Open\+Notification()}) and optionally \char`\"{}close\+Notification\char`\"{} (\hyperlink{kdbnotificationinternal_8h_adc260d2c576df585aaa965cf97bc9284}{Elektra\+Notification\+Close\+Notification()}) functions as part of their contract.
+
+The function \char`\"{}open\+Notification\char`\"{} is called during \hyperlink{kdbnotification_8h_aeae96154abdb5fdbf1b34a01e2b23e44}{elektra\+Notification\+Open()}. At this point an I/O binding is set and it is save to use it. If no binding is set despite the plugin requires it, it should log a message and perform no additional operations. This ensures that the plugin can be used in applications that do not use I/O bindings or notification features.
+
+\hyperlink{kdbnotificationinternal_8h_adf7cf73a2740a3852b73d607b911a254}{Elektra\+Notification\+Open\+Notification()} receives a callback and additional data. When a key change notification is received (or a change is detected by other means) this callback shall be called with the changed Key and the additional data. 

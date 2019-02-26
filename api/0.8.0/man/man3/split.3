@@ -1,0 +1,330 @@
+.TH "Split :: Represents splitted keysets" 3 "Wed May 9 2012" "Version 0.8.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Split :: Represents splitted keysets \- 
+.PP
+used internally for \fBkdbSet()\fP  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBSplit\fP * \fBelektraSplitNew\fP (void)"
+.br
+.ti -1c
+.RI "void \fBelektraSplitDel\fP (\fBSplit\fP *keysets)"
+.br
+.ti -1c
+.RI "void \fBelektraSplitResize\fP (\fBSplit\fP *split)"
+.br
+.ti -1c
+.RI "ssize_t \fBelektraSplitAppend\fP (\fBSplit\fP *split, \fBBackend\fP *backend, \fBKey\fP *parentKey, int syncbits)"
+.br
+.ti -1c
+.RI "ssize_t \fBelektraSplitSearchBackend\fP (\fBSplit\fP *split, \fBBackend\fP *backend, \fBKey\fP *parent)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitSearchRoot\fP (\fBSplit\fP *split, \fBKey\fP *parentKey)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitBuildup\fP (\fBSplit\fP *split, \fBKDB\fP *kdb, \fBKey\fP *parentKey)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitDivide\fP (\fBSplit\fP *split, \fBKDB\fP *handle, \fBKeySet\fP *ks)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitAppoint\fP (\fBSplit\fP *split, \fBKDB\fP *handle, \fBKeySet\fP *ks)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitGet\fP (\fBSplit\fP *split, \fBKDB\fP *handle)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitMerge\fP (\fBSplit\fP *split, \fBKeySet\fP *dest)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitSync\fP (\fBSplit\fP *split)"
+.br
+.ti -1c
+.RI "int \fBelektraSplitPrepare\fP (\fBSplit\fP *split)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+used internally for \fBkdbSet()\fP 
+
+Splits up a keyset into multiple keysets where each of them will passed to the correct \fBkdbSet()\fP. 
+.SH "Function Documentation"
+.PP 
+.SS "ssize_t elektraSplitAppend (\fBSplit\fP * split, \fBBackend\fP * backend, \fBKey\fP * parentKey, int syncbits)"Increases the size of split and appends a new empty keyset.
+.PP
+Initializes the element with the given parameters at size-1 to be used.
+.PP
+Will automatically resize split if needed.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIbackend\fP the backend which should be appended 
+.br
+\fIparentKey\fP the parentKey which should be appended 
+.br
+\fIsyncbits\fP the initial syncstate which should be appended
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP if no split is found 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the size of split - 1 
+.RE
+.PP
+
+.SS "int elektraSplitAppoint (\fBSplit\fP * split, \fBKDB\fP * handle, \fBKeySet\fP * ks)"Appoints all keys from ks to yet unsynced splits.
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBelektraSplitBuildup()\fP need to be executed before.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIhandle\fP to determine to which backend a key belongs 
+.br
+\fIks\fP the keyset to appoint to split
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 on success 
+.PP
+-1 if no backend was found for a key 
+.RE
+.PP
+
+.SS "int elektraSplitBuildup (\fBSplit\fP * split, \fBKDB\fP * kdb, \fBKey\fP * parentKey)"Walks through the trie and adds all backends below parentKey.
+.PP
+Sets syncbits to 2 if it is a default or root backend (which needs splitting).
+.PP
+\fBPrecondition:\fP
+.RS 4
+split needs to be empty, directly after creation with \fBelektraSplitNew()\fP.
+.PP
+there needs to be a valid defaultBackend but its ok not to have a trie inside KDB.
+.PP
+parentKey must be a valid key! (could be implemented more generally, but that would require splitting up of keysets of the same backend)
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIkdb\fP the handle to get information about backends 
+.br
+\fIparentKey\fP the information below which key the backends are from interest
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+always 1 
+.RE
+.PP
+
+.SS "void elektraSplitDel (\fBSplit\fP * keysets)"Delete a split object.
+.PP
+Will free all allocated resources of a splitted keyset.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkeysets\fP the split object to work with 
+.RE
+.PP
+
+.SS "int elektraSplitDivide (\fBSplit\fP * split, \fBKDB\fP * handle, \fBKeySet\fP * ks)"Splits up the keysets and search for a sync bit.
+.PP
+It does not check if there were removed keys, see elektraSplitRemove() for the next step.
+.PP
+It does not create new backends, this has to be done by buildup before.
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBelektraSplitBuildup()\fP need to be executed before.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIhandle\fP to get information where the individual keys belong 
+.br
+\fIks\fP the keyset to divide
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if there were no sync bits 
+.PP
+1 if there were sync bits 
+.PP
+-1 if no backend was found for a key 
+.RE
+.PP
+
+.SS "int elektraSplitGet (\fBSplit\fP * split, \fBKDB\fP * handle)"Does some work after getting of backends is finished.
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBelektraSplitAppoint()\fP needs to be executed before.
+.RE
+.PP
+.IP "\(bu" 2
+check if keys are in correct backend
+.IP "\(bu" 2
+remove syncbits
+.IP "\(bu" 2
+update usersize and systemsize
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIhandle\fP the handle to preprocess the keys 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 on success 
+.PP
+-1 if no backend was found for a key 
+.RE
+.PP
+
+.SS "int elektraSplitMerge (\fBSplit\fP * split, \fBKeySet\fP * dest)"Merges together all parts of split into dest.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIdest\fP the destination keyset where all keysets are appended. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 on success 
+.RE
+.PP
+
+.SS "\fBSplit\fP* elektraSplitNew (void)"Allocates a new split object.
+.PP
+Initially the size is APPROXIMATE_NR_OF_BACKENDS.
+.PP
+\fBReturns:\fP
+.RS 4
+a fresh allocated split object
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraSplitDel()\fP 
+.RE
+.PP
+
+.SS "int elektraSplitPrepare (\fBSplit\fP * split)"Prepares for \fBkdbSet()\fP mainloop afterwards.
+.PP
+All splits which do not need sync are removed and a deep copy of the remaining keysets is done.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "void elektraSplitResize (\fBSplit\fP * split)"Doubles the size of how many parts of keysets can be appended.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.RE
+.PP
+
+.SS "ssize_t elektraSplitSearchBackend (\fBSplit\fP * split, \fBBackend\fP * backend, \fBKey\fP * parent)"Determines if the backend is already inserted or not.
+.PP
+\fBWarning:\fP
+.RS 4
+If no parent Key is given, the default/root backends won't be searched.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIbackend\fP the backend to search for 
+.br
+\fIparent\fP the key to check for domains in default/root backends. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+pos of backend if it already exist 
+.PP
+-1 if it does not exist 
+.RE
+.PP
+
+.SS "int elektraSplitSearchRoot (\fBSplit\fP * split, \fBKey\fP * parentKey)"\fBReturns:\fP
+.RS 4
+1 if one of the backends in split has all keys below parentKey 
+.PP
+0 if parentKey == 0 or there are keys below or same than parentKey which do not fit in any of splitted keysets 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIparentKey\fP the key which relation is searched for 
+.RE
+.PP
+
+.SS "int elektraSplitSync (\fBSplit\fP * split)"Add sync bits everywhere keys were removed.
+.PP
+Only this function can really decide if sync is needed or not.
+.PP
+\fBPrecondition:\fP
+.RS 4
+split needs to be processed with \fBelektraSplitDivide()\fP before.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if \fBkdbSet()\fP is not needed 
+.PP
+1 if \fBkdbSet()\fP is needed 
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+user/system was splitted before. 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code.

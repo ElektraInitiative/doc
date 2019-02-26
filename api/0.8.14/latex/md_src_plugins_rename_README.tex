@@ -1,0 +1,55 @@
+
+\begin{DoxyItemize}
+\item infos = Information about keytometa plugin is in keys below
+\item infos/author = Felix Berlakovich \href{mailto:elektra@berlakovich.net}{\tt elektra@berlakovich.\+net}
+\item infos/licence = B\+S\+D
+\item infos/needs =
+\item infos/provides = filter
+\item infos/placements = presetstorage postgetstorage
+\item infos/description = renaming of keys
+\end{DoxyItemize}
+
+This plugin can be used to perform rename operations on keys passing by. This might be useful if a backend does not provide keys in the required format. If keys are renamed, their original name is stored in the {\ttfamily origname} Meta\+Key.
+
+\subsection*{C\+U\+T}
+
+\subsubsection*{O\+P\+E\+R\+A\+T\+I\+O\+N}
+
+The cut operation can be used to strip parts of a keys name. The cut operation is able to cut anything starting after the path of the parent key. A renamed key may even replace the parent key. For example consider a Key\+Set with the parent key {\ttfamily user/config}. If the Key\+Set contained a key with the name {\ttfamily user/config/with/long/path/key1}, the cut operation would be able to strip the following key name parts\+:
+\begin{DoxyItemize}
+\item with
+\item with/long
+\item with/long/path
+\item with/long/path/key1
+\end{DoxyItemize}
+
+\subsubsection*{C\+O\+N\+F\+I\+G\+U\+R\+A\+T\+I\+O\+N}
+
+The cut operation takes as its only configuration parameter the key name part to strip. This configuration can be supplied in two different ways. First, the global configuration key {\ttfamily cut} can be used. Second, keys to be stripped can be tagged with the Meta\+Key {\ttfamily rename/cut}. If both options are given, the Meta\+Key takes precedence. For example, consider the following setup\+: \begin{DoxyVerb}                            `config/cut` = will/be
+                            parent key = user/config
+
+                            user/config/will/be/stripped/key1                       <- meta rename/cut = will/be/stripped
+                            user/config/will/be/stripped/key2                       <- meta rename/cut = will/be/stripped
+                            user/config/will/be/stripped/key3
+                            user/config/will/not/be/stripped/key4
+\end{DoxyVerb}
+
+
+The result of the cut operation would be the following Key\+Set\+: \begin{DoxyVerb}                            user/config/key1
+                            user/config/key2
+                            user/config/stripped/key3
+                            user/config/will/not/be/stripped/key4
+\end{DoxyVerb}
+
+
+The cut operation is agnostic to a single trailing slash in the configuration. This means that it makes no difference whether {\ttfamily cut = will/be/stripped} or {\ttfamily cut = will/be/stripped/}. However, the cut operation refuses cut paths with leading slash. This is to clarify that key name parts can only be stripped after the parent key path.
+
+If an invalid configuration is given or the cut operation would cause a parent key duplicate, the affected keys are simply skipped and not renamed.
+
+\subsection*{P\+L\+A\+N\+N\+E\+D O\+P\+E\+R\+A\+T\+I\+O\+N\+S}
+
+Additional rename operations are planned for future versions of the rename plugin\+:
+\begin{DoxyItemize}
+\item trim\+: remove spaces in the name (that are not part of parent\+Key!)
+\item case\+: upper/lowercase the name (that are not part of parent\+Key!) 
+\end{DoxyItemize}

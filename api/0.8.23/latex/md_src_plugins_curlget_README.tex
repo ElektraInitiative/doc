@@ -1,0 +1,150 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the curlget plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = getresolver setresolver commit rollback
+\item infos/status = configurable readonly preview unfinished nodoc
+\item infos/metadata =
+\item infos/description = mount remote config files via curl
+\end{DoxyItemize}
+
+The {\ttfamily curlget} plugin is a resolver using libcurl to upload and download files from/to remote hosts. When mounted with a {\ttfamily U\+RL} as configuration file there will be no changes to the file system. When mounted with a (local) path to a configuration a copy of the remote configuration is kept and used as fallback in {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} if fetching the remote file from the server fails.
+
+\subsection*{Configuration}
+
+\subsubsection*{definitions}
+
+{\ttfamily U\+RL}\+:
+
+an U\+RL has to be prefixed with the protocol. valid protocols\+: {\ttfamily \href{http://}{\tt http\+://}}, {\ttfamily \href{https://}{\tt https\+://}}, {\ttfamily \href{ftp://}{\tt ftp\+://}}, {\ttfamily ftps\+://}, {\ttfamily scp\+://}, {\ttfamily sftp\+://}, {\ttfamily smb\+://} (currently not supported)
+
+{\ttfamily Filename}\+:
+
+can bei either an {\ttfamily U\+RL} or a local configuration file.
+
+if the filename is an {\ttfamily U\+RL} the plugin operates on temporary files only and keeps no local copy of the configuration. unless specified otherwise the {\ttfamily U\+RL} is used for both upload and download.
+
+\subsubsection*{plugin configuration}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily url}\+:
+
+{\ttfamily U\+RL} used for both upload and download of the configuration. might be overwritten by {\ttfamily url/get} and {\ttfamily url/put}.
+\item {\ttfamily url/get}\+:
+
+the {\ttfamily U\+RL} of the remote configuration file.
+\item {\ttfamily url/put}\+:
+
+the {\ttfamily U\+RL} used to upload the configuration on kdb\+Set
+\item {\ttfamily upload/method}\+:
+
+only used for {\ttfamily H\+T\+TP} requests. use {\ttfamily P\+O\+ST} for {\ttfamily P\+O\+ST}-\/requests, or {\ttfamily P\+UT} for {\ttfamily P\+UT}-\/requests.
+\item {\ttfamily upload/postfield}\+:
+
+for {\ttfamily H\+T\+TP P\+O\+ST}-\/requests\+: the name of the field containing the file
+\item {\ttfamily upload/filename}\+:
+
+name of the uploaded file. if present it will be appended to {\ttfamily url/put} on uploads except for {\ttfamily H\+T\+TP P\+O\+ST} uploads where it overrides the {\ttfamily filename} field of the header. if not specified the value defaults to {\ttfamily url/put} is assumed to be a valid upload {\ttfamily U\+RL} already containing the filename, except for {\ttfamily H\+T\+TP P\+O\+ST}-\/requests where the {\ttfamily basename(3)} of the local mounted configuration file is used if present, or of {\ttfamily url/get}
+\item {\ttfamily user}\+:
+
+username for authentication
+\item {\ttfamily password}\+:
+
+password for authentication
+\item {\ttfamily ssl/verify}\+:
+
+if set {\ttfamily 1} enforce the use of {\ttfamily S\+SL}. {\ttfamily H\+O\+S\+T\+N\+A\+ME} and {\ttfamily P\+E\+ER} verifications are enabled but might be overwritten by {\ttfamily ssl/verify/host} and {\ttfamily ssl/verify/peer}.
+
+if not set or set to {\ttfamily 0} the plugin will try to use {\ttfamily S\+SL} but not fail if not possible.
+\item {\ttfamily ssl/verify/host}\+:
+
+if set to {\ttfamily 1} use hostname verification, if set to {\ttfamily 0}, skip it.
+\item {\ttfamily ssl/verify/peer}\+:
+
+if set to {\ttfamily 1} verify the ssl certificate, if set to {\ttfamily 0}, skip the verification.
+\item {\ttfamily prefer}\+:
+
+if set to {\ttfamily local} don\textquotesingle{}t update the configuration if the remote version has changed {\bfseries within} succeeding {\ttfamily \hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} calls.
+\item {\ttfamily ssh/auth}\+:
+
+ssh authentication method for sftp and scp. possible values\+: {\ttfamily agent} for using {\ttfamily ssh-\/agent}, {\ttfamily password} for password authentication, {\ttfamily pubkey} for public key authentication and {\ttfamily pubkeypw} for public key + password authentication.
+\item {\ttfamily ssh/key}\+:
+
+path of the private key file for ssh public key authentication. if not set, default to {\ttfamily \$\+H\+O\+ME/.ssh/id\+\_\+dsa} or {\ttfamily \$\+H\+O\+ME/.ssh/id\+\_\+rsa}
+\item {\ttfamily ssh/key/passwd}\+:
+
+password for the private key file
+\end{DoxyItemize}
+
+\subsection*{Example}
+
+
+\begin{DoxyCode}
+rm /tmp/curltest.ini || $(exit 0)
+sudo kdb mount -R curlget -c
+       url/get="http://127.0.0.1:8000/curltest.ini",url/put="http://127.0.0.1:8000",user="thomas",password="pass",upload/method="POST",upload/postfield="file" /tmp/curltest.ini system/curl ini
+kdb ls system/curl
+#> system/curl/section1
+#> system/curl/section1/key1
+stat /tmp/curltest.ini
+# RET:0
+kdb set system/curl/section1/key2 val2
+sudo kdb umount system/curl
+stat /tmp/curltest.ini
+# RET:0
+cat /tmp/curltest.ini
+#> [section1]
+#> key1 = val1
+#> key2 = val2
+rm /tmp/curltest.ini || $(exit 0)
+sudo kdb mount -R curlget -c
+       url/put="http://127.0.0.1:8000",user="thomas",password="pass",upload/method="POST",upload/postfield="file" "http://127.0.0.1:8000/curltest.ini" system/curl ini
+kdb ls system/curl
+#> system/curl/section1
+#> system/curl/section1/key1
+#> system/curl/section1/key2
+stat /tmp/curltest.ini
+# RET:1
+mv /tmp/httproot/curltest.ini /tmp/httproot/curltest.ini\_moved
+kdb ls system/curl
+# RET:5
+mv /tmp/httproot/curltest.ini\_moved /tmp/httproot/curltest.ini
+kdb rm system/curl/section1/key2
+sudo kdb umount system/curl
+cat /tmp/httproot/curltest.ini
+#> [section1]
+#> key1 = val1
+\end{DoxyCode}
+
+
+\subsubsection*{Mount with H\+T\+TP G\+ET + P\+O\+ST and keep local copy}
+
+
+\begin{DoxyCode}
+kdb mount -R curlget -c
+       url/get="http://127.0.0.1:8000/curltest.ini",url/put="http://127.0.0.1:8000",user="thomas",password="pass",upload/method="POST",upload/postfield="file" /tmp/curltest.ini system/curl ini
+\end{DoxyCode}
+
+
+\subsubsection*{Mount with H\+T\+TP G\+ET + P\+O\+ST and keep no local copys}
+
+
+\begin{DoxyCode}
+kdb mount -R curlget -c
+       url/put="http://127.0.0.1:8000",user="thomas",password="pass",upload/method="POST",upload/postfield="file" "http://127.0.0.1:8000/curltest.ini" system/curl ini
+\end{DoxyCode}
+
+
+\subsubsection*{Mount with F\+TP G\+ET + P\+UT and keep local copy}
+
+
+\begin{DoxyCode}
+kdb mount -R curlget -c
+       url/get="ftp://127.0.0.1:21/test.ini",url/put="ftp://127.0.0.1:21/test.ini",user="thomas",password="pass",upload/method="FTP" /tmp/curltest.ini system/curl ini
+\end{DoxyCode}
+ 

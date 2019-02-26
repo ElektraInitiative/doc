@@ -1,0 +1,284 @@
+Elektra provides a global key database, that can integrate configuration in various formats.
+
+Conversely configuration managed by Elektra can be integrated into applications. The best way of integrating Elektra into applications is to \hyperlink{md_doc_help_elektra-glossary_doc_help_elektra-glossary_md}{elektrify} them.
+
+A simpler form of integration is to let Elektra directly use configuration files as they are present on the system. Thus applications can read the configuration files and changes in the key database will be picked up by applications.
+
+The heart of the approach is the so called {\itshape mounting} of configuration files into the key database.
+
+Let us start with a motivating example first\+:
+
+\subsection*{Mount the Lookup Table for Hostnames}
+
+We mount the lookup table with the following command\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount --with-recommends /etc/hosts system/hosts hosts
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily /etc/hosts} is the configuration file we want to mount
+\item {\ttfamily system/hosts} is the path it should have in the key database, also known as {\bfseries mountpoint}
+\item {\ttfamily hosts} is the {\itshape storage plugin} that can read and write this configuration format.
+\end{DoxyEnumerate}
+
+\begin{quote}
+Consider using mount with the option {\ttfamily -\/-\/with-\/recommends}, which loads all plugins recommended by the {\itshape hosts} plugin. You can see the recommended plugins of {\itshape hosts} if you look at the output of {\ttfamily kdb info hosts}. Hosts recommends the {\itshape glob}, {\itshape network} and {\itshape error} plugins. Using {\ttfamily -\/-\/with-\/recommends}, more validation is done when modifying keys in {\ttfamily system/hosts}. \end{quote}
+
+
+Now we use {\ttfamily kdb file}, to verify that all configuration below {\ttfamily system/hosts} is stored in {\ttfamily /etc/hosts}\+:
+
+
+\begin{DoxyCode}
+kdb file system/hosts
+#> /etc/hosts
+\end{DoxyCode}
+
+
+After mounting a file, we can modify keys below {\ttfamily system/hosts}. We need to be root, because we modify {\ttfamily /etc/hosts}.
+
+
+\begin{DoxyCode}
+sudo kdb set system/hosts/ipv4/mylocalhost 127.0.0.33
+\end{DoxyCode}
+
+
+These changes are reflected in {\ttfamily /etc/hosts} instantly\+:
+
+
+\begin{DoxyCode}
+cat /etc/hosts | grep mylocalhost
+#> 127.0.0.33   mylocalhost
+\end{DoxyCode}
+
+
+Applications will now pick up these changes\+:
+
+
+\begin{DoxyCode}
+ping -c 1 mylocalhost
+# RET:2
+\end{DoxyCode}
+
+
+We are also safe against wrong changes\+:
+
+
+\begin{DoxyCode}
+sudo kdb set system/hosts/ipv4/mylocalhost ::1
+# RET:5
+# ERROR:51
+sudo kdb set system/hosts/ipv4/mylocalhost 300.0.0.1
+# RET:5
+# ERROR:51
+\end{DoxyCode}
+
+
+We can undo these changes with\+:
+
+
+\begin{DoxyCode}
+# remove the key ...
+sudo kdb rm system/hosts/ipv4/mylocalhost
+
+# ... and unmount
+sudo kdb umount system/hosts
+\end{DoxyCode}
+
+
+\begin{quote}
+\subparagraph*{Why do you Need Superuser Privileges to Mount Files?}
+
+
+
+Elektra manages its mountpoints in configuration below {\bfseries system/elektra/mountpoints}. The file that holds this configuration is, in the same way as {\ttfamily /etc/hosts} before, only writable by administrators\+: \begin{DoxyVerb}$ kdb file system/elektra/mountpoints
+/etc/kdb/elektra.ecf
+\end{DoxyVerb}
+
+
+Because of that only root can mount files. \end{quote}
+
+
+\subsection*{Resolver}
+
+The configuration file path you supplied to {\ttfamily kdb mount} above is actually not an absolute or relative path in your file system, but gets resolved to one by Elektra. The plugin that is responsible for this is the \hyperlink{md_src_plugins_resolver_README_src_plugins_resolver_README_md}{\+\_\+\+Resolver\+\_\+}.
+
+When you mount a configuration file the resolver first looks at the namespace of your mountpoint. Based on that namespace and if the supplied path was relative or absolute the resolver then resolves the supplied path to a path in the file system. The resolving happens dynamically for every {\ttfamily kdb} invocation.
+
+You can display the mounted configuration files with {\ttfamily kdb mount}. Also here you only see the unresolved paths.
+
+If you supplied an absolute path (e.\+g. {\ttfamily /example.ini}) it gets resolved to this\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ namespace }&\textbf{ resolved path  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ namespace }&\textbf{ resolved path  }\\\cline{1-2}
+\endhead
+{\ttfamily spec} &{\ttfamily /example.ini} \\\cline{1-2}
+{\ttfamily dir} &{\ttfamily \$\{P\+WD\}/example.ini} \\\cline{1-2}
+{\ttfamily user} &{\ttfamily \$\{H\+O\+ME\}/example.ini} \\\cline{1-2}
+{\ttfamily system} &{\ttfamily /example.ini} \\\cline{1-2}
+\end{longtabu}
+If you supplied a relative path (e.\+g. {\ttfamily example.\+ini}) it gets resolved to this\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ namespace }&\textbf{ resolved path  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ namespace }&\textbf{ resolved path  }\\\cline{1-2}
+\endhead
+{\ttfamily spec} &{\ttfamily /usr/share/elektra/specification/example.ini} \\\cline{1-2}
+{\ttfamily dir} &{\ttfamily \$\{P\+WD\}/.dir/example.\+ini} \\\cline{1-2}
+{\ttfamily user} &{\ttfamily \$\{H\+O\+ME\}/.config/example.\+ini} \\\cline{1-2}
+{\ttfamily system} &{\ttfamily /etc/kdb/example.ini} \\\cline{1-2}
+\end{longtabu}
+If this differs on your system, the resolver has a different configuration. Type {\ttfamily kdb info resolver} for more information about the resolvers.
+
+There are different resolvers. For instance on non-\/\+P\+O\+S\+IX systems paths must be resolved differently. In this case one might want to use the \hyperlink{md_src_plugins_wresolver_README_src_plugins_wresolver_README_md}{wresolver} plugin. Another useful resolver is the \hyperlink{md_src_plugins_blockresolver_README_src_plugins_blockresolver_README_md}{blockresolver}, which integrates only a block of a configuration file into Elektra.
+
+But resolvers are not the only plugins Elektra uses\+:
+
+\subsection*{Plugins}
+
+Configuration files can have many different formats ({\ttfamily ini}, {\ttfamily json}, {\ttfamily yaml}, {\ttfamily xml}, {\ttfamily csv}, ... to name but a few).
+
+One of the goals of Elektra is to provide users with a unified interface to all those formats. Elektra accomplishes this task with {\itshape storage plugins}.
+
+\begin{quote}
+In Elektra \hyperlink{doc_tutorials_plugins_md}{Plugins} are the units that encapsulate functionality. There are not only plugins that handle storage of data, but also plugins that modify your values (\hyperlink{md_src_plugins_iconv_README_src_plugins_iconv_README_md}{iconv}). Furthermore there are plugins that validate your values (\hyperlink{md_src_plugins_validation_README_src_plugins_validation_README_md}{validation}, \hyperlink{md_src_plugins_enum_README_src_plugins_enum_README_md}{enum}, \hyperlink{md_src_plugins_boolean_README_src_plugins_boolean_README_md}{boolean}, \hyperlink{md_src_plugins_mathcheck_README_src_plugins_mathcheck_README_md}{mathcheck}, ...), log changes in the key set (\hyperlink{md_src_plugins_logchange_README_src_plugins_logchange_README_md}{logchange}) or do things like executing commands on the shell (\hyperlink{md_src_plugins_shell_README_src_plugins_shell_README_md}{shell}). You can get a complete list of all available plugins with {\ttfamily kdb list}. Although an individual plugin does not provide much functionality, plugins are powerful because they are designed to be used together. \end{quote}
+
+
+When you mount a file you can tell Elektra which plugins it should use for reading and writing to configuration files.
+
+Let us mount a projects git configuration into the dir namespace\+:
+
+
+\begin{DoxyCode}
+# create a directory for our demonstration
+mkdir -p example && cd $\_
+
+# this creates the .git/config file
+git init
+
+# mount git’s configuration into Elektra
+sudo kdb mount /.git/config dir/git ini multiline=0
+\end{DoxyCode}
+
+
+As git uses the {\ttfamily ini} format for its configuration we use the \hyperlink{md_src_plugins_ini_README_src_plugins_ini_README_md}{ini plugin}. You can pass parameters to plugins during the mount process. This is what we did with {\ttfamily multiline=0}. Git intents the entries in its configuration files and the default behavior of the {\ttfamily ini} plugin is to interpret these indented entries as values that span multiple lines. The passed parameter disables this behavior and makes the ini-\/plugin compatible with git configuration.
+
+Now let us see how smoothly the ini plugin sets and gets the git configuration.
+
+
+\begin{DoxyCode}
+# set a user name ...
+git config user.name "Rob Banks"
+
+# ... and read it with kdb
+kdb get dir/git/user/name
+#> Rob Banks
+
+# set a user email with kdb ...
+kdb set dir/git/user/email "rob.banks@dot.com"
+
+# and read it with git
+git config --get user.email
+#> rob.banks@dot.com
+\end{DoxyCode}
+
+
+\paragraph*{Meta Data}
+
+Elektra is able to store \hyperlink{md_doc_help_elektra-metadata_doc_help_elektra-metadata_md}{metadata} of keys, provided the format of the file that holds the configuration supports this feature. The ini plugin does support this feature, and so does the \hyperlink{md_src_plugins_ni_README_src_plugins_ni_README_md}{ni} and the \hyperlink{md_src_plugins_dump_README_src_plugins_dump_README_md}{dump} plugin among others.
+
+\begin{quote}
+Actually the ini plugin creates some metadata on its own. This metadata contains information about the ordering of keys or comments, if a key has some. But unlike the ni and the dump plugin we can\textquotesingle{}t store arbitrary metadata with the ini plugin. \end{quote}
+
+
+Meta data comes in handy if we use other plugins, than just the ones that store and retrieve data. I chose the {\ttfamily ni} plugin for this demonstration, because it supports metadata and is human readable. So let us have a look at the \hyperlink{md_src_plugins_enum_README_src_plugins_enum_README_md}{enum} and \hyperlink{md_src_plugins_mathcheck_README_src_plugins_mathcheck_README_md}{mathcheck} plugins.
+
+
+\begin{DoxyCode}
+# mount the backend with the plugins ...
+kdb mount example.ni user/example ni enum
+
+# ... and set a value for the demonstration
+kdb set user/example/enumtest/fruit apple
+#> Create a new key user/example/enumtest/fruit with string "apple"
+\end{DoxyCode}
+
+
+By entering {\ttfamily kdb info enum} in the commandline, we can find out how to use this plugin. It turns out that this plugin allows us to define a list of valid values for our keys via the metavalue {\ttfamily check/enum}.
+
+
+\begin{DoxyCode}
+kdb setmeta user/example/enumtest/fruit check/enum "'apple', 'banana', 'grape'"
+kdb set user/example/enumtest/fruit tomato
+# RET:5
+# this fails because tomato is not in the list of valid values
+\end{DoxyCode}
+
+
+You can have a look or even edit the configuration file with {\ttfamily kdb editor user/example ni} to see how the value and metadata is stored\+:
+
+
+\begin{DoxyCode}
+enumtest/fruit = apple
+
+[enumtest/fruit]
+check/enum = 'apple', 'banana', 'grape'
+\end{DoxyCode}
+
+
+The example shows an important problem\+: the configuration file is now changed in ways that might not be acceptable for applications. We have at least two ways to avoid that\+:
+
+
+\begin{DoxyEnumerate}
+\item Encode metadata as comments
+\item Encode metadata in its own {\ttfamily spec} namespace, completely separate to the configuration files the application will see
+\end{DoxyEnumerate}
+
+If you want to find out more about validation I recommend reading \hyperlink{md_doc_tutorials_validation_doc_tutorials_validation_md}{this} tutorial next.
+
+\paragraph*{Backends}
+
+The plugins together with the configuration file form a {\itshape backend}. The backend determines how Elektra stores data below a mountpoint. You can examine every mountpoints backend by looking at the configuration below {\ttfamily system/elektra/mountpoints/$<$mountpoint$>$/}.
+
+\subsection*{Limitations}
+
+One drawback of this approach is, that an application can bypass Elektra and change configuration files directly. If for example Elektra is configured to \hyperlink{md_doc_tutorials_validation_doc_tutorials_validation_md}{validate} new configuration values before updating them, this is something you do not want to happen.
+
+Another drawback is that mounting is static. In a previous example we mounted the {\ttfamily /.git/config} file into {\ttfamily dir/git}. Now the {\ttfamily dir} namespace of every directory stores the configuration below {\ttfamily dir/git} in this directories {\ttfamily /.git/config} file. And this mountpoint is the same for all users and all directories. So you can\textquotesingle{}t have different configuration files for the same mountpoints in other directories. Because of the same reason you cannot have different configuration file names or syntax for the same mountpoint in the {\ttfamily user} namespace.
+
+This is one of the reasons why Elektra promotes this \hyperlink{md_doc_help_elektra-key-names_doc_help_elektra-key-names_md}{naming convention} for keys\+:
+
+\begin{quote}
+Key names of software-\/applications should always start with\+: {\ttfamily /$<$type$>$/$<$org$>$/$<$name$>$/$<$version$>$/$<$profile$>$} \end{quote}
+
+
+\begin{quote}
+
+\begin{DoxyItemize}
+\item {\bfseries type} can be {\ttfamily sw} (software), {\ttfamily hw} (hardware) or {\ttfamily elektra} (for internal configuration)
+\item {\bfseries org} is an U\+R\+L/organization name. E.\+g. {\ttfamily kde}
+\item {\bfseries name} the name of the component that has this configuration
+\item {\bfseries version} is the major version number. E.\+g. If you version is 6.\+3.\+8 than this would be {\ttfamily \#6}
+\item {\bfseries profile} is the name of the profile to be used. E.\+g.\+: {\ttfamily production}, {\ttfamily development}, {\ttfamily testing}, ... 
+\end{DoxyItemize}\end{quote}
+
+
+Furthermore, one cannot simply change the configuration file format, because it must be one the application understands. Thus one loses quite some flexibility (for instance if this file format doesn\textquotesingle{}t support meta keys, as already mentioned).
+
+These limitations are the reasons why \hyperlink{md_doc_help_elektra-glossary_doc_help_elektra-glossary_md}{elektrifing} applications provides even better integration. Go on reading \hyperlink{doc_tutorials_application-integration_md}{how to elektrify your application}. 

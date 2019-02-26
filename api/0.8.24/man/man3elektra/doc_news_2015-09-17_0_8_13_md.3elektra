@@ -1,0 +1,358 @@
+.TH "doc_news_2015-09-17_0_8_13_md" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2015-09-17_0_8_13_md0\&.8\&.13 Release 
+ \- 
+.IP "\(bu" 2
+guid: 3c00a5f1-c017-4555-92b5-a2cf6e0803e3
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Thu, 17 Sep 2015 17:32:16 +0200
+.IP "\(bu" 2
+shortDesc: adds elektrify-getenv & other improvements
+.PP
+.PP
+Again we managed to release with many new features, many fixes and also other improvements\&.
+.PP
+.SS "Elektrify-getenv"
+.PP
+getenv(3) is one of the most popular ways to retrieve configuration, even though it has many known problems:
+.PP
+.IP "\(bu" 2
+no standard way to modify it
+.IP "\(bu" 2
+relogin (or restart of shell) necessary
+.IP "\(bu" 2
+names are flat (no hierarchical structure)
+.IP "\(bu" 2
+cannot be set for individual applications
+.IP "\(bu" 2
+different in at, cron and similar scripts
+.PP
+.PP
+With elektrify-getenv we wrote a solution which solves most of the problems\&. We use the LD_PRELOAD technique to \fIadditionally\fP retrieve values from Elektra, and not only the environment\&.
+.PP
+You simply can do:
+.PP
+.PP
+.nf
+kdb set user/env/override/HTTP_PROXY "http://my\&.proxy:8080"
+.fi
+.PP
+.PP
+This will set the \fCHTTP_PROXY\fP environment variable to \fChttp://my.proxy:8080\fP\&. Configuration can be retrieved with \fCkdb get\fP:
+.PP
+.PP
+.nf
+kdb get user/env/override/HTTP_PROXY
+lynx   # or start another www-browser with the newly set HTTP_PROXY
+.fi
+.PP
+.PP
+Or using the man pages: 
+.PP
+.nf
+kdb elektrify-getenv man man --elektra:MANWIDTH=40
+
+.fi
+.PP
+.PP
+Will use MANWIDTH 40 for this invocation of man man\&. This feature is handy, if an option is only available by environment, but not by command-line arguments, because sometimes environment variables are not trivial to set (e\&.g\&. in Makefiles)\&.
+.PP
+Some more examples: 
+.PP
+.nf
+kdb set user/env/override/MANOPT -- "--regex -LC"
+kdb elektrify-getenv getenv MANOPT   # to check if it is set as expected
+kdb getenv MANOPT   # if /etc/ld.so.preload is active
+
+.fi
+.PP
+.PP
+So is this the final solution for configuration and manual elektrification of applications is not needed anymore?
+.PP
+The answer is: no and yes\&.
+.PP
+It is quite satisfactory for configuration that is inherently sharable (not different from one application to another) \fIand\fP needs the environment semantics, i\&.e\&. some subprocesses should have different configuration than others, e\&.g\&. in a specific terminal\&.
+.PP
+But it might not be a good solution for your own application, because libgetenv(3) implies many architectural decision, that other elektrified applications would decide differently, e\&.g\&.:
+.PP
+.IP "\(bu" 2
+it uses global variables (getenv(3) has no handle)
+.IP "\(bu" 2
+it uses mutex for multi-threading safety
+.IP "\(bu" 2
+the API getenv(3) only returns \fCchar*\fP and has no support for other data types
+.PP
+.PP
+For more information see \fBhttps:\fP//git\&.libelektra\&.org/blob/master/src/libs/getenv/README\&.md 'src/libgetenv/README\&.md'
+.PP
+.SS "Compatibility"
+.PP
+As always, the API and API is fully forward-compatible, i\&.e\&. programs compiled against an older 0\&.8 versions of Elektra will continue to work\&.
+.PP
+Because \fCkeyUnescapedName\fP and \fCkeyGetUnescapedNameSize\fP is added in this release, it is not backward-compatible, i\&.e\&. programs compiled against 0\&.8\&.13, might \fInot\fP work with older 0\&.8 libraries\&.
+.PP
+The function \fCkeyUnescapedName\fP provides access to an unescaped name, i\&.e\&. one where \fC/\fP and \fC\\\\\fP are literal symbols and do not have any special meaning\&. \fCNULL\fP characters are used as path separators\&. This function makes it trivial and efficient to iterate over all path names, as already exploited in all bindings:
+.PP
+.IP "\(bu" 2
+\fCjna (java)\fP
+.IP "\(bu" 2
+\fClua\fP
+.IP "\(bu" 2
+\fCpython2\fP
+.IP "\(bu" 2
+\fCpython3\fP
+.PP
+.PP
+Other small changes/additions in bindings:
+.PP
+.IP "\(bu" 2
+fix key constructor, thanks to Manuel Mausz
+.IP "\(bu" 2
+add copy and deepcopy in python (+examples,+testcases), thanks to Manuel Mausz
+.IP "\(bu" 2
+dup() in python3 returned wrong type (SWIG wrapper), thanks to Toscano Pino for reporting, thanks to Manuel Mausz for fixing it
+.PP
+.PP
+Doxygen 1\&.8\&.8 is preferred and the configfile was updated to this version\&.
+.PP
+The symbols of nickel (for the ni plugin) do not longer leak from the Elektra library\&. As such, old versions of testmod_ni won't work with Elektra 0\&.8\&.13\&. A version-script is now in use to only export following symbols:
+.PP
+.IP "\(bu" 2
+kdb*
+.IP "\(bu" 2
+key*
+.IP "\(bu" 2
+ks*
+.IP "\(bu" 2
+libelektra* for module loading system
+.IP "\(bu" 2
+elektra* for proposed and other functions (no ABI/API compatibility here!)
+.PP
+.PP
+In this release, ENABLE_CXX11 was changed to \fCON\fP by default\&.
+.PP
+Note that in the next release 0\&.8\&.14 there will be two changes:
+.PP
+.IP "\(bu" 2
+According to \fCissue #262\fP, we plan to remove the option ENABLE_CXX11 and require the compiler to be C++11 compatible\&. If you have any system you are not able to build Elektra with -DENABLE_CXX11=ON (which is the default for 0\&.8\&.13) please report that immediately\&.
+.IP "\(bu" 2
+the python3 bindings will be renamed to python
+.PP
+.PP
+By not having to care for pre-C++11 compilers, we hope to attract more developers\&. The core part is still in C99 so that Elektra can be used on systems where libc++ is not available\&. Many new plugins are still written in C99, also with the purpose of not depending on C++\&.
+.PP
+.SS "Python Plugins"
+.PP
+A technical preview of \fCpython3\fP and \fCpython2\fP plugins has been added\&.
+.PP
+With them its possible to write any plugin with python scripts\&.
+.PP
+Note, they are a technical preview\&. They might have severe bugs and the API might change in the future\&. Nevertheless, it is already possible to, e\&.g\&. develop storage plugins with it\&.
+.PP
+They are not included in \fCALL\fP plugins\&. To use it, you have to specify it: 
+.PP
+.nf
+-PLUGINS="ALL;python;python2"
+
+.fi
+.PP
+.PP
+Thanks to Manuel Mausz for to this work on the plugins and the patience in all the last minute fixes!
+.PP
+.SS "Qt-gui 0\&.0\&.8"
+.PP
+The GUI was improved and the most annoying bugs are fixed:
+.PP
+.IP "\(bu" 2
+only reload and write config files if something has changed
+.IP "\(bu" 2
+use merging in a way that only a conflict free merge will be written, thanks to Felix Berlakovich
+.IP "\(bu" 2
+made sure keys can only be renamed if the new name/value/metadata is different from the existing ones
+.IP "\(bu" 2
+fixed 1) and 2) of #233
+.IP "\(bu" 2
+fixed #235
+.IP "\(bu" 2
+fixed qml warning when deleting key
+.IP "\(bu" 2
+fixed qml typerror when accepting an edit
+.PP
+.PP
+A big thanks to Raffael Pancheri!
+.PP
+.SS "KDB Tool"
+.PP
+The commandline tool \fCkdb\fP also got some improvements\&. Most noteworthy is that \fCkdb get -v\fP now gives a complete trace for every key that was tried\&. This is very handy if you have a complex specification with many fallback and override links\&.
+.PP
+It also shows default values and warnings in the case of context-oriented features\&.
+.PP
+Furthermore:
+.PP
+.IP "\(bu" 2
+Add \fC-v\fP for setmeta
+.IP "\(bu" 2
+Copy will warn when it won't overwrite another key (behaviour did not change)
+.IP "\(bu" 2
+improve help text, thanks to Ian Donnelly
+.PP
+.PP
+.SS "Documentation Initiative"
+.PP
+As Michael Haberler from \fCmachinekit\fP pointed out it was certainly not easy for someone to get started with Elektra\&. With the documentation initiative we are going to change that\&.
+.PP
+.IP "\(bu" 2
+The discussion in \fCgithub issues\fP should clarify many things
+.IP "\(bu" 2
+We start writing man pages in ronn-format(7), thanks to Ian Donnelly for current work
+.IP "\(bu" 2
+Kurt Micheli is woring on improved doxygen docu + pdf generation
+.IP "\(bu" 2
+Daniel Bugl already restructed the main page
+.IP "\(bu" 2
+Daniel Bugl also improved formatting
+.IP "\(bu" 2
+doc: use 
+.PP
+\fBReturn values:\fP
+.RS 4
+\fImore,thanks\fP to Pino Toscano
+.RE
+.PP
+
+.IP "\(bu" 2
+doxygen: fix template to use \fC@\fP and not \fC\\\\\fP\&.
+.IP "\(bu" 2
+SVG logo is preferred, thanks to Daniel Bugl
+.IP "\(bu" 2
+doc: use 
+.PP
+\fBReturn values:\fP
+.RS 4
+\fImore,thanks\fP to Pino Toscano
+.RE
+.PP
+
+.IP "\(bu" 2
+many typo fixes, thanks to Pino Toscano
+.IP "\(bu" 2
+fix broken links, thanks to Manuel Mausz, Daniel Bugl and Michael Haberler
+.PP
+.PP
+Any further help is very welcome! This call is especially addressed to beginners in Elektra because they obviously know best which documentation is lacking and what they would need\&.
+.PP
+.SS "Portability"
+.PP
+\fCkdb-full\fP and \fCkdb-static\fP work fine now for Windows 64bit, thanks to Manuel Mausz\&. The wresolver is now more relaxed with unset environment\&.
+.PP
+All issues for macOS were resolved\&. With the exception of elektrify-getenv everything should work now, thanks to Mihael Pranjic:
+.PP
+.IP "\(bu" 2
+fix mktemp
+.IP "\(bu" 2
+testscripts
+.IP "\(bu" 2
+recursive mutex simplification
+.IP "\(bu" 2
+clearenv ifdef
+.PP
+.PP
+and thanks to Daniel Bugl:
+.PP
+.IP "\(bu" 2
+RPATH fixed, so that \fCkdb\fP works
+.PP
+.PP
+furthermore:
+.PP
+.IP "\(bu" 2
+fix \fC__FUNCTION__\fP to \fC__func__\fP (C99), thanks to Pino Toscano
+.IP "\(bu" 2
+avoid compilation error when JNI_VERSION_1_8 is missing
+.IP "\(bu" 2
+fix (twice, because of an accidental revert) the TARGET_CMAKE_FOLDER, thanks to Pino Toscano
+.PP
+.PP
+Thanks to Manuel Mausz for to testing and improving portability!
+.PP
+.SS "Packaging and Build System"
+.PP
+.IP "\(bu" 2
+\fC0\&.8\&.12 packaged+migrated to testing\fP, thanks to Pino Toscano
+.IP "\(bu" 2
+fix build with external gtest, thanks to Pino Toscano
+.IP "\(bu" 2
+switch from FindElektra\&.cmake to ElektraConfig\&.cmake, thanks to Pino Toscano
+.IP "\(bu" 2
+use \fCcmake_parse_arguments\fP instead of \fCparse_arguments\fP, thanks to Manuel Mausz
+.PP
+.PP
+.SS "Further Fixes"
+.PP
+.IP "\(bu" 2
+Key::release() will also work when Key holds a null-pointer
+.IP "\(bu" 2
+Key::getName() avoids std::string exception
+.IP "\(bu" 2
+support for copy module was introduced, thanks to Manuel Mausz
+.IP "\(bu" 2
+be more POSIX compatible in shell scripts (\fCtype\fP to \fCcommand -v\fP and avoid \fCecho -e\fP) thanks to Pino Toscano
+.IP "\(bu" 2
+fix vararg type for KEY_FLAGS, thanks to Pino Toscano
+.IP "\(bu" 2
+fix crash of example, thanks to Pino Toscano
+.IP "\(bu" 2
+add proper licence file for Modules (COPYING-CMAKE-SCRIPTS), thanks to Pino Toscano
+.IP "\(bu" 2
+fix XDG resolver issue when no given path in XDG_CONFIG_DIRS is valid
+.IP "\(bu" 2
+make dbus example work again
+.IP "\(bu" 2
+fix compiler warnings for gcc and clang
+.IP "\(bu" 2
+fix Valgrind suppressions
+.IP "\(bu" 2
+Installation of GI binding is fixed, thanks to Dāvis
+.IP "\(bu" 2
+make uninstall is fixed and docu improved
+.PP
+.PP
+.SS "Notes"
+.PP
+There are some misconceptions about Elektra and semi structured data (like XML, JSON)\&. Elektra is a key-value storage, that internally represents everything with key and values\&. Even though, Elektra can use XML and JSON files elegantly, there are limitations what XML and JSON can represent\&. XML, e\&.g\&., cannot have holes within its structure, while this is obviously easily possible with key-value\&. And JSON, e\&.g\&., cannot have non-array entries within an array\&. This is a more general issue of that configuration files in general are constrained in what they are able to express\&. The solution to this problem is validation, i\&.e\&. keys that does not fit in the underlying format are rejected\&. Note there is no issue the other way round: special characteristics of configuration files can always be captured in Elektra’s metadata\&.
+.PP
+.SS "Get It!"
+.PP
+You can download the release from \fChere\fP and now also \fChere on github\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.13\&.tar\&.gz
+.IP "\(bu" 2
+size: 2141758
+.IP "\(bu" 2
+md5sum: 6e7640338f440e67aba91bd64b64f613
+.IP "\(bu" 2
+sha1: ca58524d78e5d39a540a4db83ad527354524db5e
+.IP "\(bu" 2
+sha256: f5c672ef9f7826023a577ca8643d0dcf20c3ad85720f36e39f98fe61ffe74637
+.PP
+.PP
+This release tarball now is also available \fCsigned by me using gpg\fP
+.PP
+already built API-Docu can be found \fChere\fP
+.PP
+.SS "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the \fCMailing List\fP the issue tracker \fCon github\fP or by mail elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, Markus 

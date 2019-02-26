@@ -1,0 +1,35 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the required plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = presetstorage
+\item infos/status = productive maintained nodep libc final
+\item infos/metadata = required mandatory
+\item infos/description = validates configuration against set of required \& accepted keys
+\end{DoxyItemize}
+
+Rarely you want a very strict validation where only required keys should be accepted.
+
+This plugin rejects every configuration where keys which are not required are present.
+
+In general this technique is not recommended because it would lead to rejection of any optional parameter that is introduced in later versions, hindering upgradability. Nevertheless, if you need such a feature, this is the correct plugin to do so.
+
+\subsection*{Usage}
+
+The plugin is {\itshape not} mounted by default. So you must explicitly add it with {\ttfamily infos/needs} either in specifications or contracts.
+
+\subsection*{Example}
+
+If you used \hyperlink{md_src_plugins_simplespeclang_README_src_plugins_simplespeclang_README_md}{simplespeclang} and want to only allow keys that are present in the specification, you can add {\ttfamily required} to the {\ttfamily spec-\/mount} command\+: \begin{DoxyVerb}% kdb mount test.spec spec/test simplespeclang
+% cat << HERE > `kdb file spec/test`
+plugins required
+enum allowed = something
+HERE
+% kdb spec-mount /test
+% kdb set /test/allowed something    # is specified, works!
+% kdb set /test/rejected  something  # fails because rejected not required\end{DoxyVerb}
+ 

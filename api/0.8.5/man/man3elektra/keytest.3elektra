@@ -1,0 +1,698 @@
+.TH "Methods for Making Tests" 3elektra "Mon Mar 3 2014" "Version 0.8.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Methods for Making Tests \- 
+.PP
+Methods to do various tests on Keys\&.  
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBkeyCmp\fP (const Key *k1, const Key *k2)"
+.br
+.ti -1c
+.RI "int \fBkeyNeedSync\fP (const Key *key)"
+.br
+.ti -1c
+.RI "int \fBkeyIsSystem\fP (const Key *key)"
+.br
+.ti -1c
+.RI "int \fBkeyIsUser\fP (const Key *key)"
+.br
+.ti -1c
+.RI "int \fBkeyIsBelow\fP (const Key *key, const Key *check)"
+.br
+.ti -1c
+.RI "int \fBkeyIsDirectBelow\fP (const Key *key, const Key *check)"
+.br
+.ti -1c
+.RI "int \fBkeyRel\fP (const Key *key, const Key *check)"
+.br
+.ti -1c
+.RI "int \fBkeyIsInactive\fP (const Key *key)"
+.br
+.ti -1c
+.RI "int \fBkeyIsDir\fP (const Key *key)"
+.br
+.ti -1c
+.RI "int \fBkeyIsBinary\fP (const Key *key)"
+.br
+.ti -1c
+.RI "int \fBkeyIsString\fP (const Key *key)"
+.br
+.ti -1c
+.RI "\fBkeyswitch_t\fP \fBkeyCompare\fP (const Key *key1, const Key *key2)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to do various tests on Keys\&. 
+
+To use them: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+ 
+.SH "Function Documentation"
+.PP 
+.SS "int keyCmp (const Key *k1, const Key *k2)"
+Compare the name of two keys\&.
+.PP
+\fBReturns:\fP
+.RS 4
+a number less than, equal to or greater than zero if k1 is found, respectively, to be less than, to match, or be greater than k2\&.
+.RE
+.PP
+The comparison is based on a strcmp of the keynames, and iff they match a strcmp of the owner will be used to distuingish\&. If even this matches the keys are found to be exactly the same and 0 is returned\&. These two keys can't be used in the same KeySet\&.
+.PP
+\fBkeyCmp()\fP defines the sorting order for a KeySet\&.
+.PP
+The following 3 points are the rules for null values\&. They only take account when none of the preceding rules matched\&.
+.PP
+.IP "\(bu" 2
+A null pointer will be found to be smaller than every other key\&. If both are null pointers, 0 is returned\&.
+.PP
+.PP
+.IP "\(bu" 2
+A null name will be found to be smaller than every other name\&. If both are null names, 0 is returned\&.
+.PP
+.PP
+.IP "\(bu" 2
+No owner will be found to be smaller then every other owner\&. If both don't have a owner, 0 is returned\&.
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+the owner will only be used if the names are equal\&.
+.RE
+.PP
+Often is enough to know if the other key is less then or greater then the other one\&. But Sometimes you need more precise information, see \fBkeyRel()\fP\&.
+.PP
+Given any Keys k1 and k2 constructed with \fBkeyNew()\fP, following equation hold true:
+.PP
+.PP
+.nf
+// keyCmp(0,0) == 0
+// keyCmp(k1,0) ==  1
+// keyCmp(0,k2) == -1
+.fi
+.PP
+.PP
+You can write similar equation for the other rules\&.
+.PP
+Here are some more examples with equation: 
+.PP
+.nf
+Key *k1 = keyNew('user/a', KEY_END);
+Key *k2 = keyNew('user/b', KEY_END);
+
+// keyCmp(k1,k2) < 0
+// keyCmp(k2,k1) > 0
+
+.fi
+.PP
+.PP
+.PP
+.nf
+Key *k1 = keyNew('user/a', KEY_OWNER, 'markus', KEY_END);
+Key *k2 = keyNew('user/a', KEY_OWNER, 'max', KEY_END);
+
+// keyCmp(k1,k2) < 0
+// keyCmp(k2,k1) > 0
+.fi
+.PP
+.PP
+\fBWarning:\fP
+.RS 4
+Do not try to strcmp the \fBkeyName()\fP yourself because the used strcmp implementation is allowed to differ from simple ascii comparison\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIk1\fP the first key object to compare with 
+.br
+\fIk2\fP the second key object to compare with
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBksAppendKey()\fP, \fBksAppend()\fP will compare keys when appending 
+.PP
+\fBksLookup()\fP will compare keys during searching 
+.RE
+.PP
+
+.SS "\fBkeyswitch_t\fP keyCompare (const Key *key1, const Key *key2)"
+Compare 2 keys\&.
+.PP
+The returned flags bit array has 1s (differ) or 0s (equal) for each key meta info compared, that can be logically ORed using \fC\fBkeyswitch_t\fP\fP flags\&. \fBKEY_NAME \fP, \fBKEY_VALUE \fP, \fBKEY_OWNER \fP, \fBKEY_COMMENT \fP, \fBKEY_UID \fP, \fBKEY_GID \fP, \fBKEY_MODE \fP and
+.PP
+\fBA very simple example would be\fP
+.RS 4
+
+.PP
+.nf
+Key *key1, *key;
+uint32_t changes;
+
+// omited key1 and key2 initialization and manipulation
+
+changes=keyCompare(key1,key2);
+
+if (changes == 0) printf('key1 and key2 are identicall\n');
+
+if (changes & KEY_VALUE)
+        printf('key1 and key2 have different values\n');
+ 
+if (changes & KEY_UID)
+        printf('key1 and key2 have different UID\n');
+
+.fi
+.PP
+.RE
+.PP
+\fBExample of very powerful specific Key lookup in a KeySet:\fP
+.RS 4
+
+.PP
+.nf
+KDB *handle = kdbOpen();
+KeySet *ks=ksNew(0);
+Key *base = keyNew ('user/sw/MyApp/something', KEY_END);
+Key *current;
+uint32_t match;
+uint32_t interests;
+
+
+kdbGetByName(handle, ks, 'user/sw/MyApp', 0);
+
+// we are interested only in key type and access permissions
+interests=(KEY_TYPE | KEY_MODE);
+
+ksRewind(ks);   // put cursor in the begining
+while ((curren=ksNext(ks))) {
+        match=keyCompare(current,base);
+        
+        if ((~match & interests) == interests)
+                printf('Key %s has same type and permissions of base key',keyName(current));
+
+        // continue walking in the KeySet\&.\&.\&.\&.
+}
+
+// now we want same name and/or value
+interests=(KEY_NAME | KEY_VALUE);
+
+// we don't really need ksRewind(), since previous loop achieved end of KeySet
+ksRewind(ks);
+while ((current=ksNext(ks))) {
+        match=keyCompare(current,base);
+
+        if ((~match & interests) == interests) {
+                printf('Key %s has same name, value, and sync status
+                        of base key',keyName(current));
+        }
+        // continue walking in the KeySet\&.\&.\&.\&.
+}
+
+keyDel(base);
+ksDel(ks);
+kdbClose (handle);
+
+.fi
+.PP
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a bit array pointing the differences 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey1\fP first key 
+.br
+\fIkey2\fP second key 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyswitch_t\fP 
+.RE
+.PP
+
+.SS "int keyIsBelow (const Key *key, const Key *check)"
+Check if the key check is below the key key or not\&.
+.PP
+Example: 
+.PP
+.nf
+key user/sw/app
+check user/sw/app/key
+
+.fi
+.PP
+.PP
+returns true because check is below key
+.PP
+Example: 
+.PP
+.nf
+key user/sw/app
+check user/sw/app/folder/key
+
+.fi
+.PP
+.PP
+returns also true because check is indirect below key
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIcheck\fP the key to find the relative position of 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if check is below key 
+.PP
+0 if it is not below or if it is the same key 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeySetName()\fP, \fBkeyGetName()\fP, \fBkeyIsDirectBelow()\fP 
+.RE
+.PP
+
+.SS "int keyIsBinary (const Key *key)"
+Check if a key is binary type\&.
+.PP
+The function checks if the key is a binary\&. Opposed to string values binary values can have '\\0' inside the value and may not be terminated by a null character\&. Their disadvantage is that you need to pass their size\&.
+.PP
+Make sure to use this function and don't test the binary type another way to ensure compatibility and to write less error prone programs\&.
+.PP
+\fBReturns:\fP
+.RS 4
+1 if it is binary 
+.PP
+0 if it is not 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetBinary()\fP, \fBkeySetBinary()\fP 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key to check 
+.RE
+.PP
+
+.SS "int keyIsDir (const Key *key)"
+Check if the mode for the key has access privileges\&.
+.PP
+In the filesys backend a key represented through a file has the mode 664, but a key represented through a folder 775\&. \fBkeyIsDir()\fP checks if all 3 executeable bits are set\&.
+.PP
+If any executable bit is set it will be recognized as a directory\&.
+.PP
+\fBNote:\fP
+.RS 4
+keyIsDir may return true even though you can't access the directory\&.
+.RE
+.PP
+To know if you can access the directory, you need to check, if your
+.IP "\(bu" 2
+user ID is equal the key's user ID and the mode & 100 is true
+.IP "\(bu" 2
+group ID is equal the key's group ID and the mode & 010 is true
+.IP "\(bu" 2
+mode & 001 is true
+.PP
+.PP
+Accessing does not mean that you can get any value or comments below, see \fBModes\fP for more information\&.
+.PP
+\fBNote:\fP
+.RS 4
+currently mountpoints can only where \fBkeyIsDir()\fP is true (0\&.7\&.0) but this is likely to change\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if key is a directory, 0 otherwise 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeySetDir()\fP, \fBkeySetMode()\fP 
+.RE
+.PP
+
+.SS "int keyIsDirectBelow (const Key *key, const Key *check)"
+Check if the key check is direct below the key key or not\&.
+.PP
+.PP
+.nf
+Example:
+key user/sw/app
+check user/sw/app/key
+
+returns true because check is below key
+
+Example:
+key user/sw/app
+check user/sw/app/folder/key
+
+does not return true, because there is only a indirect relation
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIcheck\fP the key to find the relative position of 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if check is below key 
+.PP
+0 if it is not below or if it is the same key 
+.PP
+-1 on null pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyIsBelow()\fP, \fBkeySetName()\fP, \fBkeyGetName()\fP 
+.RE
+.PP
+
+.SS "int keyIsInactive (const Key *key)"
+Check whether a key is inactive or not\&.
+.PP
+In elektra terminology any key is inactive if the it's basename starts with '\&.'\&. Inactive keys must not have any meaning to applications, they are reserved for users and administrators\&.
+.PP
+To remove a whole hierarchy in elektra, don't forget to pass option_t::KDB_O_INACTIVE to \fBkdbGet()\fP to receive the inactive keys in order to remove them\&.
+.PP
+Otherwise you should not fetch these keys\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if the key is inactive, 0 otherwise 
+.PP
+-1 on NULL pointer or when key has no name 
+.RE
+.PP
+
+.SS "int keyIsString (const Key *key)"
+Check if a key is string type\&.
+.PP
+String values are null terminated and are not allowed to have any '\\0' characters inside the string\&.
+.PP
+Make sure to use this function and don't test the string type another way to ensure compatibility and to write less error prone programs\&.
+.PP
+\fBReturns:\fP
+.RS 4
+1 if it is string 
+.PP
+0 if it is not 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyGetString()\fP, \fBkeySetString()\fP 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key to check 
+.RE
+.PP
+
+.SS "int keyIsSystem (const Key *key)"
+Check whether a key is under the \fCsystem\fP namespace or not
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if key name begins with \fCsystem\fP, 0 otherwise 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyIsUser()\fP, \fBkeySetName()\fP, \fBkeyName()\fP 
+.RE
+.PP
+
+.SS "int keyIsUser (const Key *key)"
+Check whether a key is under the \fCuser\fP namespace or not\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if key name begins with \fCuser\fP, 0 otherwise 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyIsSystem()\fP, \fBkeySetName()\fP, \fBkeyName()\fP 
+.RE
+.PP
+
+.SS "int keyNeedSync (const Key *key)"
+Test if a key needs to be synced to backend storage\&.
+.PP
+If any key modification took place the key will be flagged with KEY_FLAG_SYNC so that \fBkdbSet()\fP knows which keys were modified and which not\&.
+.PP
+After \fBkeyNew()\fP the flag will normally be set, but after \fBkdbGet()\fP and \fBkdbSet()\fP the flag will be removed\&. When you modify the key the flag will be set again\&.
+.PP
+In your application you can make use of that flag to know if you changed something in a key after a \fBkdbGet()\fP or \fBkdbSet()\fP\&.
+.PP
+\fBNote:\fP
+.RS 4
+Note that also changes in the meta data will set that flag\&.
+.RE
+.PP
+\fBSee Also:\fP
+.RS 4
+\fBkeyNew()\fP 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+1 if \fCkey\fP was changed in memory, 0 otherwise 
+.PP
+-1 on NULL pointer 
+.RE
+.PP
+
+.SS "int keyRel (const Key *key, const Key *check)"
+Information about the relation in the hierarchy between two keys\&.
+.PP
+Unlike \fBkeyCmp()\fP the number gives information about hierarchical information\&.
+.PP
+.IP "\(bu" 2
+If the keys are the same 0 is returned\&. So it is the key itself\&. 
+.PP
+.nf
+user/key
+user/key
+
+.fi
+.PP
+
+.PP
+.PP
+.PP
+.nf
+keySetName (key, 'user/key/folder');
+keySetName (check, 'user/key/folder');
+succeed_if (keyRel (key, check) == 0, 'should be same');
+ *
+.fi
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+this relation can be checked with \fBkeyCmp()\fP too\&.
+.RE
+.PP
+.IP "\(bu" 2
+If the key is direct below the other one 1 is returned\&. That means that, in terms of hierarchy, no other key is between them - it is a direct child\&. 
+.PP
+.nf
+user/key/folder
+user/key/folder/child
+
+.fi
+.PP
+
+.PP
+.PP
+.PP
+.nf
+keySetName (key, 'user/key/folder');
+keySetName (check, 'user/key/folder/child');
+succeed_if (keyRel (key, check) == 1, 'should be direct below');
+ *
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+If the key is below the other one, but not directly 2 is returned\&. This is also called grand-child\&. 
+.PP
+.nf
+user/key/folder
+user/key/folder/any/depth/deeper/grand-child
+
+.fi
+.PP
+
+.PP
+.PP
+.PP
+.nf
+keySetName (key, 'user/key/folder');
+keySetName (check, 'user/key/folder/any/depth/deeper/grand-child');
+succeed_if (keyRel (key, check) >= 2, 'should be below (but not direct)');
+succeed_if (keyRel (key, check) > 0, 'should be below');
+succeed_if (keyRel (key, check) >= 0, 'should be the same or below');
+ *
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+If a invalid or null ptr key is passed, -1 is returned
+.PP
+.PP
+.IP "\(bu" 2
+If the keys have no relations, but are not invalid, -2 is returned\&.
+.PP
+.PP
+.IP "\(bu" 2
+If the keys are in the same hierarchy, a value smaller then -2 is returned\&. It means that the key is not below\&. 
+.PP
+.nf
+user/key/myself
+user/key/sibling
+
+.fi
+.PP
+
+.PP
+.PP
+.PP
+.nf
+keySetName (key, 'user/key/folder');
+keySetName (check, 'user/notsame/folder');
+succeed_if (keyRel (key, check) < -2, 'key is not below, but same namespace');
+.fi
+.PP
+.PP
+.PP
+.nf
+.fi
+.PP
+.PP
+TODO Below is an idea how it could be extended: It could continue the search into the other direction if any (grand-)parents are equal\&.
+.PP
+.IP "\(bu" 2
+If the keys are direct below a key which is next to the key, -2 is returned\&. This is also called nephew\&. (TODO not implemented) 
+.PP
+.nf
+user/key/myself
+user/key/sibling
+
+.fi
+.PP
+
+.PP
+.PP
+.IP "\(bu" 2
+If the keys are direct below a key which is next to the key, -2 is returned\&. This is also called nephew\&. (TODO not implemented) 
+.PP
+.nf
+user/key/myself
+user/key/sibling/nephew
+
+.fi
+.PP
+
+.PP
+.PP
+.IP "\(bu" 2
+If the keys are below a key which is next to the key, -3 is returned\&. This is also called grand-nephew\&. (TODO not implemented) 
+.PP
+.nf
+user/key/myself
+user/key/sibling/any/depth/deeper/grand-nephew
+
+.fi
+.PP
+
+.PP
+.PP
+The same holds true for the other direction, but with negative values\&. For no relation INT_MIN is returned\&.
+.PP
+\fBNote:\fP
+.RS 4
+to check if the keys are the same, you must use \fBkeyCmp()\fP == 0! \fBkeyRel()\fP does not give you the information if it did not find a relation or if it is the same key\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+dependend on the relation: 2\&.\&. if below 1\&.\&. if direct below 0\&.\&. if the same -1\&.\&. on null or invalid keys -2\&.\&. if none of any other relation -3\&.\&. if same hierarchy (none of those below) -4\&.\&. if sibling (in same hierarchy) -5\&.\&. if nephew (in same hierarchy)
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIcheck\fP the second key object to check the relation with 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

@@ -1,0 +1,100 @@
+spec is a special namespace that describes via metadata the semantics of individual keys.
+
+Most importantly it\+:
+
+
+\begin{DoxyEnumerate}
+\item describes which keys are of interest to the application
+\item describes the metadata to be copied to every key
+\item describes how the cascading lookup works
+\item describes the mountpoints including the plugins needed for them
+\end{DoxyEnumerate}
+
+It is, however, not limited to this but can express any other key database semantics (new plugins might be necessary, though).
+
+\subsection*{Application}
+
+The most simple use is to enlist all keys that will be used by an application and maybe give a description for them (we use ini syntax in this document)\+:
+
+
+\begin{DoxyCode}
+[mykey]
+
+[folder/anotherkey]
+description = set this key if you want another behavior
+\end{DoxyCode}
+
+
+So Keys in {\ttfamily spec} allow us to specify which keys are read by the application. The description key will be copied (referred to) to {\ttfamily folder/anotherkey} of any namespace, so that it can easily be accessed.
+
+\subsection*{Cascading Lookup}
+
+Other features are directly implemented in {\ttfamily ks\+Lookup}. When cascading keys (those starting with {\ttfamily /}) are used following features are now available (in the metadata of respective {\ttfamily spec}-\/keys)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily override/\#}\+: use these keys {\itshape in favour} of the key itself (note that {\ttfamily \#} is the syntax for arrays, e.\+g. {\ttfamily \#0} for the first element, {\ttfamily \#\+\_\+10} for the 11th and so on)
+\item {\ttfamily namespace/\#}\+: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+\item {\ttfamily fallback/\#}\+: when no key was found in any of the (specified) namespaces the {\ttfamily fallback}-\/keys will be searched
+\item {\ttfamily default}\+: this value will be used if nothing else was found
+\end{DoxyItemize}
+
+E.\+g.
+
+
+\begin{DoxyCode}
+[promise]
+default=20
+fallback/#0=/somewhere/else
+namespace/#0=user
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item When this file is mounted to {\ttfamily spec/sw/app/\#0} we specify, that for the key {\ttfamily /sw/app/\#0/promise} only the namespace {\ttfamily user} should be used.
+\item If this key was not found, but {\ttfamily /somewhere/else} is present, we will use this key instead. The {\ttfamily fallback} technique is very powerful\+: it allows us to have (recursive) links between applications. In the example above, the application is tricked in receiving e.\+g. the key {\ttfamily user/somewhere/else} when {\ttfamily promise} was not available.
+\item The value {\ttfamily 20} will be used as default, even if no configuration file is found.
+\end{DoxyEnumerate}
+
+Note that the fallback, override and cascading works on {\itshape key level}, and not like most other systems have implemented, on configuration {\itshape file level}.
+
+\subsection*{Validation}
+
+You can tag any key using the {\ttfamily check} metadata so that it will be validated.
+
+For example\+:
+
+
+\begin{DoxyCode}
+[folder/anotherkey]
+check/validation = abc.*
+check/validation/message = def does not start with abc
+\end{DoxyCode}
+
+
+\subsection*{Mounting}
+
+In the spec namespace you can also specify mountpoints. First you need the metakey {\ttfamily mountpoint} and a configuration file name. Otherwise, it basically works in the same way as the contracts in plugins using {\ttfamily infos} and {\ttfamily config}\+:
+
+
+\begin{DoxyCode}
+[]
+mountpoint=file.abc
+config/plugin/code/escape = 40
+config/plugin/lua#abc/script = abc\_storage.lua
+infos/author = Markus Raab
+infos/needs = resolver\_abc rename code lua#abc
+infos/recommends = hexcode
+\end{DoxyCode}
+
+
+\subsection*{S\+EE A\+L\+SO}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{doc_tutorials_application-integration_md}{see application integration tutorial (towards end)}
+\item \hyperlink{doc_tutorials_namespaces_md}{see namespaces tutorial}
+\item \hyperlink{md_doc_help_elektra-namespaces_doc_help_elektra-namespaces_md}{elektra-\/namespaces(7)}
+\item \hyperlink{md_doc_help_elektra-cascading_doc_help_elektra-cascading_md}{elektra-\/cascading(7)} 
+\end{DoxyItemize}

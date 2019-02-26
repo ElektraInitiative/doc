@@ -1,0 +1,71 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the simplespeclang plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:markus@libelektra.org}{\tt markus@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/needs =
+\item infos/provides = storage
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained specific nodep preview experimental difficult unfinished old concept
+\item infos/metadata =
+\item infos/description = provides conceptual specification language
+\end{DoxyItemize}
+
+See \hyperlink{doc_tutorials_validation_md}{the validation tutorial} for introduction. This plugin provides a conceptual simplistic specification language.
+
+It currently supports to specify\+:
+
+
+\begin{DoxyItemize}
+\item structure (which keys are allowed)
+\item enums (which values are allowed)
+\item multi-\/enums (by name convention\+: if name ends with {\ttfamily $\ast$})
+\end{DoxyItemize}
+
+\subsection*{Purpose}
+
+The plugin demonstrates how simple a configuration specification can be within the Elektra framework. It is conceptual and mainly for educational usage. You can base your plugins
+
+\subsection*{Configuration}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily /keyword/enum}, default {\ttfamily enum}\+: used as keywords for enum definitions.
+\item {\ttfamily /keyword/assign}, default {\ttfamily =}\+: used as keywords for assignment.
+\end{DoxyItemize}
+
+Configuration within the specification language\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily mountpoint $<$filename$>$}\+: defines a file-\/name for {\ttfamily kdb spec-\/mount}
+\item {\ttfamily plugins $<$pluginspec$>$}\+: defines list of plugins for {\ttfamily kdb spec-\/mount}
+\end{DoxyItemize}
+
+\subsection*{Usage}
+
+First you need to mount the plugin to spec, e.\+g.\+: \begin{DoxyVerb}kdb mount myspec.ssl spec/test simplespeclang
+\end{DoxyVerb}
+
+
+Then you can write your specification (with default keywords)\+: \begin{DoxyVerb}cat << HERE > `kdb file spec/test`
+mountpoint filename.txt
+enum key = value1 value2 value3
+enum key2 = value1 value2
+HERE
+\end{DoxyVerb}
+
+
+And finally you need a specification mount, so that all necessary plugins are present\+: \begin{DoxyVerb}kdb spec-mount /test
+\end{DoxyVerb}
+
+
+Also make sure that {\ttfamily spec} is mounted as global plugin\+: \begin{DoxyVerb}kdb global-mount
+\end{DoxyVerb}
+
+
+Then you are only able to write valid keys\+: \begin{DoxyVerb}kdb set /test/key value1  # accepted
+kdb set /test/key2 value3 # rejected, no value3 for key2
+kdb set /test/something else # rejected, no key something\end{DoxyVerb}
+ 

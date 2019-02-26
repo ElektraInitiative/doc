@@ -1,0 +1,63 @@
+.TH "doc_tutorials_elektra-merge-integration_md" 3elektra "Sat Aug 18 2018" "Version 0.8.24" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_elektra-merge-integration_mdHow-To: Integrate elektra-merge Into a Debian Package 
+ \- We assume that you know what \fCucf\fP is and have some \fCgeneral knowledge about configuration file handling in Debian\fP\&.
+.PP
+This guide explains how to use ucf's new \fC--three-way-merge-command\fP functionality in conjunction with Elektra in order to utilize Elektra’s powerful tools in order to allow automatic three-way merges of your package's configuration during upgrades in a way that is more reliable than a diff3 merge\&. This guide assumes that you are familiar with ucf already and are just trying to implement the \fC--three-way-merge-command\fP option using Elektra\&.
+.PP
+.SS "The New Option"
+.PP
+The addition of the \fC--three-way-merge-command\fP option was a part of my Google Summer of Code Project\&. This option takes the form: --three-way-merge-command command <New file>=''> <Destination>
+.PP
+Where \fCcommand\fP is the command you would like to use for the merge\&. \fCNew File\fP and \fCDestination\fP are the same as always\&.
+.PP
+.SS "elektra-merge"
+.PP
+We added a new script to Elektra called \fBelektra-merge\fP for use with this new option in ucf\&. This script acts as a liaison between ucf and Elektra, allowing a regular ucf command to run a \fCkdb merge\fP even though ucf commands only pass \fCNew File\fP and \fCDestination\fP whereas kdb merge requires \fCourpath\fP, \fCtheirpath\fP, \fCbasepath\fP, and \fCresultpath\fP\&. Since ucf already performs a three-way merge, it keeps track of all the necessary files to do so, even though it only takes in \fCNew File\fP and \fCDestination\fP\&.
+.PP
+In order to use \fCelektra-merge\fP, the current configuration file must be mounted to KDB to serve as \fCours\fP in the merge\&. The script automatically mounts \fCtheirs\fP, \fCbase\fP, and \fCresult\fP using the \fCkdb remount\fP command in order to use the same backend as \fCours\fP (since all versions of the same file should use the same backend anyway) and this way users don't need to worry about specifying the backend for each version of the file\&. Then the script attempts a merge on the newly mounted KeySets\&. Once this is finished, either with success or not, the script finishes by unmounting all but \fCour\fP copy of the file to cleanup KDB\&. Then, if the merge was successful ucf will replace \fCours\fP with the result providing the package with an automatically merged configuration which will also be updated in KDB itself\&.
+.PP
+Additionally, we added two other scripts, \fCelektra-mount\fP and \fCelektra-umount\fP which act as simple wrappers for \fCkdb mount\fP and \fCkdb umount\fP\&. They work identically but are more script friendly\&.
+.PP
+.SS "The Full Command"
+.PP
+The full command to use \fCelektra-merge\fP to perform a three-way merge on a file managed by ucf is: ucf --three-way --threeway-merge-command elektra-merge <New file>=''> <Destination>
+.PP
+That's it! As described above, \fCelektra-merge\fP is smart enough to run the whole merge off of the information from that command and utilizes the new \fCkdb remount\fP command to do so\&.
+.PP
+.SS "How-To Integrate"
+.PP
+Integrating \fCelektra-merge\fP into a package that already uses ucf is very easy! In \fCpostinst\fP you should have a line similar to: ucf <New file>=''> <Destination>
+.PP
+or perhaps: ucf --three-way <New file>=''> <Destination>
+.PP
+All you must do is in \fCpostinst\fP, when run with the \fCconfigure\fP option you must mount the config file to Elektra: kdb elektra-mount <New file>=''> <Mounting destination>=''> <Backend>
+.PP
+Next, you must update the line containing \fCucf\fP with the options \fC--three-way\fP and \fC--threeway-merge-command\fP like so: ucf --three-way --threeway-merge-command elektra-merge <New file>=''> <Destination>
+.PP
+Then, in your \fCpostrm\fP script, during a purge, you must unmount the config file before deleting it: kdb elektra-umount <name>
+.PP
+That's it! With those small changes you can use Elektra to perform automatic three-way merges on any files that your package uses ucf to handle!
+.PP
+.SS "Example"
+.PP
+Below is a diff representing the changes we made to the samba-common package in order to allow automatic configuration merging for \fCsmb\&.conf\fP using Elektra\&. We chose this package because it already uses ucf to handle \fCsmb\&.conf\fP but it frequently requires users to manually merge changes across versions\&. Here is the patch showing what we changed:
+.PP
+.PP
+.nf
+diff samba_orig/samba-3\&.6\&.6/debian/samba-common\&.postinst samba/samba-3\&.6\&.6/debian/samba-common\&.postinst
+92c92,93
+< ucf --three-way --debconf-ok "$NEWFILE" "$CONFIG"
+---
+> kdb elektra-mount "$CONFIG" system/samba/smb ini
+> ucf --three-way --threeway-merge-command elektra-merge --debconf-ok "$NEWFILE" "$CONFIG"
+Only in samba/samba-3\&.6\&.6/debian/: samba-common\&.postinst~
+diff samba_orig/samba-3\&.6\&.6/debian/samba-common\&.postrm samba/samba-3\&.6\&.6/debian/samba-common\&.postrm
+4a5
+>       kdb elektra-umount system/samba/smb
+.fi
+.PP
+.PP
+As you can see, all we had to do was add the line to mount \fCsmb\&.conf\fP during install, update the ucf command to include the new \fC--threeway-merge-command\fP option, and unmount \fCsystem/samba/smb\fP during a purge\&. It really is that easy! 

@@ -1,0 +1,119 @@
+.TH "md_src_plugins_error_README" 3elektra "Tue Nov 22 2016" "Version 0.8.19" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_error_README \- Plugin: error 
+
+.IP "\(bu" 2
+infos = Information about error plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = error
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = productive maintained conformant shelltest tested nodep libc configurable discouraged
+.IP "\(bu" 2
+infos/metadata = trigger/warnings trigger/error trigger/error/nofail
+.IP "\(bu" 2
+infos/description = Provokes errors for testing the plugin framework
+.PP
+.PP
+Plugins (should) rarely return an error or warnings, e\&.g\&. writing the configuration basically only fails on filesystem problems\&. Such behaviour is difficult to produce for tests\&.
+.PP
+This plugin tackles this issue by yielding error/warnings on request\&.
+.PP
+.SS "Usage"
+.PP
+.SS "By metadata"
+.PP
+Mount this plugin additionally with a working resolver and a storage e\&.g\&.: 
+.PP
+.nf
+kdb mount error.dump /error error dump
+
+.fi
+.PP
+.PP
+When following metakey is present during storing (\fC\fBkdbSet()\fP\fP) the keyset: 
+.PP
+.nf
+trigger/warnings
+
+.fi
+.PP
+.PP
+a warning will be added\&. The plugin will still return success, but when the following metakey is present: 
+.PP
+.nf
+trigger/error
+
+.fi
+.PP
+.PP
+the plugin will return with an error\&.
+.PP
+The value of the metadata needs to contain the number of the requested error or warning\&.
+.PP
+So an error and warnings can be injected directly with the kdb tool\&. E\&.g\&. the warning number 3: 
+.PP
+.nf
+kdb setmeta system/error/key trigger/warnings 3
+
+.fi
+.PP
+.PP
+or the error number 10 (will not modify the KDB because \fC\fBkdbSet()\fP\fP will fail for the error plugin then): 
+.PP
+.nf
+kdb setmeta user/error/key trigger/error 10
+
+.fi
+.PP
+.PP
+.SS "By config"
+.PP
+To yield an error in \fBkdbOpen()\fP the metadata approach does not work\&. So the plugin also can yield warning/errors using configuration\&.
+.PP
+To do that, configure the plugin using: 
+.PP
+.nf
+on_open/warnings
+on_open/error
+
+.fi
+.PP
+.PP
+E\&.g\&. you can use: 
+.PP
+.nf
+kdb mount error.dump /error error on_open/error=10 dump
+
+.fi
+.PP
+.PP
+Then you get an error on any access, e\&.g\&.: 
+.PP
+.nf
+kdb ls system/error
+
+.fi
+.PP
+.PP
+Will yield error #63: 
+.PP
+.nf
+Description: Tried to get a key from a missing backend
+Mountpoint: system/error
+
+.fi
+.PP
+.PP
+because the opening of the plugin failed (resulting to a missing backend)\&. 

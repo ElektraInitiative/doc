@@ -1,0 +1,108 @@
+
+\begin{DoxyItemize}
+\item infos = Information about Y\+A\+I\+L plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+S\+D
+\item infos/provides = storage
+\item infos/needs =
+\item infos/recommends = rebase directoryvalue comment type
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained coverage unittest
+\item infos/description = J\+S\+O\+N using Y\+A\+I\+L
+\end{DoxyItemize}
+
+This is a plugin reading and writing json files using the library \href{http://lloyd.github.com/yajl/}{\tt yail}
+
+The plugin was tested with yajl version 1.\+0.\+8-\/1 from Debian 6 and yajl version 2.\+0.\+4-\/2 from Debian 7.
+
+Examples of files which are used for testing can be found below the folder in \char`\"{}src/plugins/yajl/examples\char`\"{}.
+
+The json grammar can be found \href{http://www.ietf.org/rfc/rfc4627.txt}{\tt here}.
+
+A validator can be found \href{http://jsonlint.com/}{\tt here}.
+
+Supports every Key\+Set except when arrays are intermixed with other keys. Has only limited support for metadata.
+
+\subsection*{Dependencies}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libyajl-\/dev} (version 1 and 2 should work)
+\end{DoxyItemize}
+
+\subsection*{Types}
+
+My metadata {\ttfamily type} the used types can be chosen\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily string}\+: The J\+S\+O\+N string type.
+\item {\ttfamily boolean}\+: The J\+S\+O\+N boolean type (true or false)
+\item {\ttfamily double}\+: For J\+S\+O\+N numbers.
+\end{DoxyItemize}
+
+If no metadata {\ttfamily type} is given, the type is either\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily null} on binary null-\/key
+\item {\ttfamily string} otherwise
+\end{DoxyItemize}
+
+Any other type/value will still be treated as string, but the warning {\ttfamily \#78} will be added because of the potential data loss.
+
+\subsection*{Special values}
+
+In json it is possible to have empty arrays and objects. In Elektra this is mapped using the special names \begin{DoxyVerb}    ###empty_array
+\end{DoxyVerb}
+
+
+and \begin{DoxyVerb}    ___empty_map
+\end{DoxyVerb}
+
+
+Arrays are mapped to Elektra's array convention \#0, \#1,..
+
+\subsection*{Restrictions}
+
+
+\begin{DoxyItemize}
+\item Everything is string if not tagged by meta key \char`\"{}type\char`\"{} Only valid json types can be used in type, otherwise there are some fall backs to string but warnings are produced.
+\item Values in non-\/leaves are discarded.
+\item Arrays will be normalized (to \#0, \#1, ..)
+\item Comments of various json-\/dialects are discarded.
+\end{DoxyItemize}
+
+Because of these potential problems a type checker, comments filter and directory value filter are highly recommended.
+
+\subsection*{Open\+I\+C\+C Device Config}
+
+This plugin was specifically designed and tested for the {\ttfamily Open\+I\+C\+C\+\_\+device\+\_\+config\+\_\+\+D\+B} although it is of course not limited to it.
+
+Mount the plugin\+: \begin{DoxyVerb}    kdb mount --resolver=resolver_fm_xhp_x color/settings/openicc-devices.json /org/freedesktop/openicc yajl rename cut=org/freedesktop/openicc
+\end{DoxyVerb}
+
+
+or\+: \begin{DoxyVerb}    kdb mount-openicc
+\end{DoxyVerb}
+
+
+Then you can copy the Open\+I\+C\+C\+\_\+device\+\_\+config\+\_\+\+D\+B.\+json to systemwide or user config, e.\+g. \begin{DoxyVerb}    cp src/plugins/yajl/examples/OpenICC_device_config_DB.json /etc/xdg
+    cp src/plugins/yajl/examples/OpenICC_device_config_DB.json ~/.config
+
+    kdb ls system/org/freedesktop/openicc
+\end{DoxyVerb}
+
+
+prints out then all device entries available in the config \begin{DoxyVerb}    kdb get system/org/freedesktop/openicc/device/camera/0/EXIF_manufacturer
+\end{DoxyVerb}
+
+
+prints out \char`\"{}\+Glasshuette\char`\"{} with the example config in souce
+
+You can export the whole system openicc config to ini with\+: \begin{DoxyVerb}    kdb export system/org/freedesktop/openicc simpleini > dump.ini
+\end{DoxyVerb}
+
+
+or import it\+: \begin{DoxyVerb}    kdb import system/org/freedesktop/openicc ini < dump.ini\end{DoxyVerb}
+ 
