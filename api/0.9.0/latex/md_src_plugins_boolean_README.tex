@@ -1,0 +1,53 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the boolean plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = check
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = reviewed conformant compatible coverage specific unittest tested nodep configurable obsolete
+\item infos/metadata =
+\item infos/description = canonicalizes boolean values
+\end{DoxyItemize}
+
+{\bfseries This plugin is obsolete\+:} Please use the {\ttfamily type} plugin instead.
+
+Different configurations might use different values for {\ttfamily T\+R\+UE}/{\ttfamily F\+A\+L\+SE}. The {\ttfamily boolean} plugin canonicalizes boolean values.
+
+\subsection*{Example}
+
+
+\begin{DoxyCode}
+# Mount plugin
+sudo kdb mount config.ecf user/tests/boolean dump boolean
+
+# By default the plugin uses `1` (true) and `0` (false) to represent boolean values
+kdb set user/tests/boolean/truthiness false
+kdb setmeta user/tests/boolean/truthiness type boolean
+kdb get user/tests/boolean/truthiness
+#> 0
+
+# The plugin does not change ordinary values
+kdb set user/tests/boolean/key value
+kdb get user/tests/boolean/key
+#> value
+
+# Undo changes
+kdb rm -r user/tests/boolean
+sudo kdb umount user/tests/boolean
+\end{DoxyCode}
+
+
+\subsection*{Configuration}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily on/true} specifies the normalized value for {\ttfamily T\+R\+UE}. Default\+: {\ttfamily 1}
+\item {\ttfamily on/false} specifies the normalized value for {\ttfamily F\+A\+L\+SE}. Default\+: {\ttfamily 0}
+\item {\ttfamily on/invalid} specifies the normalized value for keys that don\textquotesingle{}t contain a valid boolean value. Values\+: {\ttfamily T\+R\+UE}, {\ttfamily F\+A\+L\+SE}. Default\+: {\ttfamily T\+R\+UE}.
+\item {\ttfamily on/invalid/warning} specifies if the plugin will yield a warning when an invalid value is found during kdb\+Get. Values\+: {\ttfamily T\+R\+UE}, {\ttfamily F\+A\+L\+SE}. Default\+: {\ttfamily T\+R\+UE}
+\item {\ttfamily true} specifies a (case insensitive) list of valid {\ttfamily T\+R\+UE}-\/values. The values have to be separated by a {\ttfamily ;}. Default\+: {\ttfamily T\+R\+UE; 1; ON; E\+N\+A\+B\+LE; E\+N\+A\+B\+L\+ED; Y\+ES}
+\item {\ttfamily false} specifies a (case insensitive) list of valid {\ttfamily F\+A\+L\+SE}-\/values. The values have to be separated by a {\ttfamily ;}. Default\+: {\ttfamily F\+A\+L\+SE; 0; O\+FF; D\+I\+S\+A\+B\+LE; D\+I\+S\+A\+B\+L\+ED; NO; N\+OT} 
+\end{DoxyItemize}

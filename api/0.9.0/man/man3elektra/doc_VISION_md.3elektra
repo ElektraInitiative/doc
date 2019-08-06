@@ -1,0 +1,226 @@
+.TH "doc_VISION_md" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_VISION_mdVISION 
+ \- The vision of Elektra is to have systems in which every configuration setting is easily accessible and specifiable\&.
+.PP
+We will use Samba and its configuration value \fCglobal/workgroup\fP as running example\&.
+.PP
+.SS "Problem"
+.PP
+Currently, the administrator would first need to locate the configuration file, it could be \fC/etc/samba/smb\&.conf\fP, learn the \fCsyntax\fP and then implement some configuration management code to add or replace the value\&. Furthermore, application developers need to implement the parser, design tools like \fCSWAT\fP, and document in detail how to configure their specific software\&. This is a huge effort on both sides\&.
+.PP
+.SS "Configuration Management"
+.PP
+We envision, that instead a key-value interface allows us to change any configuration value as desired\&.
+.PP
+Either by either invoking \fBcommand-line tools\fP:
+.PP
+.PP
+.nf
+kdb set system/sw/samba/#0/current/global/workgroup MYGROUP
+.fi
+.PP
+.PP
+Also by importing an INI file with the information:
+.PP
+.PP
+.nf
+kdb import system/sw/samba/#0/current ini << HERE
+[global]
+workgroup=MYGROUP
+HERE
+.fi
+.PP
+.PP
+Or using some compiled language like C (shown code uses the \fBhigh-level API\fP, with neither code generation nor error handling):
+.PP
+.PP
+.nf
+#include <elektra\&.h>
+
+int main ()
+{
+        ElektraError* error;
+        Elektra * elektra = elektraOpen ("system/sw/samba/#0/current", 0, &error);
+        elektraSetString (elektra, "global/workgroup", "MYGROUP", &error);
+        elektraClose (elektra);
+}
+.fi
+.PP
+.PP
+Or using some interpreted language like Python (shown code uses the \fBPython binding of the low-level API\fP):
+.PP
+.PP
+.nf
+import kdb
+k = kdb\&.KDB()
+ks = kdb\&.KeySet()
+s = "system/sw/samba/#0/current"
+k\&.get (ks, s)
+ks\&.append(kdb\&.Key(s+"/global/workgroup", kdb\&.KEY_VALUE, "MYGROUP"))
+k\&.set (ks, s)
+.fi
+.PP
+.PP
+Or if you already use configuration management tools, the vision is that a single statement within the configuration management tool suffices to change a configuration value\&.
+.PP
+Key-value access in \fCpuppet-libelektra\fP:
+.PP
+.PP
+.nf
+kdbkey {'system/sw/samba/#0/current/global/workgroup':
+        ensure => 'present',
+        value => 'MYGROUP'
+}
+.fi
+.PP
+.PP
+Key-value access in Chef:
+.PP
+.PP
+.nf
+kdbset 'system/sw/samba/#0/current/global/workgroup' do
+        value 'MYGROUP'
+        action :create
+end
+.fi
+.PP
+.PP
+Key-value access in Ansible:
+.PP
+.PP
+.nf
+- name: setup samba workgroup
+  connection: local
+  hosts: localhost
+  tasks:
+    - name: set workgroup
+      elektra:
+        key: "system/sw/samba/#0/current/global/workgroup"
+        value: "MYGROUP"
+.fi
+.PP
+.PP
+In all these examples, we have set \fCsystem/sw/samba/#0/current/global/workgroup\fP to \fCMYGROUP\fP\&.
+.PP
+.SS "Application Integration"
+.PP
+Different to other solutions, in Elektra \fBapplications itself can be integrated\fP, too\&. In Samba we would simply replace the configuration file parser with code like (\fClow-level C code\fP, no error-handling and no cleanup):
+.PP
+.PP
+.nf
+#include <kdb\&.h>
+#include <stdio\&.h>
+
+int main (void)
+{
+        KeySet * myConfig = ksNew (0, KS_END);
+        Key * key = keyNew ("/sw/samba/#0/current", KEY_CASCADING_NAME, KEY_END);
+        KDB * handle = kdbOpen (key);
+        kdbGet (handle, myConfig, key);
+
+        Key * result = ksLookupByName (myConfig, "/sw/samba/#0/current/global/workgroup", 0);
+        printf ("My workgroup is %s", keyString (result));
+}
+.fi
+.PP
+.PP
+If any of the codes above were executed, the application will print \fCMy workgroup is MYGROUP\fP\&.
+.PP
+Applications that were modified to directly use Elektra are called to be \fCelektrified\fP\&.
+.PP
+But the vision also includes legacy applications which do not directly use Elektra\&. Then distributions can mount configuration files, so that the configuration is visible within Elektra\&.
+.PP
+Elektra uses the same configuration to configure itself, so every way shown above can be used\&. To make mounting more simple, we introduced an extra tool:
+.PP
+.PP
+.nf
+kdb mount /etc/samba/smb\&.conf system/sw/samba/#0/current ini
+.fi
+.PP
+.PP
+Mounting can also be done via configuration management tools\&.
+.PP
+Mounting in puppet-libelektra:
+.PP
+.PP
+.nf
+kdbmount {'system/sw/samba/#0/current':
+        ensure => 'present',
+        file => '/etc/samba/smb\&.conf',
+        plugins => 'ini'
+}
+kdbkey {'system/sw/samba/global/log level':
+        ensure => 'absent'
+}
+.fi
+.PP
+.PP
+Mounting in Ansible:
+.PP
+.PP
+.nf
+- name: setup samba workgroup
+  connection: local
+  hosts: localhost
+  tasks:
+    - name: set workgroup
+    elektra:
+      mountpoint: system/sw/samba
+      file: /etc/samba/smb\&.conf
+      plugins: ini
+.fi
+.PP
+.PP
+.SS "Specifications"
+.PP
+Ideally, applications specify their settings\&. This way, we know which keys exist on a system and which values are expected for these keys\&. Then administrators do not need to guess\&.
+.PP
+Next to the documentation for humans, specifications also provide information for software\&. For example, the \fBWeb UI\fP automatically gives input fields according to the type of the configuration setting\&. For example, a boolean configuration setting gets a checkbox\&.
+.PP
+Also the specifications are integrated within Elektra in the same way\&. Again, we can use any of the above ways to specify configuration\&.
+.PP
+Either by either invoking \fBcommand-line tools\fP:
+.PP
+.PP
+.nf
+kdb set-meta /sw/samba/#0/current/global/workgroup type string
+kdb set-meta /sw/samba/#0/current/global/workgroup description "This controls what workgroup your server will appear to be in when queried by clients\&. Note that this parameter also controls the Domain name used with the security = domain setting\&."
+.fi
+.PP
+.PP
+Key-value specifications in \fCpuppet-libelektra\fP:
+.PP
+.PP
+.nf
+kdbkey {'system/sw/samba/#0/current/global/workgroup':
+        ensure => 'present',
+        check => {
+                'type' => 'string',
+                'default' => 'WORKGROUP',
+                'description' => 'This controls what workgroup
+                        your server will appear to be in when
+                        queried by clients\&. Note that this
+                        parameter also controls the Domain
+                        name used with the security = domain
+                        setting\&.'
+}
+.fi
+.PP
+.PP
+Note, that the specification (in both examples above) actually lands up in \fCspec/sw/samba/#0/current/global/workgroup\fP\&. The unique path to the configuration setting is \fC/sw/samba/#0/current/global/workgroup\fP, but the specification gets written to the \fBnamespace\fP \fCspec\fP, while the system-configuration gets written to the namespace \fCsystem\fP\&.
+.PP
+.SS "Conclusion"
+.PP
+Here we have shown how Elektra can be used to configure systems more easily\&. Both application developers and administrators can save time\&.
+.PP
+The main technique to achieve the vision is unique key names: Every configuration setting can be addressed by its unique key name\&.
+.PP
+With this unique key name, we get an identifier, which can be used at all places throughout the system\&.
+.PP
+.IP "\(bu" 2
+Continue reading \fBbig picture\fP 
+.PP
+

@@ -1,0 +1,295 @@
+
+\begin{DoxyItemize}
+\item guid\+: 519cbfac-\/6db5-\/4594-\/8a38-\/dec4c84b134f
+\item author\+: Markus Raab
+\item pub\+Date\+: Thu, 19 Nov 2015 17\+:48\+:14 +0100
+\item short\+Desc\+: adds massive documentation improvements \& new or overhauled plugins
+\end{DoxyItemize}
+
+Again we managed to release with many new features and plugins (lua, enum, list, crypto, csvstorage, conditionals, mathcheck, filecheck, logchange) many fixes, and especially with a vastly improved polished documentation.
+
+\subsection*{Documentation Initiative}
+
+The Documentation Initiative is a huge success and now the documentation of Elektra is in a state where someone (preferable a linux guru), never heard of Elektra, still can use Elektra only by reading man pages.
+
+There are now many ways to show a man page\+:
+
+
+\begin{DoxyItemize}
+\item https\+://master.libelektra.\+org/doc/help/kdb.md \char`\"{}on github\char`\"{}
+\item \href{https://doc.libelektra.org/api/latest/html/doc_help_kdb_md.html}{\tt in the A\+PI docu}
+\item by using {\ttfamily kdb -\/-\/help} or {\ttfamily kdb help $<$command$>$}
+\item by using {\ttfamily man kdb}
+\end{DoxyItemize}
+
+\subsubsection*{Help system}
+
+Ian Donnelly wrote man pages for all the tools delivered with Elektra. Additionally, nearly all R\+E\+A\+D\+M\+E.\+md are now also converted to man pages and also to Doxygen.
+
+\subsubsection*{Doxygen Filter}
+
+Kurt Micheli did an amazing work with a new doxygen filter. The filter allows all Elektra markdown pages to be also included in the doxygen documentation. Thus all technical concepts are now explained in Markdown pages, this filter is essential.
+
+But even more, the filter also includes all man pages written for the tools, giving a nice html view for them. (In addition to the markdown rendering on github).
+
+Enjoy the \href{https://doc.libelektra.org/api/0.8.14/html/}{\tt result}.
+
+A big thanks to Kurt Micheli!
+
+\subsubsection*{Further Docu fixes}
+
+
+\begin{DoxyItemize}
+\item getenv debugging docu was improved
+\item typo fix\+: Specify, thanks to Pino Toscano
+\item \href{https://master.libelektra.org/doc/decisions}{\tt Design decisions} Definition of Bool, capabilities and Publish Subscribe (thanks to Daniel Bugl)
+\item Improve iconv docu
+\item usage examples for many plugins
+\item improve R\+E\+A\+D\+ME for line plugin (thanks to Ian Donnelly)
+\item add docu about dependencies for some plugins (thanks to Ian Donnelly)
+\item create many new links within the documentation
+\end{DoxyItemize}
+
+\subsection*{Simplicity}
+
+We shifted our https\+://git.libelektra.\+org/blob/master/doc/\+G\+O\+A\+LS.md \char`\"{}goals\char`\"{} a bit\+: We want to prefer simplicity to flexibility. Not because we do no like flexibility, but because we think we achieved enough of it. Currently (and in future) you can use Elektra\+:
+
+
+\begin{DoxyItemize}
+\item obviously as primitive key-\/value storage
+\item with specifications and dozens of plugins driven by it
+\item with code generation
+\item ...
+\end{DoxyItemize}
+
+But we cut flexibility regarding\+:
+
+
+\begin{DoxyItemize}
+\item namespaces are only useful for configuration (not for arbitrary key-\/value)
+\item the semantics of \href{https://git.libelektra.org/blob/master/doc/METADATA.ini}{\tt metadata}
+\item mounting functionality
+\item error code meanings are fixed, if a resolver detects a conflict, our defined error must be used
+\item of course A\+BI, A\+PI
+\end{DoxyItemize}
+
+\subsection*{Qt-\/gui 0.\+0.\+9}
+
+Raffael Pancheri again updated his qt-\/gui to version 0.\+0.\+9 (beta) with important of fixes and improvements\+:
+
+
+\begin{DoxyItemize}
+\item Fixes for Qt 5.\+5
+\item Handling of merge-\/conflicts improved
+\item Avoid rewriting on merge-\/conflicts
+\item Allow Q\+ML to destroy C++ owned model
+\item Dialog at startup
+\item Reduce memory footprint
+\item add man page
+\end{DoxyItemize}
+
+A bit thanks to Raffael Pancheri!
+
+\subsection*{Compatibility}
+
+As always, the A\+PI and A\+PI is fully forward-\/compatible, i.\+e. programs compiled against an older 0.\+8 versions of Elektra will continue to work.
+
+The behaviour of some plugins, however, changed\+:
+
+
+\begin{DoxyItemize}
+\item the I\+NI plugin, the section handling was improved.
+\item in the NI plugin, the symbol Ni\+\_\+\+Get\+Version vanished
+\item in the resolver plugin files of other namespaces which are not mounted are not resolved anymore
+\end{DoxyItemize}
+
+\subsubsection*{Build System}
+
+E\+N\+A\+B\+L\+E\+\_\+\+C\+X\+X11 does not exist anymore, it is always on. We do not care about 199711L compilers anymore, which makes development easier, without losing any actually used platform.
+
+Some programs that are only used in-\/source are not installed anymore. (by Pino Toscano)
+
+Python and Lua plugins are enabled now in {\ttfamily -\/\+D\+P\+L\+U\+G\+I\+NS=A\+LL}.
+
+Python3 plugin was renamed to python.
+
+\subsection*{Lua Plugin}
+
+Manuel Mausz add a lightweight alternative to the python plugin\+: \href{https://master.libelektra.org/src/plugins/lua/}{\tt the lua plugin}. In a similar way, someone can write scripts, which are executed on every access to the https\+://master.libelektra.\+org/doc/help/elektra-\/glossary.md \char`\"{}key database\char`\"{}.
+
+To mount a lua based filter, you can use\+:
+
+
+\begin{DoxyCode}
+kdb mount file.ini /lua ini lua script=/path/to/lua/lua\_filter.lua
+\end{DoxyCode}
+
+
+Even though it works well, it is classified as technical preview.
+
+Thanks to Manuel Mausz for this plugin!
+
+\subsection*{Cryptography Plugin}
+
+In this technical preview, Peter Nirschl \href{https://master.libelektra.org/src/plugins/crypto/}{\tt demonstrates how a plugin} can encrypt Elektra’s values. In test cases it is already able to do so, but for the end user an easy way for key derivation is missing.
+
+A big thanks to Peter Nirschl!
+
+\subsection*{I\+NI Plugin}
+
+The I\+NI plugin got a near rewrite. Now it handles many situations better, has many more options and features, including\+:
+
+
+\begin{DoxyItemize}
+\item preserving the order
+\item using keys as metadata
+\item many new test cases
+\item fix escaping
+\end{DoxyItemize}
+
+Thanks to Thomas Waser for this work!
+
+\subsection*{Mathcheck plugin}
+
+This plugin allows you to check and even calculate keys from other keys using an polish prefix notation. It supports the typical operations {\ttfamily + -\/ / $\ast$} and {\ttfamily $<$, $<$=, ==, !=, =$>$, $>$, \+:=}. To mount, check and calculate values, one would use\+:
+
+
+\begin{DoxyCode}
+kdb mount mathcheck.dump /example/mathcheck dump mathcheck
+kdb setmeta user/example/mathcheck/k check/math "== + a b"
+kdb setmeta user/example/mathcheck/k check/math ":= + a b"
+\end{DoxyCode}
+
+
+For details \href{https://master.libelektra.org/src/plugins/mathcheck/}{\tt see the documentation}.
+
+Thanks to Thomas Waser for this important plugin!
+
+\subsection*{List Plugin}
+
+Currently, Elektra has some limitations on how many plugins can be added to certain https\+://master.libelektra.\+org/doc/dev/plugins-\/ordering.md \char`\"{}placement\char`\"{}. Because of the rapidly growing number of plugins, some combinations are not possible anymore.
+
+This plugin tackles the issue, by delegating the work to an arbitrary number of subplugins. As a bonus, it works lazily and thus might avoid the loading of some plugins all together.
+
+Thanks to Thomas Waser for this plugin!
+
+\subsection*{Conditionals}
+
+Brings {\ttfamily if} inside Elektra. It lets you check if some keys have the values they should have.
+
+
+\begin{DoxyCode}
+kdb mount conditionals.dump /tmount/conditionals conditionals dump
+kdb set user/tmount/conditionals/fkey 3.0
+kdb set user/tmount/conditionals/hkey hello
+kdb setmeta user/tmount/conditionals/key check/condition "(hkey == 'hello') ? (fkey == '3.0')" # success
+kdb setmeta user/tmount/conditionals/key check/condition "(hkey == 'hello') ? (fkey == '5.0')" # fail
+\end{DoxyCode}
+
+
+For details \href{https://master.libelektra.org/src/plugins/conditionals/}{\tt see the documentation}.
+
+Again, thanks to Thomas Waser for this plugin!
+
+\subsection*{Csvstorage Plugin}
+
+You can now mount csv-\/files. To mount {\ttfamily test.\+csv} simply use\+:
+
+
+\begin{DoxyCode}
+kdb mount test.csv /csv csvstorage
+\end{DoxyCode}
+
+
+There are many options, e.\+g. changing the delimiter, use header for the key names or predefine how the columns should be named. For details \href{https://master.libelektra.org/src/plugins/csvstorage/}{\tt see the documentation}.
+
+Thanks to Thomas Waser!
+
+\subsection*{Filecheck plugin}
+
+This plugin lets you validate lineendings, encodings, null, bom and unprintable characters.
+
+The also new plugin lineendings is already superseded by the filecheck plugin.
+
+Thanks to Thomas Waser!
+
+\subsection*{Enum plugin}
+
+The Enum plugin checks string values of Keys by comparing it against a list of valid values.
+
+Thanks to Thomas Waser!
+
+\subsection*{Elektrify Machinekit.\+io}
+
+We are proud that \href{http://www.machinekit.io/}{\tt Machinekit} starts using Elektra.
+
+Alexander Rössler is digging into all details, and already enhanced the D\+B\+US Plugin for their needs. D\+Bus now can emit a message for every changed key.
+
+A big thanks to Alexander Rössler!
+
+\subsection*{Bugfixes}
+
+
+\begin{DoxyItemize}
+\item libgetenv did not reinitalized its mutexes on forks
+\item add need\+Sync also in C++ binding
+\item handle removed current working directories (fallback to /)
+\item avoid segfault on missing version keys (when doing {\ttfamily kdb rm system/elektra/version})
+\item fix glob plugin + kdb mount with https\+://master.libelektra.\+org/doc/help/elektra-\/contracts.md \char`\"{}config/needs usage\char`\"{}
+\item fix different handling of strerror\+\_\+r in mac\+OS (thanks to Daniel Bugl)
+\item do not change the users parent\+Key in early-\/error scenarios
+\item do not try to interpret some binary keys as function keys
+\end{DoxyItemize}
+
+\subsection*{Other Gems}
+
+
+\begin{DoxyItemize}
+\item getenv example\+: do not link to elektra/elektratools, thanks to Pino Toscano
+\item fixes in other examples
+\item avoid useless U\+T\+F-\/8 chars and fix typos, thanks to Kurt Micheli
+\item fix kdb check return code (open fail)
+\item pdf now also allows U\+T\+F-\/8 characters if added to elektra\+Special\+Characters.\+sty, thanks to Kurt Micheli
+\item libgetenv\+: lookup also used for layers
+\item handle wrong arguments of metals better, thanks to Ian Donnelly
+\item Improvement of error messages in the augeas plugin
+\item {\ttfamily kdb set} avoids fetching unnecessary namespaces
+\item verbose unmount
+\item logchange\+: small demonstration plugin to show how to log added, removed and changed keys
+\item setmeta will use spec as default
+\item libtools\+: avoid useless get\+Name, add verbosity flag for find\+Backend
+\item Improve iconv error messages
+\item That mount needs permissions to /etc should now really be obvious with new error message
+\item many fixes in the template for new plugins
+\end{DoxyItemize}
+
+\subsection*{Get It!}
+
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.14.tar.gz}{\tt here} and now also \href{https://github.com/ElektraInitiative/ftp/tree/master/releases/elektra-0.8.14.tar.gz}{\tt here on github}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+14.\+tar.\+gz
+\item size\+: 2252008
+\item md5sum\+: a87cd3845e590bf413959dfd555e3704
+\item sha1\+: 2360603c347ae3f3a28e827eb9260ff0b9881e46
+\item sha256\+: af681a38c9c2921b8d249f98ab851c3d51371735471d8a1f833a224c4446fe2e
+\end{DoxyItemize}
+
+This release tarball now is also available \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.14.tar.gz.gpg}{\tt signed by me using gpg}
+
+already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.14/html/}{\tt here}
+
+\subsection*{Stay tuned!}
+
+Subscribe to the \href{https://doc.libelektra.org/news/feed.rss}{\tt R\+SS feed} to always get the release notifications.
+
+For any questions and comments, please contact the \href{https://lists.sourceforge.net/lists/listinfo/registry-list}{\tt Mailing List} the issue tracker \href{https://git.libelektra.org/issues}{\tt on github} or by mail \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org}.
+
+\href{https://doc.libelektra.org/news/519cbfac-6db5-4594-8a38-dec4c84b134f.html}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://libelektra.org}{\tt https\+://libelektra.\+org}
+
+Btw. the whole release happened with https\+://master.libelektra.\+org/src/libs/getenv/\+R\+E\+A\+D\+ME.md \char`\"{}elektrify-\/getenv\char`\"{} enabled.
+
+Best regards, Markus 

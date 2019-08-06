@@ -1,0 +1,1146 @@
+.TH "doc_news__preparation_next_release_md" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news__preparation_next_release_md0\&.8\&.<<VERSION>> Release 
+ \- This release did not happen yet\&.
+.PP
+Please update this file within PRs accordingly\&. For non-trivial changes, you can choose to be part of the highlighted changes\&. Please make sure to add some short tutorial (checked by shell recorder) or asciinema for highlighted items\&.
+.PP
+Please add your name at the end of every contribution\&. \fBSyntax:\fP _(your name)_
+.PP
+<<\fCscripts/generate-news-entry\fP>>
+.PP
+We are proud to release Elektra 0\&.8\&.<<VERSION>>\&.
+.PP
+.SS "Possible Introduction Text"
+.PP
+We are proud to present our largest release so far\&. It is the first release of the 0\&.9\&.* version series, which goal is it:
+.PP
+.IP "\(bu" 2
+to prepare Elektra for 1\&.0\&.0
+.IP "\(bu" 2
+to remove compatibility layers
+.IP "\(bu" 2
+to prototypes that did not reach maturity
+.PP
+.PP
+The 0\&.8\&.* version series will still be maintained but with a low priority -- the highest priority will be to get Elektra 1\&.0\&.0 done\&. If you have maintenance requests and want 0\&.8\&.26 to be released, please contact us via business@libelektra.org
+.PP
+.SS "Business Plans"
+.PP
+To get away from a purely research-oriented approach to a mature foundation, we also need paid employees to fix problems\&.
+.PP
+We plan to introduce following ways of income:
+.PP
+.IP "1." 4
+donations
+.IP "2." 4
+paid support/feature requests
+.IP "3." 4
+consultancy
+.PP
+.PP
+If you are interested in any of these, please contact us via business@libelektra.org
+.PP
+Please note, that Elektra will definitely stay 100% free software (BSD licensed)\&.
+.PP
+.SS "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP
+.PP
+.SS "Highlights"
+.PP
+.IP "\(bu" 2
+<<HIGHLIGHT1>>
+.IP "\(bu" 2
+<<HIGHLIGHT2>>
+.IP "\(bu" 2
+<<HIGHLIGHT3>>
+.PP
+.PP
+.SS "Type (New Version)"
+.PP
+The \fCtype\fP plugin was completely rewritten in C\&. The old version is now called \fCcpptype\fP\&. _(Klemens Böswirth)_
+.PP
+The new \fCtype\fP plugin also provides the functionality of the \fCenum\fP and the \fCboolean\fP plugin\&. These plugins are now considered obsolete and you should use \fCtype\fP instead\&.
+.PP
+A few notes on compatibility:
+.PP
+.IP "\(bu" 2
+the new \fCtype\fP does not support the full feature set of \fCenum\fP and \fCboolean\fP, but it supports the features we consider useful\&.
+.IP "\(bu" 2
+the new \fCtype\fP doesn't support \fCFSType\fP and \fCempty\fP\&. These have been deprecated for a long time and there are good alternatives available\&.
+.IP "\(bu" 2
+the new \fCtype\fP supports \fCenum\fP, \fCwchar\fP and \fCwstring\fP as types, whereas the old \fCcpptype\fP would throw an error for these\&. In most cases this won't be a problem, but you should be aware of this breaking change\&.
+.IP "\(bu" 2
+the new \fCtype\fP does not support \fCcheck/type/min\fP and \fCcheck/type/max\fP, please use the \fCrange\fP plugin\&.
+.PP
+.PP
+To switch from \fCenum\fP to the new \fCtype\fP, you have to add either \fCcheck/type=enum\fP or \fCtype=enum\fP\&. Without a \fCcheck/type\fP or \fCtype\fP metakey, the \fCtype\fP plugin will ignore the key\&. We now also support converting enum values to and from integer values (see \fCREADME\fP)\&.
+.PP
+To switch from \fCboolean\fP to the new \fCtype\fP, you don't have to do anything, if you used the default config\&. If you used a custom configuration please take a look at the \fCREADME\fP\&.
+.PP
+.SS "kdbEnsure"
+.PP
+\fCkdbEnsure\fP is a new function in \fCelektra-kdb\fP\&. It can be used to ensure that a KDB instance meets certain clauses specified in a contract\&. In principle this a very powerful tool that may be used for a lot of things\&. For now it only supports a few clauses concerning plugins:
+.PP
+.IP "\(bu" 2
+You can specify that a plugin should be mounted globally\&. This can for example be used to enable the new \fCgopts\fP plugin\&.
+.IP "\(bu" 2
+Conversely you can also define that a plugin should not be mounted globally, e\&.g\&. to disable the \fCspec\fP plugin, which is enabled by default\&.
+.IP "\(bu" 2
+Additionally you may want to enforce that a global plugin uses a certain configuration\&. For this case you can specify that the plugin should be remounted, i\&.e\&. unmounted and immediately mounted again\&.
+.IP "\(bu" 2
+Because of the different architecture involved, for now only unmounting of non-global plugins is supported\&.
+.PP
+.PP
+All changes made by \fCkdbEnsure\fP are purely temporary\&. They will only apply to the KDB handle passed to the function\&.
+.PP
+IMPORTANT: \fCkdbEnsure\fP only works, if the \fClist\fP plugin is mounted in all appropriate global positions\&.
+.PP
+Note: \fCkdbEnsure\fP right now ignores the \fCinfos/recommends\fP and \fCinfos/needs\fP metadata of plugins, so you have to explicitly take care of dependencies\&. _(Klemens Böswirth)_
+.PP
+.SS "Error Code Concept"
+.PP
+With this release, we changed our messy error code system into a more structured and clean way\&. Similar to \fCSQLStates\fP we changed to structure of our error codes and migrated them\&. Have a look into the new \fBcodes\fP\&. This allows us to easily extend the specification without breaking existing codes and to avoid risking duplicated errors as we had before\&. _(Michael Zronek)_
+.PP
+.SS "Plugins"
+.PP
+The following section lists news about the \fCmodules\fP we updated in this release\&.
+.PP
+.SS "Base64"
+.PP
+.IP "\(bu" 2
+We fixed some warnings about implicit type conversions reported by \fCUBSan\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Cache"
+.PP
+.IP "\(bu" 2
+\fCcache\fP is a new global caching plugin\&. It uses \fCmmapstorage\fP as its storage backend and lazily stores keysets from previous ´kdbGet()´ calls\&. We added initial support for the default resolver and multifile resolver\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Add check of resolved filenames, fixes false cache hits\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Execute only \fCPROCGETSTORAGE\fP global plugins when we have a cache hit\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Fix two data loss bugs when using \fCcache\fP with \fCmultifile\fP resolver\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Fix GCC ASAN build warnings #2820\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Add tools for enabling, disabling and clearing the cache (\fCkdb cache {enable,disable,default,clear}\fP)\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Enable cache when \fCini\fP is used\&. _(Mihael Pranjić)_
+.PP
+.PP
+.SS "crypto / fcrypt"
+.PP
+.IP "\(bu" 2
+Empty GPG key IDs in the plugin configuration are being ignored by the \fCcrypto\fP plugin and the \fCfcrypt\fP plugin\&. Adding empty GPG key IDs would lead to an error when \fCgpg\fP is being invoked\&._(Peter Nirschl)_
+.IP "\(bu" 2
+Apply Base64 encoding to the master password, which is stored within the plugin configuration\&. This fixes a problem that occurs if ini is used as default storage (see \fC2591\fP)\&._(Peter Nirschl)_
+.IP "\(bu" 2
+Fix compilation without deprecated OpenSSL APIs\&. Initialization and deinitialization is not needed anymore\&. _(Rosen Penev)_
+.PP
+.PP
+.SS "CSVStorage"
+.PP
+.IP "\(bu" 2
+Support DOS newlines for the csvstorage plugin\&. _(Vlad - Ioan Balan)_
+.PP
+.PP
+.SS "filecheck"
+.PP
+.IP "\(bu" 2
+We fixed some warnings about implicit type conversions reported by \fCUBSan\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "gOpts"
+.PP
+.IP "\(bu" 2
+The \fCgopts\fP plugin simply retrieves the values of \fCargc\fP, \fCargv\fP and \fCenvp\fP needed for \fC\fCelektraGetOpts\fP\fP and then makes the call\&. It is intended to be used as a global plugin, so that command-line options are automatically parsed when \fCkdbGet\fP is called\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The plugin works under WIN32 (via \fCGetCommandLineW\fP and \fCGetEnvironmentString\fP), MAC_OSX (\fC_NSGetArgc\fP, \fC_NSGetArgv\fP) and any system that either has a \fCsysctl(3)\fP function that accepts \fCKERN_PROC_ARGS\fP (e\&.g\&. FreeBSD) or when \fCprocfs\fP is mounted and either \fC/proc/self\fP or \fC/proc/curproc\fP refers to the current process\&. If you need support for any other systems, feel free to add an implementation\&.
+.PP
+.PP
+.SS "INI"
+.PP
+.IP "\(bu" 2
+Fixed \fCini\fP when only the root key needs to be written\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Plugin writes to ini files without spaces around '=' anymore\&. Reading is still possible with and without spaces\&. _(Oleksandr Shabelnyk)_
+.PP
+.PP
+.SS "macaddr"
+.PP
+.IP "\(bu" 2
+Added a plugin to handle MAC addresses\&. \fCkdbGet\fP converts a MAC address into a decimal 64-bit integer (with the most significant 16 bits always set to 0), if the format is supported\&. \fCkdbSet\fP restores the converted values back to there original form\&. _(Thomas Bretterbauer)_
+.PP
+.PP
+.SS "mINI"
+.PP
+.IP "\(bu" 2
+We fixed compiler warnings reported by GCC 9 in the \fCunit test code\fP of the plugin\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "mmapstorage"
+.PP
+.IP "\(bu" 2
+\fCmmapstorage\fP is now able to persist the Global KeySet, which is used by the \fCcache\fP plugin\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Fixed support for \fCkdb import\fP and \fCkdb export\fP\&. _(Mihael Pranjić)_
+.PP
+.PP
+.SS "multifile"
+.PP
+.IP "\(bu" 2
+Fixed segmentation fault in \fCkdbError()\fP function\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Added Global Keyset handle to storage plugin\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Fixed use of wrong resolver handle in the \fCkdbError()\fP function\&. _(Mihael Pranjić)_
+.PP
+.PP
+.SS "Quickdump"
+.PP
+.IP "\(bu" 2
+\fCquickdump\fP is a new storage plugin\&. It implements a more concise form of the \fCdump\fP format, which is also quicker too read\&. Contrary to dump, quickdump only stores keynames relative to the parent key\&. This allows easy relocation of configurations\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+quickdump now also uses an variable length integer encoding to further reduce file size\&. _(Klemens Böswirth)_
+.PP
+.PP
+.SS "Reference"
+.PP
+.IP "\(bu" 2
+Fixed missing Metadata in README and METADATA\&.ini\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Update README\&.md web tool to show, how to test REST API on localhost\&. _(Dmytro Moiseiuk)_
+.PP
+.PP
+.SS "RGBColor"
+.PP
+.IP "\(bu" 2
+New plugin to validate hex formatted colors (e\&.g\&. #fff or #abcd) and normalize them to rgba (4294967295 (= 0xffffffff) and 2864434397 (= 0xaabbccdd) respectively)\&. It also has support for named colors according to the \fCextended color keywords\fP from CSS3\&. _(Philipp Gackstatter)_
+.PP
+.PP
+.SS "semlock"
+.PP
+removed due to:
+.PP
+.IP "\(bu" 2
+constant pain
+.IP "\(bu" 2
+never worked properly
+.IP "\(bu" 2
+poor design
+.IP "\(bu" 2
+no time in future to maintain _(Kurt Micheli)_
+.PP
+.PP
+.SS "spec"
+.PP
+.IP "\(bu" 2
+The spec plugin was partly rewritten to better support specifications for arrays\&. This includes some breaking changes concerning the less used (and also less functional) parts of the plugin\&. To find out more about these changes take a look at the \fBREADME\fP\&. It now better reflects the actually implemented behaviour\&. _(Klemens Böswirth)_
+.PP
+.PP
+.SS "Specload"
+.PP
+.IP "\(bu" 2
+The \fCspecload\fP plugin is a special storage plugin\&. Instead of using a storage file it calls an external application to request its specification\&. For the transfer it relies on the \fCquickdump\fP plugin\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Currently changing the specification is only allowed in a very limited way\&. However, in future the plugin should allow overriding a specification in all cases where this can be done safely\&. NOTE: While the plugin technically allows some modifications, because of a problem with the resolver this cannot be used right now (see \fClimitations\fP)\&.
+.IP "\(bu" 2
+We also export \fCelektraSpecloadSendSpec\fP to abstract over the \fCquickdump\fP dependency\&. _(Klemens Böswirth)_
+.PP
+.PP
+.SS "Syslog"
+.PP
+.IP "\(bu" 2
+We fixed an incorrect format specifier in a call to the \fCsyslog\fP function\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "unit"
+.PP
+.IP "\(bu" 2
+New plugin to validate units of memory and normalize them into bytes\&. E\&.g\&. 20 KB (normalized to 20000 Byte)\&. _(Marcel Hauri)_
+.PP
+.PP
+.SS "YAJL"
+.PP
+.IP "\(bu" 2
+The plugin now allows setting a value to the mountpoint\&. This is represented as a top level value in JSON if no other key is present\&. _(Philipp Gackstatter)_
+.IP "\(bu" 2
+The plugin no longer lists empty parent keys with \fCkdb ls\fP\&. _(Philipp Gackstatter)_
+.IP "\(bu" 2
+The plugin signifies arrays with the metakey array according to the \fBarray decision\fP\&. _(Philipp Gackstatter)_
+.IP "\(bu" 2
+The plugin no longer produces additional \fC___dirdata\fP entries for empty array keys\&. See also issue \fC#2477\fP\&. _(Philipp Gackstatter)_
+.PP
+.PP
+.SS "YAMBi"
+.PP
+.IP "\(bu" 2
+\fCYAMBi\fP is now able detect multiple syntax errors in a file\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The error message now includes more information about the location of syntax errors\&. For example, for the incorrect YAML input \fCconfig\&.yaml\fP:
+.PP
+.PP
+.PP
+.nf
+key 1: - element 1
+ - element 2
+key 2: scalar
+       - element 3
+.fi
+.PP
+.PP
+, the plugin prints an error message that includes the following text:
+.PP
+.PP
+.nf
+config\&.yaml:2:2: syntax error, unexpected start of sequence, expecting end of map or key
+                  - element 2
+                  ^
+config\&.yaml:4:8: syntax error, unexpected start of sequence, expecting end of map or key
+                        - element 3
+                        ^
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+\fCYAMBi\fP now supports Elektra’s \fBboolean data type\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now handles YAML key-value pairs without a value at the end of a file correctly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now converts YAML key-value pairs with empty value to null/empty keys\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCYAMBi\fP now converts empty files to a key set containing an empty version of the parent key\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "YAML CPP"
+.PP
+.IP "\(bu" 2
+The plugin now handles keys that are part of a map, but use a basename ending with \fBarray syntax\fP correctly\&. For example, in a key set that contains keys with the following names:
+.PP
+.PP
+.PP
+.nf
+user/array/#0
+user/array/#1
+user/map/#0
+user/map/key
+user/map/#1
+.fi
+.PP
+.PP
+, \fCuser/array/#0\fP and \fCuser/array/#1\fP represent array elements, while \fCuser/map/#0\fP, and \fCuser/map/#1\fP do not, since the key set also contains the key \fCuser/map/key\fP\&. The following \fCMarkdown Shell Recorder\fP snippet shows the new behavior of the plugin:
+.PP
+.PP
+.nf
+kdb mount config\&.yaml user yamlcpp
+kdb set user/array/#0 one
+kdb set user/array/#1 two
+kdb set user/map/#0   three
+kdb set user/map/key  four
+kdb set user/map/#1   five
+kdb file user | xargs cat
+#> array:
+#>   - one
+#>   - two
+#> map:
+#>   "#0": three
+#>   "#1": five
+#>   key: four
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+\&.\&./\&.\&./src/plugins/yamlcpp/README\&.md 'YAML CPP' now handles the conversion from and to \fBElektra’s boolean type\fP properly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin converts “sparse” key sets properly\&. For example, for the key set that contains \fBonly\fP the key:
+.IP "  \(bu" 4
+\fCuser/parent/#1/#2/map/#0\fP with the value \fCarr\fP
+.PP
+.PP
+and uses \fCuser/parent\fP as parent key, YAML CPP stores the following YAML data:
+.PP
+.PP
+.PP
+.nf
+- ~
+- - ~
+  - ~
+  - map:
+      - arr
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+\&.\&./\&.\&./src/plugins/yamlcpp/README\&.md 'YAML CPP' now supports mixed data (nested lists & sequences) better\&. For example, the plugin now correctly converts the YAML data
+.PP
+.PP
+.PP
+.nf
+root:
+  - element: one
+  - element: two
+.fi
+.PP
+.PP
+to the key set that contains the following keys:
+.PP
+.PP
+.nf
+user/tests/yaml/root
+user/tests/yaml/root/#0/element
+user/tests/yaml/root/#1/element
+.fi
+.PP
+.PP
+.SS "YAML Smith"
+.PP
+.IP "\(bu" 2
+\fCYAML Smith\fP now converts keys that shares a common prefix correctly\&. For example, the last command in the script:
+.PP
+.PP
+.PP
+.nf
+kdb mount config\&.yaml user/tests/yaml yaml
+kdb set user/tests/yaml/common/one/#0 value
+kdb set user/tests/yaml/common/two/#0 first
+kdb set user/tests/yaml/common/two/#1 second
+kdb export user/tests/yaml yamlsmith
+.fi
+.PP
+.PP
+now prints the following YAML data:
+.PP
+.PP
+.nf
+common:
+  one:
+    - "value"
+  two:
+    - "first"
+    - "second"
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+The plugin now converts Elektra’s boolean values (\fC0\fP, \fC1\fP) back to YAML’s boolean values (\fCtrue\fP, \fCfalse\fP)\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Yan LR"
+.PP
+.IP "\(bu" 2
+The build system now disables the plugin, if you installed a version of ANTLR 4 that does not support ANTLR’s C++ runtime (like ANTLR \fC4\&.5\&.x\fP or earlier)\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed an ambiguity in the \fCYAML grammar\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The build system now regenerates the modified parsing code, every time we update the grammar file\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now reports the location of syntax errors correctly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The lexer for the plugin now emits start tokens for maps at the correct location inside the token stream\&. This update fixes a problem, where the plugin sometimes reported incorrect error messages for the \fIfirst\fP syntax error in a YAML file\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now stores the end position of map start tokens correctly\&. Before this update the plugin would sometimes not show the markers (\fC^\fP) that point to the error positions inside the input\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCYan LR\fP now supports Elektra’s \fBboolean data type\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now handles YAML key-value pairs that contain no value at the end of a file correctly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now converts YAML key-value pairs with empty value to null/empty keys\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin converts “empty” YAML files to a key set that contains an empty version of the parent key\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "YAwn"
+.PP
+.IP "\(bu" 2
+\fCYAwn\fP is now able to print error messages for multiple syntax errors\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We also improved the error messages of YAwn, which now also contain the input that caused a syntax error\&. For example, for the input
+.PP
+.PP
+.PP
+.nf
+key: value
+  - element
+.fi
+.PP
+.PP
+the plugin prints an error message that contains the following text:
+.PP
+.PP
+.nf
+config\&.yaml:2:3: Syntax error on input “start of sequence”
+                   - element
+                   ^
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+The plugin now supports Elektra’s \fBboolean data type\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCYAwn\fP handles YAML key-value pairs that contain no value at the end of a file correctly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now converts YAML key-value pairs with empty value to null/empty keys\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCYAwn\fP now stores empty files as a key set containing an empty parent key\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "YAy PEG"
+.PP
+.IP "\(bu" 2
+\fCYAy PEG\fP now also supports \fCPEGTL 2\&.8\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now includes the input that could not be parsed in error messages\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We improved the error messages for certain errors slightly\&. For example, the error message for the input
+.PP
+.PP
+.PP
+.nf
+"double quoted
+.fi
+.PP
+.PP
+now includes the following text
+.PP
+.PP
+.nf
+1:14: Missing closing double quote or incorrect value inside flow scalar
+      "double quoted
+                    ^
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+\fCYAy PEG\fP now supports compact mappings:
+.PP
+.PP
+.PP
+.nf
+- key1: value1
+  key2: value2
+.fi
+.PP
+.PP
+and compact sequences:
+.PP
+.PP
+.nf
+- - element1
+  - element2
+.fi
+.PP
+.PP
+correctly\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+The plugin now supports Elektra’s \fBboolean data type\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCYAy PEG\fP now converts YAML key-value pairs with empty value to null/empty keys\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now translates an empty file to a key set that contains a single empty parent key\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Libraries"
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.PP
+.SS "Compatibility"
+.PP
+As always, the ABI and API of kdb\&.h is fully compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API)\&.
+.PP
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Core"
+.PP
+.IP "\(bu" 2
+\fCkdbGet\fP now calls global postgetstorage plugins with the parent key passed to \fCkdbGet\fP, instead of a random mountpoint\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Fixed a double cleanup error (segmentation fault) when mounting global plugins\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Logging in Elektra was changed with this release\&. If Elektra is compiled with \fCENABLE_LOGGER\fP enabled, we now log warnings and errors to stderr and everything except debug messages to syslog\&. If \fCENABLE_DEBUG\fP is also enabled, debug messages are logged to syslog as well\&. Previously you had to make some manual changes to the code, to see most of the logging messages\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The logger does not truncate the file name incorrectly anymore, if \fC__FILE__\fP contains a relative (instead of an absolute) filepath\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Disabled any plugin execution when we have a cache hit or no update from backends\&. The old behaviour can be enabled for testing using \fCENABLE_DEBUG\fP and adding the \fC'debugGlobalPositions'\fP meta key to the parentKey of the kdbGet invocation\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Removed \fCingroup\fP from error messages to reduce verbosity\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Fixed minor problem when \fCkdb_long_double_t\fP is not available (e\&.g\&. mips32)\&. _(Matthias Schoepfer)_
+.IP "\(bu" 2
+Only add benchmarks if \fCBUILD_TEST\fP is set in cmake\&. _(Matthias Schoepfer)_
+.IP "\(bu" 2
+We fixed some warnings about implicit conversion to \fCunsigned int\fP reported by \fCUBSan\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Ease"
+.PP
+.IP "\(bu" 2
+The functions for reference resolving used in the \fCreference plugin\fP have been extracted into libease\&. This lets other parts of Elektra easily use references and ensures a consistent syntax for them\&. _(Klemens Böswirth)_
+.PP
+.PP
+.SS "<>"
+.PP
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "<>"
+.PP
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Bindings"
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up to date with the multi-language support provided by Elektra\&.
+.PP
+.IP "\(bu" 2
+JNA is now not experimental anymore\&. _(Markus Raab)_
+.IP "\(bu" 2
+gsettings is not default anymore\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add fix for creating the Key and KeySet objects in the HelloElektra\&.java file\&. _(Dmytro Moiseiuk)_
+.IP "\(bu" 2
+We fixed a \fCwarning about a deprecated default constructor\fP in the C++ binding reported by GCC 9\&.0\&. _(René Schwaiger)_
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "<>"
+.PP
+.SS "<>"
+.PP
+.SS "Tools"
+.PP
+.IP "\(bu" 2
+\fCkdb get -v\fP now displays if the resulting value is a default-value defined by the metadata of the key\&. _(Thomas Bretterbauer)_
+.IP "\(bu" 2
+\fCkdb cp\fP now succeeds if the target-keys already have the same values as the source-keys\&. _(Thomas Bretterbauer)_
+.IP "\(bu" 2
+\fCweb-ui\fP issue #2441 is fixed in form of a workaround _(Josef Wechselauer)_
+.IP "\(bu" 2
+\fCkdb import\fP does not fail anymore if executed more than once with the same target in the spec-namespace\&. _(Thomas Bretterbauer)_
+.IP "\(bu" 2
+\fCkdb mount\fP avoid adding sync if sync is already provided\&. _(Markus Raab)_
+.IP "\(bu" 2
+\fCkdb list-tools\fP now supports \fCKDB_EXEC_PATH\fP environment variables that contain spaces\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCgen-gpg-testkey\fP is added to the default tools list (see \fC#2668\fP)\&._(Peter Nirschl)_
+.IP "\(bu" 2
+\fCkdb getenv\fP now executed correctly from within tests _(Markus Raab)_
+.IP "\(bu" 2
+\fCkdb-bash-completion\fP was fixed (see \fC#2836\fP)\&. _(Eduardo Santana)_
+.IP "\(bu" 2
+\fCkdb rm\fP supports \fC--without-elektra\fP and returns 11 on key not found\&. _(Markus Raab)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Code generation"
+.PP
+\fCkdb gen\fP is now no longer an external tool implemented via python, but rather a first class command of the \fCkdb\fP tool\&. For now it only supports code generation for use with the highlevel API\&. Try it by running \fCkdb gen elektra <parentKey> <outputName>\fP, where \fC<parentKey>\fP is the parent key of the specification to use and \fC<outputName>\fP is some prefix for the output files\&. If you don't have your specification mounted, use \fCkdb gen -F <plugin>:<file> elektra <parentKey> <outputName>\fP to load it from \fC<file>\fP using plugin \fC<plugin>\fP\&.
+.PP
+\&.\&. _(Klemens Böswirth)_
+.PP
+.SS "Scripts"
+.PP
+.IP "\(bu" 2
+The \fCreformat-source\fP script now also formats \fCtests/shell/include_common\&.sh\&.in\fP\&. Additionally it ensures that the file is 1000 lines long, so that line numbers of files using it are easier to read\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The \fBclang-format wrapper script\fP now also checks the supported maximum version of Clang-Format\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The script \fC\fCreformat-shfmt\fP\fP now also reformats shell support files (\fC*\&.in\fP) in the \fC\fCscripts\fP\fP folder\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCreformat-*\fP scripts now allow you to specify a list of files that should be formatted\&. Only files actual suitable for the reformat script, will reformat\&. So e\&.g\&. calling \fCreformat-cmake \fBsrc/include/kdbprivate\&.h\fP\fP doesn't change any files\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The script \fCscripts/reformat-all\fP is a new convenience script that calls all other \fCreformat-*\fP scripts\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The script \fCscripts/pre-commit-check-formatting\fP can be used as a pre-commit hook, to ensure files are formatted before committing\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The \fBlink checker\fP now prints broken links to the standard error output\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a script, called \fB`benchmark-yaml`\fP that compares the run-time of the YAML plugins:
+.IP "\(bu" 2
+Added \fCkdb reset\fP and \fCkdb reset-elektra\fP, fixed \fCkdb stash\fP\&. _(Markus Raab)_
+.IP "  \(bu" 4
+\fCYAML CPP\fP,
+.IP "  \(bu" 4
+\fCYan LR\fP,
+.IP "  \(bu" 4
+\fCYAMBi\fP,
+.IP "  \(bu" 4
+\fCYAwn\fP, and
+.IP "  \(bu" 4
+\fCYAy PEG\fP
+.PP
+.PP
+for a certain input file with \fChyperfine\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Benchmarks"
+.PP
+.IP "\(bu" 2
+The benchmarking tool \fC\fCbenchmark_plugingetset\fP\fP now also supports only executing the \fCget\fP method for the specified plugin\&. For example, to convert the data stored in the file \fCbenchmarks/data/yaypeg\&.test\&.in\fP with the \fCYAy PEG plugin\fP to a key set you can now use the following command:
+.PP
+.PP
+.PP
+.nf
+benchmark_plugingetset benchmarks/data user yaypeg get
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.SS "Documentation"
+.PP
+.SS "Style"
+.PP
+.IP "\(bu" 2
+The documentation now uses \fCfenced code blocks\fP to improved the syntax highlighting of code snippets\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added recommendations about the style of Markdown headers to our \fBcoding guidelines\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now use \fCtitle case\fP for most headings in the documentation\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added instructions on how to reformat code with
+.IP "  \(bu" 4
+\fCClang-Format\fP,
+.IP "  \(bu" 4
+\fCcmake format\fP,
+.IP "  \(bu" 4
+\fCPrettier\fP, and
+.IP "  \(bu" 4
+\fCshfmt\fP
+.PP
+.PP
+to the \fBcoding guidelines\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Tutorials"
+.PP
+.IP "\(bu" 2
+We added a basic tutorial that tells you \fBhow to write a (well behaved) storage plugin\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Improved the \fCcheckconf\fP section in the plugin tutorial\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+We added a \fBtutorial\fP on how to benchmark the execution time of plugins using \fB`benchmark_plugingetset`\fP and \fChyperfine\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The new \fBprofiling tutorial\fP describes how to determine the execution time of code using
+.IP "  \(bu" 4
+\fCCallgrind\fP, and
+.IP "  \(bu" 4
+\fCXRay\fP
+.PP
+.PP
+\&. _(René Schwaiger)_
+.IP "\(bu" 2
+For beginners we added a \fBtutorial\fP that guides them through the process of contributing to libelektra\&. _(Thomas Bretterbauer)_
+.IP "\(bu" 2
+Added a section on \fCelektraPluginGetGlobalKeySet\fP in the plugin tutorial\&. _(Vid Leskovar)_
+.IP "\(bu" 2
+Added a step-by-step \fBtutorial\fP for beginners to run all tests with Docker\&. _(Oleksandr Shabelnyk)_
+.IP "\(bu" 2
+Extend/improve java bindings related documentation in \fBtutorial\fP and \fBreadme\fP\&. _(Oleksandr Shabelnyk)_
+.IP "\(bu" 2
+Added a step-by-step \fBtutorial\fP for running reformatting scripts with Docker\&. _(Oleksandr Shabelnyk)_
+.IP "\(bu" 2
+Covered Resolving Missing *\&.so Library Error in \fBtutorial\fP\&. _(Oleksandr Shabelnyk)_
+.IP "\(bu" 2
+Added a basic tutorial on \fBHow-To: Write a Java Plugin\fP _(Dmytro Moiseiuk)_ and _(Miruna Orsa)_
+.PP
+.PP
+.SS "Spelling Fixes"
+.PP
+.IP "\(bu" 2
+Write Elektra with capital letter in cascading tutorial\&. _(Vlad - Ioan Balan)_
+.IP "\(bu" 2
+Add typo fix to the hello-elektra tutorial\&. _(Dmytro Moiseiuk)_
+.IP "\(bu" 2
+Add typo fix to the Java kdb tutorial\&. _(Dominik Hofmann)_
+.IP "\(bu" 2
+Fixed capitalization of the initial letter in Readme\&. _(Miruna Orsa)_
+.IP "\(bu" 2
+Improved readability in README\&. _(Philipp Gackstatter)_
+.IP "\(bu" 2
+We fixed some spelling mistakes in the documentation\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Fix typo in root README\&.md and 'build-in' => 'built-in' in several places _(Raphael Gruber)_
+.IP "\(bu" 2
+Fixed typos in \fCcassandra\&.ini\fP _(arampaa)_
+.PP
+.PP
+.SS "Other"
+.PP
+.IP "\(bu" 2
+The \fCMarkdown Link Converter\fP now uses the style
+.PP
+.PP
+.PP
+.nf
+filename:line:0
+.fi
+.PP
+.PP
+instead of
+.PP
+.PP
+.nf
+filename|line col 0|
+.fi
+.PP
+.PP
+to show the location data for broken links\&. This is also the same style that Clang and GCC use when they display location information for compiler errors\&. This update has the advantage, that certain tools such as \fCTextMate\fP are able to convert the location data, providing additional features, such as clickable links to the error source\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+The \fCMarkdown Link Converter\fP uses the index \fC1\fP for the first line number instead of \fC0\fP\&. This update fixes an off-by-one-error, when the user tries to use the error location data printed by the tool in a text editor\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a badge for \fCLGTM\fP to the \fBhttps:\fP//master\&.libelektra\&.org/README\&.md 'main ReadMe file'\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Added \fBLCDproc\fP and \fCCassandra\fP specification examples\&. These examples provide a good guideline for writing specifications for configurations\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Added a new error message format concept to be implemented soon\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Added a new error concept for error codes to be implemented soon\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Added error categorization guidelines to be used with the error concept\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Further small improvements to error messages like wording, cleanups and error splitup\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Drastically improved the error message format\&. For more information look \fBhere\fP\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Added a guideline for writing consistent and good error messages\&. For more information look \fBhere\fP\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Every \fCkdb\fP command now accepts \fCv\fP and \fCd\fP as option to show more information in case of warnings or errors\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Improved qt-gui error popup to conform with the new error message format\&. _(Raffael Pancheri)_
+.IP "\(bu" 2
+We fixed the format specifiers in the \fC“Hello, Elektra” example\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Expanded the Python Tutorial to cover installation under Alpine Linux\&. _(Philipp Gackstatter)_
+.IP "\(bu" 2
+We wrote a tutorial which is intended to \fBhelp newcomers contributing to libelektra\fP\&. _(Thomas Bretterbauer)_
+.IP "\(bu" 2
+We fixed various broken links in the documentation\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Fix finding of jni\&.h library\&. _(Dmytro Moiseiuk)_
+.IP "\(bu" 2
+Added license for asciinema\&. _(Anastasia )_
+.IP "\(bu" 2
+We incorporated \fBhttps:\fP//github\&.com/ElektraInitiative/libelektra/blob/5f6e902af5ac8f4c4228fc0859b7ecef7707bbfb/doc/help/kdb-introduction\&.md '`kdb-introduction`' into the \fCman page for \fCkdb\fP\fP _(Markus Raab)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Tests"
+.PP
+.IP "\(bu" 2
+We now test the \fCDirectory Value Plugin\fP with additional test data\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The variables:
+.IP "  \(bu" 4
+\fCSPEC_FOLDER\fP
+.IP "  \(bu" 4
+\fCSYSTEM_FOLDER\fP
+.IP "  \(bu" 4
+\fCUSER_FOLDER\fP
+.PP
+.PP
+in the \fBinclusion file for shell test\fP were set incorrectly, if the repository path contained space characters\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCCFramework\fP now also compares the names of meta keys\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fBrelease notes check\fP does not report an illegal number anymore, if the release notes were not updated at all\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a test for the keyhelper-class which checks if rebasePath calculates the new path for cascading target-keys correctly\&. _(Thomas Bretterbauer)_
+.IP "\(bu" 2
+Enable MSR for the crypto and fcrypt tutorial (\fC#1981\fP)\&._(Peter Nirschl)_
+.IP "\(bu" 2
+We fixed the \fCMarkdown Shell Recorder\fP test for the command \fB`kdb get`\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The tests
+.IP "  \(bu" 4
+\fB`testscr_check_real_world`\fP,
+.IP "  \(bu" 4
+\fB`testscr_check_resolver`\fP, and
+.IP "  \(bu" 4
+\fB`testscr_check_spec`\fP
+.PP
+.PP
+now also works correctly, if the \fCuser\fP and \fCsystem\fP directory file paths contain space characters\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Source Code Checks"
+.PP
+.IP "\(bu" 2
+The formatting instructions printed by \fC\fCcheck_formatting\fP\fP now also work correctly, if
+.IP "  \(bu" 4
+the \fCdiff\fP output does not start with the test number added by CTest, and
+.IP "  \(bu" 4
+you use a non-POSIX shell such as \fC\fCfish\fP\fP
+.PP
+.PP
+\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We reformatted the CMake source code with cmake format \fC0\&.5\&.4\fP and also \fBcheck the style of CMake code\fP with this new version of the tool\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now check the source code of the repository with \fCLGTM\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed various warnings about
+.IP "  \(bu" 4
+missing or duplicated include guards,
+.IP "  \(bu" 4
+undefined behavior,
+.IP "  \(bu" 4
+incorrect format specifiers,
+.IP "  \(bu" 4
+unnecessary statements,
+.IP "  \(bu" 4
+short names for global variables, and
+.IP "  \(bu" 4
+empty \fCif\fP-statements
+.PP
+.PP
+reported by \fCLGTM\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Build"
+.PP
+.SS "CMake"
+.PP
+.IP "\(bu" 2
+The build system now rebuilds the \fCJNA binding\fP with Maven, if you change any of the Java source files of the binding\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCtestshell_markdown_tutorial_crypto\fP is not compiled and executed if \fCgen-gpg-testkey\fP is not part of TOOLS\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+Plugin tests are now only added, if \fCBUILD_TESTING=ON\fP\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The symbol list for the static version is now exported directly from a CMake function\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Building Elektra with enabled \fB`io_glib`\fP binding does not require libuv anymore\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now disable the option \fCINSTALL_SYSTEM_FILES\fP by default\&. This change makes it possible to install Elektra using \fCHomebrew\fP on Linux without any changes to \fCElektra’s Linuxbrew formula\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Docker"
+.PP
+.SS "Alpine Linux"
+.PP
+.IP "\(bu" 2
+Our \fBDocker image for Alpine Linux\fP now uses the base image for Alpine Linux 3\&.9\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added \fCPEGTL\fP to the \fBAlpine Docker image\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Debian"
+.PP
+.IP "\(bu" 2
+We now use the default JDK on Debian sid, since the package \fCopenjdk-8-jdk\fP is not available in the official unstable repositories anymore\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added
+.IP "  \(bu" 4
+\fCBison\fP, and
+.IP "  \(bu" 4
+\fCYAEP\fP
+.PP
+.PP
+to the \fBimage for Debian sid\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now offer images for the latest stable version of Debian codenamed \fB“buster”\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Ubuntu"
+.PP
+.IP "\(bu" 2
+We added a \fBDockerfile for Ubuntu Disco Dingo\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Other Updates"
+.PP
+.IP "\(bu" 2
+The Docker images for
+.IP "  \(bu" 4
+\fBDebian stretch\fP, and
+.IP "  \(bu" 4
+\fBDebian sid\fP,
+.PP
+.PP
+now include the Python YAML library recommended by \fCcmake format\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Vagrant"
+.PP
+.IP "\(bu" 2
+The \fBVagrant file for Ubuntu Artful Aardvark\fP now installs the Python YAML library recommended by \fCcmake format\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Infrastructure"
+.PP
+.SS "Cirrus"
+.PP
+.IP "\(bu" 2
+We added the build job \fC🔗 Check\fP, which checks the documentation for broken links\&. _(René Schwaiger)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Jenkins"
+.PP
+.IP "\(bu" 2
+We disabled the tests:
+.IP "  \(bu" 4
+\fCtestmod_crypto_botan\fP,
+.IP "  \(bu" 4
+\fCtestmod_crypto_openssl\fP,
+.IP "  \(bu" 4
+\fCtestmod_dbus\fP,
+.IP "  \(bu" 4
+\fCtestmod_dbusrecv\fP,
+.IP "  \(bu" 4
+\fCtestmod_fcrypt\fP,
+.IP "  \(bu" 4
+\fCtestmod_gpgme\fP, and
+.IP "  \(bu" 4
+\fCtestmod_zeromqsend\fP
+.PP
+.PP
+, since they are \fCknown to fail in high load scenarios\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added deprecated plugins to the tests\&. _(Markus Raab)_
+.IP "\(bu" 2
+We increased the automatic timeout for jobs that show no activity from 5 to 10 minutes\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We improved the exclusion patterns for the \fCCoveralls coverage analysis\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now again build the API docu of \fCmaster\fP and we now also build the API docu of \fCPRs\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+We added buster build jobs\&. _(Markus Raab)_
+.PP
+.PP
+.SS "Restyled"
+.PP
+.IP "\(bu" 2
+We added a \fBconfiguration file\fP for \fCRestyled\fP\&. Currently \fCRestyled\fP monitors changes to Shell code in pull requests and fixes code that does not fit the \fBcoding guideline\fP, by adding additional formatting commit to PRs\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Travis"
+.PP
+.IP "\(bu" 2
+We removed the build job for the \fBHaskell binding\fP and \fBHaskell plugin\fP\&. For more information, please take a look \fChere\fP\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+We always use GCC 9 for the build job \fC🍏 GCC\fP\&. This update makes sure that the build job succeeds, even if Homebrew adds a new major version of the compiler\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We simplified our \fBTravis configuration file\fP, removing various unnecessary and unused code\&. In this process we also got rid of the caching directives, we previously used to speed up the Haskell build job \fC🍏 Haskell\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.SS "Website"
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date\&. Furthermore, we changed:
+.PP
+.IP "\(bu" 2
+Our entry for Elektra has been approved in the Free Software Directory: https://directory.fsf.org/wiki/Elektra
+.IP "\(bu" 2
+Added github build status badges to website _(hesirui)_
+.IP "\(bu" 2
+We updated part of a test for the \fCsnippet converter\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Fixed anchor links on the website _(hesirui)_
+.IP "\(bu" 2
+Added Docsearch to Website _(hesirui)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Outlook"
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.PP
+.SS "Statistics"
+.PP
+Following authors made this release possible:
+.PP
+<<\fCscripts/git-release-stats 0\&.8\&.<<VERSION>>\fP>>
+.PP
+We closed \fC114 issues\fP for this release\&.
+.PP
+.SS "Join the Initiative!"
+.PP
+We welcome new contributors! Read \fChere\fP about how to get started\&.
+.PP
+As first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.
+.PP
+.SS "Get the Release!"
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+<<\fCscripts/generate-hashsums\fP>>
+.PP
+The release tarball is also available signed by Markus Raab using GnuPG from \fChere\fP or on \fCGitHub\fP
+.PP
+Already built API-Docu can be found \fChere\fP or on \fCGitHub\fP\&.
+.PP
+.SS "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments please contact us via our issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, \fCElektra Initiative\fP 

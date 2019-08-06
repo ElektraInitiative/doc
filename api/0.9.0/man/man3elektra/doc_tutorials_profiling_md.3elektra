@@ -1,0 +1,275 @@
+.TH "doc_tutorials_profiling_md" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_profiling_mdProfiling 
+ \- 
+.SS "Execution Time"
+.PP
+One of the primary resources in computing is execution time\&. To keep usage of this resource type low, it makes sense to profile code and check which code paths in a progamm take the longest time to execute\&. There exist various tools to handle this kind of profiling\&. For this tutorial we will use
+.PP
+.IP "1." 4
+\fCCallgrind\fP and the graphical frontend \fCKCacheGrind/QCacheGrind\fP, and
+.IP "2." 4
+\fCXRay\fP and \fCFlameGraph\fP to visualize the data produced by \fCXRay\fP
+.PP
+.PP
+.SS "Callgrind"
+.PP
+.SS "Choosing the Correct Build Type"
+.PP
+Since we want to improve the readability of the Callgrind output we choose a build type that includes debug symbols\&. The two obvious choices for the build type are:
+.PP
+.IP "\(bu" 2
+\fCRelWithDebInfo\fP (optimized build with debug symbols), and
+.IP "\(bu" 2
+\fCDebug\fP (non-optimized build with debug symbols)
+.PP
+.PP
+\&. We use \fCDebug\fP here, which should provide the most detailed profiling information\&.
+.PP
+.SS "Disabling \fCdlclose\fP Calls"
+.PP
+For this tutorial we decided to profile the \&.\&./\&.\&./src/plugins/yaypeg/README\&.md 'YAy PEG' plugin\&. Since Elektra loads plugin code via \fCdlopen\fP and Callgrind \fCdoes not support the function \fCdlclose\fP properly\fP we remove the \fCdlclose\fP calls in the file \fC\fCdl\&.c\fP\fP temporarily\&. At the time of writing one option to do that is deleting
+.PP
+.IP "\(bu" 2
+a single line \fCdlclose\fP statement, and
+.IP "\(bu" 2
+an \fCif\fP-statement that checks the return value of a \fCdlclose\fP call
+.PP
+.PP
+\&. An unfortunate effect of this code update is that Elektra will now leak memory when it unloads a plugin\&. On the other hand, Callgrind will be able to add source code information about the \&.\&./\&.\&./src/plugins/yaypeg/README\&.md 'YAy PEG' plugin to the profiling output\&.
+.PP
+.SS "Building Elektra"
+.PP
+As we already described before we use the \fCDebug\fP build type for the profiling run\&. To make sure we test the actual performance of the \&.\&./\&.\&./src/plugins/yaypeg/README\&.md 'YAy PEG' plugin we disable debug code and the logger\&. The following commands show one option to translate Elektra using this configuration, if we use \fCNinja\fP as build tool:
+.PP
+.PP
+.nf
+mkdir build
+cd build
+cmake -GNinja \&.\&.               \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DENABLE_LOGGER=OFF      \
+      -DENABLE_DEBUG=OFF       \
+      -DPLUGINS=ALL
+ninja
+cd \&.\&. # Change working directory back to the root of repository
+.fi
+.PP
+.PP
+.SS "Profiling the Code"
+.PP
+We use the tool \fB`benchmark_plugingetset`\fP to profile the execution time of \&.\&./\&.\&./src/plugins/yaypeg/README\&.md 'YAy PEG'\&. The file \fC\fCkeyframes\&.yaml\fP\fP serves as input file for the plugin\&. Since \fCbenchmark_plugingetset\fP requires a data file called
+.PP
+.PP
+.nf
+test\&.$plugin\&.in
+.fi
+.PP
+.PP
+, we save a copy of \fCkeyframes\&.yaml\fP as \fCtest\&.yaypeg\&.in\fP in the folder \fCbenchmarks/data\fP:
+.PP
+.PP
+.nf
+mkdir -p benchmarks/data
+curl -L https://github\&.com/ElektraInitiative/rawdata/raw/master/YAML/Input/keyframes\&.yaml -o benchmarks/data/test\&.yaypeg\&.in
+.fi
+.PP
+.PP
+\&. After that we call \fCbenchmark_plugingetset\fP directly to make sure that everything works as expected:
+.PP
+.PP
+.nf
+build/bin/benchmark_plugingetset benchmarks/data user yaypeg get
+.fi
+.PP
+.PP
+\&. If the command above fails with a segmentation fault, then please check
+.PP
+.IP "\(bu" 2
+that the \fBbuild system\fP included \&.\&./\&.\&./src/plugins/yaypeg/README\&.md 'YAy PEG', and
+.IP "\(bu" 2
+that your OS is able to locate the plugin (e\&.g\&. append the \fClib\fP directory in the build folder to \fCLD_LIBRARY_PATH\fP on Linux)
+.PP
+.PP
+\&. If \fCbenchmark_plugingetset\fP executed successfully, then you can now use Callgrind to profile the command:
+.PP
+.PP
+.nf
+valgrind --tool=callgrind --callgrind-out-file=callgrind\&.out \
+build/bin/benchmark_plugingetset benchmarks/data user yaypeg get
+.fi
+.PP
+.PP
+\&. The command above will create a file called \fCcallgrind\&.out\fP in the root of the repository\&. You can now remove the input data and the folder \fCbenchmarks/data\fP:
+.PP
+.PP
+.nf
+rm benchmarks/data/test\&.yaypeg\&.in
+rmdir benchmarks/data
+.fi
+.PP
+.PP
+\&. If you use \fBDocker\fP to translate Elektra, then you might want to fix the paths in the file \fCcallgrind\&.out\fP before you continue:
+.PP
+.PP
+.nf
+# The tool `sponge` is part of the `moreutils` package: https://joeyh\&.name/code/moreutils
+sed -E 's~/home/jenkins/workspace/(\\&.\\&./)*~~g' callgrind\&.out | sponge callgrind\&.out
+.fi
+.PP
+.PP
+\&. Now we can analyze the file \fCcallgrind\&.out\fP with a graphical tool such as QCacheGrind:
+.PP
+.PP
+.nf
+qcachegrind&
+.fi
+.PP
+.PP
+\&. If everything worked as expected QCacheGrind should open the file \fCcallgrind\&.out\fP and display a window that look similar to the one below:
+.PP
+.PP
+\&. You can now select different parts of the call graph on the left to check which parts of the code take a long time to execute\&.
+.PP
+.SS "XRay"
+.PP
+\fCXRay\fP is an extension for LLVM that adds profiling code to binaries\&. Profiling can be dynamically enabled and disabled via the environment variable \fCXRAY_OPTIONS\fP\&.
+.PP
+.SS "Choosing the Correct Build Type"
+.PP
+Since \fCXRay\fP currently requires LLVM we need to set the compiler appropriately\&. We use Clang 8 in our example\&.
+.PP
+.PP
+.nf
+export CC=clang-8
+export CXX=clang++-8
+.fi
+.PP
+.PP
+\&. We enable the static build (\fCBUILD_STATIC=ON\fP) and disable the dynamic build (\fCBUILD_SHARED=OFF\fP), since \fCXRay currently does not support dynamic libraries\fP\&. To enable Xray we use the compiler switch \fC-fxray-instrument\fP\&. To instrument every function we set the instruction threshold to \fC1\fP with \fC-fxray-instruction-threshold=1\fP\&.
+.PP
+.PP
+.nf
+export REPOSITORY_DIRECTORY="$PWD"
+export BUILD_DIRECTORY="$REPOSITORY_DIRECTORY/build"
+mkdir -p "$BUILD_DIRECTORY"
+cd "$BUILD_DIRECTORY"
+cmake -GNinja "$REPOSITORY_DIRECTORY"                                   \
+      -DCMAKE_BUILD_TYPE=Release                                        \
+      -DBUILD_SHARED=OFF                                                \
+      -DBUILD_STATIC=ON                                                 \
+      -DCOMMON_FLAGS='-fxray-instrument -fxray-instruction-threshold=1' \
+      -DPLUGINS=ALL
+.fi
+.PP
+.PP
+We will analyze the \&.\&./\&.\&./src/plugins/yambi/README\&.md 'YAMBi plugin' below\&. Please make sure that the CMake command above includes the plugin:
+.PP
+.PP
+.nf
+…
+-- Include Plugin yambi
+…
+.fi
+.PP
+.PP
+\&. Now we can translate the code with \fCNinja\fP and change the current directory back to the root of the repository:
+.PP
+.PP
+.nf
+ninja
+cd "$REPOSITORY_DIRECTORY"
+.fi
+.PP
+.PP
+\&. In the next step we use \fB`benchmark_plugingetset`\fP to execute \&.\&./\&.\&./src/plugins/yambi/README\&.md 'YAMBi' for the input file \fC\fCgenerated\&.yaml\fP\fP\&. To do that we
+.PP
+.IP "1." 4
+create the folder \fCdata\fP in the directory \fB`benchmarks`\fP, and
+.IP "2." 4
+download the file \fC\fCgenerated\&.yaml\fP\fP as \fCtest\&.yambi\&.in\fP
+.PP
+.PP
+\&. The following commands show you how to do that:
+.PP
+.PP
+.nf
+mkdir -p benchmarks/data
+curl -L https://github\&.com/ElektraInitiative/rawdata/raw/master/YAML/Input/generated\&.yaml -o benchmarks/data/test\&.yambi\&.in
+.fi
+.PP
+.PP
+\&. Now we first check if running [\fCbenchmark_plugingetset\fP][] works without instrumentation:
+.PP
+.PP
+.nf
+"$BUILD_DIRECTORY/bin/benchmark_plugingetset" benchmarks/data user yambi get
+.fi
+.PP
+.PP
+\&. If everything worked correctly, then the command above should finish successfully and not produce any output\&. To instrument the binary we set the environment variable \fCXRAY_OPTIONS\fP to the value \fCxray_mode=xray-basic verbosity=1\fP\&.
+.PP
+.PP
+.nf
+export XRAY_OPTIONS='xray_mode=xray-basic patch_premain=true verbosity=1'
+"$BUILD_DIRECTORY/bin/benchmark_plugingetset" benchmarks/data user yambi get
+.fi
+.PP
+.PP
+\&. The command above will print the location of the XRay log file to \fCstdterr\fP:
+.PP
+.PP
+.nf
+…
+…XRay: Log file in 'xray-log\&.benchmark_plugingetset\&.gpcX3t'
+…
+.fi
+.PP
+.PP
+\&. Now we can use the log file to analyze the runtime of the execution paths of the binary\&. To do that we first save the name of the log file in the variable \fCLOGFILE\fP\&. This way we do not need to repeat the filename every time in the commands below\&.
+.PP
+.PP
+.nf
+LOGFILE=$("$BUILD_DIRECTORY/bin/benchmark_plugingetset" benchmarks/data user yambi get 2>&1 |
+          sed -nE "s/\&.*Log file in '(\&.*)'\&.*/\1/p")
+.fi
+.PP
+.PP
+\&. To list the 10 functions with the longest runtime we use the command \fCllvm-xray account\fP:
+.PP
+.PP
+.nf
+llvm-xray account "$LOGFILE" -top=10 -sort=sum -sortorder=dsc -instr_map "$BUILD_DIRECTORY/bin/benchmark_plugingetset"
+#> Functions with latencies: 94
+#>    funcid      count [      min,       med,       90p,       99p,       max]       sum  function
+#>         1          1 [ 2\&.414035,  2\&.414035,  2\&.414035,  2\&.414035,  2\&.414035]  2\&.414035  <invalid>:0:0: main
+#>      1340          1 [ 2\&.403729,  2\&.403729,  2\&.403729,  2\&.403729,  2\&.403729]  2\&.403729  <invalid>:0:0: elektraYambiGet
+#> …
+.fi
+.PP
+.PP
+\&. We can also use the log file to create a \fCFlame Graph\fP\&. To do that we use the \fCllvm-xray stack\fP to create an input file for the tool \fC\fCflamegraph\&.pl\fP\fP
+.PP
+.PP
+.nf
+llvm-xray stack "$LOGFILE" -stack-format=flame -aggregation-type=time -all-stacks \
+                -instr_map "$BUILD_DIRECTORY/bin/benchmark_plugingetset" > flamegraph\&.txt
+.fi
+.PP
+.PP
+\&. We then create the Flame Graph with the following command:
+.PP
+.PP
+.nf
+# Depending on how you installed Flame Graph the executable
+# might also be called `flamegraph\&.pl` instead of `flamegraph`\&.
+flamegraph flamegraph\&.txt > flamegraph\&.svg
+.fi
+.PP
+.PP
+\&. The image below shows one example how the picture could look like:
+.PP
+.PP
+\&. Additional information on how to use the data produced by \fCXRay\fP is available \fChere\fP\&. 

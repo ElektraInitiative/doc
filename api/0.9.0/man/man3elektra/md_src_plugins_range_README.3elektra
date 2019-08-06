@@ -1,0 +1,102 @@
+.TH "md_src_plugins_range_README" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_range_READMEPlugin: range 
+ \- 
+.IP "\(bu" 2
+infos = Information about the range plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage postgetstorage
+.IP "\(bu" 2
+infos/status = maintained conformant compatible coverage specific unittest tested libc preview unfinished
+.IP "\(bu" 2
+infos/metadata = check/range check/type
+.IP "\(bu" 2
+infos/description = tests if a value is within a given range
+.PP
+.PP
+The range plugin checks if a \fCKey\fP's value is within a given range\&.
+.PP
+.SS "Usage"
+.PP
+The plugin checks every \fCKey\fP in the \fCKeySet\fP for the metakey \fCcheck/range\fP which contains either a single range with the syntax \fC[-]min-[-]max\fP, or a list of ranges or values separated by \fC,\fP and tests if the \fCKey\fP's value is within the range(s)\&.
+.PP
+\fCcheck/type\fP can be used to specify the data type\&. If not specified otherwise the default value is \fClong long\fP
+.PP
+Possible values:
+.PP
+.IP "\(bu" 2
+\fCshort\fP, \fClong\fP, \fClong long\fP
+.PP
+for signed integer values
+.IP "\(bu" 2
+\fCunsigned short\fP, \fCunsigned long\fP, \fCunsigned long long\fP
+.PP
+for unsigned integer values
+.IP "\(bu" 2
+\fCfloat\fP, \fCdouble\fP, \fClong double\fP
+.PP
+for floating point values
+.IP "\(bu" 2
+\fCHEX\fP
+.PP
+for hexadecimal values
+.IP "\(bu" 2
+\fCchar\fP
+.PP
+for characters
+.PP
+.PP
+.SS "Dependencies"
+.PP
+None\&.
+.PP
+.SS "Examples"
+.PP
+.PP
+.nf
+# Backup-and-Restore:/tests/range
+
+sudo kdb mount range\&.ecf /tests/range range dump
+
+# should succeed
+kdb set /tests/range/value 5
+kdb setmeta /tests/range/value check/range "1-10"
+# RET: 0
+
+# should fail
+kdb set /tests/range/value 11
+# RET:5
+
+# should also fail
+kdb set /tests/range/value "\-1"
+# RET:5
+
+# we can also allow only individual values:
+kdb setmeta /tests/range/value check/range "1,2,4,8"
+
+kdb set /tests/range/value 7
+# RET:5
+
+kdb set /tests/range/value 2
+# RET:0
+
+kdb rm -r /tests/range
+sudo kdb umount /tests/range
+.fi
+.PP
+.PP
+.SS "Limitations"
+.PP
+None\&. 

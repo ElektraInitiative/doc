@@ -1,0 +1,195 @@
+
+\begin{DoxyItemize}
+\item infos = All information you want to know is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = resolver
+\item infos/needs =
+\item infos/placements = rollback getresolver setresolver commit
+\item infos/status = productive maintained specific unittest tested libc nodep configurable
+\item infos/description = system independent resolver
+\end{DoxyItemize}
+
+The {\ttfamily @P\+L\+U\+G\+I\+N\+\_\+\+S\+H\+O\+R\+T\+\_\+\+N\+A\+ME@} handles operating system dependent tasks. One task is the resolving of the filenames for user and system (hence its name).
+
+Use following command to see to which file is resolved to\+:
+
+
+\begin{DoxyCode}
+kdb file <Elektra path you are interested in>
+\end{DoxyCode}
+
+
+See the constants of this plugin for further information, they are\+:
+
+
+\begin{DoxyCode}
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/ELEKTRA\_VARIANT\_SYSTEM
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/ELEKTRA\_VARIANT\_USER
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_HOME
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_SYSTEM
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_USER
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_SPEC
+system/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_DIR
+\end{DoxyCode}
+
+
+The built-\/in resolving considers following cases\+:
+
+
+\begin{DoxyItemize}
+\item for spec with absolute path\+: path
+\item for spec with relative path\+: {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC} + path
+\item for dir with absolute path\+: {\ttfamily pwd} + path (or above when path is found)
+\item for dir with relative path\+: {\ttfamily pwd} + {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+D\+IR} + path (or above when path is found)
+\item for user with absolute path\+: {\ttfamily $\sim$} + path
+\item for user with relative path\+: {\ttfamily $\sim$} + {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+U\+S\+ER} + path
+\item for system with absolute path\+: path
+\item for system with relative path\+: {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM} + path
+\end{DoxyItemize}
+
+($\sim$ and {\ttfamily pwd} are resolved from system)
+
+\subsection*{Example}
+
+For an absolute path {\ttfamily /example.ini}, you might get following values\+:
+
+
+\begin{DoxyItemize}
+\item for spec\+: {\ttfamily /example.ini}
+\item for dir\+: {\ttfamily \$\+P\+WD/example.ini}
+\item for user\+: {\ttfamily $\sim$/example.ini}
+\item for system\+: {\ttfamily /example.ini}
+\end{DoxyItemize}
+
+For an relative path example.\+ini, you might get following values\+:
+
+
+\begin{DoxyItemize}
+\item for spec\+: {\ttfamily /usr/share/elektra/specification/example.ini}
+\item for dir\+: {\ttfamily \$\+P\+WD/.dir/example.\+ini}
+\item for user\+: {\ttfamily $\sim$/.config/example.\+ini}
+\item for system\+: {\ttfamily /etc/kdb/example.ini}
+\end{DoxyItemize}
+
+See \hyperlink{doc_tutorials_mount_md}{the mount tutorial} for more examples.
+
+\subsection*{Variants}
+
+Many variants exist that additionally influence the resolving process, typically by using environment variables.
+
+Environment variables are very simple for one-\/time usage but their maintenance in start-\/up scripts is problematic. Additionally, they are controlled by the user, so they cannot be trusted. So it is not recommended to use environment variables.
+
+Note that the file permissions apply, so it might be possible for non-\/root to modify keys in {\ttfamily system}.
+
+See \hyperlink{doc_COMPILE_md}{C\+O\+M\+P\+I\+LE.md} for a documentation of possible variants.
+
+\subsubsection*{X\+DG Compatibility}
+
+The resolver is fully \href{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html}{\tt X\+DG compatible} if configured with the variant\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily xp}, {\ttfamily xh} or {\ttfamily xu} for user (either using {\ttfamily passwd}, {\ttfamily H\+O\+ME} or {\ttfamily U\+S\+ER} as fallback or any combination of these fallbacks)
+\item {\ttfamily x} for system, no fallback necessary
+\end{DoxyItemize}
+
+Additionally {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+U\+S\+ER} needs to be left unchanged as {\ttfamily .config}.
+
+{\ttfamily X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+RS} will be used to resolve system paths the following way\+:
+
+
+\begin{DoxyItemize}
+\item if unset or empty {\ttfamily /etc/xdg} will be used instead
+\item all elements are searched in order of importance
+\item if a file was found, the search process is stopped
+\item if no file was found, the least important element will be used for potential write attempts.
+\end{DoxyItemize}
+
+\subsection*{Reading Configuration}
+
+
+\begin{DoxyEnumerate}
+\item If no update needed (unchanged modification time)\+: quit successfully
+\item Otherwise call (storage) plugin(s) to read configuration
+\item remember the last stat time (last update)
+\end{DoxyEnumerate}
+
+\subsection*{Writing Configuration}
+
+
+\begin{DoxyEnumerate}
+\item On unchanged configuration\+: quit successfully
+\item On empty configuration\+: remove the configuration file and quit successfully
+\item Otherwise, open the configuration file If not available recursively create directories and retry.
+\end{DoxyEnumerate}
+
+\#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+C\+K\+\_\+\+M\+U\+T\+EX
+
+
+\begin{DoxyEnumerate}
+\item Try to lock a global mutex, if not possible -\/$>$ conflict
+\end{DoxyEnumerate}
+
+\#endif
+
+\#ifdef E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+C\+K\+\_\+\+F\+I\+LE
+
+
+\begin{DoxyEnumerate}
+\item Try to lock the configuration file, if not possible -\/$>$ conflict
+\end{DoxyEnumerate}
+
+\#endif
+
+
+\begin{DoxyEnumerate}
+\item Check the update time -\/$>$ might lead to conflict
+\item Update the update time (in order to not self-\/conflict)
+\end{DoxyEnumerate}
+
+We have an optimistic approach. Locking is only used to detect concurrent cooperative processes in the short moment between prepare and commit. A conflict will be raised in that situation. When processes do not lock the file it might be overwritten. This is, however, very unlikely on file systems with nanosecond precision.
+
+\subsection*{Exported Functions and Data}
+
+The resolver provides 2 functions for other plugins to use.
+
+\subsubsection*{filename}
+
+resolves {\ttfamily path} in with namespace {\ttfamily namespace}, creates a temporary file to work on and returns a struct containing the resolved data.
+
+Signature\+: {\ttfamily Elektra\+Resolved $\ast$ filename (elektra\+Namespace namespace, const char $\ast$ path, Elektra\+Resolve\+Tempfile temp\+File, Key $\ast$ warnings\+Key)}
+
+{\ttfamily Elektra\+Resolved} and {\ttfamily Elektra\+Resolve\+Tempfile} are both defined in \href{/home/markus/Projekte/Elektra/current/src/plugins/resolver/shared.h}{\tt shared.\+h}.
+
+{\ttfamily Elektra\+Resolved} is a struct with the following members\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily rel\+Path}\+: contains the path relative to the namespace.
+\item {\ttfamily dirname}\+: contains the parent directory of the resolved file.
+\item {\ttfamily full\+Path}\+: contains the full path of the resolved file.
+\item {\ttfamily tmp\+File}\+: contains the full path of the created temporary file.
+\end{DoxyItemize}
+
+{\ttfamily Elektra\+Resolve\+Tempfile} dictates if and where a temporary file should be created. Possible values\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+R\+E\+S\+O\+L\+V\+E\+R\+\_\+\+T\+E\+M\+P\+F\+I\+L\+E\+\_\+\+N\+O\+NE}\+: don\textquotesingle{}t create a temporary file.
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+R\+E\+S\+O\+L\+V\+E\+R\+\_\+\+T\+E\+M\+P\+F\+I\+L\+E\+\_\+\+S\+A\+M\+E\+D\+IR}\+: create a temporary file in the same directory as the resolved file.
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+R\+E\+S\+O\+L\+V\+E\+R\+\_\+\+T\+E\+M\+P\+F\+I\+L\+E\+\_\+\+T\+M\+P\+D\+IR}\+: create a temporary file in {\ttfamily /tmp}.
+\end{DoxyItemize}
+
+\subsubsection*{free\+Handle}
+
+frees the handle returned by {\ttfamily filename}.
+
+Signature\+: {\ttfamily void $\ast$ free\+Handle (Elektra\+Resolved $\ast$ handle)}
+
+where {\ttfamily handle} is the handle returned by {\ttfamily filename}.
+
+\subsection*{Limitations}
+
+If none of the resolving techniques work, the resolver will fail during {\ttfamily kdb\+Open}. This happens, for example, with the default resolver (E\+L\+E\+K\+T\+R\+A\+\_\+\+V\+A\+R\+I\+A\+N\+T\+\_\+\+U\+S\+ER {\ttfamily hpu}) if neither\+: {\ttfamily \$\+H\+O\+ME}, {\ttfamily \$\+U\+S\+ER}, nor any home directory in {\ttfamily /etc/passwd} is set. 

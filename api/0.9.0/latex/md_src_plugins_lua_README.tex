@@ -1,0 +1,101 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the lua plugin is in keys below
+\item infos/author = Manuel Mausz \href{mailto:manuel-elektra@mausz.at}{\tt manuel-\/elektra@mausz.\+at}
+\item infos/licence = B\+SD
+\item infos/provides =
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = unittest configurable global memleak
+\item infos/description = proxy that calls other plugins (scripts) written in lua
+\end{DoxyItemize}
+
+The plugin uses Lua to do magic things. It basically allows to call plugins written in Lua.
+
+What a Lua script can do is not really limited by design, so any kind of plugin may be implemented. The lua plugin is especially useful to write filter and logging scripts.
+
+\subsection*{Usage}
+
+The lua plugin accepts only the {\bfseries script} configuration parameter holding the path to a Lua script. The mount command would look like
+
+
+\begin{DoxyCode}
+kdb mount file.ini /lua ini lua script=/path/to/filter\_script.lua
+\end{DoxyCode}
+
+
+if the {\bfseries ini} plugin should be used for storage and the lua plugin only serves to invoke the filter script.
+
+For a Lua script that serves as (J\+S\+ON) storage plugin itself, one could also use
+
+
+\begin{DoxyCode}
+kdb mount file.json /lua lua script=/path/to/json\_plugin.lua
+\end{DoxyCode}
+
+
+\subsubsection*{Lua Scripts}
+
+Lua scripts can implement the following functions
+
+
+\begin{DoxyItemize}
+\item elektra\+Open(config, error\+Key)
+\item elektra\+Get(returned, parent\+Key)
+\item elektra\+Set(returned, parent\+Key)
+\item elektra\+Error(returned, parent\+Key)
+\item elektra\+Close(error\+Key)
+\end{DoxyItemize}
+
+where {\itshape config} \& {\itshape returned} are Key\+Sets and {\itshape error\+Key} \& {\itshape parent\+Key} are Keys. For the return codes of the functions, the same rules as for normal plugins apply.
+
+If a function is not available, it simply is not called. A script does not have to implement all functions therefore.
+
+Access to {\bfseries kdb} can be retrieved using the Lua import
+
+
+\begin{DoxyCode}
+require("kdb")
+\end{DoxyCode}
+
+
+\subsection*{Example}
+
+An example script that prints some information for each method call would be\+:
+
+
+\begin{DoxyCode}
+function elektraOpen(config, errorKey)
+  print("Lua script method 'elektraOpen' called")
+  return 0
+end
+
+function elektraGet(returned, parentKey)
+  print("Lua script method 'elektraGet' called")
+  return 1
+end
+
+function elektraSet(returned, parentKey)
+  print("Lua script method 'elektraSet' called")
+  return 1
+end
+
+function elektraError(returned, parentKey)
+  print("Lua script method 'elektraError' called")
+  return 1
+end
+
+function elektraClose(errorKey)
+  print("Lua script method 'elektraClose' called")
+  return 0
+end
+\end{DoxyCode}
+
+
+Further examples can be found in the lua directory.
+
+\subsection*{Disclaimer}
+
+Note, this is a technical preview. It might have severe bugs and the A\+PI might change in the future.
+
+Be also aware that a Lua script will never be as performant as a native C/\+C++ plugin. Spinning up the interpreter takes additional time and resources. 

@@ -1,0 +1,90 @@
+\subsection*{S\+Y\+N\+O\+P\+S\+IS}
+
+{\ttfamily kdb cp $<$source$>$ $<$dest$>$}
+
+\subsection*{D\+E\+S\+C\+R\+I\+P\+T\+I\+ON}
+
+This command copies key(s) in the Key database. You can copy keys to another directory within the database or even below another key. Note that you cannot copy a key below itself.
+
+Where {\ttfamily source} is the path of the key(s) you want to copy and {\ttfamily dest} is the path where you would like to copy the key(s) to. Note that when using the {\ttfamily -\/r} flag, {\ttfamily source} as well as all of the keys below it will be copied.
+
+\subsection*{L\+I\+M\+I\+T\+A\+T\+I\+O\+NS}
+
+Neither {\ttfamily source} nor {\ttfamily dest} can be a cascading key. (Start with {\ttfamily /}). Make sure to select a namespace.
+
+\subsection*{R\+E\+T\+U\+RN V\+A\+L\+U\+ES}
+
+This command will return the following values as an exit status\+:
+
+
+\begin{DoxyItemize}
+\item 0\+: No errors.
+\item 1-\/10\+: standard exit codes, see \hyperlink{doc_help_kdb_md}{kdb(1)}
+\item 11\+: No key to copy found.
+\end{DoxyItemize}
+
+\subsection*{O\+P\+T\+I\+O\+NS}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/r}, {\ttfamily -\/-\/recursive}\+: Recursively copy keys.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional debug information in case of errors/warnings.
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: Force overwriting the keys.
+\end{DoxyItemize}
+
+\subsection*{E\+X\+A\+M\+P\+L\+ES}
+
+
+\begin{DoxyCode}
+# Backup-and-Restore: user/tests/cp/examples
+
+# Create the keys we use for the examples
+kdb set user/tests/cp/examples/kdb-cp/key key1
+kdb set user/tests/cp/examples/kdb-cp/key/first key
+kdb set user/tests/cp/examples/kdb-cp/key/second key
+kdb set user/tests/cp/examples/kdb-cp/cpkey key1
+kdb set user/tests/cp/examples/kdb-cp/cpkey/first key
+kdb set user/tests/cp/examples/kdb-cp/cpkey/second key
+kdb set user/tests/cp/examples/kdb-cp/cpkeyerror/first key
+kdb set user/tests/cp/examples/kdb-cp/cpkeyerror/second anotherValue
+kdb set user/tests/cp/examples/kdb-cp/another/key one
+kdb set user/tests/cp/examples/kdb-cp/another/value two
+
+# To copy a single key:
+kdb cp user/tests/cp/examples/kdb-cp/key user/tests/cp/examples/kdb-cp/key2
+#>
+
+# To copy multiple keys:
+kdb cp -r user/tests/cp/examples/kdb-cp/key user/tests/cp/examples/kdb-cp/copied
+#>
+
+# If the target-key already exists and has a different value, cp fails:
+kdb cp -r user/tests/cp/examples/kdb-cp/key user/tests/cp/examples/kdb-cp/cpkeyerror
+# RET: 11
+
+# If the target-key already exists and has the same value as the source, everything is fine:
+kdb cp -r user/tests/cp/examples/kdb-cp/key user/tests/cp/examples/kdb-cp/cpkey
+#>
+
+# To force the copy of keys:
+kdb cp -rf user/tests/cp/examples/kdb-cp/key user/tests/cp/examples/kdb-cp/cpkeyerror
+#>
+
+# Now the key-values of /cpkeyerror are overwritten:
+kdb export user/tests/cp/examples/kdb-cp/cpkeyerror mini
+#> =key1
+#> first=key
+#> second=key
+
+# To copy keys below an existing key:
+kdb cp -r user/tests/cp/examples/kdb-cp/another user/tests/cp/examples/kdb-cp/another/key
+#>
+
+kdb rm -r user/tests/cp/examples/kdb-cp/
+\end{DoxyCode}
+ 

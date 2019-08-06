@@ -1,0 +1,146 @@
+.TH "md_src_plugins_yamlsmith_README" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_yamlsmith_READMEPlugin: yamlsmith 
+ \- 
+.IP "\(bu" 2
+infos = Information about the yamlsmith plugin is in keys below
+.IP "\(bu" 2
+infos/author = René Schwaiger sanssecours@me.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs = directoryvalue
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = setstorage
+.IP "\(bu" 2
+infos/status = maintained specific unittest nodep preview experimental unfinished nodoc concept discouraged
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = This plugin exports key sets in the YAML format
+.PP
+.SH "YAML Smith"
+.PP
+.SS "Examples"
+.PP
+.SS "Scalar"
+.PP
+.PP
+.nf
+# Save a single key-value pair
+kdb set user/tests/yamlsmith/text 'Pattern Against User'
+
+# Only export the value
+kdb export user/tests/yamlsmith/text yamlsmith
+#> "Pattern Against User"
+
+# Check that the plugin supports boolean values correctly
+kdb set user/tests/yamlsmith/boolean 0
+kdb export user/tests/yamlsmith/boolean yamlsmith
+#> false
+
+# Undo modifications
+kdb rm -r user/tests/yamlsmith
+.fi
+.PP
+.PP
+.SS "Mappings"
+.PP
+.PP
+.nf
+# Add some key-value pairs to the database
+kdb set user/tests/yamlsmith/key value
+kdb set user/tests/yamlsmith/time 'will die and love will burrow it'
+kdb set user/tests/yamlsmith/level1/one 'I'
+kdb set user/tests/yamlsmith/level1/two 'II'
+
+# Export data using YAML Smith
+kdb export user/tests/yamlsmith yamlsmith
+#> key:
+#>   "value"
+#> level1:
+#>   one:
+#>     "I"
+#>   two:
+#>     "II"
+#> time:
+#>   "will die and love will burrow it"
+
+# Undo modifications
+kdb rm -r user/tests/yamlsmith
+.fi
+.PP
+.PP
+.SS "Arrays"
+.PP
+.SS "Simple Array"
+.PP
+.PP
+.nf
+kdb set user/tests/yamlsmith/low
+kdb set user/tests/yamlsmith/low/#0 'You bought some sweet, sweet, sweet, sweet sunflowers'
+kdb set user/tests/yamlsmith/low/#1 'And gave them'
+kdb set user/tests/yamlsmith/low/#2 'To the night'
+
+kdb export user/tests/yamlsmith yamlsmith
+#> low:
+#>   -
+#>     "You bought some sweet, sweet, sweet, sweet sunflowers"
+#>   -
+#>     "And gave them"
+#>   -
+#>     "To the night"
+
+# Undo modifications
+kdb rm -r user/tests/yamlsmith
+.fi
+.PP
+.PP
+.SS "Multiple Arrays"
+.PP
+.PP
+.nf
+kdb set user/tests/yamlsmith/arrays/Elliott/Smith/#0 XO
+kdb set user/tests/yamlsmith/arrays/Elliott/Smith/#1 'Figure 8'
+kdb set user/tests/yamlsmith/arrays/The/Smiths/#0 'The Queen Is Dead'
+
+kdb export user/tests/yamlsmith yamlsmith
+#> arrays:
+#>   Elliott:
+#>     Smith:
+#>       -
+#>         "XO"
+#>       -
+#>         "Figure 8"
+#>   The:
+#>     Smiths:
+#>       -
+#>         "The Queen Is Dead"
+
+# Undo modifications
+kdb rm -r user/tests/yamlsmith
+.fi
+.PP
+.PP
+.SS "Limitations"
+.PP
+.IP "\(bu" 2
+This plugin supports only \fBa very limited\fP subset of YAML\&.
+.IP "\(bu" 2
+YAML Smith \fBdoes not support\fP
+.IP "  \(bu" 4
+\fBbinary values\fP,
+.IP "  \(bu" 4
+\fBnon-contiguous arrays\fP and
+.IP "  \(bu" 4
+\fBspecial characters\fP
+.PP
+
+.PP
+

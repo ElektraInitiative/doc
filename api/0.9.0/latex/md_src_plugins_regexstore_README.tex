@@ -1,0 +1,103 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the regexstore plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage
+\item infos/placements = getstorage setstorage
+\item infos/status = nodep configurable readonly preview difficult limited unfinished
+\item infos/description = regular expressions as storage plugin
+\end{DoxyItemize}
+
+Allows regular expressions to be applied as storage plugin. The idea is to have something like \char`\"{}lazy lenses\char`\"{} with regex only on relevant parts of a file. It is unclear if this is a good idea and we do not encourage you to use this plugin. Currently it can only read and the potential harm is limited.
+
+In the configuration, below the key (that must also exist)
+
+
+\begin{DoxyCode}
+regexstore
+\end{DoxyCode}
+
+
+other keys define which regex are applied on a text file.
+
+The name of these config keys (with .../regexstore/ stripped of) will be used to build up the names of the keys\+:
+
+
+\begin{DoxyItemize}
+\item \#\mbox{[}0-\/9\mbox{]} will be replaced what the regex matched
+\item If no or the wrong placeholder occurs in the name, the keys will overwrite themselves, the last wins then.
+\end{DoxyItemize}
+
+The value of the config key is as follows\+:
+
+
+\begin{DoxyItemize}
+\item the first three letters need to be \textquotesingle{}\#\mbox{[}0-\/9 \textquotesingle{}. According to this number the value of the key will be set.
+\end{DoxyItemize}
+
+The key also might contain metadata.
+
+
+\begin{DoxyItemize}
+\item the only characters allowed in metavalues are \textquotesingle{}\#\mbox{[}0-\/9\mbox{]}\textquotesingle{}. the metadata will be replaced by the regex match then.
+\end{DoxyItemize}
+
+\subsection*{Limitations}
+
+The semantics of how the regex works is unsteady and the plugin should be avoided in productive use.
+
+Currently the storage plugin does not have write support. When writing is added, overlapping regex need to be disallowed.
+
+\subsection*{Usage}
+
+\subsubsection*{vim config}
+
+First mount the regexstore with some at least one config key\+:
+
+
+\begin{DoxyCode}
+kdb mount vimrc /vim regexstore "regexstore=root,regexstore/map/#2=#1 map ([^
+]*) ([^
+]*)"
+\end{DoxyCode}
+
+
+(the character classes contain a space and a newline)
+
+So lets say we have a .vimrc with the content\+:
+
+
+\begin{DoxyCode}
+something else...
+map map Q :qa<CR>
+something else...
+map <C-Q> :qa<CR>
+something else...
+\end{DoxyCode}
+
+
+then we will get two keys with\+:
+
+
+\begin{DoxyCode}
+user/vim/map/:qa<CR>
+\end{DoxyCode}
+
+
+\subsubsection*{emacs config}
+
+
+\begin{DoxyCode}
+kdb mount emacs /emacs
+\end{DoxyCode}
+
+
+Suppose we want to match\+:
+
+
+\begin{DoxyCode}
+(global-set-key (kbd "<escape>")      'keyboard-escape-quit)
+\end{DoxyCode}
+ 

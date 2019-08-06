@@ -1,0 +1,111 @@
+.TH "doc_help_elektra-namespaces_md" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_elektra-namespaces_mdelektra-namespaces(7) -- namespaces 
+ \- 
+.SS "INTRODUCTION"
+.PP
+Every key in Elektra needs a unique name so that administrators can refer to them unambiguously\&. Sometimes, multiple keys denote the same configuration item from different sources, e\&.g\&.:
+.PP
+.IP "\(bu" 2
+by a commandline argument
+.IP "\(bu" 2
+by a configuration file found relative to the current directory
+.IP "\(bu" 2
+by a configuration file found relative to the home directory
+.IP "\(bu" 2
+by a configuration file found below \fC/\fP etc
+.PP
+.PP
+To allow such keys to exist in parallel, Elektra uses namespaces\&.
+.PP
+A namespace has following properties:
+.PP
+.IP "\(bu" 2
+in-memory Keys start with one of the namespaces
+.IP "\(bu" 2
+keys within a namespace are known to stem from a specific configuration source\&. For example files from the \fCuser\fP namespace are from the users home directory, \fBeven if\fP an absolute configuration file name was used\&.
+.IP "\(bu" 2
+\fC\fBksLookup()\fP\fP uses multiple namespaces in a specific default order unless specified otherwise (cascading lookup)
+.PP
+.PP
+Following parts of Elektra source code are affected by namespaces:
+.PP
+.IP "\(bu" 2
+the key name validation in \fC\fBkeySetName()\fP\fP
+.IP "\(bu" 2
+\fC\fBkeyGetNamespace()\fP\fP which enumerates all namespaces
+.IP "\(bu" 2
+\fC_Backend\fP and \fC\fBsplit\&.c\fP\fP for correct distribution to plugins (note that not all namespaces actually are distributed to configuration files)
+.IP "\(bu" 2
+\fC\fBmount\&.c\fP\fP for cascading and root backends
+.IP "\(bu" 2
+and of course many unit tests
+.PP
+.PP
+In the rest of this document all currently available namespaces in the default order are described\&.
+.PP
+.SS "spec"
+.PP
+Unlike the other namespaces, the specification namespace does not contain values of the keys, but instead metadata as described in \fC\fCMETADATA\&.ini\fP\fP\&.
+.PP
+When a cascading key is looked up, keys from the spec-namespace are the first to be searched\&. When a spec-key is found, the rest of the lookup will be done as specified, probably in a different order than the namespaces enlisted here\&.
+.PP
+Usually, the spec-keys do not directly contribute to the value, with one notable exception: the default value (metadata \fCdefault\fP, see in cascading below) might be used if every other way as specified in the spec-key failed\&.
+.PP
+Spec-keys typically include an explanation and description for the key itself (but not comments which are specific for individual keys)\&.
+.PP
+The spec configuration files are below \fCCMAKE_INSTALL_PREFIX/KDB_DB_SPEC\fP\&.
+.PP
+spec is not part of cascading mounts, because the specifications often are written in different syntax than the configuration files\&.
+.PP
+.SS "proc"
+.PP
+Derived from the process (e\&.g\&. by parsing \fC/proc/self\fP or by arguments passed from the main method):
+.PP
+.IP "\(bu" 2
+program name
+.IP "\(bu" 2
+arguments
+.IP "\(bu" 2
+environment
+.PP
+.PP
+Keys in the namespace proc can not be stored by their nature\&. Thus they are ignored by \fCkdbGet\fP and \fCkdbSet\fP\&. They might be different for every invocation of an application\&.
+.PP
+.SS "dir"
+.PP
+Keys from the namespace \fCdir\fP are derived from a directory special to the user starting/using the application, e\&.g\&.:
+.PP
+.IP "\(bu" 2
+the current working directory for project specific settings, e\&.g\&. \fC\&.git\fP
+.IP "\(bu" 2
+the directory a server wants to present to the user, e\&.g\&. \fC\&.htaccess\fP
+.PP
+.PP
+Note that Elektra only supports a single special directory per KDB instance\&. Start a new KDB instance if you need different special directories for different parts of your application\&. How to change the directory may be different dependent on the resolver, e\&.g\&. by using chdir or by setting the environment variable \fCPWD\fP\&.
+.PP
+.SS "user"
+.PP
+On multi-user operating systems obviously every user wants her/his own configuration\&. The user configuration is located in the users home directory typically below the folder \fCKDB_DB_USER\&.\fP Other paths below the home directory are possible too (absolute path for resolver)\&.
+.PP
+Note that Elektra only supports a user directory per KDB instance\&. Start a new KDB instance if you need different user configuration for different parts of your application\&. How to change the user may be different dependent on the resolver, e\&.g\&. by \fCseteuid()\fP or by environment variables like \fCHOME\fP, \fCUSER\fP
+.PP
+.SS "system"
+.PP
+The system configuration is the same for every chroot\&.
+.PP
+The configuration is typically located below \fCKDB_DB_SYSTEM\fP\&. Other absolute paths, e\&.g\&. below \fC/opt\fP or \fC/usr/local/etc\fP are possible too\&.
+.PP
+.SS "Cascading"
+.PP
+Keys that are not in a namespace (i\&.e\&. start with an \fC/\fP) are called cascading keys\&. Cascading keys do not stem from a configuration source, but are used by applications to lookup a key in different namespaces\&. So, multiple keys can contribute to each cascading key name\&.
+.PP
+Cascading is the same as a name resolution and provides a namespace unification as described in \fCVersatility and Unix semantics in namespace unification\fP\&.
+.PP
+Keys without a namespace can not be stored by their nature\&. So they are transient: after a restart they are forgotten\&.
+.PP
+Keys of that namespace are only used by ksLookup when no other suitable key was found\&. So they have the lowest possible priority, even fallback keys are preferred\&.
+.PP
+\fBRead more about cascading\&.\fP 

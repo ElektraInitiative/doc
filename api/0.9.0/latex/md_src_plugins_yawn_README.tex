@@ -1,0 +1,140 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the yawn plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com}
+\item infos/licence = B\+SD
+\item infos/needs = directoryvalue yamlsmith
+\item infos/provides = storage/yaml
+\item infos/recommends =
+\item infos/placements = getstorage
+\item infos/status = maintained unittest preview experimental unfinished nodoc concept discouraged
+\item infos/metadata =
+\item infos/description = This storage plugin uses an Earley parser to read Y\+A\+ML files
+\end{DoxyItemize}\hypertarget{md_src_plugins_yawn_README_src_plugins_yawn_README_md}{}\section{Y\+Awn}\label{md_src_plugins_yawn_README_src_plugins_yawn_README_md}
+\subsection*{Introduction}
+
+This plugin uses \href{https://github.com/vnmakarov/yaep}{\tt Y\+A\+EP} to parse \href{http://yaml.org}{\tt Y\+A\+ML} data.
+
+\subsection*{Dependencies}
+
+This plugin requires \href{https://github.com/vnmakarov/yaep#installing}{\tt Y\+A\+EP}.
+
+\subsection*{Examples}
+
+\subsubsection*{Mappings}
+
+
+\begin{DoxyCode}
+# Mount plugin
+sudo kdb mount config.yaml user/tests/yawn yawn
+
+# Set and retrieve some basic values
+kdb set user/tests/yawn 'is obviously a move introduced in Generation III of Pokemon' # Source: Bulbapedia
+kdb set user/tests/yawn/ing 'is something similar'
+
+kdb get user/tests/yawn/
+#> is obviously a move introduced in Generation III of Pokemon
+kdb get user/tests/yawn/ing
+#> is something similar
+
+kdb ls user/tests/yawn
+#> user/tests/yawn
+#> user/tests/yawn/ing
+
+# Undo modifications
+kdb rm -r user/tests/yawn
+sudo kdb umount user/tests/yawn
+\end{DoxyCode}
+
+
+\subsubsection*{Arrays}
+
+
+\begin{DoxyCode}
+# Mount plugin
+sudo kdb mount config.yaml user/tests/yawn yawn
+
+kdb set user/tests/yawn/movies
+kdb set user/tests/yawn/movies/#0 'YAwn I: Time to Wake Up'
+kdb set user/tests/yawn/movies/#1 'YAwn II: The Awakening'
+kdb set user/tests/yawn/movies/#2 'YAwn III: The Sleepover'
+kdb set user/tests/yawn/movies/#3 'YAwn IV: YAwn Again'
+
+# Retrieve last array index
+kdb getmeta user/tests/yawn/movies array
+#> #3
+
+kdb get user/tests/yawn/movies/#1
+#> YAwn II: The Awakening
+
+# Undo modifications
+kdb rm -r user/tests/yawn
+sudo kdb umount user/tests/yawn
+\end{DoxyCode}
+
+
+\subsubsection*{Boolean Values}
+
+``` \section*{Mount plugin}
+
+sudo kdb mount config.\+yaml user/tests/yawn yawn
+
+\section*{Manually add a boolean value to the database}
+
+printf \textquotesingle{}bool\+: true\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yawn}
+
+\section*{Elektra stores boolean values as {\ttfamily 0} and {\ttfamily 1}}
+
+kdb get user/tests/yawn/bool \#$>$ 1
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r user/tests/yawn sudo kdb umount user/tests/yawn 
+\begin{DoxyCode}
+### Error Messages
+\end{DoxyCode}
+ \section*{Mount plugin}
+
+sudo kdb mount config.\+yaml user/tests/yawn yawn
+
+\section*{Manually add data containing syntax errors}
+
+printf -- \textquotesingle{}Brutus\+: ~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yawn} printf -- \textquotesingle{}-\/ Burst~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yawn} \# Incorrect indentation printf -- \textquotesingle{} Holon \+: Anamnesis\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yawn} \# Either incorrect indentation or line above should be removed
+
+\section*{Try to retrieve data}
+
+kdb ls user/tests/yawn \section*{R\+ET\+: 5}
+
+\section*{Let us look at the error message more closely.}
+
+\section*{Since the location of {\ttfamily config.\+yaml} depends on the current user and OS,}
+
+\section*{we store the text before {\ttfamily config.\+yaml} as {\ttfamily user/tests/error/prefix}.}
+
+kdb set user/tests/error \char`\"{}\$(2$>$\&1 kdb ls user/tests/yawn)\char`\"{} kdb set user/tests/error/prefix \char`\"{}\$(kdb get user/tests/error $\vert$ grep \textquotesingle{}config.\+yaml\textquotesingle{} $\vert$ head -\/1 $\vert$ sed -\/\+E \textquotesingle{}s/(.$\ast$)config.\+yaml.$\ast$/\textbackslash{}1/\textquotesingle{})\char`\"{} \section*{We also store the length of the prefix, so we can remove it from every}
+
+\section*{line of the error message.}
+
+kdb set user/tests/error/prefix/length \char`\"{}\$(kdb get user/tests/error/prefix $\vert$ wc -\/c $\vert$ sed \textquotesingle{}s/\mbox{[} \mbox{]}$\ast$//g\textquotesingle{})\char`\"{}
+
+\section*{Since we only want to look at the “reason” of the error, we}
+
+\section*{remove the other part of the error message with {\ttfamily head} and {\ttfamily tail}.}
+
+kdb get user/tests/error $\vert$ tail -\/n6 $\vert$ cut -\/c\char`\"{}\$(kdb get user/tests/error/prefix/length)\char`\"{}-\/ \#$>$ config.\+yaml\+:2\+:1\+: Syntax error on input “-\/” \#$>$ -\/ Burst \#$>$ $^\wedge$ \#$>$ config.\+yaml\+:3\+:19\+: Syntax error on input “end of map” \#$>$ Holon \+: Anamnesis \#$>$ $^\wedge$
+
+\section*{Fix syntax errors}
+
+printf -- \textquotesingle{}Brutus\+: ~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yawn} printf -- \textquotesingle{} -\/ Burst~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yawn} printf -- \textquotesingle{}Holon \+: Anamnesis\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yawn} kdb ls user/tests/yawn \#$>$ user/tests/yawn/\+Brutus \#$>$ user/tests/yawn/\+Brutus/\#0 \#$>$ user/tests/yawn/\+Holon
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/tests/error kdb rm -\/r user/tests/yawn sudo kdb umount user/tests/yawn ```
+
+\subsection*{Limitations}
+
+The plugin has the same limitations as \hyperlink{md_src_plugins_yambi_README_src_plugins_yambi_README_md}{Y\+A\+M\+Bi }. 

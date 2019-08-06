@@ -1,0 +1,72 @@
+
+\begin{DoxyItemize}
+\item infos = Information about type plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = check
+\item infos/needs =
+\item infos/placements = presetstorage
+\item infos/status = nodep memleak unfinished old obsolete
+\item infos/metadata = check/type type check/type/min check/type/max
+\item infos/description = type checker using C\+O\+B\+RA data types
+\end{DoxyItemize}
+
+{\bfseries This plugin is obsolete\+:} Please use the {\ttfamily newtype} plugin instead.
+
+This plugin is a type checker plugin using the {\ttfamily C\+O\+R\+BA} data types.
+
+A common and successful type system happens to be C\+O\+R\+BA. The system is well suited because of the many well-\/defined mappings it provides to other programming languages.
+
+The type checker plugin supports all basic C\+O\+R\+BA types\+: {\ttfamily short}, {\ttfamily unsigned\+\_\+short}, {\ttfamily long}, {\ttfamily unsigned\+\_\+long}, {\ttfamily long\+\_\+long}, {\ttfamily unsigned\+\_\+long\+\_\+long}, {\ttfamily float}, {\ttfamily double}, {\ttfamily char}, {\ttfamily boolean}, {\ttfamily any} and {\ttfamily octet}. When checking {\ttfamily any} it will always be successful, regardless of the content.
+
+The metadata {\ttfamily check/type} can be used to override the {\ttfamily type} metadata. This can be useful if the type to check differs to the type for code generation or the highlevel A\+PI. In most cases though, {\ttfamily type} will be enough to specify.
+
+\subsection*{Deprecation}
+
+{\ttfamily empty} and {\ttfamily F\+S\+Type} are deprecated. Please use regular expressions or enums instead.
+
+Sometimes the type should expresses that, for example, both an empty or another type is valid. This type checker allowed a space-\/separated list of types to expresses that. If any of those types match, the whole type was valid. For example, the type {\ttfamily string empty} equals the type {\ttfamily any}. This facility builds a union of the sets of instances existing types specify. It is now deprecated due to a more general sum type facility.
+
+{\ttfamily check/type/min} and {\ttfamily check/type/max} are deprecated, please use the range plugin instead.
+
+\subsection*{Example}
+
+
+\begin{DoxyCode}
+# Mount the plugin
+sudo kdb mount typetest.dump user/tests/cpptype dump cpptype
+
+# Store a character value
+kdb set user/tests/cpptype/key a
+
+# Only allow character values
+kdb setmeta user/tests/cpptype/key check/type char
+kdb get user/tests/cpptype/key
+#> a
+
+# If we store another character everything works fine
+kdb set user/tests/cpptype/key b
+kdb get user/tests/cpptype/key
+#> b
+
+# If we try to store a string Elektra will not change the value
+kdb set user/tests/cpptype/key 'Not a char'
+# STDERR: .*The type char failed to match.*
+# ERROR:  C03200
+# RET:    5
+kdb get user/tests/cpptype/key
+#> b
+
+# Undo modifications to the database
+kdb rm user/tests/cpptype/key
+sudo kdb umount user/tests/cpptype
+\end{DoxyCode}
+
+
+\subsection*{Limitations}
+
+{\ttfamily wchar} is missing.
+
+Enum and records are part of other plugins.
+
+The {\ttfamily C\+O\+R\+BA} type system also has its limits. The types {\ttfamily string} and {\ttfamily enum} can be unsatisfactory. While string is too general and makes no limit on how the sequence of characters is structured, the enumeration is too finite. For example, it is not possible to say that a string is not allowed to have a specific symbol in it. Combine this plugin with other type checker plugins to circumvent such limitations. 

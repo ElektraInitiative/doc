@@ -1,0 +1,46 @@
+Elektra solves a non-\/trivial issue\+: how to abstract configuration in a way that software can be integrated and reconfiguration can be automated. Elektra solves this problem in a holistic way. Read \hyperlink{doc_WHY_md}{why Elektra} for an explanation of why such a solution is necessary.
+
+\subsection*{Virtual File System Analogy}
+
+If you know virtual file systems, you already know a very similar solution to a very similar problem (otherwise first read about what a virtual file system is \href{https://en.wikipedia.org/wiki/Virtual_file_system}{\tt here}).
+
+Before file systems (or for devices without operating system) software simply wrote at discs (think of {\ttfamily dd of=/dev/sda}) to persistently store data. This obviously does not work with multiple applications. To allow multiple applications to access data in {\ttfamily /dev/sda}, a file system structures them in a way that every application knows where its bits are. In analogy configuration files are application-\/specific initialization that cannot be shared with other applications. So as first steps we need to have a \char`\"{}file system\char`\"{} that describes the content of a configuration file in a uniform way. In Elektra \hyperlink{src_plugins_README_md}{plugins} represent file systems\+: they know how the data in configuration files should be interpreted.
+
+For file systems, the A\+PI is {\ttfamily open}, {\ttfamily read}, {\ttfamily write}, and then {\ttfamily close}. For configuration key-\/value access is more suitable because values are so small that a single read/write always suffices. Thus Elektra \href{https://doc.libelektra.org/api/current/html}{\tt has a key-\/value A\+PI} with {\ttfamily kdb\+Open}, {\ttfamily kdb\+Get}, {\ttfamily kdb\+Set} and {\ttfamily kdb\+Close}. Not every application is written in C, thus many {\ttfamily bindings} where written to access file systems. For example, in C++ you have {\ttfamily fstream}, and in Java {\ttfamily File\+Reader}. Also Elektra provides different bindings\+: In C++ you have a class {\ttfamily K\+DB} and can use {\ttfamily kdb.\+get} or {\ttfamily kdb.\+set}. Furthermore, every language has native support for the language\textquotesingle{}s iterators which make Elektra easier to use.
+
+Furthermore, command-\/line tools like {\ttfamily cat} and {\ttfamily ls} provide an additional interface to the content of file systems for users and administrators. In Elektra also \hyperlink{doc_help_kdb_md}{command-\/line tools} for the analog purpose exist\+: With {\ttfamily kdb cp}, {\ttfamily kdb mv}, and {\ttfamily kdb ls} some command-\/line tools operating on file systems are mimicked.
+
+There is not one file system satisfying every need, e.\+g., {\ttfamily proc}, {\ttfamily tmpfs}, {\ttfamily nfs} and {\ttfamily ext4} have quite different use cases and are needed at the same time in parallel. In analogy, different configuration file format (parsers) have different advantages and disadvantages. For example, {\ttfamily /etc/passwd} or {\ttfamily /etc/hosts} are structured and very compact, while many other configuration files are semi-\/structured.
+
+To have multiple file systems present at the same time a virtual file system is able to mount (2) concrete file systems and thus give applications a way to uniformly access them. Similarly, Elektra also implements a \hyperlink{doc_help_elektra-mounting_md}{mount} functionality in its core. In Elektra a \href{/home/markus/Projekte/Elektra/current/doc/CONTRACT.ini}{\tt contract} specifies the obligations between plugins.
+
+Sometimes, it is even useful to have multiple file systems at the same mount point, so called {\ttfamily stacked} file systems. They allow you to combine features of different file systems. For example, \href{https://wiki.archlinux.org/index.php/ECryptfs}{\tt e\+Cryptfs} allows you to encrypt directories or files. In Elektra, stacking plugins is a core feature and heavily used to avoid feature-\/bloated plugins. For example, the \hyperlink{md_src_plugins_crypto_README_src_plugins_crypto_README_md}{crypto plugin} allows you to encrypt individual keys or the \hyperlink{md_src_plugins_iconv_README_src_plugins_iconv_README_md}{iconv plugin} to change the character encoding.
+
+In file systems metadata describes information about files, e.\+g. when they were last accessed and who they are owned by ({\ttfamily ls -\/l}). In the same way Elektra has metadata that describe individual key-\/value pairs. In Elektra metadata is \href{/home/markus/Projekte/Elektra/current/doc/METADATA.ini}{\tt defined globally} but implemented in many \hyperlink{src_plugins_README_md}{plugins}.
+
+Implementations of file systems is not an easy task. The idea of F\+U\+SE (Filesystem in Userspace) is to make file system development easier by having the conveniences of userspace together with a helper library {\ttfamily libfuse}. In particular this allowed developers to use any programming language and easier abstractions. Elektra also tries hard to make plugin development simple. For example, special \hyperlink{src_plugins_README_md}{interpreter plugins} enable developers to also write plugins in different languages. Furthermore, \hyperlink{src_libs_README_md}{other libraries} also assist in creating plugins.
+
+Of course not every feature of virtual file systems or Elektra has an analogy in the other system. If they would solve the same problem, one of them would be useless. Main differences are\+:
+
+
+\begin{DoxyItemize}
+\item A\+PI (get/set vs. read/write)
+\item commit semantics\+: one {\ttfamily kdb\+Set} can change many configuration files atomically. This is important if you want, e.\+g., a new host in {\ttfamily /etc/hosts} and use this host in some other configuration files.
+\item \hyperlink{doc_help_elektra-namespaces_md}{namespaces} there are many places where the same configuration is stored. All of these configuration files have the same semantics and they override each other (think of command-\/line arguments, {\ttfamily /etc}, {\ttfamily \$\+H\+O\+ME/.config}, ...)
+\item Elektra interacts closely with the program execution environment such as command-\/line parsing. The namespace {\ttfamily proc} is specifically reserved for this purpose.
+\item in Elektra it is possible to create holes (files without directories above them) which are needed because of these override semantics\+: we want to be able to override a single value without duplicating the whole skeleton.
+\item validation\+: in Elektra you can describe how valid configuration should look like and reject invalid configuration.
+\item and much more...
+\end{DoxyItemize}
+
+\subsection*{Further Readings}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{doc_COMPILE_md}{Compile} and \hyperlink{doc_INSTALL_md}{Install} Elektra
+\item Then continue reading the \hyperlink{md_doc_tutorials_README_doc_tutorials_README_md}{tutorials}
+\item Read about bindings
+\item Read about tools
+\item Look into \hyperlink{doc_help_elektra-glossary_md}{the glossary}.
+\item Start reading about \hyperlink{doc_help_kdb_md}{command-\/line tools} 
+\end{DoxyItemize}

@@ -1,0 +1,185 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the yaypeg plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com}
+\item infos/licence = B\+SD
+\item infos/needs = directoryvalue yamlsmith
+\item infos/provides = storage/yaml
+\item infos/recommends =
+\item infos/placements = getstorage
+\item infos/status = maintained unittest preview experimental unfinished nodoc concept discouraged
+\item infos/metadata =
+\item infos/description = This storage plugin uses a P\+EG based parser to read Y\+A\+ML files
+\end{DoxyItemize}\hypertarget{md_src_plugins_yaypeg_README_src_plugins_yaypeg_README_md}{}\section{Y\+Ay P\+EG}\label{md_src_plugins_yaypeg_README_src_plugins_yaypeg_README_md}
+The Y\+Ay P\+EG plugin use a parser based on \href{https://github.com/taocpp/PEGTL}{\tt P\+E\+G\+TL} to convert Y\+A\+ML data to Elektra’s {\ttfamily Key\+Set} type.
+
+\subsection*{Dependencies}
+
+This plugin requires \href{https://repology.org/project/pegtl/versions}{\tt P\+E\+G\+TL} {\ttfamily 2.\+7.\+1} or later. It does not support P\+E\+G\+TL {\ttfamily 3}, which requires C++ 17.
+
+\subsection*{Examples}
+
+\subsubsection*{Mappings}
+
+``` \section*{Mount plugin}
+
+sudo kdb mount config.\+yaml user/tests/yaypeg yaypeg
+
+\section*{Add some values}
+
+kdb set user/tests/yaypeg/movements/deadly \textquotesingle{}Dull\textquotesingle{} kdb set user/tests/yaypeg/movements/deep \textquotesingle{}Red\textquotesingle{}
+
+\section*{Manually add a key}
+
+printf \textquotesingle{}Rosalía\+: El\+::\+Mal\+::\+Querer\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yaypeg}
+
+\section*{List keys}
+
+kdb ls user/tests/yaypeg \#$>$ user/tests/yaypeg/\+Rosalía \#$>$ user/tests/yaypeg/movements/deadly \#$>$ user/tests/yaypeg/movements/deep
+
+\section*{Retrieve a value}
+
+kdb get user/tests/yaypeg/\+Rosalía \#$>$ El\+::\+Mal\+::\+Querer
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/tests/yaypeg sudo kdb umount user/tests/yaypeg 
+\begin{DoxyCode}
+### Arrays
+\end{DoxyCode}
+ \section*{Mount plugin}
+
+sudo kdb mount config.\+yaml user/tests/yaypeg yaypeg
+
+\section*{Manually add some values}
+
+printf \textquotesingle{}ponies\+:~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg} printf \textquotesingle{} -\/ Fluttershy \# Yay!~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yaypeg} printf \textquotesingle{} -\/ Pinkie Pie~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yaypeg} printf \textquotesingle{} -\/ Maud Pie\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yaypeg}
+
+\section*{List array keys}
+
+kdb ls user/tests/yaypeg \#$>$ user/tests/yaypeg/ponies \#$>$ user/tests/yaypeg/ponies/\#0 \#$>$ user/tests/yaypeg/ponies/\#1 \#$>$ user/tests/yaypeg/ponies/\#2
+
+\section*{Retrieve last array entry}
+
+kdb get user/tests/yaypeg/ponies/\$(kdb getmeta user/tests/yaypeg/ponies array) \#$>$ Maud Pie
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/tests/yaypeg sudo kdb umount user/tests/yaypeg 
+\begin{DoxyCode}
+### Boolean Values
+\end{DoxyCode}
+ \section*{Mount plugin}
+
+sudo kdb mount config.\+yaml user/tests/yaypeg yaypeg
+
+\section*{Manually add a boolean value to the database}
+
+printf \textquotesingle{}one\+: true\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg}
+
+\section*{Elektra stores boolean values as {\ttfamily 0} and {\ttfamily 1}}
+
+kdb get user/tests/yaypeg/one \#$>$ 1
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r user/tests/yaypeg sudo kdb umount user/tests/yaypeg 
+\begin{DoxyCode}
+### Error Messages
+\end{DoxyCode}
+ \section*{Mount plugin}
+
+sudo kdb mount config.\+yaml user/tests/yaypeg yaypeg
+
+\section*{Manually add syntactically incorrect data}
+
+printf \textquotesingle{}Fluttershy\+:~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg} printf \textquotesingle{}I’d like to be a tree~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yaypeg} \# Incorrect indentation
+
+kdb ls user/tests/yaypeg \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$config.yaml\+:2\+:0\+: Incomplete document, expected “end of file”.$\ast$}
+
+\section*{Let us look at the error message more closely.}
+
+\section*{Since the location of {\ttfamily config.\+yaml} depends on the current user and OS,}
+
+\section*{we store the text before {\ttfamily config.\+yaml} as {\ttfamily user/tests/error/prefix}.}
+
+kdb set user/tests/error \char`\"{}\$(2$>$\&1 kdb ls user/tests/yaypeg)\char`\"{} kdb set user/tests/error/prefix \char`\"{}\$(kdb get user/tests/error $\vert$ grep \textquotesingle{}config.\+yaml\textquotesingle{} $\vert$ head -\/1 $\vert$ sed -\/\+E \textquotesingle{}s/(.$\ast$)config.\+yaml.$\ast$/\textbackslash{}1/\textquotesingle{})\char`\"{} \section*{We also store the length of the prefix, so we can remove it from every}
+
+\section*{line of the error message.}
+
+kdb set user/tests/error/prefix/length \char`\"{}\$(kdb get user/tests/error/prefix $\vert$ wc -\/c $\vert$ sed \textquotesingle{}s/\mbox{[} \mbox{]}$\ast$//g\textquotesingle{})\char`\"{}
+
+\section*{Since we only want to look at the “reason” of the error, we}
+
+\section*{remove the other part of the error message with {\ttfamily head} and {\ttfamily tail}.}
+
+kdb get user/tests/error $\vert$ tail -\/n3 $\vert$ cut -\/c\char`\"{}\$(kdb get user/tests/error/prefix/length)\char`\"{}-\/ \#$>$ config.\+yaml\+:2\+:0\+: Incomplete document, expected “end of file” \#$>$ I’d like to be a tree \#$>$ $^\wedge$
+
+\section*{Fix syntax error}
+
+printf \textquotesingle{}Fluttershy\+:~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg} printf \textquotesingle{} I’d like to be a tree~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yaypeg}
+
+kdb get user/tests/yaypeg/\+Fluttershy \#$>$ I’d like to be a tree
+
+\section*{Add double quoted scalar with missing closing quote character}
+
+printf \textquotesingle{}"nothing,nowhere.\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg} kdb ls user/tests/yaypeg \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$config.yaml\+:1\+:17\+: Missing closing double quote or incorrect value inside flow scalar.$\ast$}
+
+\section*{Check error messages for other syntax errors}
+
+printf \textquotesingle{}\char`\"{}\textbackslash{}ö\char`\"{}\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg} kdb ls user/tests/yaypeg \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$config.yaml\+:1\+:2\+: Unexpected escape character.$\ast$}
+
+printf \char`\"{}\textbackslash{}\char`\"{}\textbackslash{}07"" $>$ {\ttfamily kdb file user/tests/yaypeg} kdb ls user/tests/yaypeg \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$config.yaml\+:1\+:1\+: Missing closing double quote or incorrect value inside flow scalar.$\ast$}
+
+printf \char`\"{}\textquotesingle{}\+Single\char`\"{} $>$ {\ttfamily kdb file user/tests/yaypeg} kdb ls user/tests/yaypeg \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$config.yaml\+:1\+:7\+: Missing closing single quote or incorrect value inside flow scalar.$\ast$}
+
+printf \char`\"{}\textquotesingle{}\textbackslash{}07\textquotesingle{}\char`\"{} $>$ {\ttfamily kdb file user/tests/yaypeg} kdb ls user/tests/yaypeg \section*{R\+ET\+: 5}
+
+\section*{S\+T\+D\+E\+RR\+: .$\ast$config.yaml\+:1\+:1\+: Missing closing single quote or incorrect value inside flow scalar.$\ast$}
+
+\section*{Store syntactically correct data}
+
+printf \textquotesingle{}dummy\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yaypeg}
+
+\section*{Undo modifications}
+
+kdb rm -\/r user/tests/error kdb rm -\/r user/tests/yaypeg sudo kdb umount user/tests/yaypeg ```
+
+\subsection*{Limitations}
+
+
+\begin{DoxyItemize}
+\item The plugin does {\bfseries not support}
+\begin{DoxyItemize}
+\item {\bfseries block scalars},
+\item {\bfseries flow collections},
+\item {\bfseries tags},
+\item {\bfseries anchors \& aliases}, and
+\item {\bfseries multiple documents}
+\end{DoxyItemize}
+
+\subsubsection*{Comments}
+\end{DoxyItemize}
+
+While the parser does read comments, the \href{/home/markus/Projekte/Elektra/current/src/plugins/yaypeg/listener.cpp}{\tt listener} does currently not add metakeys for them. This means that comments will be lost, if you modify a key set.
+
+\subsubsection*{Error Messages}
+
+Visualized error messages (containing {\ttfamily $^\wedge$} markers) might not point to the correct error location, if the input contains tabs or unicode characters with a length other than {\ttfamily 1}. 

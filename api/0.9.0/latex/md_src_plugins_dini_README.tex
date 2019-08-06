@@ -1,0 +1,65 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the dini plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:markus@libelektra.org}{\tt markus@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/ini
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = compatible shelltest tested nodep libc
+\item infos/metadata =
+\item infos/description = default I\+NI plugin
+\end{DoxyItemize}
+
+The dini plugin is proposed to become the new default plugin. It pulls in all deps as needed for I\+NI.
+
+To be compatible with legacy installations, it will use the dump plugin to parse dump configuration files.
+
+\subsection*{Usage}
+
+
+\begin{DoxyCode}
+kdb change-storage-symlink dini
+\end{DoxyCode}
+
+
+\subsection*{Dependencies}
+
+
+\begin{DoxyItemize}
+\item Loads the {\ttfamily dump} plugin at run-\/time (optional, only for parsing)
+\item Loads the {\ttfamily ini} plugin and its dependencies
+\end{DoxyItemize}
+
+\subsection*{Examples}
+
+``` \section*{Create a need for legacy support}
+
+sudo kdb mount config.\+file user/tests/dini dump
+
+kdb set user/tests/dini/key \char`\"{}legacy value\char`\"{} \#$>$ Create a new key user/tests/dini/key with string \char`\"{}legacy value\char`\"{}
+
+kdb umount user/tests/dini
+
+\section*{Mount dini plugin to {\ttfamily user/tests/dini}}
+
+sudo kdb mount config.\+file user/tests/dini dini
+
+kdb get user/tests/dini/key \#$>$ legacy value
+
+kdb set user/tests/dini/key2 value \#$>$ Create a new key user/tests/dini/key2 with string \char`\"{}value\char`\"{}
+
+kdb get user/tests/dini/key \#$>$ legacy value
+
+kdb get user/tests/dini/key2 \#$>$ value
+
+cat {\ttfamily kdb file user/tests/dini}
+
+\section*{Undo modifications to the key database}
+
+kdb rm -\/r user/tests/dini sudo kdb umount user/tests/dini ```
+
+\subsection*{Limitations}
+
+None. 

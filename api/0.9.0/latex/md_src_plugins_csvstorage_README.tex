@@ -1,0 +1,177 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the csvstorage plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/csv
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest nodep libc configurable limited
+\item infos/description = parses C\+SV files
+\end{DoxyItemize}
+
+This plugin allows you to read and write C\+SV files using Elektra. It aims to be compatible with R\+FC 4180. Rows and columns are written using Elektra\textquotesingle{}s arrays ({\ttfamily \#0}, {\ttfamily \#1},..). By configuring the plugin you can give columns a name.
+
+\subsection*{Configuration}
+
+{\ttfamily delimiter} Tells the plugin what delimiter is used in the file. The default delimiter is {\ttfamily ,} and will be used if {\ttfamily delimiter} is not set.
+
+{\ttfamily header} Tells the plugin to use the first line as a header if it is set to {\ttfamily colname}. The columns will get the corresponding names. Skip the first line if it is set to {\ttfamily skip} or treat the first line as a record if it is set to {\ttfamily record}. If {\ttfamily header} is not set, or set to {\ttfamily record}, the columns get named \#0,\#1,... (array key naming)
+
+{\ttfamily columns} If this key is set the plugin will yield an error for every file that doesn\textquotesingle{}t have exactly the amount of columns as specified in {\ttfamily columns}.
+
+{\ttfamily columns/names} Sets the column names. Only usable in combination with the {\ttfamily columns} key. The number of subkeys must match the number of columns. Conflicts with usage of {\ttfamily header}.
+
+{\ttfamily columns/index} Specifies which column should be used to index records instead of the record number.
+
+{\ttfamily export=,export/$<$column name$>$=} Export column {\ttfamily column name}\+:
+
+
+\begin{DoxyItemize}
+\item The key {\ttfamily export} must be present, additionally to {\ttfamily export/$<$column name$>$}
+\item Also multiple column names can be given for different columns to export.
+\begin{DoxyItemize}
+\item Then {\ttfamily delimiter} will be used as delimiter ({\ttfamily ,} as default).
+\item The order depends on the alphabetic order of the column names. Use `awk -\/F\textquotesingle{},\textquotesingle{} \textquotesingle{}B\+E\+G\+IN\{O\+FS=\char`\"{},\char`\"{}\} \{print \$2, \$1, \$3\}\textquotesingle{}` or similar to reorder.
+\item Unknown column names are ignored.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\subsection*{Examples}
+
+First line should determine the headers\+:
+
+
+\begin{DoxyCode}
+kdb mount test.csv /csv csvstorage \(\backslash\)
+  "delimiter=;,header=colname,columns=2,columns/names,columns/names/#0=col0Name,columns/names/#1=col1Name"
+\end{DoxyCode}
+
+
+\subsubsection*{Usage}
+
+The example below shows how you can use this plugin to read and write C\+SV files.
+
+``{\ttfamily  $<$h1$>$Mount plugin to}user/tests/csv` \section*{We use the column names from the first line of the}
+
+\section*{config file as key names}
+
+sudo kdb mount config.\+csv user/tests/csv csvstorage \char`\"{}header=colname,columns/names/\#0=col0\+Name,columns/names/\#1=col1\+Name\char`\"{}
+
+\section*{Add some data}
+
+printf \textquotesingle{}band,album~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/csv} printf \textquotesingle{}Converge,All We Love We Leave Behind~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/csv} printf \textquotesingle{}mewithout\+You,Pale Horses~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/csv} printf \textquotesingle{}Kate Tempest,Everybody Down~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/csv}
+
+kdb ls user/tests/csv \#$>$ user/tests/csv/\#0 \#$>$ user/tests/csv/\#0/album \#$>$ user/tests/csv/\#0/band \#$>$ user/tests/csv/\#1 \#$>$ user/tests/csv/\#1/album \#$>$ user/tests/csv/\#1/band \#$>$ user/tests/csv/\#2 \#$>$ user/tests/csv/\#2/album \#$>$ user/tests/csv/\#2/band \#$>$ user/tests/csv/\#3 \#$>$ user/tests/csv/\#3/album \#$>$ user/tests/csv/\#3/band
+
+\section*{The first array element contains the column names}
+
+kdb get user/tests/csv/\#0/band \#$>$ band kdb get user/tests/csv/\#0/album \#$>$ album
+
+\section*{Retrieve data from the last entry}
+
+kdb get user/tests/csv/\#3/album \#$>$ Everybody Down kdb get user/tests/csv/\#3/band \#$>$ Kate Tempest
+
+\section*{Change an existing item}
+
+kdb set user/tests/csv/\#1/album \textquotesingle{}You Fail Me\textquotesingle{} \section*{Retrieve the new item}
+
+kdb get user/tests/csv/\#1/album \#$>$ You Fail Me
+
+\section*{The plugin stores the index of the last column}
+
+\section*{in all of the parent keys.}
+
+kdb get user/tests/csv/\#0 \#$>$ \#1 kdb get user/tests/csv/\#1 \#$>$ \#1 kdb get user/tests/csv/\#2 \#$>$ \#1 kdb get user/tests/csv/\#3 \#$>$ \#1
+
+\section*{The configuration file reflects the changes}
+
+kdb file user/tests/csv $\vert$ xargs cat \#$>$ album,band \#$>$ You Fail Me,Converge \#$>$ Pale Horses,mewithout\+You \#$>$ Everybody Down,Kate Tempest
+
+\section*{Undo changes to the key database}
+
+kdb rm -\/r user/tests/csv sudo kdb umount user/tests/csv 
+\begin{DoxyCode}
+# Directory Values
+
+By default the `csvstorage` plugin saves the name of the last column in each parent key. If you want to
+       store a different value, you can do
+so using the [Directory Value](@ref src\_plugins\_directoryvalue\_README\_md) plugin.
+\end{DoxyCode}
+ \section*{Mount plugin together with {\ttfamily directoryvalue} to {\ttfamily user/tests/csv}}
+
+kdb mount config.\+csv user/tests/csv csvstorage directoryvalue
+
+\section*{Add some data}
+
+printf \textquotesingle{}Schindler’s List,1993,8.\+9~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/csv} printf \textquotesingle{}Léon\+: The Professional,1994,8.\+5~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/csv}
+
+\section*{Retrieve data}
+
+kdb ls user/tests/csv \#$>$ user/tests/csv/\#0 \#$>$ user/tests/csv/\#0/\#0 \#$>$ user/tests/csv/\#0/\#1 \#$>$ user/tests/csv/\#0/\#2 \#$>$ user/tests/csv/\#1 \#$>$ user/tests/csv/\#1/\#0 \#$>$ user/tests/csv/\#1/\#1 \#$>$ user/tests/csv/\#1/\#2
+
+kdb get user/tests/csv/\#0/\#0 \#$>$ Schindler’s List kdb get user/tests/csv/\#1/\#2 \#$>$ 8.\+5
+
+\section*{The plugin stores the index of the last column in the parent keys}
+
+kdb get user/tests/csv/\#0 \#$>$ \#2 kdb get user/tests/csv/\#1 \#$>$ \#2
+
+\section*{Since we use the Directory Value plugin we can also change the data in a parent key}
+
+kdb set user/tests/csv/\#0 \textquotesingle{}Movie – Year – Rating\textquotesingle{} kdb set user/tests/csv/\#1 \textquotesingle{}It’s a Me.\textquotesingle{}
+
+\section*{Retrieve data stored in parent keys}
+
+kdb get user/tests/csv/\#0 \#$>$ Movie – Year – Rating kdb get user/tests/csv/\#1 \#$>$ It’s a Me.
+
+\section*{Undo changes to the key database}
+
+kdb rm -\/r user/tests/csv sudo kdb umount user/tests/csv 
+\begin{DoxyCode}
+# Column as index
+\end{DoxyCode}
+ kdb mount config.\+csv /tests/csv csvstorage \char`\"{}delimiter=;,header=colname,columns/index=\+I\+M\+D\+B\char`\"{}
+
+printf \textquotesingle{}I\+M\+DB;Title;Year~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/csv} printf \textquotesingle{}tt0108052;Schindler´s List;1993~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/csv} printf \textquotesingle{}tt0110413;Léon\+: The Professional;1994~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/csv}
+
+kdb ls /tests/csv \#$>$ user/tests/csv/tt0108052 \#$>$ user/tests/csv/tt0108052/\+I\+M\+DB \#$>$ user/tests/csv/tt0108052/\+Title \#$>$ user/tests/csv/tt0108052/\+Year \#$>$ user/tests/csv/tt0110413 \#$>$ user/tests/csv/tt0110413/\+I\+M\+DB \#$>$ user/tests/csv/tt0110413/\+Title \#$>$ user/tests/csv/tt0110413/\+Year
+
+kdb get /tests/csv/tt0108052/\+Title \#$>$ Schindler´s List
+
+kdb rm -\/r /tests/csv sudo kdb umount /tests/csv
+
+
+\begin{DoxyCode}
+# Export filter
+\end{DoxyCode}
+ kdb mount config.\+csv /tests/csv csvstorage \char`\"{}delimiter=;,header=colname,columns/index=\+I\+M\+D\+B\char`\"{}
+
+printf \textquotesingle{}I\+M\+DB;Title;Year~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/csv} printf \textquotesingle{}tt0108052;Schindler´s List;1993~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/csv} printf \textquotesingle{}tt0110413;Léon\+: The Professional;1994~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/csv}
+
+kdb export /tests/csv csvstorage -\/c \char`\"{}delimiter=;,header=colname,columns/index=\+I\+M\+D\+B,export=,export/\+I\+M\+D\+B=,export/\+Title=\char`\"{} \#$>$ I\+M\+DB;Title \#$>$ tt0108052;Schindler´s List \#$>$ tt0110413;Léon\+: The Professional
+
+kdb export /tests/csv csvstorage -\/c \char`\"{}delimiter=;,header=colname,columns/index=\+I\+M\+D\+B,export=,export/\+I\+M\+D\+B=,export/\+Year=\char`\"{} \#$>$ I\+M\+DB;Year \#$>$ tt0108052;1993 \#$>$ tt0110413;1994
+
+kdb rm -\/r /tests/csv sudo kdb umount /tests/csv
+
+```
+
+\subsection*{Limitations}
+
+
+\begin{DoxyItemize}
+\item Does not work on file streams (e.\+g. {\ttfamily kdb import} without file) 
+\end{DoxyItemize}

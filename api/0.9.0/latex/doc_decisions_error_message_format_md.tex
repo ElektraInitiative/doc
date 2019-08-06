@@ -1,0 +1,89 @@
+\subsection*{Problem}
+
+Too verbose error message Currently for every error, 9 lines are shown in which most of them are not relevant to end users/administrators. One goal is to reduce the verbosity of such messages and let users/administrators see only information they need.
+
+\subsection*{Constraints}
+
+
+\begin{DoxyItemize}
+\item Supporting multiple programming languages
+\item Plugin System
+\item Error Code should be preserved
+\end{DoxyItemize}
+
+\subsection*{Assumptions}
+
+\subsection*{Considered Alternatives}
+
+Possible variations on what message should be displayed, e.\+g., to keep the mountpoint information or on how wordings should be (with or without \char`\"{}\+Sorry, ...\char`\"{}, coloring of certain parts of a message, etc.)
+
+Examples would be to
+
+
+\begin{DoxyItemize}
+\item Leave out the \char`\"{}\+Sorry\char`\"{} in the error message or leave the introduction sentence completely
+\item Drop {\ttfamily At}, {\ttfamily Mountpoint}, {\ttfamily Configfile}, {\ttfamily Module}. This information though yields useful information or was even added as a request
+\item Show mountpoint, configfile, module, etc in beneath the general introduction message. Eg. {\ttfamily The command kdb set failed while accessing the key database on mountpoint (...) with the info}
+\item Incorporating the description in another ways\+: {\ttfamily Reason\+: Validation of key \char`\"{}$<$key$>$\char`\"{} with string \char`\"{}$<$value$>$\char`\"{} failed. (validation failed)}
+\item Use one command line option to show all additional info which gets hidden per default from now on instead of two
+\item Color the main message differently compared to the general introduction message
+\item Do not color messages as it might confuse users with overwhelming many colors
+\item Do not print out the error code. It is useful though for googling
+\end{DoxyItemize}
+
+\subsection*{Decision}
+
+The error message has the current format\+:
+
+
+\begin{DoxyCode}
+The command kdb set failed while accessing the key database with the info:
+Sorry, the error (#121) occurred ;(
+Description: validation failed
+Reason: Validation of key "<key>" with string "<value>" failed.
+Ingroup: plugin
+Module: enum
+At: ....../src/plugins/enum/enum.c:218
+Mountpoint: <parentKey>
+Configfile: ...../<file>.25676:1549919217.284067.tmp
+\end{DoxyCode}
+
+
+The new default message will look like this\+:
+
+
+\begin{DoxyCode}
+Sorry, module `MODULE` issued [error|warning] `NR`:
+`ERROR\_CODE\_DESCRIPTION`: Validation of key "<key>" with string "<value>" failed.
+\end{DoxyCode}
+
+
+The {\ttfamily NR} will be the color red in case of an error or yellow in case of a warning while {\ttfamily M\+O\+D\+U\+LE} will be the color blue.
+
+Optionally a third line indicating a solution can be added. Eg. for a permission related error there would be a third line\+:
+
+
+\begin{DoxyCode}
+Possible Solution: Retry the command as sudo (sudo !!)
+\end{DoxyCode}
+
+
+To avoid losing information, the user can use the command line argument {\ttfamily -\/v} (verbose) to show {\ttfamily Mountpoint}, {\ttfamily Configfile} in addition to the current error message. Furthermore a developer can use the command line argument {\ttfamily -\/d} (debug) to show {\ttfamily At} for debugging purposes.
+
+\subsection*{Rationale}
+
+The new error message is much more succinct which gives end users more relevant information. Furthermore the solution approach still holds all necessary information if requested by users.
+
+\subsection*{Implications}
+
+{\ttfamily Description} will be incorporated into {\ttfamily Reason} whereas the {\ttfamily Module} will be incorporated into the general sentence starting the error message.
+
+\subsection*{Related Decisions}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{doc_decisions_error_codes_md}{Error Codes} Shows how the new error codes are meant to be
+\item \hyperlink{doc_decisions_ingroup_removal_md}{Ingroup Removal} Shows the decision of why the {\ttfamily ingoup} field has been removed
+\end{DoxyItemize}
+
+\subsection*{Notes}

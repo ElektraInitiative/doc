@@ -1,0 +1,757 @@
+We are proud to release Elektra 0.\+8.\+24.
+
+
+\begin{DoxyItemize}
+\item guid\+: 889b700d-\/9eac-\/4eff-\/9a3d-\/f6fb15c3d9da
+\item author\+: Markus Raab
+\item pub\+Date\+: Sat, 18 Aug 2018 18\+:13\+:40 +0200
+\item short\+Desc\+: Elektra Web, Notifications, Type System
+\end{DoxyItemize}
+
+\subsection*{What is Elektra?}
+
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database. For more information, visit \href{https://libelektra.org}{\tt https\+://libelektra.\+org}.
+
+For a small demo see here\+:
+
+\href{https://asciinema.org/a/cantr04assr4jkv8v34uz9b8r}{\tt }
+
+You can also read the news \href{https://www.libelektra.org/news/0.8.24-release}{\tt on our website}
+
+\subsection*{Highlights}
+
+
+\begin{DoxyItemize}
+\item Elektra Web
+\item Notifications
+\item K\+DE Workshop
+\item Type System Prototype
+\item Chef Cookbook
+\end{DoxyItemize}
+
+\subsubsection*{Elektra Web 1.\+6}
+
+The new release of Elektra Web features many UX improvements from the usability test!
+
+\href{https://www.youtube.com/watch?v=lLg9sk6Hx-E}{\tt }
+
+Try it out now on\+: \href{http://webdemo.libelektra.org/}{\tt http\+://webdemo.\+libelektra.\+org/}
+
+\paragraph*{1.\+5 changelog\+:}
+
+
+\begin{DoxyItemize}
+\item search completely reworked -\/ it does not act as a filter on already opened keys anymore, and instead searches the whole key database -\/ feedback from the search was also greatly improved (pulsating while searching, glowing blue when done)
+\item added \char`\"{}abort\char`\"{} buttons to dialogs to revert actions
+\item added \char`\"{}create array\char`\"{} button to easily create arrays
+\item removed confirmation dialog before deletion (undo can be used instead)
+\item created a docker image\+: {\ttfamily elektra/web}
+\item implemented auto-\/deployment of webdemo.\+libelektra.\+org
+\item small fixes\+:
+\begin{DoxyItemize}
+\item updated visibility levels
+\item removed \char`\"{}done\char`\"{} button in main view
+\item fixed issues with the opener click area
+\item remove metakeys when they are set to the default value or empty/0
+\item improved keyboard support
+\item fixed many small issues (\href{https://issues.libelektra.org/2037}{\tt \#2037})
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\paragraph*{1.\+6 changelog\+:}
+
+
+\begin{DoxyItemize}
+\item fixed bugs related to arrays (\href{https://issues.libelektra.org/2103}{\tt \#2103})
+\item improved performance of search for many results
+\item added 404 page for invalid instance ids
+\item implement drag \& copy by holding the Ctrl or Alt key
+\item add button to show error details
+\item allow deleting all keys in a namespace
+\end{DoxyItemize}
+
+Thanks to Daniel Bugl.
+
+\subsubsection*{Notifications}
+
+Elektra\textquotesingle{}s notification feature which allows applications to keep persistent configuration settings in sync with the key database and other applications was greatly improved with this release\+:
+
+
+\begin{DoxyItemize}
+\item The \href{https://doc.libelektra.org/api/current/html/group__kdbnotification.html}{\tt notification A\+PI} now supports more types and has improved support for callbacks.
+\item With the addition of the \href{https://www.libelektra.org/plugins/zeromqsend}{\tt zeromqsend} and \href{https://www.libelektra.org/plugins/zeromqrecv}{\tt zeromqrecv} plugins together with the \href{https://www.libelektra.org/tools/hub-zeromq}{\tt hub-\/zeromq} tool we have an alternative to the D-\/\+Bus transport plugins (\href{https://www.libelektra.org/plugins/dbus}{\tt dbus} and \href{https://www.libelektra.org/plugins/dbusrecv}{\tt dbusrecv}).
+\item The new asynchronous I/O binding for \href{https://www.libelektra.org/bindings/io_ev}{\tt ev} is the third I/O binding -\/ so notifications can be used in applications using \href{https://www.libelektra.org/bindings/io_glib}{\tt glib}, \href{https://www.libelektra.org/bindings/io_uv}{\tt uv} or \href{https://www.libelektra.org/bindings/io_ev}{\tt ev}. If your application uses a different library please check out the \href{https://www.libelektra.org/tutorials/notifications#how-to-create-your-own-i-o-binding}{\tt \char`\"{}\+How to create your own I/\+O binding\char`\"{} section} in the \href{https://www.libelektra.org/tutorials/notifications}{\tt notification tutorial}.
+\item Notifications can be used to reload K\+DB after Elektra\textquotesingle{}s configuration (e.\+g. mountpoints or globally mounted plugins) has changed. We added a \href{https://www.libelektra.org/tutorials/notifications#howto-reload-kdb-when-elektras-configuration-has-changed}{\tt how-\/to to the notification tutorial} that explains the required steps and the \href{https://www.libelektra.org/examples/notificationreload}{\tt \char`\"{}notification\+Reload\char`\"{}} example with the complete code.
+\end{DoxyItemize}
+
+More details can be \href{#zeromq-transport-plugins}{\tt found} \href{#misc}{\tt in} \href{#bindings}{\tt this} \href{#notifications}{\tt news}. Check out the updated \href{https://www.libelektra.org/tutorials/notifications}{\tt notification tutorial} and notification examples (\href{https://www.libelektra.org/examples/notificationpolling}{\tt polling}, \href{https://www.libelektra.org/examples/notificationasync}{\tt async} and \href{https://www.libelektra.org/examples/notificationreload}{\tt reload}.
+
+\subsubsection*{K\+DE Workshop}
+
+At \href{https://akademy.kde.org/2018}{\tt Akademy 2018} we had a successful \href{https://community.kde.org/Akademy/2018/Config_Workshop}{\tt Config Workshop}.
+
+We generally agreed that misconfiguration is important and the situation in F\+L\+O\+SS needs to improve. We discussed how Elektra can be used in K\+DE and came up with the idea that K\+Config could be moved to a Elektra plugin. Then K\+Config could be patched to use Elektra instead. This would lead to the situation that K\+DE users would have the same user experience with the advantages of Elektra, like\+:
+
+
+\begin{DoxyItemize}
+\item Elektra Web and qt-\/gui to safely modify all settings
+\item modification of settings via configuration management tools
+\item switch to other configuration file formats (e.\+g., X\+ML or Y\+A\+ML for plasma)
+\item provide notification with main-\/loop integration
+\item plugin system for L\+D\+AP support and similar features
+\end{DoxyItemize}
+
+For more information see the \href{http://www.complang.tuwien.ac.at/raab/akademy.pdf}{\tt Slides}
+
+\subsubsection*{Type System Prototype}
+
+Elektra supports specifying the semantics of keys via metakeys in the {\ttfamily spec} namespace. An example is the metakey {\ttfamily check/range} which can be used to specify that a key only holds numbers in a given range. Another metakey is {\ttfamily check/enum} which only allows specific keywords to be the content of a key. Up to now these semantics are only being checked at runtime. Therefore a type system was developed to be able to check configuration specifications statically. As an example, it would detect when one accidentally adds both a range and an enum check if their possible contents are not compatible with each other.
+
+The type system is available as a plugin that gets mounted along with a configuration specification into the spec namespace. Furthermore we include a set of type definitions for commonly used metakeys such as {\ttfamily check/range}, {\ttfamily check/enum}, {\ttfamily check/validation}, {\ttfamily fallback} or {\ttfamily override}.
+
+For more details see the \href{https://www.libelektra.org/plugins/typechecker}{\tt typechecker readme}
+
+Thanks to Armin Wurzinger.
+
+\subsubsection*{Chef Cookbook}
+
+Next to the \href{http://puppet.libelektra.org/}{\tt Puppet Resource Type} we now also prepared a \href{https://supermarket.chef.io/cookbooks/kdb}{\tt Chef Cookbook} which allows us to use Elektra from within Chef.
+
+For example, to set mount a configuration file, you can use\+:
+
+
+\begin{DoxyCode}
+kdbmount 'system/hosts' do
+        file '/etc/hosts'
+        plugins 'hosts'
+        action :create
+end
+\end{DoxyCode}
+
+
+And to add an hosts entry, you can use\+:
+
+
+\begin{DoxyCode}
+kdbset '/hosts/ipv4/showthatitworks' do
+        namespace 'system'
+        value '127.0.0.33'
+        action :create
+end
+\end{DoxyCode}
+
+
+\begin{quote}
+Note that currently {\ttfamily kdb} is invoked and Elektra needs to be installed for managed systems. \end{quote}
+
+
+Thanks to Michael Zronek and Vanessa Kos.
+
+\subsection*{Plugins}
+
+\subsubsection*{C\+Code}
+
+
+\begin{DoxyItemize}
+\item We fixed various warnings in the source code reported by \href{http://oclint.org}{\tt O\+C\+Lint}. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now also encodes and decodes key names in addition to key values. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{C\+PP Template}
+
+
+\begin{DoxyItemize}
+\item We added a new \href{https://www.libelektra.org/plugins/cpptemplate}{\tt template for C++ based plugins}. To create a plugin based on this template, please use the command
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+scripts/copy-template -p pluginname
+\end{DoxyCode}
+
+
+, where {\ttfamily pluginname} specifies the name of your new plugin. \+\_\+(René Schwaiger)\+\_\+
+
+\subsubsection*{Crypto}
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily crypto} plugin now uses Elektra\textquotesingle{}s {\ttfamily libinvoke} and the {\ttfamily base64} plugin in order to encode and decode Base64 strings. This improvement reduces code duplication between the two plugins. \+\_\+(\+Peter Nirschl)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{C\+S\+V\+Storage}
+
+
+\begin{DoxyItemize}
+\item Changed behaviour of export to validate the structure of exported keys only. \+\_\+(\+Thomas Waser)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Directory Value}
+
+
+\begin{DoxyItemize}
+\item We rewrote the plugin using C++. \+\_\+(René Schwaiger)\+\_\+
+\item \href{https://www.libelektra.org/plugins/directoryvalue}{\tt Directory Value} now also supports nested arrays. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now also adds leafs for a key, if its value is null or the empty string. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{fcrypt}
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily fcrypt} plugin will consider the environment variable {\ttfamily T\+M\+P\+D\+IR} in order to detect its temporary directory. See \mbox{[}\#1973\mbox{]} \+\_\+(\+Peter Nirschl)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{fstab}
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily fstab} plugin now passes tests on musl builds. \+\_\+(\+Lukas Winkler)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Haskell}
+
+
+\begin{DoxyItemize}
+\item An issue when building Haskell plugins with a cached sandbox is fixed in case a Haskell library bundled with Elektra gets changed. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item The \href{https://master.libelektra.org/scripts/generate-haskell-dependencies}{\tt script} that generates the list of haskell dependencies now also works on ghc8.\+0.\+1 and older cabal versions. Furthermore one can specify the build directory as a parameter if it is not located within the source directory. \+\_\+(\+Armin Wurzinger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Interpreter Plugins}
+
+
+\begin{DoxyItemize}
+\item The plugins Ruby, Python and Jni can now also be mounted as global plugin.
+\item Fix crashes in global Python plugin by using pluginprocess. Python plugin can now shutdown properly again. \+\_\+(\+Markus Raab and Armin Wurzinger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{J\+NI}
+
+
+\begin{DoxyItemize}
+\item We now disable the plugin for the {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+T\+A\+T\+IC} or {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL} build variants, since otherwise the plugin breaks the {\ttfamily kdb} tool. \+\_\+(René Schwaiger)\+\_\+
+\item We disabled the internal check ({\ttfamily testscr\+\_\+check\+\_\+kdb\+\_\+internal\+\_\+check}) for the plugin, since it always fails. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Hex\+Number}
+
+
+\begin{DoxyItemize}
+\item The plugin \href{https://www.libelektra.org/plugins/hexnumber}{\tt hexnumber} has been added. It can be used to convert hexadecimal values into decimal when read, and back to hexadecimal when written. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{List}
+
+
+\begin{DoxyItemize}
+\item The \href{http://libelektra.org/plugins/list}{\tt {\ttfamily list} plugin} now allows us to pass common configuration for all plugins by using keys below the \char`\"{}config/\char`\"{} setting. The updated plugin documentation contains more information and an example. \+\_\+(\+Thomas Wahringer)\+\_\+
+\item The \href{http://libelektra.org/plugins/list}{\tt {\ttfamily list} plugin} which is responsible for global mounting had a bug which prevented globally mounted plugins from being configurable. \+\_\+(\+Thomas Wahringer)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{m\+I\+NI}
+
+
+\begin{DoxyItemize}
+\item We fixed a memory leak in the \href{https://libelektra.org/plugins/mini}{\tt m\+I\+NI plugin} by requiring the plugin \href{https://libelektra.org/plugins/ccode}{\tt {\ttfamily ccode}} instead of the “provider” {\ttfamily code}. \+\_\+(René Schwaiger)\+\_\+
+\item Removed unused header files. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{network}
+
+
+\begin{DoxyItemize}
+\item Fixed an error in network plugin that prevented it from working on non-\/glibc platforms. \+\_\+(\+Lukas Winkler)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Type}
+
+
+\begin{DoxyItemize}
+\item We extended the \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} example inside the \href{https://www.libelektra.org/plugins/type}{\tt R\+E\+A\+D\+ME of the plugin}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Regex Dispatcher}
+
+
+\begin{DoxyItemize}
+\item The plugin \href{https://www.libelektra.org/plugins/regexdispatcher}{\tt regexdispatcher} has been added. It calculates regex representations for commonly used specification keywords to be used with the \href{https://www.libelektra.org/plugins/typechecker}{\tt typechecker}. Currently the keywords {\ttfamily check/range}, {\ttfamily check/enum} and {\ttfamily default} are supported. \+\_\+(\+Armin Wurzinger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Typechecker}
+
+
+\begin{DoxyItemize}
+\item The plugin \href{https://www.libelektra.org/plugins/typechecker}{\tt typechecker}, used to validate configuration specifications for Elektra statically, has been improved under the hood. It now supports a more concise and efficient typechecking process including a greatly improved type inference scheme that should make generated specification files and thus generated errors to be easier to understand. An example of such error message is shown in the \href{https://www.libelektra.org/plugins/typechecker}{\tt R\+E\+A\+D\+ME}. \+\_\+(\+Armin Wurzinger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Tcl}
+
+
+\begin{DoxyItemize}
+\item The \href{http://libelektra.org/plugins/tcl}{\tt {\ttfamily tcl}} plugin does not fail anymore, if its configuration file does not exist and you try to retrieve the plugin contract. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now uses relative key names. This update addresses issue \href{https://issues.libelektra.org/51}{\tt \#51}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Y\+A\+JL}
+
+
+\begin{DoxyItemize}
+\item The \href{http://libelektra.org/plugins/yajl}{\tt Y\+A\+JL Plugin} now uses the internal logger functionality instead of {\ttfamily printf} statements. \+\_\+(René Schwaiger)\+\_\+
+\item We fixed a problem with negative values reported by the \href{https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html}{\tt Undefined\+Behavior\+Sanitizer}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Y\+A\+ML C\+PP}
+
+
+\begin{DoxyItemize}
+\item The plugin does not save empty intermediate keys anymore. The example below shows the old and the new behavior of the plugin\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+# Mount plugin
+kdb mount config.yaml /tests/yamlcpp yamlcpp
+# Store single key-value pair
+kdb set /tests/yamlcpp/level1/level2/level3 value
+
+# Old behavior
+kdb ls /tests/yamlcpp
+#> user/tests/yamlcpp/level1
+#> user/tests/yamlcpp/level1/level2
+#> user/tests/yamlcpp/level1/level2/level3
+
+# New behavior
+kdb ls /tests/yamlcpp
+#> user/tests/yamlcpp/level1/level2/level3
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item \href{http://libelektra.org/plugins/yamlcpp}{\tt Y\+A\+ML C\+PP} now requires at least {\ttfamily yaml-\/cpp 0.\+6}, since the current https\+://master.libelektra.\+org/src/plugins/yamlcpp/\+R\+E\+A\+D\+ME.md \char`\"{}\+M\+S\+R test for the plugin\char`\"{} triggers two bugs\+:
+\begin{DoxyItemize}
+\item \href{https://github.com/jbeder/yaml-cpp/issues/247}{\tt https\+://github.\+com/jbeder/yaml-\/cpp/issues/247}
+\item \href{https://github.com/jbeder/yaml-cpp/issues/289}{\tt https\+://github.\+com/jbeder/yaml-\/cpp/issues/289}
+\end{DoxyItemize}
+
+in earlier versions of the \href{https://github.com/jbeder/yaml-cpp}{\tt yaml-\/cpp library}. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin does now support \href{https://www.libelektra.org/tutorials/arrays}{\tt arrays} containing empty fields. \+\_\+(René Schwaiger)\+\_\+
+\item Y\+A\+ML C\+PP now also adds {\ttfamily array} meta data for arrays containing arrays. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now also supports empty arrays\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+kdb mount test.yaml user/tests/yamlcpp yamlcpp
+kdb setmeta user/tests/yamlcpp/array array ''
+kdb export user/tests/yamlcpp/array yamlcpp
+#> []
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Y\+A\+ML C\+PP now handles null values containing meta data properly\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+kdb mount test.yaml user/tests/yamlcpp yamlcpp
+kdb set user/tests/yamlcpp/null
+kdb setmeta user/tests/yamlcpp/null comment 'Null Key'
+kdb export user/tests/yamlcpp/null yamlcpp
+#> !<!elektra/meta>
+#> - ~
+#> - comment: Null Key
+\end{DoxyCode}
+
+
+\subsubsection*{Y\+A\+ML Smith}
+
+
+\begin{DoxyItemize}
+\item \href{http://libelektra.org/plugins/yamlsmith}{\tt Y\+A\+ML Smith} is a plugin that converts Elektra’s {\ttfamily Key\+Set} data structure to a textual representation in the \href{http://yaml.org}{\tt Y\+A\+ML} serialization format. The plugin is currently in a {\bfseries very early stage of development}. Please be advised, that it is quite likely that the plugin will produce incorrect or even invalid Y\+A\+ML data, especially if your {\ttfamily Key\+Set} contains special characters.
+\end{DoxyItemize}
+
+\subsubsection*{Yan LR}
+
+
+\begin{DoxyItemize}
+\item The experimental \href{http://libelektra.org/plugins/yanlr}{\tt Yan LR plugin} uses a parser, generated by \href{http://www.antlr.org}{\tt A\+N\+T\+LR} to read basic \href{http://yaml.org}{\tt Y\+A\+ML} data. The plugin only converts Y\+A\+ML data to Elektra’s {\ttfamily Key\+Set} data structure. If you want to write data in the Y\+A\+ML format please take a look at the \href{http://libelektra.org/plugins/yamlsmith}{\tt Y\+A\+ML Smith plugin}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Zero\+MQ transport plugins}
+
+
+\begin{DoxyItemize}
+\item New notification transport plugins for \href{http://zeromq.org/}{\tt Zero\+MQ} were added. The new \href{https://www.libelektra.org/plugins/zeromqsend}{\tt \char`\"{}zeromqsend\char`\"{}} and \href{https://www.libelektra.org/plugins/zeromqrecv}{\tt \char`\"{}zeromqrecv\char`\"{}} plugins use {\ttfamily Z\+M\+Q\+\_\+\+P\+UB} and {\ttfamily Z\+M\+Q\+\_\+\+S\+UB} sockets to send and receive notifications. The plugins can be used instead or along with the \href{https://www.libelektra.org/plugins/dbus}{\tt \char`\"{}dbus\char`\"{}} and \href{https://www.libelektra.org/plugins/dbusrecv}{\tt \char`\"{}dbusrecv\char`\"{}} transport plugins. Check out the \href{https://www.libelektra.org/plugins/zeromqrecv}{\tt plugin documentation} for more information. \+\_\+(\+Thomas Wahringer)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Misc}
+
+
+\begin{DoxyItemize}
+\item The logging plugins \href{https://www.libelektra.org/plugins/syslog}{\tt \char`\"{}syslog\char`\"{}}, \href{https://www.libelektra.org/plugins/journald}{\tt \char`\"{}journald\char`\"{}} and \href{https://www.libelektra.org/plugins/logchange}{\tt \char`\"{}logchange\char`\"{}} now have a new option called \char`\"{}get\char`\"{} which can be enabled to log which configuration settings are loaded by applications. The new option can be used for logging application behavior when using \href{https://www.libelektra.org/tutorials/notifications}{\tt notifications}. \+\_\+(\+Thomas Wahringer)\+\_\+
+\item Do not exclude {\ttfamily simpleini} silently on non-\/glibc systems but output a message like for other plugins \+\_\+(\+Markus Raab)\+\_\+
+\item We updated the {\ttfamily infos/status} clause of the following plugins\+:
+\begin{DoxyItemize}
+\item \href{http://libelektra.org/plugins/boolean}{\tt {\ttfamily boolean}},
+\item \href{http://libelektra.org/plugins/constants}{\tt {\ttfamily constants}},
+\item \href{http://libelektra.org/plugins/csvstorage}{\tt {\ttfamily csvstorage}},
+\item \href{http://libelektra.org/plugins/hexnumber}{\tt {\ttfamily hexnumber}},
+\item \href{http://libelektra.org/plugins/internalnotification}{\tt {\ttfamily internalnotification}},
+\item \href{http://libelektra.org/plugins/ruby}{\tt {\ttfamily ruby}},
+\item \href{http://libelektra.org/plugins/simpleini}{\tt {\ttfamily simpleini}},
+\item \href{http://libelektra.org/plugins/uname}{\tt {\ttfamily uname}}, and
+\item \href{http://libelektra.org/plugins/xerces}{\tt {\ttfamily xerces}}
+\end{DoxyItemize}
+
+. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Libraries}
+
+\subsubsection*{General}
+
+
+\begin{DoxyItemize}
+\item Replaced {\ttfamily strdup} with {\ttfamily elektra\+Str\+Dup} (for C99 compatibility). \+\_\+(\+Markus Raab)\+\_\+
+\item You can now remove the basename of a key via the C++ A\+PI by calling {\ttfamily key.\+del\+Base\+Name()}. \+\_\+(René Schwaiger)\+\_\+
+\item The function {\ttfamily elektra\+Array\+Get\+Next\+Key} now uses {\ttfamily N\+U\+LL} instead of the empty string as init value for the returned key. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{pluginprocess}
+
+
+\begin{DoxyItemize}
+\item The library \href{http://master.libelektra.org/src/libs/pluginprocess}{\tt {\ttfamily pluginprocess}} that is used to execute plugins run inside own processes has been improved. This is useful as some plugins like haskell-\/based plugins or \href{http://libelektra.org/plugins/python}{\tt {\ttfamily python}} can only be started once inside a single process, while libelektra may call a plugin several times. The library now uses an improved communication protocol that separates between pluginprocess-\/related data and keysets passed to plugins. This avoids any possible name clashes between keys used by a plugin and keys used by pluginprocess. The documentation of the plugin has been improved as well, some mistakes were corrected and it should be more clear how to store plugin data besides pluginprocess\textquotesingle{}s data structure. Tests have been added to the library to ensure its correct functionality. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item Anonymous pipes are now used instead of named pipes for the communication as anonymous pipes get terminated by the OS in case a child process dies before writing back data to the parent. Currently the parent process will freeze otherwise attempting to read from the child. \+\_\+(\+Armin Wurzinger)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Bindings}
+
+
+\begin{DoxyItemize}
+\item A new I/O binding for \href{https://www.libelektra.org/bindings/io_ev}{\tt ev} has been added. It can be used to integrate the notification feature with applications based on \href{http://libev.schmorp.de}{\tt ev} main loops. \+\_\+(\+Thomas Wahringer)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Notifications}
+
+
+\begin{DoxyItemize}
+\item The \href{https://doc.libelektra.org/api/current/html/group__kdbnotification.html}{\tt notification A\+PI} was extended. The A\+PI now supports more types\+: {\ttfamily int}, {\ttfamily unsigned int}, {\ttfamily long}, {\ttfamily unsigned long}, {\ttfamily long long}, {\ttfamily unsinged long long}, {\ttfamily float} and {\ttfamily double}. It also supports all of Elektra\textquotesingle{}s {\ttfamily kdb\+\_\+$\ast$\+\_\+t} types defined in {\ttfamily \hyperlink{kdbtypes_8h}{kdbtypes.\+h}}. Also contexts for callbacks were added and {\ttfamily \hyperlink{group__kdbnotification_ga374edd4f4fff527d6511ce4d0df62681}{elektra\+Notification\+Register\+Callback\+Same\+Or\+Below()}} allows for notifications for the registered key or below. \+\_\+(\+Thomas Wahringer)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Tools}
+
+
+\begin{DoxyItemize}
+\item The new tool {\ttfamily kdb find} lists keys of the database matching a certain regular expression. \+\_\+(\+Markus Raab)\+\_\+
+\item You can now build the \href{https://www.libelektra.org/tools/qt-gui}{\tt Qt-\/\+G\+UI} using Qt {\ttfamily 5.\+11}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Scripts}
+
+
+\begin{DoxyItemize}
+\item The script \href{https://master.libelektra.org/tests/shell/check_formatting.sh}{\tt {\ttfamily check\+\_\+formatting.\+sh}} now also checks the formatting of C\+Make code if you installed \href{https://joeyh.name/code/moreutils}{\tt {\ttfamily sponge}} and \href{https://github.com/cheshirekow/cmake_format}{\tt {\ttfamily cmake-\/format}}. \+\_\+(René Schwaiger)\+\_\+
+\item The script \href{https://master.libelektra.org/tests/shell/check_formatting.sh}{\tt {\ttfamily check\+\_\+formatting.\+sh}} now no longer writes to stdout if clang-\/format5.\+0 can not be found. \+\_\+(\+Lukas Winkler)\+\_\+
+\item The script \href{https://master.libelektra.org/tests/shell/check_bashisms.sh}{\tt {\ttfamily check\+\_\+bashisms.\+sh}} should now work correctly again, if the system uses the G\+NU version {\ttfamily find}. \+\_\+(René Schwaiger)\+\_\+
+\item The script \href{https://master.libelektra.org/scripts/reformat-cmake}{\tt {\ttfamily reformat-\/cmake}} now checks if {\ttfamily cmake-\/format} works before it reformats C\+Make files. Thank you to Klemens Böswirth for the \href{https://github.com/ElektraInitiative/libelektra/pull/1903#discussion_r189332987}{\tt detailed description of the problem}. \+\_\+(René Schwaiger)\+\_\+
+\item {\ttfamily scripts/run\+\_\+icheck} now no longer leaves the base directory of the project when checking if the A\+BI changed. \+\_\+(\+Lukas Winkler)\+\_\+
+\item The completion for \href{http://fishshell.com}{\tt fish} now also suggest the {\ttfamily info/} meta attributes of the \href{https://www.libelektra.org/plugins/file}{\tt file plugin}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Copy Template}
+
+
+\begin{DoxyItemize}
+\item The script \href{https://master.libelektra.org/scripts/copy-template}{\tt {\ttfamily copy-\/template}} is now location independent. It will always create a new plugin in {\ttfamily src/plugins}. \+\_\+(René Schwaiger)\+\_\+
+\item The command now also supports the new \href{https://www.libelektra.org/plugins/cpptemplate}{\tt template for C++ based plugins}. Please use the command line switch {\ttfamily -\/p} to create a new plugin based on {\ttfamily cpptemplate}.
+\end{DoxyItemize}
+
+\subsection*{Documentation}
+
+
+\begin{DoxyItemize}
+\item We improved the formatting of our \hyperlink{doc_COMPILE_md}{compilation guide}. \+\_\+(René Schwaiger)\+\_\+
+\item We fixed various minor spelling mistakes in the documentation. \+\_\+(René Schwaiger)\+\_\+
+\item The man pages for \href{https://www.libelektra.org/manpages/kdb-change-resolver-symlink}{\tt {\ttfamily kdb change-\/resolver-\/symlink}} and \href{https://www.libelektra.org/manpages/kdb-change-storage-symlink}{\tt {\ttfamily kdb change-\/storage-\/symlink}} referenced the wrong command. \+\_\+(Lukas Winkler, René Schwaiger)\+\_\+
+\item We added documentation for our build system in https\+://master.libelektra.\+org/doc/\+B\+U\+I\+L\+D\+S\+E\+R\+V\+ER.md \char`\"{}\+B\+U\+I\+L\+D\+S\+E\+R\+V\+E\+R.\+md\char`\"{}. \+\_\+(\+Lukas Winkler)\+\_\+
+\item The documentation for {\ttfamily kdb} and {\ttfamily kdb set} now mentions the {\ttfamily -\/-\/} argument that stops processing of command line switches. This is useful for setting negative values among other things. \+\_\+(Klemens Böswirth)\+\_\+
+\item We added a new tutorial about the jna binding. The tutorial shows how to use the java library to interact with kdb \+\_\+(\+Michael Zronek)\+\_\+
+\item Git\+Hub now detects the license of the repository correctly again. \+\_\+(René Schwaiger)\+\_\+
+\item We added a tutorial describing Elektra’s \href{https://www.libelektra.org/tutorials/arrays}{\tt array data type}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Tests}
+
+\subsubsection*{(Markdown) Shell Recorder}
+
+
+\begin{DoxyItemize}
+\item We added new \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} tests for the
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/ccode}{\tt {\ttfamily ccode}},
+\item \href{https://www.libelektra.org/plugins/file}{\tt {\ttfamily file}},
+\item \href{https://www.libelektra.org/plugins/iconv}{\tt {\ttfamily iconv}},
+\item \href{https://www.libelektra.org/plugins/ni}{\tt {\ttfamily ni}},
+\item \href{https://www.libelektra.org/plugins/rename}{\tt {\ttfamily rename}}, and
+\item \href{https://www.libelektra.org/plugins/uname}{\tt {\ttfamily uname}} plugin. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+\item (Markdown) Shell Recorder tests now save test data below {\ttfamily /tests} (see issue \href{https://github.com/ElektraInitiative/libelektra/issues/1887}{\tt \#1887}). \+\_\+(René Schwaiger)\+\_\+
+\item The Markdown Shell Recorder checks {\ttfamily kdb set} commands to ensure we only add tests that store data below {\ttfamily /tests}. \+\_\+(René Schwaiger)\+\_\+
+\item The Markdown Shell Recorder now supports indented code blocks. \+\_\+(René Schwaiger)\+\_\+
+\item The Markdown Shell Recorder now also tests if a command prints nothing to {\ttfamily stdout} if you add the check {\ttfamily \#$>$}. \+\_\+(René Schwaiger)\+\_\+
+\item We fixed some problems in the \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} test of https\+://master.libelektra.\+org/doc/help/kdb-\/ls.md \char`\"{}`kdb ls`\char`\"{}. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{(https://master.libelektra.org/tests/shell/shell_recorder)}{\tt Shell Recorder} now does not interpret {\ttfamily -\/} in checks as option character any more. \+\_\+(René Schwaiger)\+\_\+
+\item The {\ttfamily add\+\_\+plugin} helper now respects {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+K\+D\+B\+\_\+\+T\+E\+S\+T\+I\+NG} when adding Markdown Shell Recorder tests. \+\_\+(\+Lukas Winkler)\+\_\+
+\item The Markdown Shell Recorder test for https\+://master.libelektra.\+org/doc/help/kdb-\/find.md \char`\"{}`kdb find`\char`\"{} now removes the configuration file at the end of the test. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{(https://master.libelektra.org/tests/shell/shell_recorder)}{\tt Shell Recorder} now properly unmounts any additional mountpoints created during a test. \+\_\+(René Schwaiger)\+\_\+
+\item We removed the broken auto unmounting feature from the \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder}. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} does not require a {\ttfamily bash} compatible shell anymore. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{General}
+
+
+\begin{DoxyItemize}
+\item Plugins added with the flag {\ttfamily S\+H\+A\+R\+E\+D\+\_\+\+O\+N\+LY} no longer get tested in the script {\ttfamily check\+\_\+kdb\+\_\+internal\+\_\+check.\+sh} if executed with kdb-\/full or kdb-\/static. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item Add {\ttfamily compare\+\_\+regex\+\_\+to\+\_\+line\+\_\+files} which allows to compare a file made of regex patterns to be compared with a text file line by line. \+\_\+(\+Lukas Winkler)\+\_\+
+\item The O\+P\+M\+P\+HM has a new test case \+\_\+(\+Kurt Micheli)\+\_\+
+\item Do not execute {\ttfamily fcrypt} and {\ttfamily crypto} unit tests if the {\ttfamily gpg} binary is not available. \+\_\+(\+Peter Nirschl)\+\_\+
+\item Resolved an issue where tests did not cleanup properly after they ran. This was especially noticeable for {\ttfamily gpg} tests as the {\ttfamily gpg-\/agents} that were spawned did not get cleaned up afterwards. \+\_\+(\+Lukas Winkler)\+\_\+
+\item We disabled the general plugin test ({\ttfamily testkdb\+\_\+allplugins}) for the \href{https://libelektra.org/plugins/mini}{\tt {\ttfamily semlock} plugin}, since the test reported \href{https://issues.libelektra.org/2113}{\tt memory leaks} on the latest version of Debian Unstable. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{https://master.libelektra.org/tests/cframework}{\tt C\+Framework} macro {\ttfamily compare\+\_\+keyset} now supports the comparison of two empty key sets. \+\_\+(René Schwaiger)\+\_\+
+\item The C++ version of the macro {\ttfamily exit\+\_\+if\+\_\+fail} now really exits the test progamm if the test fails. \+\_\+(René Schwaiger)\+\_\+
+\item The C++ testing framework now supports the macro {\ttfamily compare\+\_\+keyset} that checks if two key sets are equal. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Build}
+
+As written in the previous release notes\+:
+
+
+\begin{DoxyItemize}
+\item Debian Wheezy is not supported anymore.
+\item Jessie (oldstable) with gcc 4.\+8.\+4 is now the oldest supported platform.
+\end{DoxyItemize}
+
+Another important change is\+:
+
+
+\begin{DoxyItemize}
+\item We now import the current version of \href{https://github.com/google/googletest}{\tt Google Test} as external project at configuration time using \href{https://github.com/Crascit/DownloadProject}{\tt Download\+Project}. If you want to use a local installation of \href{https://github.com/google/googletest}{\tt Google Test} instead, please set the value of {\ttfamily G\+T\+E\+S\+T\+\_\+\+R\+O\+OT} to the path of you local copy of the \href{https://github.com/google/googletest}{\tt Google Test} framework. \+\_\+(René Schwaiger)\+\_\+
+\item The cmake variable {\ttfamily G\+T\+E\+S\+T\+\_\+\+R\+O\+OT} now respects the environment variable {\ttfamily G\+T\+E\+S\+T\+\_\+\+R\+O\+OT} if it is set. \+\_\+(\+Lukas Winkler)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{C\+Make}
+
+
+\begin{DoxyItemize}
+\item The build system no longer installs Haskell dependencies from hackage by itself, instead this has to be done beforehand like it is the case with all other dependencies. The main reason is that the build servers shouldn\textquotesingle{}t compile the dependencies over and over again, only if something changes. See the \href{https://www.libelektra.org/bindings/haskell}{\tt R\+E\+A\+D\+ME}. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item Plugins can be specified to be only built for {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+H\+A\+R\+ED} builds, but to be excluded from any {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL} or {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+T\+A\+T\+IC} builds using the new optional argument {\ttfamily O\+N\+L\+Y\+\_\+\+S\+H\+A\+R\+ED} for our cmake macro {\ttfamily add\+\_\+plugin}. This way {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+H\+A\+R\+ED} can be combined with the other options without excluding such plugins. The cmake messages about plugin inclusion have been updated to indicate this behavior. This behavior has been applied for the Haskell plugins-\/ and bindings and J\+NI plugin as they currently don\textquotesingle{}t support full or static builds. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item The build system does not install \href{https://github.com/google/googletest}{\tt Google Test} anymore if you install Elektra. \+\_\+(René Schwaiger)\+\_\+
+\item We disabled the test {\ttfamily testlib\+\_\+notification} on A\+S\+AN enabled builds, since Clang reports that the test leaks memory. \+\_\+(René Schwaiger)\+\_\+
+\item Disable Markdown Shell Recorder test {\ttfamily validation.\+md} for A\+S\+AN builds. It leaks memory and thus fails the test during spec mount. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Haskell plugins and bindings are now correctly excluded when using {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL} or {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+T\+A\+T\+IC} as this is currently unsupported. Another issue when building Haskell plugins with a cached sandbox is fixed as well. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item Fix compilation with {\ttfamily B\+U\+I\+L\+D\+\_\+\+T\+E\+S\+T\+I\+NG=O\+FF} when {\ttfamily spec} or {\ttfamily list} plugins are not selected.
+\item Set coverage prefix to {\ttfamily P\+R\+O\+J\+E\+C\+T\+\_\+\+S\+O\+U\+R\+C\+E\+\_\+\+D\+IR}, resulting in easier readable coverage reports. \+\_\+(\+Lukas Winkler)\+\_\+
+\item The functions {\ttfamily add\+\_\+plugintest} and {\ttfamily add\+\_\+plugin} now also support adding a C++ test instead of a C test. \+\_\+(René Schwaiger)\+\_\+
+\item The function {\ttfamily add\+\_\+plugintest} now also supports setting environment variables for C/\+C++ based tests. \+\_\+(René Schwaiger)\+\_\+
+\item The build system now automatically detects Homebrew’s Open\+S\+SL version on mac\+OS. \+\_\+(René Schwaiger)\+\_\+
+\item We improved the automatic detection of Libgcrypt and Open\+S\+SL. \+\_\+(René Schwaiger)\+\_\+
+\item Resolved an issue where cmake did not properly set test feature macros to detect and use libc functionality. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Improve the detection of {\ttfamily ftw.\+h}, if the current build use the compiler switch {\ttfamily -\/\+Werror}. \+\_\+(René Schwaiger)\+\_\+
+\item We now ignore warnings about
+\begin{DoxyItemize}
+\item zero size arrays (Clang),
+\item variadic macros (Clang, G\+CC),
+\item conversions to non-\/pointer type (G\+CC), and
+\item attribute warnings (G\+CC),
+\end{DoxyItemize}
+
+caused by code generated via \href{http://www.swig.org}{\tt S\+W\+IG} in the Ruby binding and plugin. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsubsection*{Docker}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily clang-\/5.\+0} is now used for clang tests by the build system \+\_\+(\+Lukas Winkler)\+\_\+
+\item An additional build job on Ubuntu\+:xenial has been added \+\_\+(\+Lukas Winkler)\+\_\+
+\item {\ttfamily with\+Docker\+Env} Jenkinsfile helper now no longer provides stages automatically. \+\_\+(\+Lukas Winkler)\+\_\+
+\item \href{https://github.com/google/googletest}{\tt Google Test} is installed in Docker images used by the build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Infrastructure}
+
+\subsubsection*{Jenkins}
+
+
+\begin{DoxyItemize}
+\item A build job checks if P\+Rs modify the release notes. \+\_\+(\+Markus Raab)\+\_\+
+\item Several improvements to the build system have been implemented \+\_\+(\+Lukas Winkler)\+\_\+\+:
+\begin{DoxyItemize}
+\item Better Docker image handling.
+\item Abort of previously queued but unfinished runs on new commits.
+\item Document how to locally replicate the Docker environment used for tests.
+\end{DoxyItemize}
+\item The Jenkins build server now also compiles and tests Elektra with enabled address sanitizer. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Add {\ttfamily S\+T\+A\+T\+IC} and {\ttfamily F\+U\+LL} linked builds. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Ported G\+CC A\+S\+AN build job to new build system \+\_\+(René Schwaiger + Lukas Winkler)\+\_\+
+\item Docker artifacts are now cleaned up in our daily build job. \+\_\+(\+Lukas Winkler)\+\_\+
+\item {\ttfamily clang} tests have been ported to the new build system \+\_\+(\+Lukas Winkler et al)\+\_\+
+\item {\ttfamily icheck} build server job has been ported to our new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/gcc-\/configure-\/debian-\/optimizations} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/gcc-\/configure-\/mingw-\/w64} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily debian-\/multiconfig-\/gcc-\/stable} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/ini-\/mergerequests} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/gcc-\/configure-\/debian-\/nokdbtest} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/gcc-\/configure-\/xdg}to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/gcc-\/i386} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Port {\ttfamily elektra-\/gcc-\/configure-\/debian-\/musl} to new build system. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Docker Registry is cleaned up by our daily buildserver task. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Remove {\ttfamily elektra-\/gcc-\/configure-\/debian-\/nokdbtest} test. Instead we are now removing write permissions of Elektra\textquotesingle{}s paths to detect if we write to the filesystem even though tests are not tagged as such. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Remove {\ttfamily elektra-\/gcc-\/configure-\/debian-\/withspace} test. We now test for compatibility of spaced build paths during normal tests. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Check for source formatting during early test stages. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Remove the amount of spawned tests via not running a full multiconfig setup for the {\ttfamily P\+L\+U\+G\+I\+NS=N\+O\+D\+EP} config. They did not provide any additional coverage. Instead we added a new test checking if {\ttfamily P\+L\+U\+G\+I\+NS=N\+O\+D\+EP} builds in an minimal Docker image. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Speed up coverage data upload. \+\_\+(\+Lukas Winkler)\+\_\+
+\item Fix an issue where file archiving did not happen because of suppressed shell expansion \+\_\+(\+Lukas Winkler)\+\_\+
+\item Setup mailing for jenkins \+\_\+(\+Lukas Winkler)\+\_\+
+\begin{DoxyItemize}
+\item send mail to \href{mailto:build@libelektra.org}{\tt build@libelektra.\+org} when {\ttfamily master} fails \+\_\+(\+Lukas Winkler)\+\_\+
+\item parse change list into mail \+\_\+(\+Lukas Winkler)\+\_\+
+\item do not send mails if pipeline run was aborted \+\_\+(\+Lukas Winkler)\+\_\+
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\subsubsection*{Travis}
+
+
+\begin{DoxyItemize}
+\item Travis now uses the latest version of G\+CC and Clang to translate Elektra on Linux. \+\_\+(René Schwaiger)\+\_\+
+\item Our Travis build job now
+\begin{DoxyItemize}
+\item builds all (applicable) bindings by default again, and
+\item checks the formatting of C\+Make code via \href{https://github.com/cheshirekow/cmake_format}{\tt {\ttfamily cmake-\/format}} . \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+\item Some cache issues on the Travis build job for cached haskell sandboxes have been resolved. \+\_\+(\+Armin Wurzinger)\+\_\+
+\item Travis caches downloaded Homebrew packages to improve the reliability of mac\+OS build jobs. \+\_\+(René Schwaiger)\+\_\+
+\item Travis is now using Xcode 9.\+4.\+1 on mac\+OS 10.\+13 for most mac\+OS build jobs. \+\_\+(Mihael Pranjić)\+\_\+
+\item We added a unique name to each build job, so you can see quickly which configuration caused problems. \+\_\+(René Schwaiger)\+\_\+
+\item We now specify custom binding, plugin and tool configuration for jobs via the environment variables\+:
+\begin{DoxyItemize}
+\item {\ttfamily B\+I\+N\+D\+I\+N\+GS},
+\item {\ttfamily P\+L\+U\+G\+I\+NS}, and
+\item {\ttfamily T\+O\+O\+LS}
+\end{DoxyItemize}
+
+. We also added environment variables for the build configuration options {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL}, {\ttfamily C\+O\+M\+M\+O\+N\+\_\+\+F\+L\+A\+GS}, {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+A\+S\+AN} and the command used to test the build ({\ttfamily T\+E\+S\+T\+\_\+\+C\+O\+M\+M\+A\+ND}). \+\_\+(René Schwaiger)\+\_\+
+\item The A\+S\+AN build jobs {\ttfamily 🍏 Clang A\+S\+AN} and {\ttfamily 🐧 G\+CC A\+S\+AN} now only build the {\ttfamily kdb} tool and the {\ttfamily cpp} binding. This update ensures, that we do not hit the \href{https://docs.travis-ci.com/user/customizing-the-build/#build-timeouts}{\tt job timeout for public repositories} that often. \+\_\+(René Schwaiger)\+\_\+
+\item We now use the latest version of Ruby ({\ttfamily 2.\+5.\+1}) to build and test the Ruby binding/plugin. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Compatibility}
+
+As always, the A\+BI and A\+PI of kdb.\+h is fully compatible, i.\+e. programs compiled against an older 0.\+8 version of Elektra will continue to work (A\+BI) and you will be able to recompile programs without errors (A\+PI).
+
+Following changes were made\+:
+
+
+\begin{DoxyItemize}
+\item The C++ A\+PI was extended with {\ttfamily del\+Base\+Name()}. This does not affect A\+BI compatibility, also C++ programs compiled against 0.\+8.\+24 and using {\ttfamily del\+Base\+Name()} will work with Elektra 0.\+8.\+23 or older.
+\item {\ttfamily \hyperlink{kdbtypes_8h}{kdbtypes.\+h}} now comes with support for C99 types.
+\item We added the private headerfiles {\ttfamily \hyperlink{kdbnotificationinternal_8h}{kdbnotificationinternal.\+h}}, {\ttfamily \hyperlink{kdbioplugin_8h}{kdbioplugin.\+h}}. \+\_\+(\+Thomas Wahringer)\+\_\+
+\item The I/O binding header files have been moved a new directory called {\ttfamily kdbio}. For example, instead of including {\ttfamily elektra/kdbio\+\_\+ev.\+h} users of the binding now include {\ttfamily elektra/kdbio/ev.\+h}. \+\_\+(\+Thomas Wahringer)\+\_\+
+\item The plugin directoryvalue has changed its behavior, see above.
+\item The plugin list changed its configuration, see above.
+\item The plugin yamlcpp now gets excluded with too old versions of yamlcpp (Debian Stretch is affected).
+\end{DoxyItemize}
+
+The new plugins are\+:
+
+
+\begin{DoxyItemize}
+\item hexnumber
+\item yamlsmith
+\item zeromqrecv
+\item zeromqsend
+\end{DoxyItemize}
+
+The new tool is\+: kdb-\/find
+
+\subsection*{Website}
+
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date.
+
+\subsection*{Outlook}
+
+We are currently working on following topics\+:
+
+
+\begin{DoxyItemize}
+\item The hybrid search algorithm for the Key search {\ttfamily ks\+Lookup (...)} is now in preparation. The preparation includes a new Key\+Set flag {\ttfamily K\+S\+\_\+\+F\+L\+A\+G\+\_\+\+N\+A\+M\+E\+\_\+\+C\+H\+A\+N\+GE}, this flag will be used by the hybrid search. The hybrid search combines the best properties of the binary search and the \href{https://master.libelektra.org/doc/dev/data-structures.md#order-preserving-minimal-perfect-hash-map-aka-opmphm}{\tt O\+P\+M\+P\+HM}. The hybrid search uses a modified branch predictor to predicts Key\+Set changes and decides if binary search or O\+P\+M\+P\+HM would be faster. \+\_\+(\+Kurt Micheli)\+\_\+
+\end{DoxyItemize}
+
+\subsection*{Statistics}
+
+Following persons made in total 1734 commits\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Commits }&\textbf{ Author  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Commits }&\textbf{ Author  }\\\cline{1-2}
+\endhead
+1 &Mihael Pranjic \href{mailto:mpranj@limun.org}{\tt mpranj@limun.\+org} \\\cline{1-2}
+2 &Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org} \\\cline{1-2}
+7 &Michael Zronek \href{mailto:michael.zronek@gmail.com}{\tt michael.\+zronek@gmail.\+com} \\\cline{1-2}
+12 &Kurt Micheli \href{mailto:e1026558@student.tuwien.ac.at}{\tt e1026558@student.\+tuwien.\+ac.\+at} \\\cline{1-2}
+17 &Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com} \\\cline{1-2}
+21 &Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\tt k.\+boeswirth+git@gmail.\+com} \\\cline{1-2}
+197 &Markus Raab \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org} \\\cline{1-2}
+102 &Thomas Wahringer \href{mailto:thomas.wahringer@libelektra.org}{\tt thomas.\+wahringer@libelektra.\+org} \\\cline{1-2}
+117 &Daniel Bugl \href{mailto:me@omnidan.net}{\tt me@omnidan.\+net} \\\cline{1-2}
+265 &Lukas Winkler \href{mailto:derwinlu+git@gmail.com}{\tt derwinlu+git@gmail.\+com} \\\cline{1-2}
+249 &Armin Wurzinger \href{mailto:e1528532@student.tuwien.ac.at}{\tt e1528532@student.\+tuwien.\+ac.\+at} \\\cline{1-2}
+744 &René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com} \\\cline{1-2}
+\end{longtabu}
+In total there were 792 files changed with 27677 insertions(+) and 39176 deletions(-\/).
+
+\subsection*{Get It!}
+
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.24.tar.gz}{\tt here} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.24.tar.gz?raw=true}{\tt Git\+Hub}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.24.tar.gz.hashsum?raw=true}{\tt hashsums are\+:}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+24.\+tar.\+gz
+\item size\+: 6130464
+\item md5sum\+: 2e3def7b905f94e1f9f7fa0fe4743189
+\item sha1\+: ff2a9b2d3a5e20a456e272a47fe9fd79ad410428
+\item sha256\+: 454763dd00e95e774a907b26eb59b139cfc59e733692b3cfe37735486d6c4d1d
+\end{DoxyItemize}
+
+The release tarball is also available signed by Markus Raab using Gnu\+PG from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.24.tar.gz.gpg}{\tt here} or on \href{https://github.com/ElektraInitiative/ftp/blob/master/releases//elektra-0.8.24.tar.gz.gpg?raw=true}{\tt Git\+Hub}
+
+Already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.24/html/}{\tt online} or \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.8.24}{\tt Git\+Hub}.
+
+\subsection*{Stay tuned!}
+
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\tt R\+SS feed} to always get the release notifications.
+
+For any questions and comments, please contact the issue tracker \href{http://issues.libelektra.org}{\tt on Git\+Hub} or Markus Raab by email using \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org}.
+
+\href{https://www.libelektra.org/news/0.8.24-release}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://libelektra.org}{\tt https\+://libelektra.\+org}
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\tt Elektra Initiative} 

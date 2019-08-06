@@ -1,0 +1,107 @@
+.TH "doc_tutorials_compilation-variants_md" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_compilation-variants_mdCompilation Variants 
+ \- To create different variants of the same feature, but avoid code duplications within plugins, you have multiple options:
+.PP
+.IP "\(bu" 2
+Define a needs clause in a \fCcontract\fP and reuse another plugin as it is\&. This should be preferred for filter and validation tasks\&.
+.IP "\(bu" 2
+Have common code together in a helper library (or core library), see the CMake function \fCadd_lib\fP for creating such a library (in the folder libs)\&. This should be used for rather common functionality that might be useful for many plugins or even applications\&.
+.IP "\(bu" 2
+Have configuration for plugins (See \fCelektraPluginGetConfig()\fP and dynamically switch with \fCif\fP according to the configuration\&. This should be preferred when you want to (de)activate some features of a plugin at run-time\&.
+.IP "\(bu" 2
+Or use compilation variants to compile the plugin code multiple times with different \fCCOMPILE_DEFINITIONS\fP (that are Macro definitions)\&. This should be preferred when different macro definitions lead to different plugins\&. It should especially be used when the resulting plugins have different dependencies: it is possible to have different \fCLINK_LIBRARIES\fP\&.
+.PP
+.PP
+The advantage of compilation variants are:
+.PP
+.IP "\(bu" 2
+No run-time overhead
+.IP "\(bu" 2
+Can be used during bootstrapping (when no configuration is available)
+.IP "\(bu" 2
+Different compilation variants can be built at once (no recompilation with different CMake flags required)
+.IP "\(bu" 2
+Different compilation variants can have different dependencies
+.IP "\(bu" 2
+Different compilation variants can be mounted without \fC#refnames\fP
+.PP
+.PP
+.SS "How to use It"
+.PP
+To use compilation variants, add your plugin in the CMake Cache Variable \fCPLUGINS\fP multiple times\&. Then there can be an arbitrary number of variants\&. As naming convention you should have a base name with an additional variant appended with underscore, e\&.g\&.:
+.PP
+.PP
+.nf
+myplugin_varianta;myplugin_variantb
+.fi
+.PP
+.PP
+In the CMakeLists\&.txt of your plugin, you have two options\&. Option (A): When you can easily enlist every variant you simply list all plugins one after the other (\fIoutside of\fP \fCif (DEPENDENCY_PHASE)\fP):
+.PP
+.PP
+.nf
+add_plugin(myplugin_varianta
+        SOURCES      <your sources for varianta here\&.\&.>
+        COMPILE_DEFINITIONS   VARIANTA ELEKTRA_VARIANT=varianta
+        LINK_LIBRARIES <libraries for varianta>
+        )
+add_plugin(myplugin_variantb
+        SOURCES      <your sources for variantb here\&.\&.>
+        COMPILE_DEFINITIONS   VARIANTB  ELEKTRA_VARIANT=variantb
+        LINK_LIBRARIES <libraries for variantb>
+        )
+.fi
+.PP
+.PP
+Option (B): If you cannot enlist every possible compilation variant, you can iterate over all PLUGINS and check which names are requested\&. Then you create a plugin for every name that matches:
+.PP
+.PP
+.nf
+foreach (plugin ${PLUGINS})
+        if (${plugin} MATCHES "myplugin_\&.*")
+                # somehow process the variant names and include
+                # or change sources and compile definitions
+                # based on that\&.
+                add_plugin(${plugin}
+                SOURCES      <your sources here\&.\&.>
+                COMPILE_DEFINITIONS   <definitions here\&.\&.>
+                        ELEKTRA_VARIANT=${plugin without prefix}
+        LINK_LIBRARIES <libraries for variantb>
+        if (${plugin} MATCHES "ALL")
+                # handle categories of plugins
+                add_plugin(myplugin_all1, \&.\&.\&.)
+                add_plugin(myplugin_all2, \&.\&.\&.)
+.fi
+.PP
+.PP
+For the categories such as \fCALL\fP, however, you need to automatically append (using \fCadd_plugin\fP) a useful set of plugins\&.
+.PP
+Note that every plugin needs to have \fCELEKTRA_VARIANT\fP differently set in \fCCOMPILE_DEFINITIONS\fP, otherwise you will get a linker error that \fClibelektra_<pluginname>_LTX_elektraPluginSymbol\fP has multiple definitions\&.
+.PP
+Now every public function of the plugin conflicts with itself\&. To avoid that, you can use:
+.PP
+.IP "\(bu" 2
+static functions, but they are only visible within one file\&. This should be preferred, when possible\&.
+.IP "\(bu" 2
+use helper libraries using \fCadd_lib\fP to share code between compilation variants (only if code is also potentially useful for other plugins/applications)
+.IP "\(bu" 2
+Get a unique name for every variant using the macro \fC\fBELEKTRA_PLUGIN_FUNCTION(myplugin, open)\fP\fP where myplugin is the name of the plugin and the second argument is how the function should be called\&.
+.IP "\(bu" 2
+Including a readme for every variant (with \fC#ifdef\fP for different text) using the macro \fC#include \fBELEKTRA_README(myplugin)\fP\fP
+.PP
+.PP
+As a summary, you can have many plugins build out of the same source\&. Using \fCpluginname_variantnames\fP many plugins will be compiled, each with other \fCSOURCES\fP or \fCCOMPILE_DEFINITIONS\fP and even \fCLINK_LIBRARIES\fP: If you, e\&.g\&. just set the variants name as macro you can use
+.PP
+.PP
+.nf
+#ifdef varianta
+#endif
+.fi
+.PP
+.PP
+within the code and can have two plugins: one (called \fCmyplugin_varianta\fP) compiled included the \fC#ifdef\fP the other (base variant called \fCmyplugin\fP) without\&.
+.PP
+Currently compilation variants are used in \fCthe resolver plugin\fP\&. 

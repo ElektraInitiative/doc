@@ -1,0 +1,427 @@
+\hypertarget{group__keymeta}{}\section{Meta Info Manipulation Methods}
+\label{group__keymeta}\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+
+
+Methods to do various operations on Key metadata.  
+
+
+Collaboration diagram for Meta Info Manipulation Methods\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=266pt]{group__keymeta}
+\end{center}
+\end{figure}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{key\+Rewind\+Meta} (Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Rewind the internal iterator to first metadata. \end{DoxyCompactList}\item 
+const Key $\ast$ \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta} (Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Iterate to the next meta information. \end{DoxyCompactList}\item 
+const Key $\ast$ \hyperlink{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{key\+Current\+Meta} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Returns the value of a meta-\/information which is current. \end{DoxyCompactList}\item 
+int \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{key\+Copy\+Meta} (Key $\ast$dest, const Key $\ast$source, const char $\ast$meta\+Name)
+\begin{DoxyCompactList}\small\item\em Do a shallow copy of metadata from source to dest. \end{DoxyCompactList}\item 
+int \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{key\+Copy\+All\+Meta} (Key $\ast$dest, const Key $\ast$source)
+\begin{DoxyCompactList}\small\item\em Do a shallow copy of all metadata from source to dest. \end{DoxyCompactList}\item 
+const Key $\ast$ \hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{key\+Get\+Meta} (const Key $\ast$key, const char $\ast$meta\+Name)
+\begin{DoxyCompactList}\small\item\em Returns the value of a meta-\/information given by name. \end{DoxyCompactList}\item 
+ssize\+\_\+t \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta} (Key $\ast$key, const char $\ast$meta\+Name, const char $\ast$new\+Meta\+String)
+\begin{DoxyCompactList}\small\item\em Set a new meta-\/information. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Methods to do various operations on Key metadata. 
+
+To use them\+: 
+\begin{DoxyCode}
+\textcolor{preprocessor}{#include <kdb.h>}
+\end{DoxyCode}
+
+
+Next to \hyperlink{group__keyname}{Name (key and owner) } and \hyperlink{group__keyvalue}{value (data and comment) } there is the so called meta information inside every key.
+
+Key meta information are an unlimited number of key/value pairs strongly related to a key. It main purpose is to give keys special semantics, so that plugins can treat them differently.
+
+Metakey, as opposed to Key, deliberately has following limitations\+:
+\begin{DoxyItemize}
+\item no null values
+\item no binary data
+\item no modification of references (C\+OW)
+\item no guarantee of ordering
+\end{DoxyItemize}
+
+\subsubsection*{Examples for metadata}
+
+File system information (see stat(2) for more information)\+:
+\begin{DoxyItemize}
+\item uid\+: the user id (positive number)
+\item gid\+: the group id (positive number)
+\item mode\+: filesystem-\/like mode permissions (positive octal number)
+\item atime\+: When was the key accessed the last time.
+\item mtime\+: When was the key modified the last time.
+\item ctime\+: When the uid, gid or mode of a key changes. (times are represented through a positive number as unix timestamp)
+\end{DoxyItemize}
+
+The comment can contain userdata which directly belong to that key. The name of the meta information is \char`\"{}comment\char`\"{} for a general purpose comment about the key. Multi-\/\+Language comments are also supported by appending \mbox{[}L\+A\+NG\mbox{]} to the name.
+
+Validators are regular expressions which are tested against the key value. The metakey \char`\"{}validator\char`\"{} can hold a regular expression which will be matched against.
+
+Types can be expressed with the meta information \char`\"{}type\char`\"{}.
+
+The relevance of the key can be tagged with a value from -\/20 to 20. Negative numbers are the more important and must be present in order to start the program.
+
+A version of a key may be stored with \char`\"{}version\char`\"{}. Its format is full.\+major.\+minor where all of these are integers.
+
+The order inside a persistent storage can be described with the tag \char`\"{}order\char`\"{} which contains a positive number.
+
+The metakey \char`\"{}app\char`\"{} describes to which application a key belongs. It can be used to remove keys from an application no longer installed.
+
+The metakey \char`\"{}path\char`\"{} describes where the key is physically stored.
+
+The \char`\"{}owner\char`\"{} is the user that owns the key. It only works for the user/ hierarchy. It rather says where the key is stored and says nothing about the filesystem properties. 
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{group__keymeta_ga8e63720a65610a29597494d0671f9401}\label{group__keymeta_ga8e63720a65610a29597494d0671f9401}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Copy\+All\+Meta@{key\+Copy\+All\+Meta}}
+\index{key\+Copy\+All\+Meta@{key\+Copy\+All\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Copy\+All\+Meta()}{keyCopyAllMeta()}}
+{\footnotesize\ttfamily int key\+Copy\+All\+Meta (\begin{DoxyParamCaption}\item[{Key $\ast$}]{dest,  }\item[{const Key $\ast$}]{source }\end{DoxyParamCaption})}
+
+
+
+Do a shallow copy of all metadata from source to dest. 
+
+The key dest will additionally have all metadata the source had. Meta data not present in source will not be changed. Meta data which was present in source and dest will be overwritten.
+
+For example the metadata type is copied into the Key k\+:
+
+
+\begin{DoxyCodeInclude}
+\textcolor{keywordtype}{void} l (Key * k)
+\{
+        \textcolor{comment}{// receive copy}
+        \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{keyCopyAllMeta} (k, copy);
+        \textcolor{comment}{// the caller will see the changed key k}
+        \textcolor{comment}{// with all the metadata from copy}
+\}
+\end{DoxyCodeInclude}
+ The main purpose of this function is for plugins or applications which want to add the same metadata to n keys. When you do that with \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()} it will take n times the memory for the key. This can be considerable amount of memory for many keys with some metadata for each.
+
+To avoid that problem you can use \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{key\+Copy\+All\+Meta()} or \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{key\+Copy\+Meta()}\+:
+
+
+\begin{DoxyCodeInclude}
+\textcolor{keywordtype}{void} o (KeySet * ks)
+\{
+        Key * current;
+        Key * shared = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (0);
+        \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta} (shared, \textcolor{stringliteral}{"shared1"}, \textcolor{stringliteral}{"this metadata should be shared among many keys"});
+        \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta} (shared, \textcolor{stringliteral}{"shared2"}, \textcolor{stringliteral}{"this metadata should be shared among many keys also"});
+        \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta} (shared, \textcolor{stringliteral}{"shared3"}, \textcolor{stringliteral}{"this metadata should be shared among many keys too"});
+
+        \hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind} (ks);
+        \textcolor{keywordflow}{while} ((current = \hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ksNext} (ks)) != 0)
+        \{
+                \textcolor{keywordflow}{if} (needsSharedData (current)) \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{keyCopyAllMeta} (current, shared);
+        \}
+
+        \hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel} (shared);
+\}
+\end{DoxyCodeInclude}
+ \begin{DoxyPostcond}{Postcondition}
+for every meta\+Name present in source\+: key\+Get\+Meta(source, meta\+Name) == key\+Get\+Meta(dest, meta\+Name)
+\end{DoxyPostcond}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if was successfully copied \\
+\hline
+{\em 0} & if source did not have any metadata \\
+\hline
+{\em -\/1} & on null pointer of dest or source \\
+\hline
+{\em -\/1} & on memory problems \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em dest} & the destination where the metadata should be copied too \\
+\hline
+{\em source} & the key where the metadata should be copied from \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}\label{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Copy\+Meta@{key\+Copy\+Meta}}
+\index{key\+Copy\+Meta@{key\+Copy\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Copy\+Meta()}{keyCopyMeta()}}
+{\footnotesize\ttfamily int key\+Copy\+Meta (\begin{DoxyParamCaption}\item[{Key $\ast$}]{dest,  }\item[{const Key $\ast$}]{source,  }\item[{const char $\ast$}]{meta\+Name }\end{DoxyParamCaption})}
+
+
+
+Do a shallow copy of metadata from source to dest. 
+
+The key dest will have the same metadata referred with meta\+Name afterwards then source.
+
+For example the metadata type is copied into the Key k.
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{void} l(Key *k)
+\{
+        \textcolor{comment}{// receive c}
+        \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{keyCopyMeta}(k, c, \textcolor{stringliteral}{"type"});
+        \textcolor{comment}{// the caller will see the changed key k}
+        \textcolor{comment}{// with the metadata "type" from c}
+\}
+\end{DoxyCode}
+
+
+The main purpose of this function is for plugins or applications which want to add the same metadata to n keys. When you do that with \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()} it will take n times the memory for the key. This can be considerable amount of memory for many keys with some metadata for each.
+
+To avoid that problem you can use \hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{key\+Copy\+All\+Meta()} or \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{key\+Copy\+Meta()}.
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{void} o(KeySet *ks)
+\{
+        Key *current;
+        Key *shared = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (0);
+        \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta}(shared, \textcolor{stringliteral}{"shared"}, \textcolor{stringliteral}{"this metadata should be shared among many keys"});
+
+        \hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind}(ks);
+        \textcolor{keywordflow}{while} ((current = \hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ksNext}(ks)) != 0)
+        \{
+                \textcolor{keywordflow}{if} (needs\_shared\_data(current)) \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{keyCopyMeta}(current, shared, \textcolor{stringliteral}{"shared"});
+        \}
+\}
+\end{DoxyCode}
+
+
+\begin{DoxyPostcond}{Postcondition}
+key\+Get\+Meta(source, meta\+Name) == key\+Get\+Meta(dest, meta\+Name)
+\end{DoxyPostcond}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if was successfully copied \\
+\hline
+{\em 0} & if the metadata in dest was removed too \\
+\hline
+{\em -\/1} & on null pointers (source or dest) \\
+\hline
+{\em -\/1} & on memory problems \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em dest} & the destination where the metadata should be copied too \\
+\hline
+{\em source} & the key where the metadata should be copied from \\
+\hline
+{\em meta\+Name} & the name of the metadata which should be copied \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{group__keymeta_ga74a273f529030f4947df52e14fdd2869}\label{group__keymeta_ga74a273f529030f4947df52e14fdd2869}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Current\+Meta@{key\+Current\+Meta}}
+\index{key\+Current\+Meta@{key\+Current\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Current\+Meta()}{keyCurrentMeta()}}
+{\footnotesize\ttfamily const Key$\ast$ key\+Current\+Meta (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Returns the value of a meta-\/information which is current. 
+
+The pointer is N\+U\+LL if you reached the end or after \hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ks\+Rewind()}.
+
+\begin{DoxyNote}{Note}
+You must not delete or change the returned key, use \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()} if you want to delete or change it.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a buffer to the value pointed by {\ttfamily key\textquotesingle{}s} cursor 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & on N\+U\+LL pointer \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta()}, \hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{key\+Rewind\+Meta()}
+
+\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ks\+Current()} for pedant in iterator interface of Key\+Set 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}\label{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Get\+Meta@{key\+Get\+Meta}}
+\index{key\+Get\+Meta@{key\+Get\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Get\+Meta()}{keyGetMeta()}}
+{\footnotesize\ttfamily const Key$\ast$ key\+Get\+Meta (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key,  }\item[{const char $\ast$}]{meta\+Name }\end{DoxyParamCaption})}
+
+
+
+Returns the value of a meta-\/information given by name. 
+
+You are not allowed to modify the resulting key.
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} f(Key *k)
+\{
+        \textcolor{keywordflow}{if} (!strcmp(\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}(\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}(k, \textcolor{stringliteral}{"type"})), \textcolor{stringliteral}{"boolean"}))
+        \{
+                \textcolor{comment}{// the type of the key is boolean}
+        \}
+\}
+\end{DoxyCode}
+
+
+\begin{DoxyNote}{Note}
+You must not delete or change the returned key, use \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()} if you want to delete or change it.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+{\em meta\+Name} & the name of the meta information you want the value from \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if the key or meta\+Name is 0 \\
+\hline
+{\em 0} & if no such meta\+Name is found \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxyReturn}{Returns}
+value of meta-\/information if meta-\/information is found 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()} 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keymeta_ga4c88342f580a4291455a801af71ce048}\label{group__keymeta_ga4c88342f580a4291455a801af71ce048}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Next\+Meta@{key\+Next\+Meta}}
+\index{key\+Next\+Meta@{key\+Next\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Next\+Meta()}{keyNextMeta()}}
+{\footnotesize\ttfamily const Key$\ast$ key\+Next\+Meta (\begin{DoxyParamCaption}\item[{Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Iterate to the next meta information. 
+
+Keys have an internal cursor that can be reset with \hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{key\+Rewind\+Meta()}. Every time \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta()} is called the cursor is incremented and the new current Name of Meta Information is returned.
+
+You\textquotesingle{}ll get a N\+U\+LL pointer if the meta information after the end of the Key was reached. On subsequent calls of \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta()} it will still return the N\+U\+LL pointer.
+
+The {\ttfamily key} internal cursor will be changed, so it is not const.
+
+\begin{DoxyNote}{Note}
+That the resulting key is guaranteed to have a value, because meta information has no binary or null pointer semantics.
+
+You must not delete or change the returned key, use \hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()} if you want to delete or change it.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a key representing meta information 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & when the end is reached \\
+\hline
+{\em 0} & on N\+U\+LL pointer\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ks\+Next()} for pedant in iterator interface of Key\+Set 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}\label{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Rewind\+Meta@{key\+Rewind\+Meta}}
+\index{key\+Rewind\+Meta@{key\+Rewind\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Rewind\+Meta()}{keyRewindMeta()}}
+{\footnotesize\ttfamily int key\+Rewind\+Meta (\begin{DoxyParamCaption}\item[{Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Rewind the internal iterator to first metadata. 
+
+Use it to set the cursor to the beginning of the Key Meta Infos. \hyperlink{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{key\+Current\+Meta()} will then always return N\+U\+LL afterwards. So you want to \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta()} first.
+
+
+\begin{DoxyCode}
+Key *key;
+\textcolor{keyword}{const} Key *meta;
+
+\hyperlink{group__keymeta_ga5dbb669802eea27e106ee3a5e39717a9}{keyRewindMeta} (key);
+\textcolor{keywordflow}{while} ((meta = \hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta} (key))!=0)
+\{
+        printf (\textcolor{stringliteral}{"name: %s, value: %s"}, \hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}(meta), \hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}(meta));
+\}
+\end{DoxyCode}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & on success \\
+\hline
+{\em 0} & if there is no meta information for that key (\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta()} will always return 0 in that case) \\
+\hline
+{\em -\/1} & on N\+U\+LL pointer \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{key\+Next\+Meta()}, \hyperlink{group__keymeta_ga74a273f529030f4947df52e14fdd2869}{key\+Current\+Meta()} 
+
+\hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ks\+Rewind()} for pedant in iterator interface of Key\+Set 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}\label{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}} 
+\index{Meta Info Manipulation Methods@{Meta Info Manipulation Methods}!key\+Set\+Meta@{key\+Set\+Meta}}
+\index{key\+Set\+Meta@{key\+Set\+Meta}!Meta Info Manipulation Methods@{Meta Info Manipulation Methods}}
+\subsubsection{\texorpdfstring{key\+Set\+Meta()}{keySetMeta()}}
+{\footnotesize\ttfamily ssize\+\_\+t key\+Set\+Meta (\begin{DoxyParamCaption}\item[{Key $\ast$}]{key,  }\item[{const char $\ast$}]{meta\+Name,  }\item[{const char $\ast$}]{new\+Meta\+String }\end{DoxyParamCaption})}
+
+
+
+Set a new meta-\/information. 
+
+Will set a new meta-\/information pair consisting of meta\+Name and new\+Meta\+String.
+
+Will add a new Pair for meta-\/information if meta\+Name was not added up to now.
+
+It will modify an existing Pair of meta-\/information if the the meta\+Name was inserted already.
+
+It will remove a meta information if new\+Meta\+String is 0.
+
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the key object to work with \\
+\hline
+{\em meta\+Name} & the name of the meta information where you want to change the value \\
+\hline
+{\em new\+Meta\+String} & the new value for the meta information \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & on error if key or meta\+Name is 0, out of memory or names are not valid \\
+\hline
+{\em 0} & if the meta-\/information for meta\+Name was removed \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxyReturn}{Returns}
+size ($>$0) of new\+Meta\+String if meta-\/information was successfully added 
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{key\+Get\+Meta()} 
+\end{DoxySeeAlso}

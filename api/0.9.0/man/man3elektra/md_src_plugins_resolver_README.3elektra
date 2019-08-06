@@ -1,0 +1,222 @@
+.TH "md_src_plugins_resolver_README" 3elektra "Tue Aug 6 2019" "Version 0.9.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_resolver_READMEPlugin: resolver 
+ \- 
+.IP "\(bu" 2
+infos = All information you want to know is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@markus-raab.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = resolver
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = rollback getresolver setresolver commit
+.IP "\(bu" 2
+infos/status = productive maintained specific unittest tested libc nodep configurable
+.IP "\(bu" 2
+infos/description = system independent resolver
+.PP
+.PP
+The \fC@PLUGIN_SHORT_NAME@\fP handles operating system dependent tasks\&. One task is the resolving of the filenames for user and system (hence its name)\&.
+.PP
+Use following command to see to which file is resolved to:
+.PP
+.PP
+.nf
+kdb file <Elektra path you are interested in>
+.fi
+.PP
+.PP
+See the constants of this plugin for further information, they are:
+.PP
+.PP
+.nf
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/ELEKTRA_VARIANT_SYSTEM
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/ELEKTRA_VARIANT_USER
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/KDB_DB_HOME
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/KDB_DB_SYSTEM
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/KDB_DB_USER
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/KDB_DB_SPEC
+system/elektra/modules/@PLUGIN_SHORT_NAME@/constants/KDB_DB_DIR
+.fi
+.PP
+.PP
+The built-in resolving considers following cases:
+.PP
+.IP "\(bu" 2
+for spec with absolute path: path
+.IP "\(bu" 2
+for spec with relative path: \fCKDB_DB_SPEC\fP + path
+.IP "\(bu" 2
+for dir with absolute path: \fCpwd\fP + path (or above when path is found)
+.IP "\(bu" 2
+for dir with relative path: \fCpwd\fP + \fCKDB_DB_DIR\fP + path (or above when path is found)
+.IP "\(bu" 2
+for user with absolute path: \fC~\fP + path
+.IP "\(bu" 2
+for user with relative path: \fC~\fP + \fCKDB_DB_USER\fP + path
+.IP "\(bu" 2
+for system with absolute path: path
+.IP "\(bu" 2
+for system with relative path: \fCKDB_DB_SYSTEM\fP + path
+.PP
+.PP
+(~ and \fCpwd\fP are resolved from system)
+.PP
+.SS "Example"
+.PP
+For an absolute path \fC/example\&.ini\fP, you might get following values:
+.PP
+.IP "\(bu" 2
+for spec: \fC/example\&.ini\fP
+.IP "\(bu" 2
+for dir: \fC$PWD/example\&.ini\fP
+.IP "\(bu" 2
+for user: \fC~/example\&.ini\fP
+.IP "\(bu" 2
+for system: \fC/example\&.ini\fP
+.PP
+.PP
+For an relative path example\&.ini, you might get following values:
+.PP
+.IP "\(bu" 2
+for spec: \fC/usr/share/elektra/specification/example\&.ini\fP
+.IP "\(bu" 2
+for dir: \fC$PWD/\&.dir/example\&.ini\fP
+.IP "\(bu" 2
+for user: \fC~/\&.config/example\&.ini\fP
+.IP "\(bu" 2
+for system: \fC/etc/kdb/example\&.ini\fP
+.PP
+.PP
+See \fBthe mount tutorial\fP for more examples\&.
+.PP
+.SS "Variants"
+.PP
+Many variants exist that additionally influence the resolving process, typically by using environment variables\&.
+.PP
+Environment variables are very simple for one-time usage but their maintenance in start-up scripts is problematic\&. Additionally, they are controlled by the user, so they cannot be trusted\&. So it is not recommended to use environment variables\&.
+.PP
+Note that the file permissions apply, so it might be possible for non-root to modify keys in \fCsystem\fP\&.
+.PP
+See \fBCOMPILE\&.md\fP for a documentation of possible variants\&.
+.PP
+.SS "XDG Compatibility"
+.PP
+The resolver is fully \fCXDG compatible\fP if configured with the variant:
+.PP
+.IP "\(bu" 2
+\fCxp\fP, \fCxh\fP or \fCxu\fP for user (either using \fCpasswd\fP, \fCHOME\fP or \fCUSER\fP as fallback or any combination of these fallbacks)
+.IP "\(bu" 2
+\fCx\fP for system, no fallback necessary
+.PP
+.PP
+Additionally \fCKDB_DB_USER\fP needs to be left unchanged as \fC\&.config\fP\&.
+.PP
+\fCXDG_CONFIG_DIRS\fP will be used to resolve system paths the following way:
+.PP
+.IP "\(bu" 2
+if unset or empty \fC/etc/xdg\fP will be used instead
+.IP "\(bu" 2
+all elements are searched in order of importance
+.IP "\(bu" 2
+if a file was found, the search process is stopped
+.IP "\(bu" 2
+if no file was found, the least important element will be used for potential write attempts\&.
+.PP
+.PP
+.SS "Reading Configuration"
+.PP
+.IP "1." 4
+If no update needed (unchanged modification time): quit successfully
+.IP "2." 4
+Otherwise call (storage) plugin(s) to read configuration
+.IP "3." 4
+remember the last stat time (last update)
+.PP
+.PP
+.SS "Writing Configuration"
+.PP
+.IP "1." 4
+On unchanged configuration: quit successfully
+.IP "2." 4
+On empty configuration: remove the configuration file and quit successfully
+.IP "3." 4
+Otherwise, open the configuration file If not available recursively create directories and retry\&.
+.PP
+.PP
+#ifdef ELEKTRA_LOCK_MUTEX
+.PP
+.IP "4." 4
+Try to lock a global mutex, if not possible -> conflict
+.PP
+.PP
+#endif
+.PP
+#ifdef ELEKTRA_LOCK_FILE
+.PP
+.IP "5." 4
+Try to lock the configuration file, if not possible -> conflict
+.PP
+.PP
+#endif
+.PP
+.IP "6." 4
+Check the update time -> might lead to conflict
+.IP "7." 4
+Update the update time (in order to not self-conflict)
+.PP
+.PP
+We have an optimistic approach\&. Locking is only used to detect concurrent cooperative processes in the short moment between prepare and commit\&. A conflict will be raised in that situation\&. When processes do not lock the file it might be overwritten\&. This is, however, very unlikely on file systems with nanosecond precision\&.
+.PP
+.SS "Exported Functions and Data"
+.PP
+The resolver provides 2 functions for other plugins to use\&.
+.PP
+.SS "filename"
+.PP
+resolves \fCpath\fP in with namespace \fCnamespace\fP, creates a temporary file to work on and returns a struct containing the resolved data\&.
+.PP
+Signature: \fCElektraResolved * filename (elektraNamespace namespace, const char * path, ElektraResolveTempfile tempFile, Key * warningsKey)\fP
+.PP
+\fCElektraResolved\fP and \fCElektraResolveTempfile\fP are both defined in \fCshared\&.h\fP\&.
+.PP
+\fCElektraResolved\fP is a struct with the following members:
+.PP
+.IP "\(bu" 2
+\fCrelPath\fP: contains the path relative to the namespace\&.
+.IP "\(bu" 2
+\fCdirname\fP: contains the parent directory of the resolved file\&.
+.IP "\(bu" 2
+\fCfullPath\fP: contains the full path of the resolved file\&.
+.IP "\(bu" 2
+\fCtmpFile\fP: contains the full path of the created temporary file\&.
+.PP
+.PP
+\fCElektraResolveTempfile\fP dictates if and where a temporary file should be created\&. Possible values:
+.PP
+.IP "\(bu" 2
+\fCELEKTRA_RESOLVER_TEMPFILE_NONE\fP: don't create a temporary file\&.
+.IP "\(bu" 2
+\fCELEKTRA_RESOLVER_TEMPFILE_SAMEDIR\fP: create a temporary file in the same directory as the resolved file\&.
+.IP "\(bu" 2
+\fCELEKTRA_RESOLVER_TEMPFILE_TMPDIR\fP: create a temporary file in \fC/tmp\fP\&.
+.PP
+.PP
+.SS "freeHandle"
+.PP
+frees the handle returned by \fCfilename\fP\&.
+.PP
+Signature: \fCvoid * freeHandle (ElektraResolved * handle)\fP
+.PP
+where \fChandle\fP is the handle returned by \fCfilename\fP\&.
+.PP
+.SS "Limitations"
+.PP
+If none of the resolving techniques work, the resolver will fail during \fCkdbOpen\fP\&. This happens, for example, with the default resolver (ELEKTRA_VARIANT_USER \fChpu\fP) if neither: \fC$HOME\fP, \fC$USER\fP, nor any home directory in \fC/etc/passwd\fP is set\&. 
