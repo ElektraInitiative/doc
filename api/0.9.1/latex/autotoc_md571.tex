@@ -1,0 +1,77 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the range plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = presetstorage postgetstorage
+\item infos/status = maintained conformant compatible coverage specific unittest tested libc preview unfinished
+\item infos/metadata = check/range check/type
+\item infos/description = tests if a value is within a given range
+\end{DoxyItemize}
+
+The range plugin checks if a {\ttfamily Key}\textquotesingle{}s value is within a given range.
+
+The plugin checks every {\ttfamily Key} in the {\ttfamily Key\+Set} for the metakey {\ttfamily check/range} which contains either a single range with the syntax {\ttfamily \mbox{[}-\/\mbox{]}min-\/\mbox{[}-\/\mbox{]}max}, or a list of ranges or values separated by {\ttfamily ,} and tests if the {\ttfamily Key}\textquotesingle{}s value is within the range(s).
+
+{\ttfamily check/type} can be used to specify the data type. If not specified otherwise the default value is {\ttfamily long long}
+
+Possible values\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily short}, {\ttfamily long}, {\ttfamily long long}
+
+for signed integer values
+\item {\ttfamily unsigned short}, {\ttfamily unsigned long}, {\ttfamily unsigned long long}
+
+for unsigned integer values
+\item {\ttfamily float}, {\ttfamily double}, {\ttfamily long double}
+
+for floating point values
+\item {\ttfamily H\+EX}
+
+for hexadecimal values
+\item {\ttfamily char}
+
+for characters
+\end{DoxyItemize}
+
+None.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-and-Restore:/tests/range}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount range.ecf /tests/range range dump}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should succeed}
+\DoxyCodeLine{kdb set /tests/range/value 5}
+\DoxyCodeLine{kdb meta-set /tests/range/value check/range "1-10"}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set /tests/range/value 11}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should also fail}
+\DoxyCodeLine{kdb set /tests/range/value "\(\backslash\)-1"}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# we can also allow only individual values:}
+\DoxyCodeLine{kdb meta-set /tests/range/value check/range "1,2,4,8"}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set /tests/range/value 7}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set /tests/range/value 2}
+\DoxyCodeLine{\# RET:0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -r /tests/range}
+\DoxyCodeLine{sudo kdb umount /tests/range}
+\end{DoxyCode}
+
+
+None. 

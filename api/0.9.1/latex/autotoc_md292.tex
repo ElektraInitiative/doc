@@ -1,0 +1,262 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the ini plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/ini
+\item infos/recommends = binary
+\item infos/placements = getstorage setstorage
+\item infos/status = unittest shelltest nodep libc configurable
+\item infos/metadata = order
+\item infos/description = storage plugin for I\+NI files
+\end{DoxyItemize}
+
+This plugin allows Elektra\textquotesingle{}s users to read and write I\+NI files. I\+NI files consist of simple key value pairs of the form {\ttfamily key=value}. Additionally keys can be categorized into different sections. Sections must be enclosed in \char`\"{}\mbox{[}$\,$\mbox{]}\char`\"{}, for example \char`\"{}\mbox{[}section\mbox{]}\char`\"{}. Each section is converted into a directory key (without value) and keys below the section are located below the section key. If the same section appears multiple times, the keys of all sections with the same name are merged together under the section key.
+
+On the one hand the ini plugin is feature rich and customizable, on the other hand it is quite buggy and shows unexpected behavior in some of its features.
+
+If you want to add an I\+NI file to the global key database, simply use mount\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount file.ini user/tests/ini ini}
+\end{DoxyCode}
+
+
+Then you can modify the contents of the I\+NI file using set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user/tests/ini/key value}
+\DoxyCodeLine{\#> Create a new key user/tests/ini/key with string "value"}
+\DoxyCodeLine{kdb set user/tests/ini/section}
+\DoxyCodeLine{\#> Create a new key user/tests/ini/section with null value}
+\DoxyCodeLine{kdb set user/tests/ini/section/key value}
+\DoxyCodeLine{\#> Create a new key user/tests/ini/section/key with string "value"}
+\end{DoxyCode}
+
+
+Find out which file you modified\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file user/tests/ini}
+\DoxyCodeLine{\# STDOUT-REGEX: .+/file.ini}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -r user/tests/ini}
+\DoxyCodeLine{sudo kdb umount user/tests/ini}
+\end{DoxyCode}
+
+
+The ini plugin supports the use of comments. Comment lines start with a \textquotesingle{};\textquotesingle{} or a \textquotesingle{}\#\textquotesingle{}. Comments are put into the comment metadata of the key following the comment. This can be either a section key or a normal key. When creating new comments (e.\+g. via {\ttfamily kdb meta-\/set}) you can prefix your comment with the comment indicator of your choice (\textquotesingle{};\textquotesingle{} or \textquotesingle{}\#\textquotesingle{}) which will be used when writing the comment to the file. If the comment is not prefixed with a comment indicator, the ini plugin will use the character defined by the {\ttfamily comment} option, or default to \textquotesingle{}\#\textquotesingle{}.
+
+The ini plugin supports multiline values. Continuations of previous values have to start with whitespace characters.
+
+For example consider the following I\+NI file\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=value1}
+\DoxyCodeLine{key2=value2}
+\DoxyCodeLine{        with continuation}
+\DoxyCodeLine{        lines}
+\end{DoxyCode}
+
+
+This would result in a Key\+Set containing two keys. One key named {\ttfamily key1} with the value {\ttfamily value1} and another key named {\ttfamily key2} with the value {\ttfamily value2\textbackslash{}nwith continuation\textbackslash{}nlines}.
+
+By default this feature is enabled. The default continuation character is tab ({\ttfamily \textbackslash{}t}). If you want to use another character, then please specify the configuration option {\ttfamily linecont}.
+
+The ini plugin handles repeating keys by turning them into an elektra array when the {\ttfamily array} config is set.
+
+For example an I\+NI file looking like\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[sec]}
+\DoxyCodeLine{a=1}
+\DoxyCodeLine{a=2}
+\DoxyCodeLine{a=3}
+\DoxyCodeLine{a=4}
+\end{DoxyCode}
+
+
+will be interpreted as
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/sec}
+\DoxyCodeLine{/sec/a}
+\DoxyCodeLine{/sec/a/\#0}
+\DoxyCodeLine{/sec/a/\#1}
+\DoxyCodeLine{/sec/a/\#2}
+\DoxyCodeLine{/sec/a/\#3}
+\end{DoxyCode}
+
+
+The following example shows how you can store and retrieve array values using the {\ttfamily ini} plugin.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount the INI plugin with array support}
+\DoxyCodeLine{sudo kdb mount config.ini user/tests/ini ini array=true}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add an array storing song titles}
+\DoxyCodeLine{kdb set user/tests/ini/songs/\#0 "Non-Zero Possibility"}
+\DoxyCodeLine{kdb set user/tests/ini/songs/\#1 "Black Art Number One"}
+\DoxyCodeLine{kdb set user/tests/ini/songs/\#2 "A Story Of Two Convicts"}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check if INI saved all array entries}
+\DoxyCodeLine{kdb ls user/tests/ini/songs}
+\DoxyCodeLine{\#> user/tests/ini/songs}
+\DoxyCodeLine{\#> user/tests/ini/songs/\#0}
+\DoxyCodeLine{\#> user/tests/ini/songs/\#1}
+\DoxyCodeLine{\#> user/tests/ini/songs/\#2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve an array item}
+\DoxyCodeLine{kdb get user/tests/ini/songs/\#2}
+\DoxyCodeLine{\#> A Story Of Two Convicts}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the file written by the INI plugin}
+\DoxyCodeLine{kdb file user/tests/ini | xargs cat}
+\DoxyCodeLine{\#> songs=Non-Zero Possibility}
+\DoxyCodeLine{\#> songs=Black Art Number One}
+\DoxyCodeLine{\#> songs=A Story Of Two Convicts}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -r user/tests/ini}
+\DoxyCodeLine{sudo kdb umount user/tests/ini}
+\end{DoxyCode}
+
+
+By default the I\+NI plugin does not support binary data. You can use the \mbox{\hyperlink{autotoc_md52_src_plugins_base64_README_md}{Base64 plugin}} to remove this limitation.
+
+\`{}\`{}\`{} \hypertarget{autotoc_md292_autotoc_md298}{}\section{Mount I\+N\+I and recommended plugin Base64}\label{autotoc_md292_autotoc_md298}
+\hypertarget{autotoc_md292_autotoc_md299}{}\section{We add the required plugin $<$tt$>$base64$<$/tt$>$ (which provides $<$tt$>$binary$<$/tt$>$) at the end too,}\label{autotoc_md292_autotoc_md299}
+\hypertarget{autotoc_md292_autotoc_md300}{}\section{since otherwise this command leaks memory.}\label{autotoc_md292_autotoc_md300}
+sudo kdb mount --with-\/recommends config.\+ini user/tests/ini ini base64\hypertarget{autotoc_md292_autotoc_md301}{}\section{Add empty binary value}\label{autotoc_md292_autotoc_md301}
+printf \textquotesingle{}nothing=\char`\"{}@\+B\+A\+S\+E64\char`\"{}~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/ini} \hypertarget{autotoc_md292_autotoc_md302}{}\section{Copy binary data}\label{autotoc_md292_autotoc_md302}
+kdb cp system/elektra/modules/ini/exports/get user/tests/ini/binary \hypertarget{autotoc_md292_autotoc_md303}{}\section{Add textual data}\label{autotoc_md292_autotoc_md303}
+kdb set user/tests/ini/text \textquotesingle{}Na na na na na na na na na na na na na na na na Batman!\textquotesingle{}\hypertarget{autotoc_md292_autotoc_md304}{}\section{Print empty binary value}\label{autotoc_md292_autotoc_md304}
+kdb get user/tests/ini/nothing \#$>$\hypertarget{autotoc_md292_autotoc_md305}{}\section{Print binary data}\label{autotoc_md292_autotoc_md305}
+kdb get user/tests/ini/binary \hypertarget{autotoc_md292_autotoc_md306}{}\section{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+E\+X\+: $^\wedge$(\textbackslash{}x\mbox{[}0-\/9a-\/f\mbox{]}\{1,2\})+\$}\label{autotoc_md292_autotoc_md306}
+\hypertarget{autotoc_md292_autotoc_md307}{}\section{Print textual data}\label{autotoc_md292_autotoc_md307}
+kdb get user/tests/ini/text \#$>$ Na na na na na na na na na na na na na na na na Batman!
+
+kdb rm -\/r user/tests/ini sudo kdb umount user/tests/ini 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Metadata}
+\DoxyCodeLine{}
+\DoxyCodeLine{The INI plugin also supports to store arbitrary metadata in comments after the `@META` declarative.}
+\end{DoxyCode}
+ sudo kdb mount config.\+ini user/tests/ini ini\hypertarget{autotoc_md292_autotoc_md308}{}\section{Add a new key and some metadata}\label{autotoc_md292_autotoc_md308}
+kdb set user/tests/ini/brand new kdb meta-\/set user/tests/ini/brand description \char`\"{}\+The Devil And God Are Raging Inside Me\char`\"{} kdb meta-\/set user/tests/ini/brand rationale \char`\"{}\+Because I Love It\char`\"{}\hypertarget{autotoc_md292_autotoc_md309}{}\section{The plugin stores metadata as comments inside the I\+N\+I file}\label{autotoc_md292_autotoc_md309}
+kdb file user/tests/ini $\vert$ xargs cat \#$>$ \#@\+M\+E\+TA description = The Devil And God Are Raging Inside Me \#$>$ \#@\+M\+E\+TA rationale = Because I Love It \#$>$ brand=new\hypertarget{autotoc_md292_autotoc_md310}{}\section{Retrieve metadata}\label{autotoc_md292_autotoc_md310}
+kdb meta-\/ls user/tests/ini/brand $\vert$ grep -\/v \textquotesingle{}internal\textquotesingle{} \hypertarget{autotoc_md292_autotoc_md311}{}\section{rationale}\label{autotoc_md292_autotoc_md311}
+\hypertarget{autotoc_md292_autotoc_md312}{}\section{description}\label{autotoc_md292_autotoc_md312}
+kdb meta-\/get user/tests/ini/brand description \#$>$ The Devil And God Are Raging Inside Me kdb meta-\/get user/tests/ini/brand rationale \#$>$ Because I Love It\hypertarget{autotoc_md292_autotoc_md313}{}\section{The plugin ignores some metadata such as $<$tt$>$comment$<$/tt$>$!}\label{autotoc_md292_autotoc_md313}
+kdb meta-\/set user/tests/ini/brand comment \char`\"{}\+Where Art Thou?\char`\"{} kdb meta-\/get user/tests/ini/brand comment \hypertarget{autotoc_md292_autotoc_md314}{}\section{S\+T\+D\+E\+R\+R\+: Metakey not found}\label{autotoc_md292_autotoc_md314}
+\hypertarget{autotoc_md292_autotoc_md315}{}\section{R\+E\+T\+: 2}\label{autotoc_md292_autotoc_md315}
+kdb rm -\/r user/tests/ini sudo kdb umount user/tests/ini \`{}\`{}\`{}\hypertarget{autotoc_md292_autotoc_md316}{}\subsection{Sections}\label{autotoc_md292_autotoc_md316}
+The ini plugin supports 3 different sectioning modes (via {\ttfamily section=})\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily N\+O\+NE} sections wont be printed as {\ttfamily \mbox{[}Section\mbox{]}} but as part of the key name {\ttfamily section/key}
+\item {\ttfamily N\+U\+LL} only empty keys will be printed as {\ttfamily \mbox{[}Section\mbox{]}}
+\item {\ttfamily A\+L\+W\+A\+YS} sections will be created automatically. This is the default setting\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /empty.ini dir/tests ini}
+\DoxyCodeLine{kdb set dir/tests/a/b ab}
+\DoxyCodeLine{kdb get dir/tests/a       \# <-- key is suddenly here}
+\DoxyCodeLine{cat empty.ini}
+\DoxyCodeLine{\#> [a]}
+\DoxyCodeLine{\#> b=ab}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -r dir/tests}
+\DoxyCodeLine{sudo kdb umount dir/tests}
+\end{DoxyCode}
+
+
+By changing the option {\ttfamily section} you can suppress the automatic creation of keys. E.\+g., if you use {\ttfamily N\+U\+LL} instead you only get a section if you explicitly create it\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /empty.ini dir/tests ini section=NULL}
+\DoxyCodeLine{kdb set dir/tests/a/b ab}
+\DoxyCodeLine{kdb get dir/tests/a       \# no key here}
+\DoxyCodeLine{\# RET: 11}
+\DoxyCodeLine{cat empty.ini}
+\DoxyCodeLine{\#> a/b=ab}
+\DoxyCodeLine{kdb rm dir/tests/a/b}
+\DoxyCodeLine{kdb set dir/tests/a    \# create section first}
+\DoxyCodeLine{kdb set dir/tests/a/b ab}
+\DoxyCodeLine{cat empty.ini}
+\DoxyCodeLine{\#> [a]}
+\DoxyCodeLine{\#> b=ab}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -r dir/tests}
+\DoxyCodeLine{sudo kdb umount dir/tests}
+\end{DoxyCode}
+\hypertarget{autotoc_md292_autotoc_md317}{}\subsubsection{Merge Sections}\label{autotoc_md292_autotoc_md317}
+The ini plugin supports merging duplicated section entries when the {\ttfamily mergesections} config is set. The keys will be appended to the first occurrence of the section key.\hypertarget{autotoc_md292_autotoc_md318}{}\subsection{Ordering}\label{autotoc_md292_autotoc_md318}
+The ini plugin preserves the order. Inserted subsections get appended to the corresponding parent section and new sections by name.
+
+Example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.ini /tests/ini ini}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat > `kdb file /tests/ini` <<EOF \(\backslash\)}
+\DoxyCodeLine{[Section1]\(\backslash\)}
+\DoxyCodeLine{key1=val1\(\backslash\)}
+\DoxyCodeLine{[Section3]\(\backslash\)}
+\DoxyCodeLine{key3=val3\(\backslash\)}
+\DoxyCodeLine{EOF}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb file /tests/ini | xargs cat}
+\DoxyCodeLine{\#> [Section1]}
+\DoxyCodeLine{\#> key1=val1}
+\DoxyCodeLine{\#> [Section3]}
+\DoxyCodeLine{\#> key3=val3}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set /tests/ini/Section1/Subsection1/subkey1 subval1}
+\DoxyCodeLine{kdb set /tests/ini/Section2/key2 val2}
+\DoxyCodeLine{kdb file /tests/ini | xargs cat}
+\DoxyCodeLine{\#> [Section1]}
+\DoxyCodeLine{\#> key1=val1}
+\DoxyCodeLine{\#> [Section1/Subsection1]}
+\DoxyCodeLine{\#> subkey1=subval1}
+\DoxyCodeLine{\#> [Section2]}
+\DoxyCodeLine{\#> key2=val2}
+\DoxyCodeLine{\#> [Section3]}
+\DoxyCodeLine{\#> key3=val3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -r /tests/ini}
+\DoxyCodeLine{sudo kdb umount /tests/ini}
+\end{DoxyCode}
+
+
+The current implementation of the ordering sometimes breaks compatibility with the cache plugin \href{https://github.com/ElektraInitiative/libelektra/issues/2592}{\texttt{ (see ini bug)}}.\hypertarget{autotoc_md292_autotoc_md319}{}\subsection{Special Characters}\label{autotoc_md292_autotoc_md319}
+The I\+NI plugin also supports values and keys containing delimiter characters ({\ttfamily =}) properly.
+
+\`{}\`{}\`{} sudo kdb mount test.\+ini user/tests/ini ini
+
+printf \textquotesingle{}\mbox{[}section1\mbox{]}~\newline
+\textquotesingle{} $>$ {\ttfamily kdb file user/tests/ini} printf \textquotesingle{}hello=world~\newline
+\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/ini}
+
+kdb get user/tests/ini/section1/hello \#$>$ world
+
+kdb set user/tests/ini/section1/x=x \textquotesingle{}a + b=b + a\textquotesingle{} kdb get user/tests/ini/section1/x=x \#$>$ a + b=b + a\hypertarget{autotoc_md292_autotoc_md320}{}\section{Undo modifications}\label{autotoc_md292_autotoc_md320}
+kdb rm -\/r user/tests/ini sudo kdb umount user/tests/ini \`{}\`{}\`{} 

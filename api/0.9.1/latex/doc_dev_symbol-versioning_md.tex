@@ -1,0 +1,90 @@
+To enable backwards compatibility, while allowing the A\+PI to evolve, we use symbol versioning. This document focuses on the setup Elektra uses. For an explanation of symbol versioning itself, you may start \href{https://people.freebsd.org/~deischen/symver/library_versioning.txt}{\texttt{ here}}.
+
+The setup used is based on the one used by Free\+B\+SD. The main script \`{}version\+\_\+gen.awk\`{} is taken from their source (with small modifications to enable Alpine Linux compatibility).
+
+The main script, is called by C\+Make during the build process. It parses the {\ttfamily symbols.\+map} files of all libraries (e.\+g. \`{}/src/libs/elektra/symbols.map\`{}) and combines them into a single file, which is then used by the compiler and the linker.
+
+All versions of Elektra symbols have to be declared in \`{}versions.def\`{}. Only the versions declared in this file can be used in the {\ttfamily symbols.\+map} files. No symbols should be declared in this file.
+
+Each version corresponds to a release. After each release of Elektra, a new version must be added to {\ttfamily versions.\+def}. Only this version may be modified in the {\ttfamily symbols.\+map} files. Released version M\+U\+ST N\+OT change. The newest and therefore unreleased version may change at any point before its release.
+
+The {\ttfamily libelektraprivate\+\_\+1.\+0} is special. It M\+U\+ST always declare the newest version (e.\+g. {\ttfamily libelektra\+\_\+0.\+9}) as its base and it is the only private version (i.\+e. there is will be no {\ttfamily libelektraprivate\+\_\+1.\+1}). The purpose of the private version is to allow the use of internal symbols across compile units. For example {\ttfamily elektra\+Abort} is part of this version. It should be usable in all of Elektra\textquotesingle{}s modules, but not outside. Currently there is no mechanism to enforce this, however, developers can manually check, if the use any of the symbols declared in {\ttfamily libelektraprivate\+\_\+1.\+0}. Any of these symbols may change or removed at any time. No compatibility guarantee is given for these symbols.
+
+To add a new symbol (probably a function), simply add its name to the {\ttfamily symbols.\+map} file of the relevant library. Make sure to always add the symbol to the newest version only. Only symbols listed in one of the {\ttfamily symbols.\+map} files will be accessible by the linker. This means only these symbols can be used outside of their compilation unit. Only export symbols, if this is your intention.
+
+For public A\+PI this is an obvious decision. All public A\+PI function should be added to newest version that exists at the time of their creation.
+
+For internal A\+PI the question is not so obvious. If possible use static symbols. Static symbols cannot be exported via {\ttfamily symbols.\+map}, so the question is trivial. If the symbol shall be used in different source files (and therefore cannot be static), but only inside a single compilation unit (°), you don\textquotesingle{}t need to add the symbol. If you are unsure, first try it without adding the symbol to {\ttfamily symbols.\+map} and only if it doesn\textquotesingle{}t work add the symbol to {\ttfamily libelektraprivate\+\_\+1.\+0}.
+
+(°) compilation units mostly correspond to libraries
+
+If a symbol is part of the public A\+PI (i.\+e. not in {\ttfamily libelektraprivate\+\_\+1.\+0}) and you want to make changes that are A\+BI incompatible (e.\+g. changing the signature of a function), you have to update the symbol version.
+
+To do this, simply add the symbol name to the newest version in {\ttfamily symbols.\+map} and remove it from the version it is currently part of. Each symbol may only be defined in one version. If the symbol is already declared in the latest version, you don\textquotesingle{}t need to do anything, unreleased version may be modified at any point in time.
+
+For additional clarity, you may leave a comment in the old version noting where the symbols was moved to.
+
+To actually implement symbol versioning, a few code changes are necessary. Explaining this is much easier, when using a concrete example.
+
+We will use the function {\ttfamily int foo (Key $\ast$ k)} and assume the new version will have the signature {\ttfamily int foo (Key $\ast$ k, int x)}. The old version shall be called {\ttfamily oldversion} and the new version shall be {\ttfamily newversion}.
+
+The old function declaration
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} foo (Key * k);}
+\end{DoxyCode}
+
+
+has to be replaced with the new declarations
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} foo (Key * k, \textcolor{keywordtype}{int} x);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{kdbmacros_8h_a5dd9e2d021e60949f63eeb88b8b2558c}{ELEKTRA\_SYMVER}} (foo, v1) (Key * k);}
+\end{DoxyCode}
+
+
+The second line declares an old version of {\ttfamily foo}. Note\+: {\ttfamily v1} may be replaced by any string that is a valid identifier. It is simply their to make the symbol name unique.
+
+In the source files containing the definition of our function, we change the old definition
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} foo (Key * k)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    \textcolor{comment}{// old code ...}}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+to use the compatibility symbol
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{kdbmacros_8h_a5dd9e2d021e60949f63eeb88b8b2558c}{ELEKTRA\_SYMVER}} (foo, v1) (Key * k)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    \textcolor{comment}{// old code ...}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{kdbmacros_8h_a03ba43b14fd54b22eed39a4130956a5d}{ELEKTRA\_SYMVER\_DECLARE}} (\textcolor{stringliteral}{"oldversion"}, foo, v1)}
+\end{DoxyCode}
+
+
+To actually enable backwards compatibility, we need to add some assembler {\ttfamily .symver} pseudo instructions. To make this easier, we have the helper macro {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+Y\+M\+V\+E\+R\+\_\+\+D\+E\+C\+L\+A\+RE}. We add these lines after the function declaration. Note\+: there M\+U\+ST N\+OT be a {\ttfamily ;} after the {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+Y\+M\+V\+E\+R\+\_\+\+D\+E\+C\+L\+A\+RE} otherwise there will be errors on systems that don\textquotesingle{}t support symbol versioning
+
+Then we simply write the definition for the new version, as if it was an entirely new function\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} foo (Key * k, \textcolor{keywordtype}{int} x)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    \textcolor{comment}{// new code ...}}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+The current version of a symbol always uses the unversioned name of the symbol. That way we default to this version. Only older versions use a versioned name via {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+Y\+M\+V\+ER}.
+
+If a symbol becomes deprecated, it should N\+OT be removed from the {\ttfamily symbols.\+map} file. This would break backwards compatibility. Instead we remove the default implementation and only leave versions implemented via {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+Y\+M\+V\+ER} and {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+S\+Y\+M\+V\+E\+R\+\_\+\+D\+E\+C\+L\+A\+RE}. The existing default version must be converted into a versioned symbol for the last supported version. 

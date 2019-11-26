@@ -1,0 +1,231 @@
+\hypertarget{autotoc_md545_src_plugins_quickdump_benchmarks_md}{}\section{Benchmarks}\label{autotoc_md545_src_plugins_quickdump_benchmarks_md}
+\hypertarget{autotoc_md545_autotoc_md546}{}\subsection{$<$tt$>$benchmark\+\_\+storage$<$/tt$>$}\label{autotoc_md545_autotoc_md546}
+The following table shows a summary of the results of a {\ttfamily benchmark\+\_\+storage} run\+: N\+O\+TE\+: {\ttfamily factor} is always {\ttfamily dump / quickdump} (bigger = {\ttfamily quickdump} is faster), this test was only run with version 1, see below for a comparison of with version 2
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ operation  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (µs)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (µs)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ operation  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (µs)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (µs)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+write keyset  &\PBS\raggedleft 81661  &\PBS\raggedleft 4741  &\PBS\raggedleft 17.\+224   \\\cline{1-4}
+read keyset  &\PBS\raggedleft 94782  &\PBS\raggedleft 44673  &\PBS\raggedleft 2.\+122   \\\cline{1-4}
+iterate keyset  &\PBS\raggedleft 125  &\PBS\raggedleft 135  &\PBS\raggedleft 0.\+926   \\\cline{1-4}
+delete keyset  &\PBS\raggedleft 1823  &\PBS\raggedleft 3518  &\PBS\raggedleft 0.\+518   \\\cline{1-4}
+re-\/read keyset  &\PBS\raggedleft 92939  &\PBS\raggedleft 43749  &\PBS\raggedleft 2.\+124   \\\cline{1-4}
+strcmp key name  &\PBS\raggedleft 609  &\PBS\raggedleft 1826  &\PBS\raggedleft 0.\+334   \\\cline{1-4}
+strcmp key value  &\PBS\raggedleft 684  &\PBS\raggedleft 761  &\PBS\raggedleft 0.\+899   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md547}{}\subsection{$<$tt$>$benchmark\+\_\+plugingetset$<$/tt$>$}\label{autotoc_md545_autotoc_md547}
+A script was used to generate Key\+Sets with {\ttfamily 2}, {\ttfamily 200}, {\ttfamily 2,000}, {\ttfamily 200,000} and {\ttfamily 2,000,000} Keys. For keynames we used increasing numbers (prefixed with {\ttfamily \+\_\+} to keep correct order), each key had a randomized value of 15 characters. Additionally we added 4 metakeys to each key. The names and values of these were created similarly.
+
+The parent key used was {\ttfamily dir/tests/bench}.
+
+We then used \href{https://github.com/sharkdp/hyperfine}{\texttt{ {\ttfamily hyperfine}}} to compare the performance of {\ttfamily dump} and {\ttfamily quickdump}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{hyperfine --min-runs 25 'benchmark\_plugingetset <path> <parent> dump' 'benchmark\_plugingetset <path> <parent> quickdump'}
+\end{DoxyCode}
+
+
+This means we used the same key sets for each of the runs, but the key values shouldn\textquotesingle{}t really matter. It also means that no shared metadata ({\ttfamily key\+Copy\+Meta}) was involved.
+
+We also used a modified version of {\ttfamily benchmark\+\_\+plugingetset} that returned after the {\ttfamily get} call, to test the {\ttfamily get} performance by itself. Because {\ttfamily set} doesn\textquotesingle{}t scale linearly because of the checks for {\ttfamily key\+Copy\+Meta}, the largest Key\+Set was only used for the {\ttfamily get} only version. (The test was aborted after the initial run of {\ttfamily dump} took longer than all the runs for {\ttfamily quickdump} together.)
+
+The complete results can be found in \href{https://github.com/ElektraInitiative/rawdata}{\texttt{ this repository}} and the files used for these benchmarks are quite big and can be found in another \href{https://github.com/kodebach/eqd-bench}{\texttt{ separate repository}}.\hypertarget{autotoc_md545_autotoc_md548}{}\subsubsection{Raw data sizes}\label{autotoc_md545_autotoc_md548}
+For reference in the file size tests below, here is a list of the raw data sizes of the keysets. These sizes are calculated as the sum of\+: 1) length of all keynames 2) length of all key values 3) length of all metakeys 4) length of all meta values All lengths include a null terminator, sizes are calculated once with (WP) and once without the parent key (W\+OP).
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ raw size WP (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ raw size W\+OP (B)   }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ raw size WP (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ raw size W\+OP (B)   }\\\cline{1-3}
+\endhead
+2  &\PBS\raggedleft 252  &\PBS\raggedleft 220   \\\cline{1-3}
+200  &\PBS\raggedleft 25784  &\PBS\raggedleft 22584   \\\cline{1-3}
+2000  &\PBS\raggedleft 262786  &\PBS\raggedleft 229786   \\\cline{1-3}
+200000  &\PBS\raggedleft 26977790  &\PBS\raggedleft 23777790   \\\cline{1-3}
+20000000  &\PBS\raggedleft 273777792  &\PBS\raggedleft 241777792   \\\cline{1-3}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md549}{}\subsubsection{Version 1}\label{autotoc_md545_autotoc_md549}
+\hypertarget{autotoc_md545_autotoc_md550}{}\paragraph{File sizes}\label{autotoc_md545_autotoc_md550}
+{\ttfamily factor} is {\ttfamily dump / quickdump} like above (bigger = {\ttfamily quickdump} has smaller files)
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 430  &\PBS\raggedleft 412  &\PBS\raggedleft 1.\+04   \\\cline{1-4}
+200  &\PBS\raggedleft 41206  &\PBS\raggedleft 40988  &\PBS\raggedleft 1.\+01   \\\cline{1-4}
+2000  &\PBS\raggedleft 415807  &\PBS\raggedleft 413788  &\PBS\raggedleft 1.\+00   \\\cline{1-4}
+200000  &\PBS\raggedleft 42377809  &\PBS\raggedleft 42177788  &\PBS\raggedleft 1.\+00   \\\cline{1-4}
+2000000  &\PBS\raggedleft 427777810  &\PBS\raggedleft 425777788  &\PBS\raggedleft 1.\+00   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md551}{}\paragraph{get and set}\label{autotoc_md545_autotoc_md551}
+The values are mean ± standard deviation. {\ttfamily factor} is {\ttfamily dump / quickdump} like above
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 0.\+0016 ± 0.\+0003  &\PBS\raggedleft 0.\+0006 ± 0.\+0001  &\PBS\raggedleft 2.\+67   \\\cline{1-4}
+200  &\PBS\raggedleft 0.\+0091 ± 0.\+0009  &\PBS\raggedleft 0.\+0018 ± 0.\+0000  &\PBS\raggedleft 5.\+06   \\\cline{1-4}
+2000  &\PBS\raggedleft 0.\+0770 ± 0.\+0030  &\PBS\raggedleft 0.\+0127 ± 0.\+0008  &\PBS\raggedleft 6.\+06   \\\cline{1-4}
+200000  &\PBS\raggedleft 10.\+7876 ± 4.\+2564  &\PBS\raggedleft 1.\+2640 ± 0.\+0061  &\PBS\raggedleft 8.\+53   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md552}{}\paragraph{get only}\label{autotoc_md545_autotoc_md552}
+The values are mean ± standard deviation. {\ttfamily factor} is {\ttfamily dump / quickdump} like above
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ dump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 0.\+0014 ± 0.\+0000  &\PBS\raggedleft 0.\+0005 ± 0.\+0000  &\PBS\raggedleft 2.\+8   \\\cline{1-4}
+200  &\PBS\raggedleft 0.\+0032 ± 0.\+0005  &\PBS\raggedleft 0.\+0013 ± 0.\+0002  &\PBS\raggedleft 2.\+46   \\\cline{1-4}
+2000  &\PBS\raggedleft 0.\+0179 ± 0.\+0002  &\PBS\raggedleft 0.\+0086 ± 0.\+0008  &\PBS\raggedleft 2.\+08   \\\cline{1-4}
+200000  &\PBS\raggedleft 1.\+6830 ± 0.\+0222  &\PBS\raggedleft 0.\+8515 ± 0.\+0048  &\PBS\raggedleft 1.\+98   \\\cline{1-4}
+2000000  &\PBS\raggedleft 17.\+1814 ± 0.\+2201  &\PBS\raggedleft 8.\+8808 ± 0.\+0344  &\PBS\raggedleft 1.\+93   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md553}{}\subsubsection{Version 2}\label{autotoc_md545_autotoc_md553}
+Running the same {\ttfamily benchmark\+\_\+plugingetset} tests with version 2 of the plugin yields\+:\hypertarget{autotoc_md545_autotoc_md554}{}\paragraph{File sizes}\label{autotoc_md545_autotoc_md554}
+{\ttfamily factor} is {\ttfamily v1 / v2} like above (bigger is better)
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v1 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v1 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 412  &\PBS\raggedleft 380  &\PBS\raggedleft 1.\+08   \\\cline{1-4}
+200  &\PBS\raggedleft 40988  &\PBS\raggedleft 23788  &\PBS\raggedleft 1.\+72   \\\cline{1-4}
+2000  &\PBS\raggedleft 413788  &\PBS\raggedleft 381788  &\PBS\raggedleft 1.\+08   \\\cline{1-4}
+200000  &\PBS\raggedleft 42177788  &\PBS\raggedleft 38977788  &\PBS\raggedleft 1.\+08   \\\cline{1-4}
+2000000  &\PBS\raggedleft 425777788  &\PBS\raggedleft 393777788  &\PBS\raggedleft 1.\+08   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md555}{}\paragraph{get and set}\label{autotoc_md545_autotoc_md555}
+The values are mean ± standard deviation. {\ttfamily factor} is {\ttfamily v1 / v2}, i.\+e. bigger is better
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v1 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v1 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 0.\+0006 ± 0.\+0001  &\PBS\raggedleft 0.\+0013 ± 0.\+0035  &\PBS\raggedleft 0.\+47   \\\cline{1-4}
+200  &\PBS\raggedleft 0.\+0018 ± 0.\+0000  &\PBS\raggedleft 0.\+0018 ± 0.\+0002  &\PBS\raggedleft 1.\+02   \\\cline{1-4}
+2000  &\PBS\raggedleft 0.\+0127 ± 0.\+0008  &\PBS\raggedleft 0.\+0112 ± 0.\+0021  &\PBS\raggedleft 1.\+13   \\\cline{1-4}
+200000  &\PBS\raggedleft 1.\+2640 ± 0.\+0061  &\PBS\raggedleft 1.\+2602 ± 0.\+0372  &\PBS\raggedleft 1.\+00   \\\cline{1-4}
+2000000  &\PBS\raggedleft -\/  &\PBS\raggedleft 13.\+2104 ± 0.\+1185  &\PBS\raggedleft -\/   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md556}{}\paragraph{get only}\label{autotoc_md545_autotoc_md556}
+The values are mean ± standard deviation. {\ttfamily factor} is {\ttfamily v1 / v2} like above
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v1 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v1 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 0.\+0005 ± 0.\+0000  &\PBS\raggedleft 0.\+0006 ± 0.\+0001  &\PBS\raggedleft 0.\+88   \\\cline{1-4}
+200  &\PBS\raggedleft 0.\+0014 ± 0.\+0002  &\PBS\raggedleft 0.\+0010 ± 0.\+0001  &\PBS\raggedleft 1.\+33   \\\cline{1-4}
+2000  &\PBS\raggedleft 0.\+0086 ± 0.\+0008  &\PBS\raggedleft 0.\+0072 ± 0.\+0005  &\PBS\raggedleft 1.\+20   \\\cline{1-4}
+200000  &\PBS\raggedleft 0.\+8516 ± 0.\+0048  &\PBS\raggedleft 0.\+6413 ± 0.\+0082  &\PBS\raggedleft 1.\+33   \\\cline{1-4}
+2000000  &\PBS\raggedleft 8.\+8809 ± 0.\+0345  &\PBS\raggedleft 6.\+3756 ± 0.\+0443  &\PBS\raggedleft 1.\+39   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md557}{}\subsubsection{Version 3}\label{autotoc_md545_autotoc_md557}
+Running the same {\ttfamily benchmark\+\_\+plugingetset} tests with version 3 of the plugin yields\+:\hypertarget{autotoc_md545_autotoc_md558}{}\paragraph{File sizes}\label{autotoc_md545_autotoc_md558}
+{\ttfamily factor} is {\ttfamily v1 / v2} like above (bigger is better)
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v3 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v3 (B)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 380  &\PBS\raggedleft 240  &\PBS\raggedleft 1.\+58   \\\cline{1-4}
+200  &\PBS\raggedleft 23788  &\PBS\raggedleft 23788  &\PBS\raggedleft 1.\+00   \\\cline{1-4}
+2000  &\PBS\raggedleft 381788  &\PBS\raggedleft 241788  &\PBS\raggedleft 1.\+58   \\\cline{1-4}
+200000  &\PBS\raggedleft 38977788  &\PBS\raggedleft 24977788  &\PBS\raggedleft 1.\+56   \\\cline{1-4}
+2000000  &\PBS\raggedleft 393777788  &\PBS\raggedleft 253777788  &\PBS\raggedleft 1.\+55   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md559}{}\paragraph{get and set}\label{autotoc_md545_autotoc_md559}
+The values are mean ± standard deviation. {\ttfamily factor} is {\ttfamily v2 / v3}, i.\+e. bigger is better
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v3 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v3 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 0.\+0013 ± 0.\+0035  &\PBS\raggedleft 0.\+0012 ± 0.\+0029  &\PBS\raggedleft 1.\+08   \\\cline{1-4}
+200  &\PBS\raggedleft 0.\+0018 ± 0.\+0002  &\PBS\raggedleft 0.\+0017 ± 0.\+0002  &\PBS\raggedleft 1.\+05   \\\cline{1-4}
+2000  &\PBS\raggedleft 0.\+0112 ± 0.\+0021  &\PBS\raggedleft 0.\+0106 ± 0.\+0011  &\PBS\raggedleft 1.\+06   \\\cline{1-4}
+200000  &\PBS\raggedleft 1.\+2602 ± 0.\+0372  &\PBS\raggedleft 1.\+1473 ± 0.\+0287  &\PBS\raggedleft 1.\+10   \\\cline{1-4}
+2000000  &\PBS\raggedleft 13.\+2104 ± 0.\+1185  &\PBS\raggedleft 11.\+5082 ± 0.\+2624  &\PBS\raggedleft 1.\+15   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{autotoc_md545_autotoc_md560}{}\paragraph{get only}\label{autotoc_md545_autotoc_md560}
+The values are mean ± standard deviation. {\ttfamily factor} is {\ttfamily v2 / v3} like above
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v3 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ no. of keys  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v2 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ quickdump v3 (s)  }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ factor   }\\\cline{1-4}
+\endhead
+2  &\PBS\raggedleft 0.\+0006 ± 0.\+0001  &\PBS\raggedleft 0.\+0006 ± 0.\+0001  &\PBS\raggedleft 0.\+99   \\\cline{1-4}
+200  &\PBS\raggedleft 0.\+0010 ± 0.\+0001  &\PBS\raggedleft 0.\+0012 ± 0.\+0001  &\PBS\raggedleft 0.\+84   \\\cline{1-4}
+2000  &\PBS\raggedleft 0.\+0072 ± 0.\+0005  &\PBS\raggedleft 0.\+0070 ± 0.\+0004  &\PBS\raggedleft 1.\+03   \\\cline{1-4}
+200000  &\PBS\raggedleft 0.\+6413 ± 0.\+0082  &\PBS\raggedleft 0.\+6288 ± 0.\+0218  &\PBS\raggedleft 1.\+02   \\\cline{1-4}
+2000000  &\PBS\raggedleft 6.\+3756 ± 0.\+0443  &\PBS\raggedleft 6.\+2309 ± 0.\+0462  &\PBS\raggedleft 1.\+02   \\\cline{1-4}
+\end{longtabu}

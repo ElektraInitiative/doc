@@ -1,0 +1,114 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the conditionals plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/provides =
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = unittest nodep libc global preview
+\item infos/metadata = check/condition assign/condition condition/validsuffix check/condition/any/\# check/condition/all/\# check/condition/none/\# assign/condition/\#
+\item infos/description = ensures key values through conditions
+\end{DoxyItemize}
+
+This plugin uses if-\/then-\/else like conditions. It also works as global plugin.
+
+Stored in the metakey {\ttfamily check/condition} to validate data is\+:
+
+{\ttfamily (I\+F-\/condition) ? (T\+H\+E\+N-\/condition) \+: (E\+L\+S\+E-\/condition)} where the E\+L\+S\+E-\/condition is optional
+
+Condition\+: {\ttfamily Key} {\itshape Operation} `(\textquotesingle{}String' $\vert$ \textquotesingle{}1234.\+56\textquotesingle{} $\vert$ Key $\vert$ \textquotesingle{}\textquotesingle{})\`{}
+
+Operations\+: {\ttfamily !=, ==, $<$, $<$=, =$>$, $>$, \+:=}, where\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \+:=} is used to set a key value
+\item others are for comparison as in C
+\end{DoxyItemize}
+
+{\ttfamily (! a/key)} evaluates to true if the key {\ttfamily a/key} doesn\textquotesingle{}t exist, to false if it exists.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{(IF-condition) ? ('ThenValue') : ('ElseValue')}
+\end{DoxyCode}
+
+
+Depending on if the condition is met, either \textquotesingle{}Then\+Value\textquotesingle{} or \textquotesingle{}Else\+Value\textquotesingle{} will be assigned as key value if the metakey {\ttfamily assign/condition} is used.
+
+Multiple conditions can be nested and combined using parentheses and {\ttfamily \&\&} (logical A\+ND) or {\ttfamily $\vert$$\vert$} (logical OR). Additional parentheses must be used to form valid conditions again. {\ttfamily (} {\ttfamily (condition 1) \&\& (condition 2)} {\ttfamily )}
+
+The {\ttfamily condition/validsuffix} can be used to define a list of valid suffixes to numeric values. If two operants have the same valid suffix or one of them no suffix they will be treated by their numeric value ignoring their suffix. `condition/validsuffix = \textquotesingle{}m', \textquotesingle{}cm\textquotesingle{}, \textquotesingle{}km\textquotesingle{}{\ttfamily would treat}2.\+3m{\ttfamily just as the numeric value}2.\+3\`{} when comparing to another value having the same or no suffix.
+
+Keynames are all either relative to to-\/be-\/tested key (starting with {\ttfamily ./} or {\ttfamily ../}), relative to the parentkey (starting with {\ttfamily @/}) or absolute (e.\+g. {\ttfamily system/key}).
+
+It\textquotesingle{}s also possible to test multiple conditions using {\ttfamily check/condition/\{any,all,none\}} as a meta array. Where {\ttfamily any} means that at least one statement has to evaluate to true, {\ttfamily all} that all statements have to evaluate to true, and {\ttfamily none} that no statement is allowed to evaluate to false (default). For multiple assign statements use {\ttfamily assign/condition} as a meta array. The first {\ttfamily assign/condition/\#} statement that evaluates to true will be assigned and the rest ignored.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{(this/key  != 'value') ? (then/key == some/other/key) : (or/key <= '125')}
+\end{DoxyCode}
+
+
+Meaning\+: IF {\ttfamily this/key} N\+OT E\+Q\+U\+AL TO `\textquotesingle{}value'{\ttfamily T\+H\+EN}then/key{\ttfamily M\+U\+ST E\+Q\+U\+AL}some/other/key{\ttfamily E\+L\+SE}or/key{\ttfamily M\+U\+ST BE L\+E\+SS T\+H\+AN}125\`{}
+
+Another full example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#Backup-and-Restore:user/tests/conditionals}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount conditionals.dump user/tests/conditionals conditionals dump}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user/tests/conditionals/fkey 3.0}
+\DoxyCodeLine{kdb set user/tests/conditionals/hkey hello}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# will succeed}
+\DoxyCodeLine{kdb meta-set user/tests/conditionals/key check/condition "(../hkey == 'hello') ? (../fkey == '3.0')"}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# will fail}
+\DoxyCodeLine{kdb meta-set user/tests/conditionals/key check/condition "(../hkey == 'hello') ? (../fkey == '5.0')"}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\end{DoxyCode}
+
+
+Assignment example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user/tests/conditionals/hkey Hello}
+\DoxyCodeLine{kdb meta-set user/tests/conditionals/hkey assign/condition "(./ == 'Hello') ? ('World')"}
+\DoxyCodeLine{\# alternative syntax: "(../hkey == 'Hello') ? ('World')}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user/tests/conditionals/hkey}
+\DoxyCodeLine{\#> World}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -r user/tests/conditionals}
+\DoxyCodeLine{sudo kdb umount user/tests/conditionals}
+\end{DoxyCode}
+
+
+Global plugin example\+:
+
+\`{}\`{}\`{} \hypertarget{autotoc_md88_autotoc_md97}{}\section{Backup old list of global plugins}\label{autotoc_md88_autotoc_md97}
+kdb set user/tests/msr  kdb export system/elektra/globalplugins $>$ \$(kdb get user/tests/msr)
+
+sudo kdb mount main.\+ini /tests/conditionals ni sudo kdb mount sub.\+ini /tests/conditionals/sub ini\hypertarget{autotoc_md88_autotoc_md98}{}\section{mount conditionals as global plugin}\label{autotoc_md88_autotoc_md98}
+sudo kdb global-\/mount conditionals $\vert$$\vert$ \$(exit 0)\hypertarget{autotoc_md88_autotoc_md99}{}\section{create testfiles}\label{autotoc_md88_autotoc_md99}
+echo \textquotesingle{}key1=val1\textquotesingle{} $>$ {\ttfamily kdb file /tests/conditionals} echo \textquotesingle{}\mbox{[}key1\mbox{]}\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/conditionals} echo \char`\"{}check/condition=(./ == \textquotesingle{}val1\textquotesingle{}) ? (../sub/key == \textquotesingle{}true\textquotesingle{})\char`\"{} $>$$>$ {\ttfamily kdb file /tests/conditionals}
+
+echo \char`\"{}key=false\char`\"{} $>$ {\ttfamily kdb file /tests/conditionals/sub}\hypertarget{autotoc_md88_autotoc_md100}{}\section{should fail and yield an error}\label{autotoc_md88_autotoc_md100}
+kdb export /tests/conditionals ini \hypertarget{autotoc_md88_autotoc_md101}{}\section{E\+R\+R\+O\+R\+:\+C03200}\label{autotoc_md88_autotoc_md101}
+\hypertarget{autotoc_md88_autotoc_md102}{}\section{Sorry, module conditionals issued the error C03200\+:}\label{autotoc_md88_autotoc_md102}
+\hypertarget{autotoc_md88_autotoc_md103}{}\section{Validation failed\+: Validation of Key key1\+: (./ == \textquotesingle{}val1\textquotesingle{}) ? (../sub/key == \textquotesingle{}true\textquotesingle{}) failed. ((../sub/key == \textquotesingle{}true\textquotesingle{}) failed)}\label{autotoc_md88_autotoc_md103}
+kdb set /tests/conditionals/sub/key true\hypertarget{autotoc_md88_autotoc_md104}{}\section{should succeed}\label{autotoc_md88_autotoc_md104}
+kdb export /tests/conditionals ini \#$>$ sub/key=true \#$>$ \#@\+M\+E\+TA check/condition = (./ == \textquotesingle{}val1\textquotesingle{}) ? (../sub/key == \textquotesingle{}true\textquotesingle{}) \#$>$ key1=val1\hypertarget{autotoc_md88_autotoc_md105}{}\section{cleanup}\label{autotoc_md88_autotoc_md105}
+kdb rm -\/r /tests/conditionals sudo kdb umount /tests/conditionals/sub sudo kdb umount /tests/conditionals
+
+sudo kdb global-\/umount conditionals
+
+kdb rm -\/r system/elektra/globalplugins kdb import system/elektra/globalplugins $<$ \$(kdb get user/tests/msr) rm \$(kdb get user/tests/msr) kdb rm user/tests/msr \`{}\`{}\`{} 

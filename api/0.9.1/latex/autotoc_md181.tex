@@ -1,0 +1,164 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the directoryvalue plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\texttt{ sanssecours@me.\+com}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep preview
+\item infos/metadata =
+\item infos/description = This plugin converts directory keys to leaf keys in the set direction
+\end{DoxyItemize}\hypertarget{autotoc_md181_src_plugins_directoryvalue_README_md}{}\section{Directory Value}\label{autotoc_md181_src_plugins_directoryvalue_README_md}
+\hypertarget{autotoc_md181_autotoc_md182}{}\subsection{Introduction}\label{autotoc_md181_autotoc_md182}
+The Directory Value plugin converts
+
+
+\begin{DoxyEnumerate}
+\item directory (non-\/leaf) keys to leaf keys in the “set” direction, and
+\item converts them back to directory keys in the “get” direction.
+\end{DoxyEnumerate}
+
+A directory key is a key that has children. For example in the key set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/grandparent                = Grandparent}
+\DoxyCodeLine{user/grandparent/leaf           = Leaf}
+\DoxyCodeLine{user/grandparent/parent         = Parent}
+\DoxyCodeLine{user/grandparent/parent/child   = Child}
+\DoxyCodeLine{user/mother                     = Mother}
+\DoxyCodeLine{user/mother/daughter            = Daughter}
+\DoxyCodeLine{user/mother/son                 = Son}
+\end{DoxyCode}
+
+
+the keys
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/grandparent}
+\DoxyCodeLine{user/grandparent/parent}
+\DoxyCodeLine{user/mother}
+\end{DoxyCode}
+
+
+represent directory keys, while the keys
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/grandparent/leaf}
+\DoxyCodeLine{user/grandparent/parent/child}
+\DoxyCodeLine{user/mother/daughter}
+\DoxyCodeLine{user/mother/son}
+\end{DoxyCode}
+
+
+are leaf keys. You can easily check this by drawing the key set in the form of a rooted tree\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{             user}
+\DoxyCodeLine{      /               \(\backslash\)}
+\DoxyCodeLine{  granparent        mother}
+\DoxyCodeLine{  /      |          /    \(\backslash\)}
+\DoxyCodeLine{leaf  parent    daughter son}
+\DoxyCodeLine{         |}
+\DoxyCodeLine{       child}
+\end{DoxyCode}
+
+
+. The Directory Value plugin converts all directory keys to leaf keys in the “set” direction by adding new keys with the postfix {\ttfamily \+\_\+\+\_\+\+\_\+dirdata}. Theses keys then store the old value of their parent keys
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/grandparent                    =}
+\DoxyCodeLine{user/grandparent/\_\_\_dirdata         = Grandparent}
+\DoxyCodeLine{user/grandparent/leaf               = Leaf}
+\DoxyCodeLine{user/grandparent/parent             =}
+\DoxyCodeLine{user/grandparent/parent/\_\_\_dirdata  = Parent}
+\DoxyCodeLine{user/grandparent/parent/child       = Child}
+\DoxyCodeLine{user/mother                         =}
+\DoxyCodeLine{user/mother/\_\_\_dirdata              = Mother}
+\DoxyCodeLine{user/mother/daughter                = Daughter}
+\DoxyCodeLine{user/mother/son                     = Son}
+\end{DoxyCode}
+
+
+. You might ask why we need the Directory Value plugin at all. The reason why we created this plugin is that some storage plugins like \mbox{\hyperlink{autotoc_md726_src_plugins_yajl_README_md}{\`{}yajl\`{}}} or \mbox{\hyperlink{autotoc_md726_src_plugins_yajl_README_md}{\`{}yamlcpp\`{}}} are only able to save values inside leaf keys. By loading the Directory Value plugin these storage plugins are also able to represent directory values properly.\hypertarget{autotoc_md181_autotoc_md183}{}\subsubsection{Array Values}\label{autotoc_md181_autotoc_md183}
+The Directory value plugin also converts array values. Let us take a look at an example key set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/array    = Array Value}
+\DoxyCodeLine{user/array/\#0 = Firt Value}
+\DoxyCodeLine{user/array/\#1 = Second Value}
+\DoxyCodeLine{user/array/\#2 = Third Value}
+\end{DoxyCode}
+
+
+. The plugin {\bfseries{does not}} convert this key set into\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/array            =}
+\DoxyCodeLine{user/array/\_\_\_dirdata = Array Value}
+\DoxyCodeLine{user/array/\#0         = First Value}
+\DoxyCodeLine{user/array/\#1         = Second Value}
+\DoxyCodeLine{user/array/\#2         = Third Value}
+\end{DoxyCode}
+
+
+, since then {\ttfamily user/array} {\bfseries{would not be an array}} any more. Instead the plugin inserts a new element at index 0 with the {\bfseries{value prefix}} {\ttfamily \+\_\+\+\_\+\+\_\+dirdata\+:}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/array            =}
+\DoxyCodeLine{user/array/\#0         = \_\_\_dirdata: Array Value}
+\DoxyCodeLine{user/array/\#1         = First Value}
+\DoxyCodeLine{user/array/\#2         = Second Value}
+\DoxyCodeLine{user/array/\#3         = Third Value}
+\end{DoxyCode}
+
+
+. This way a storage plugin such as Y\+A\+JL or Y\+A\+ML C\+PP are still able to store {\ttfamily user/array} as an array.
+
+{\bfseries{Remark\+:}} The plugin only converts array parents that store {\bfseries{string values}}.\hypertarget{autotoc_md181_autotoc_md184}{}\subsection{Usage}\label{autotoc_md181_autotoc_md184}
+To mount the plugin use the command\+:
+
+\`{}\`{}{\ttfamily  @section autotoc\+\_\+md185 Mount plugin at}user/tests/directoryvalue\`{} sudo kdb mount config.\+file user/tests/directoryvalue directoryvalue 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{. To unmount the plugin use the command}
+\end{DoxyCode}
+ sudo kdb umount user/tests/directoryvalue 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{.}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\# Example}
+\end{DoxyCode}
+ \hypertarget{autotoc_md181_autotoc_md186}{}\section{Mount plugin}\label{autotoc_md181_autotoc_md186}
+sudo kdb mount config.\+file user/tests/directoryvalue directoryvalue\hypertarget{autotoc_md181_autotoc_md187}{}\section{Add a directory value}\label{autotoc_md181_autotoc_md187}
+kdb set user/tests/directoryvalue/harold \textquotesingle{}Father of Sponge\+Bob Square\+Pants\textquotesingle{} \hypertarget{autotoc_md181_autotoc_md188}{}\section{Add a leaf value}\label{autotoc_md181_autotoc_md188}
+kdb set user/tests/directoryvalue/harold/spongebob \textquotesingle{}I am ready!\textquotesingle{}\hypertarget{autotoc_md181_autotoc_md189}{}\section{Add an array}\label{autotoc_md181_autotoc_md189}
+kdb set user/tests/directoryvalue/patrick Star kdb set user/tests/directoryvalue/patrick/\#0 \textquotesingle{}Being grown-\/up is boring. Besides, I don’t get Jazz.\textquotesingle{}\hypertarget{autotoc_md181_autotoc_md190}{}\section{Since the plugin converts values back in the get direction}\label{autotoc_md181_autotoc_md190}
+\hypertarget{autotoc_md181_autotoc_md191}{}\section{a user of the database will not notice any changes.}\label{autotoc_md181_autotoc_md191}
+kdb ls user/tests/directoryvalue \#$>$ user/tests/directoryvalue/harold \#$>$ user/tests/directoryvalue/harold/spongebob \#$>$ user/tests/directoryvalue/patrick \#$>$ user/tests/directoryvalue/patrick/\#0
+
+kdb get user/tests/directoryvalue/harold \#$>$ Father of Sponge\+Bob Square\+Pants kdb get user/tests/directoryvalue/harold/spongebob \#$>$ I am ready!
+
+kdb get user/tests/directoryvalue/patrick \#$>$ Star kdb get user/tests/directoryvalue/patrick/\#0 \#$>$ Being grown-\/up is boring. Besides, I don’t get Jazz.\hypertarget{autotoc_md181_autotoc_md192}{}\section{Retrieve index of last element in array.}\label{autotoc_md181_autotoc_md192}
+\hypertarget{autotoc_md181_autotoc_md193}{}\section{This also works if the storage plugin does not store this index.}\label{autotoc_md181_autotoc_md193}
+kdb meta-\/get user/tests/directoryvalue/patrick array \#$>$ \#0\hypertarget{autotoc_md181_autotoc_md194}{}\section{Undo changes to the key database}\label{autotoc_md181_autotoc_md194}
+kdb rm -\/r user/tests/directoryvalue sudo kdb umount user/tests/directoryvalue \`{}\`{}\`{}\hypertarget{autotoc_md181_autotoc_md195}{}\section{Limitations}\label{autotoc_md181_autotoc_md195}
+
+\begin{DoxyItemize}
+\item {\bfseries{Escaping}} is currently {\bfseries{not possible}}. If you use the Directory Value plugin you can not
+\begin{DoxyItemize}
+\item use the name {\ttfamily \+\_\+\+\_\+\+\_\+dirdata} as the last part of a normal key,
+\item use {\ttfamily \+\_\+\+\_\+\+\_\+dirdata\+:} at the beginning of a normal value in the first array element
+\end{DoxyItemize}
+
+!
+\item The plugin is \href{https://issues.libelektra.org/2281}{\texttt{ quite slow}}. 
+\end{DoxyItemize}

@@ -1,0 +1,41 @@
+.TH "doc_decisions_error_code_implementation_md" 3elektra "Tue Nov 26 2019" "Version 0.9.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_error_code_implementation_md \- Error Code Implementation 
+In the previous error concept it was very useful to generate macros as we often added new errors\&. The code generation itself, however, is quite complicated (C++ code that prints the code; which is also not ideal for cross compilation, see also https://github.com/ElektraInitiative/libelektra/issues/2814)\&.
+.PP
+.IP "\(bu" 2
+Error codes do not change very often
+.PP
+.PP
+.IP "\(bu" 2
+Migrate to a more modern and easier way to generate code with our mustache system, and let this generate the (mapping) code for all compiled languages (C, C++, Java, Rust, Go)\&. All we get out of this is the removal of \fCstd::cout << \&.\&.\&.\fP code from C++ but not much more\&.
+.IP "\(bu" 2
+Migrate to CMake code that generates such macros/classes (see also https://github.com/ElektraInitiative/libelektra/issues/2814) Mustache templates have to be supplied with the input data somehow\&. Either we have to use a custom executable that is compiled at build time\&. In that case we would just get rid of the std::cout << \&.\&.\&. in the C++ code, but not much else would change\&. The other option is to use the default mustache executable, which is a Ruby script and therefore requires Ruby to be installed\&. Also kdb gen cannot be reused, since that would require compiling kdb first, which needs \fBkdberrors\&.h\fP\&.
+.PP
+.PP
+Write down the few macros manually, and also manually write down exceptions for the language bindings (and also the mappings from Elektra's internal errors to nice errors specific for the languages)
+.PP
+Since error codes and crucial parts Elektra's core implementation will not change often this is the best approach with minimal effort\&.
+.PP
+The existing code will be refactored so that error macros directly call macros\&.
+.PP
+When adding a new error code, language bindings have to be adapted accordingly such as the Rust or Java Binding\&.
+.PP
+.IP "\(bu" 2
+Updates to error codes will imply syncing every binding\&. This though should happen in very rare circumstances\&.
+.PP
+.PP
+.IP "\(bu" 2
+The current bindings stay untouched
+.IP "\(bu" 2
+Tutorial on how to write a binding should be written
+.PP
+.PP
+.IP "\(bu" 2
+https://github.com/ElektraInitiative/libelektra/issues/2871
+.IP "\(bu" 2
+https://github.com/ElektraInitiative/libelektra/issues/2814 
+.PP
+

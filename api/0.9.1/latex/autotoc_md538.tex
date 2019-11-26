@@ -1,0 +1,96 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the python plugin is in keys below
+\item infos/author = Manuel Mausz \href{mailto:manuel-elektra@mausz.at}{\texttt{ manuel-\/elektra@mausz.\+at}}
+\item infos/licence = B\+SD
+\item infos/provides =
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest configurable global memleak
+\item infos/description = proxy that calls other plugins (scripts) written in python
+\end{DoxyItemize}
+
+The plugin uses Python to do magic things. It allows plugins to be written in Python.
+
+What a Python script can do is not really limited by design, so any kind of plugin may be implemented. The python plugin is especially useful to write filter and logging scripts.
+
+The python plugin requires the configuration parameter {\bfseries{script}} holding the file path to a python script. The mount command would look like
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.ini /python python script=/path/to/filter\_script.py}
+\end{DoxyCode}
+
+
+if the {\bfseries{ini}} plugin should be used for storage and the python plugin only serves to invoke the filter script.
+
+For a Python script that serves as I\+NI storage plugin itself, one uses
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.json /python python script=python\_configparser.py}
+\end{DoxyCode}
+
+
+The python plugin supports following optional configuration values/flags\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily script} (string)\+: The script to be executed.
+\item {\ttfamily print} (flag)\+: Make the plugin print engine errors, triggered by the calls of this plugin, to stderr. Mainly intended for diagnostic. Please note that the Python engine itself will print script errors to stderr regardless of this flag.
+\item {\ttfamily python/path} (string)\+: Extends sys.\+path by this entry. Better then P\+Y\+T\+H\+O\+N\+P\+A\+TH it is always available, regardless of the context where a binary is executed.
+\end{DoxyItemize}
+
+Python scripts must implement a class called {\ttfamily Elektra\+Plugin} with one parameter. The class itself can implement the following functions
+
+
+\begin{DoxyItemize}
+\item open(self, config, error\+Key)
+\item get(self, returned, parent\+Key)
+\item set(self, returned, parent\+Key)
+\item error(self, returned, parent\+Key)
+\item close(self, error\+Key)
+\end{DoxyItemize}
+
+where {\itshape config} \& {\itshape returned} are Key\+Sets and {\itshape error\+Key} \& {\itshape parent\+Key} are Keys. For the return codes of the functions, the same rules as for normal plugins apply.
+
+If a function is not available, it simply is not called. A script does not have to implement all functions therefore.
+
+Access to {\bfseries{kdb}} can be retrieved using the Python import
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\end{DoxyCode}
+
+
+An example script that prints some information for each method call would be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{class }ElektraPlugin(object):}
+\DoxyCodeLine{    \textcolor{keyword}{def }open(self, config, errorKey):}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"Python script method 'open' called"})}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keyword}{def }get(self, returned, parentKey):}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"Python script method 'get' called"})}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keyword}{def }set(self, returned, parentKey):}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"Python script method 'set' called"})}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keyword}{def }error(self, returned, parentKey):}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"Python script method 'error' called"})}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keyword}{def }close(self, errorKey):}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"Python script method 'close' called"})}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} 0}
+\end{DoxyCode}
+
+
+Further examples can be found in the python directory.
+
+Be aware that a Python script will never be as performant as a native C/\+C++ plugin. Spinning up the interpreter takes additional time and resources. 

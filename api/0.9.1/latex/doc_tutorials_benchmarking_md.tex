@@ -1,0 +1,60 @@
+One of the usual questions for a standard benchmark is, how much more or less time two or more different programs take to execute on the same hardware. This tutorial will introduce some tools and techniques that will help you to answer this question. For that purpose we compare the time it takes for certain Y\+A\+ML \mbox{\hyperlink{doc_tutorials_storage-plugins_md}{storage plugins}} to translate Y\+A\+ML data into Elektra’s key set structure. Most of the techniques we describe here should be applicable too, if you want to compare the run-\/time of other parts of Elektra. If you want to know why a certain part of Elektra takes a long time to execute, then you might also be interested in the \mbox{\hyperlink{doc_tutorials_profiling_md}{profiling tutorial}}.
+
+If you have never translated the code base of Elektra before, then please take a look \mbox{\hyperlink{doc_COMPILE_md}{here}} before you continue.
+
+Usually you want to compare the execution time of the fastest version of a compiled binary. For that purpose it makes sense to change the C\+Make build type to {\ttfamily Release}, which means that the generated build system will optimize the code and strip debug symbols. You should also disable the logger and debug code. An example C\+Make command that uses \href{https://ninja-build.org}{\texttt{ Ninja}} as build tool could look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir build}
+\DoxyCodeLine{cd build}
+\DoxyCodeLine{cmake -GNinja ..                 \(\backslash\)}
+\DoxyCodeLine{      -DCMAKE\_BUILD\_TYPE=Release \(\backslash\)}
+\DoxyCodeLine{      -DENABLE\_LOGGER=OFF        \(\backslash\)}
+\DoxyCodeLine{      -DENABLE\_DEBUG=OFF         \(\backslash\)}
+\DoxyCodeLine{      -DPLUGINS=ALL}
+\DoxyCodeLine{ninja}
+\DoxyCodeLine{cd .. \# Change working directory back to the root of repository}
+\end{DoxyCode}
+
+
+Elektra already includes a tool that helps you to benchmark the {\ttfamily get} and {\ttfamily set} methods of a certain \mbox{\hyperlink{doc_tutorials_plugins_md}{plugin}} called \`{}benchmark\+\_\+plugingetset\`{}. To show you how to use {\ttfamily benchmark\+\_\+plugingetset}, we create a file named {\ttfamily test.\+yamlcpp.\+in} with the following content\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{- You,}
+\DoxyCodeLine{- Me, \&}
+\DoxyCodeLine{- The Violence}
+\end{DoxyCode}
+
+
+and save it in the folder {\ttfamily benchmarks/data}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -p benchmarks/data}
+\DoxyCodeLine{printf -- '- You,\(\backslash\)n'       >  benchmarks/data/test.yamlcpp.in}
+\DoxyCodeLine{printf -- '- Me, \&\(\backslash\)n'      >> benchmarks/data/test.yamlcpp.in}
+\DoxyCodeLine{printf -- '- The Violence' >> benchmarks/data/test.yamlcpp.in}
+\end{DoxyCode}
+
+
+. As you can see the filename has to use the pattern\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{test.\$plugin.in}
+\end{DoxyCode}
+
+
+, where {\ttfamily \$plugin} specifies the name of the plugin the benchmark tool should call. We can now call the {\ttfamily get} method of the plugin ../../src/plugins/yamlcpp/\+R\+E\+A\+D\+ME.md \char`\"{}\+Y\+A\+M\+L C\+P\+P\char`\"{} using the following shell command
+
+\`{}\`{}\`{} build/bin/benchmark\+\_\+plugingetset benchmarks/data user yamlcpp get \hypertarget{doc_tutorials_benchmarking_md_autotoc_md2567}{}\section{↑              ↑        ↑           ↑}\label{doc_tutorials_benchmarking_md_autotoc_md2567}
+\hypertarget{doc_tutorials_benchmarking_md_autotoc_md2568}{}\section{parent directory  namespace  plugin   only use $<$tt$>$get$<$/tt$>$}\label{doc_tutorials_benchmarking_md_autotoc_md2568}
+\# of config file plugin method 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{. If you can want you can also use the `time` utility to measure the execution time of the last command:}
+\end{DoxyCode}
+ time build/bin/benchmark\+\_\+plugingetset benchmarks/data user yamlcpp get \#$>$ 0.\+00 real 0.\+00 user 0.\+00 sys \`{}\`{}\`{}
+
+. As you can see in the output above a real configuration file that tests the performance of the ../../src/plugins/yamlcpp/\+R\+E\+A\+D\+ME.md \char`\"{}\+Y\+A\+M\+L C\+P\+P\char`\"{} plugin should be much larger.

@@ -1,0 +1,124 @@
+\hypertarget{kdbopts_8h}{}\section{kdbopts.\+h File Reference}
+\label{kdbopts_8h}\index{kdbopts.h@{kdbopts.h}}
+{\ttfamily \#include $<$kdb.\+h$>$}\newline
+Include dependency graph for kdbopts.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=145pt]{kdbopts_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=145pt]{kdbopts_8h__dep__incl}
+\end{center}
+\end{figure}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{kdbopts_8h_a9b60d56d97c918867960f19c19ab4058}{elektra\+Get\+Opts}} (Key\+Set $\ast$ks, int argc, const char $\ast$$\ast$argv, const char $\ast$$\ast$envp, Key $\ast$parent\+Key)
+\begin{DoxyCompactList}\small\item\em This functions parses a specification of program options, together with a list of arguments and environment variables to extract the option values. \end{DoxyCompactList}\item 
+char $\ast$ \mbox{\hyperlink{kdbopts_8h_aee9125474f09a946fe00ae2bd7a2468d}{elektra\+Get\+Opts\+Help\+Message}} (Key $\ast$error\+Key, const char $\ast$usage, const char $\ast$prefix)
+\begin{DoxyCompactList}\small\item\em Extracts the help message from the {\ttfamily error\+Key} used in \mbox{\hyperlink{opts_8c_a9b60d56d97c918867960f19c19ab4058}{elektra\+Get\+Opts()}}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyCopyright}{Copyright}
+B\+SD License (see L\+I\+C\+E\+N\+S\+E.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{kdbopts_8h_a9b60d56d97c918867960f19c19ab4058}\label{kdbopts_8h_a9b60d56d97c918867960f19c19ab4058}} 
+\index{kdbopts.h@{kdbopts.h}!elektraGetOpts@{elektraGetOpts}}
+\index{elektraGetOpts@{elektraGetOpts}!kdbopts.h@{kdbopts.h}}
+\subsubsection{\texorpdfstring{elektraGetOpts()}{elektraGetOpts()}}
+{\footnotesize\ttfamily int elektra\+Get\+Opts (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{ks,  }\item[{int}]{argc,  }\item[{const char $\ast$$\ast$}]{argv,  }\item[{const char $\ast$$\ast$}]{envp,  }\item[{Key $\ast$}]{parent\+Key }\end{DoxyParamCaption})}
+
+
+
+This functions parses a specification of program options, together with a list of arguments and environment variables to extract the option values. 
+
+The options have to be defined in the metadata of keys in the spec namespace. If an option value is found for any of the given keys, a new key with the same path but inside the proc namespace will be inserted into {\ttfamily ks}. This enables a cascading lookup to find these values.
+
+Take look at \href{https://www.libelektra.org/tutorials/command-line-options}{\texttt{ https\+://www.\+libelektra.\+org/tutorials/command-\/line-\/options}} for information on how exactly the specification works.
+
+N\+O\+TE\+: Per default option processing D\+O\+ES N\+OT stop, when a non-\/option string is encountered in {\ttfamily argv}. If you want processing to stop, set the metadata {\ttfamily posixly = 1} on {\ttfamily parent\+Key}.
+
+The basic usage of this function is as follows\+: 
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{        KDB * \mbox{\hyperlink{namespacekdb}{kdb}} = \mbox{\hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdbOpen}} (parentKey);}
+\DoxyCodeLine{        KeySet * ks = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{kdbenum_8c_a7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{keywordtype}{int} result = \mbox{\hyperlink{opts_8c_a9b60d56d97c918867960f19c19ab4058}{elektraGetOpts}} (ks, argc, argv, (\textcolor{keyword}{const} \textcolor{keywordtype}{char} **) environ, parentKey);}
+\DoxyCodeLine{        \textcolor{keywordflow}{if} (result == -1)}
+\DoxyCodeLine{        \{}
+\DoxyCodeLine{                fprintf (stderr, \textcolor{stringliteral}{"ERROR: \%s\(\backslash\)n"}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (parentKey, \textcolor{stringliteral}{"error/reason"})));}
+\DoxyCodeLine{                \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (parentKey);}
+\DoxyCodeLine{                \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (ks);}
+\DoxyCodeLine{                \textcolor{keywordflow}{return} EXIT\_FAILURE;}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{keywordflow}{if} (result == 1)}
+\DoxyCodeLine{        \{}
+\DoxyCodeLine{                \textcolor{keywordtype}{char} * help = \mbox{\hyperlink{opts_8c_aee9125474f09a946fe00ae2bd7a2468d}{elektraGetOptsHelpMessage}} (parentKey, NULL, NULL);}
+\DoxyCodeLine{                fprintf (stderr, \textcolor{stringliteral}{"\%s\(\backslash\)n"}, help);}
+\DoxyCodeLine{                \mbox{\hyperlink{internal_8c_a7f572149d2e0bfe18023a6ac969f195c}{elektraFree}} (help);}
+\DoxyCodeLine{                \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (parentKey);}
+\DoxyCodeLine{                \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (ks);}
+\DoxyCodeLine{                \textcolor{keywordflow}{return} EXIT\_SUCCESS;}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{}
+\end{DoxyCodeInclude}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em ks} & The Key\+Set containing the specification for the options. \\
+\hline
+{\em argc} & The number of strings in argv. \\
+\hline
+{\em argv} & The arguments to be processed. \\
+\hline
+{\em envp} & A list of environment variables. This needs to be a null-\/terminated list of strings of the format \textquotesingle{}K\+EY=V\+A\+L\+UE\textquotesingle{}. \\
+\hline
+{\em parent\+Key} & The parent key below which the function while search for option specifications. Also used for error reporting. The key will be translated into the spec namespace automatically, i.\+e. \textquotesingle{}user/test/parent\textquotesingle{} will be translated into \textquotesingle{}spec/test/parent\textquotesingle{}, before checking against spec keys.\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & on success, this is the only case in which {\ttfamily ks} will be modified \\
+\hline
+{\em -\/1} & on error, the error will be set as metadata in {\ttfamily error\+Key} \\
+\hline
+{\em 1} & if the help option {\ttfamily -\/-\/help} was found, use \mbox{\hyperlink{opts_8c_aee9125474f09a946fe00ae2bd7a2468d}{elektra\+Get\+Opts\+Help\+Message()}} access the generated help message \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{kdbopts_8h_aee9125474f09a946fe00ae2bd7a2468d}\label{kdbopts_8h_aee9125474f09a946fe00ae2bd7a2468d}} 
+\index{kdbopts.h@{kdbopts.h}!elektraGetOptsHelpMessage@{elektraGetOptsHelpMessage}}
+\index{elektraGetOptsHelpMessage@{elektraGetOptsHelpMessage}!kdbopts.h@{kdbopts.h}}
+\subsubsection{\texorpdfstring{elektraGetOptsHelpMessage()}{elektraGetOptsHelpMessage()}}
+{\footnotesize\ttfamily char$\ast$ elektra\+Get\+Opts\+Help\+Message (\begin{DoxyParamCaption}\item[{Key $\ast$}]{error\+Key,  }\item[{const char $\ast$}]{usage,  }\item[{const char $\ast$}]{prefix }\end{DoxyParamCaption})}
+
+
+
+Extracts the help message from the {\ttfamily error\+Key} used in \mbox{\hyperlink{opts_8c_a9b60d56d97c918867960f19c19ab4058}{elektra\+Get\+Opts()}}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em error\+Key} & The same Key as passed to \mbox{\hyperlink{opts_8c_a9b60d56d97c918867960f19c19ab4058}{elektra\+Get\+Opts()}} as error\+Key. \\
+\hline
+{\em usage} & If this is not N\+U\+LL, it will be used instead of the default usage line. \\
+\hline
+{\em prefix} & If this is not N\+U\+LL, it will be inserted between the usage line and the options list.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The full help message extracted from {\ttfamily error\+Key}, or N\+U\+LL if no help message was found. The returned string has to be freed with \mbox{\hyperlink{internal_8c_a7f572149d2e0bfe18023a6ac969f195c}{elektra\+Free()}}. 
+\end{DoxyReturn}

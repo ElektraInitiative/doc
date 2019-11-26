@@ -1,0 +1,79 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the dump plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/dump
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = productive maintained conformant unittest tested nodep -\/1000
+\item infos/metadata =
+\item infos/description = Dumps into a format tailored for complete Key\+Set semantics
+\end{DoxyItemize}
+
+This plugin is a storage plugin that supports full Elektra semantics. Combined with a resolver plugin it already assembles a fully featured backend. No other plugins are needed.
+
+The file format edf (Elektra dump format) consists of a simple command language with arguments. When an argument is binary or string data the length needs to be passed first. Because the size is known in advance, any binary dump is accepted. Terminating characters present no problem. The commands are assembled similar to the ones present in Elektra’s A\+PI.
+
+The file starts with the magic word {\ttfamily kdb\+Open} followed by a version number. Processing can be stopped immediately when it is not in Elektra’s dump format at all. A wrong version number most likely indicates that the version of the plugin is too old to recognize all commands in the file. The basic idea of the dump plugin is to write out the way that the Key\+Set needs to be constructed. The dump plugin interprets such a file. The file also looks similar to C code that would create the Key\+Set. Keys can contain any binary values and arbitrary metadata and are still stored and parsed correctly. The dump plugin can even reconstruct pointers to metadata to save memory. When a pointer to the same region of memory is found, a special command {\ttfamily key\+Copy\+Meta} is written out that is able to reconstruct the data structure the way it was before. The commands were designed to make parsing of the file an easy task.
+
+The serialized configuration can look like (0 bytes at end of strings are omitted)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbOpen 1}
+\DoxyCodeLine{ksNew 207}
+\DoxyCodeLine{keyNew 27 1}
+\DoxyCodeLine{system/elektra/mountpoints}
+\DoxyCodeLine{keyMeta 8 27}
+\DoxyCodeLine{commentBelow are the mount points.}
+\DoxyCodeLine{keyEnd}
+\DoxyCodeLine{keyNew 32 19}
+\DoxyCodeLine{system/elektra/mountpoints/dbusserialized Backend}
+\DoxyCodeLine{keyEnd keyNew 39 1}
+\DoxyCodeLine{system/elektra/mountpoints/dbus/config}
+\DoxyCodeLine{keyMeta 8 72}
+\DoxyCodeLine{commentThis is a configuration for a backend, see subkeys for more information}
+\DoxyCodeLine{keyEnd}
+\DoxyCodeLine{keyNew 53 1}
+\DoxyCodeLine{system/elektra/mountpoints/fstab/config/struct/FStab}
+\DoxyCodeLine{keyCopyMeta 59 11}
+\DoxyCodeLine{system/elektra/mountpoints/file}
+\DoxyCodeLine{systems/config/struct/FStabcheck/type}
+\DoxyCodeLine{keyEnd}
+\DoxyCodeLine{ksEnd}
+\end{DoxyCode}
+
+
+(status -\/1000)
+
+
+\begin{DoxyItemize}
+\item It is quite slow
+\item Files cannot easily edited by hand
+\end{DoxyItemize}
+
+Export a Key\+Set using {\ttfamily dump}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export system/example dump > example.ecf}
+\end{DoxyCode}
+
+
+Import a Key\+Set using {\ttfamily dump}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat example.ecf | kdb import system/example dump}
+\end{DoxyCode}
+
+
+Using grep/diff or other Unix tools on the dump file. Make sure that you treat it as text file, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{grep --text 'mount points' example.ecf}
+\end{DoxyCode}
+ 

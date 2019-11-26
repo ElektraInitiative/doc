@@ -1,0 +1,96 @@
+
+\begin{DoxyItemize}
+\item Plugin names and plugin folders not always exactly match ({\ttfamily resolver\+\_\+$\ast$}, {\ttfamily crypto\+\_\+$\ast$})
+\item plugin should be able to register new variants
+\item there should be only one place to define a new plugin
+\item Multiple categories should be possible per plugin, defined in R\+E\+A\+D\+M\+E.\+md
+\item On some OS some plugins won\textquotesingle{}t work (simpleini)
+\item Some unit tests depend on bindings
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item should work with supported C\+Make
+\item It should be easy to add trivial plugins (without dependency and variants)
+\item It should be possible to add complex plugins (with dependencies on plugins/unit tests and many variants)
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item have one more mapping that describes folder $<$-\/$>$ plugins (bad coherence)
+\item directly use R\+E\+A\+D\+M\+E.\+md to also describe cmake deps (too limited in expression)
+\item split up Add\+Plugin.\+cmake and C\+Make\+Lists.\+txt (does not work well with variants)
+\item simply adding all directories in src/plugins and decide within the {\ttfamily add\+\_\+plugin} if we should drop the plugin (see below in Rationale)
+\end{DoxyItemize}
+
+Names for flag\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+I\+ES} -\/$>$ might be used for {\ttfamily add\+\_\+plugin}
+\item {\ttfamily A\+S\+S\+E\+M\+B\+L\+E\+\_\+\+D\+E\+PS}
+\item {\ttfamily F\+I\+N\+D\+\_\+\+D\+E\+PS} -\/$>$ not only finding happens
+\item {\ttfamily P\+R\+O\+C\+E\+S\+S\+\_\+\+D\+E\+PS}
+\item {\ttfamily H\+A\+N\+D\+L\+E\+\_\+\+D\+E\+PS}
+\item {\ttfamily D\+E\+P\+S\+\_\+\+M\+O\+DE} -\/$>$ too generic, new terminology
+\item {\ttfamily C\+H\+E\+C\+K\+\_\+\+D\+E\+PS} -\/$>$ not only checking happens
+\item {\ttfamily D\+O\+\_\+\+D\+E\+PS} -\/$>$ sounds funny
+\item {\ttfamily F\+I\+N\+D\+\_\+\+P\+A\+C\+K\+A\+G\+ES} -\/$>$ not only packages are subject to this phase
+\item {\ttfamily C\+O\+L\+L\+E\+CT} -\/$>$ needs N\+OT
+\item {\ttfamily F\+I\+N\+D\+\_\+\+P\+H\+A\+SE} -\/$>$ needs N\+OT
+\item {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+CY} -\/$>$ ambiguous
+\end{DoxyItemize}
+
+Introduce a C\+Make process where all plugins are processed three times. Following C\+Make variables are used for the phases\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily C\+O\+L\+L\+E\+C\+T\+I\+O\+N\+\_\+\+P\+H\+A\+SE} .. collect all {\ttfamily add\+\_\+plugins}
+\item {\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+Y\+\_\+\+P\+H\+A\+SE} .. resolve all dependencies, do {\ttfamily add\+\_\+plugins} again
+\item {\ttfamily A\+D\+D\+T\+E\+S\+T\+I\+N\+G\+\_\+\+P\+H\+A\+SE} .. (reserve for potential 3rd phase)
+\end{DoxyItemize}
+\begin{DoxyEnumerate}
+\item Collection phase ({\ttfamily C\+O\+L\+L\+E\+C\+T\+I\+O\+N\+\_\+\+P\+H\+A\+SE} is {\ttfamily ON}), add\+\_\+plugin internally builds up\+:
+\begin{DoxyItemize}
+\item {\ttfamily A\+D\+D\+E\+D\+\_\+\+P\+L\+U\+G\+I\+NS}
+\item {\ttfamily R\+E\+M\+O\+V\+E\+D\+\_\+\+P\+L\+U\+G\+I\+NS}
+\item {\ttfamily A\+D\+D\+E\+D\+\_\+\+D\+I\+R\+E\+C\+T\+O\+R\+I\+ES}
+\end{DoxyItemize}
+\item assemble dependency phase ({\ttfamily D\+E\+P\+E\+N\+D\+E\+N\+C\+Y\+\_\+\+P\+H\+A\+SE} is {\ttfamily ON}, only considering {\ttfamily A\+D\+D\+E\+D\+\_\+\+D\+I\+R\+E\+C\+T\+O\+R\+I\+ES}), with\+:
+\begin{DoxyItemize}
+\item {\ttfamily find\+\_\+libraries}, actually search for libraries on the system (only relevant libraries of plugins that are considered for inclusion)
+\item {\ttfamily add\+\_\+plugin}, with {\itshape actually adding} the plugins
+\end{DoxyItemize}
+\item assemble all unit tests ({\ttfamily A\+D\+D\+T\+E\+S\+T\+I\+N\+G\+\_\+\+P\+H\+A\+SE} is {\ttfamily ON}), either
+\begin{DoxyItemize}
+\item with {\ttfamily A\+D\+D\+\_\+\+T\+E\+ST} in {\ttfamily add\+\_\+plugin}, or
+\item with {\ttfamily add\+\_\+plugintest} (for unittests that have dependencies to bindings)
+\end{DoxyItemize}
+\end{DoxyEnumerate}
+
+Solves all the issues without adding too much complexity for actually adding plugins.
+
+Maintaining additional mappings is very time-\/consuming. Simply adding all plugins directories is problematic. It would\+:
+
+
+\begin{DoxyItemize}
+\item clutter the cmake output (especially in the case of errors)
+\item introduce more variables into the C\+Make\+Cache which are irrelevant for the user
+\item maybe even find libraries in wrong versions which are incompatible to what other plugins need
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item need to adopt all C\+Make\+Lists.\+txt
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_plugin_variants_md}{Plugin Variants}}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily A\+D\+D\+E\+D\+\_\+\+D\+I\+R\+E\+C\+T\+O\+R\+I\+ES} of variants will be kept
+\item Typos in plugin names are currently not checked, strings that are not plugin names are simply ignored. 
+\end{DoxyItemize}

@@ -1,0 +1,1480 @@
+.TH "kdbprivate.h" 3elektra "Tue Nov 26 2019" "Version 0.9.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbprivate.h \- Private declarations\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <elektra\&.h>\fP
+.br
+\fC#include <elektra/error\&.h>\fP
+.br
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbextension\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <kdbio\&.h>\fP
+.br
+\fC#include <kdbmacros\&.h>\fP
+.br
+\fC#include <kdbnotificationinternal\&.h>\fP
+.br
+\fC#include <kdbplugin\&.h>\fP
+.br
+\fC#include <kdbproposal\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+\fC#include <kdbglobal\&.h>\fP
+.br
+\fC#include <limits\&.h>\fP
+.br
+
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBKEYSET_SIZE\fP   16"
+.br
+.RI "The minimal allocation size of a keyset inclusive NULL byte\&. "
+.ti -1c
+.RI "#define \fBNR_OF_PLUGINS\fP   10"
+.br
+.RI "How many plugins can exist in an backend\&. "
+.ti -1c
+.RI "#define \fBCOMMIT_PLUGIN\fP   7"
+.br
+.RI "The index of the commit plugin\&. "
+.ti -1c
+.RI "#define \fBSTORAGE_PLUGIN\fP   5"
+.br
+.RI "The index of the storage plugin\&. "
+.ti -1c
+.RI "#define \fBRESOLVER_PLUGIN\fP   0"
+.br
+.RI "The index of the resolver plugin\&. "
+.ti -1c
+.RI "#define \fBAPPROXIMATE_NR_OF_BACKENDS\fP   16"
+.br
+.RI "Trie optimization\&. "
+.ti -1c
+.RI "#define \fBMAX_LEN_INT\fP   31"
+.br
+.RI "The maximum of how many characters an integer needs as decimal number\&. "
+.ti -1c
+.RI "#define \fBKDB_SYSTEM_ELEKTRA\fP   'system/elektra'"
+.br
+.RI "Backend mounting information\&. "
+.ti -1c
+.RI "#define \fBKDB_CACHE_PREFIX\fP   'system/elektra/cache'"
+.br
+.RI "All keys below this are used for cache metadata in the global keyset\&. "
+.ti -1c
+.RI "#define \fBtest_bit\fP(var,  bit)   ((var) & (bit))"
+.br
+.RI "Test a bit\&. "
+.ti -1c
+.RI "#define \fBset_bit\fP(var,  bit)   ((var) |= (bit))"
+.br
+.RI "Set a bit\&. "
+.ti -1c
+.RI "#define \fBclear_bit\fP(var,  bit)   ((var) &= ~(bit))"
+.br
+.RI "Clear a bit\&. "
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBkeyflag_t\fP { \fBKEY_FLAG_SYNC\fP = 1, \fBKEY_FLAG_RO_NAME\fP = 1 << 1, \fBKEY_FLAG_RO_VALUE\fP = 1 << 2, \fBKEY_FLAG_RO_META\fP = 1 << 3, \fBKEY_FLAG_MMAP_STRUCT\fP = 1 << 4, \fBKEY_FLAG_MMAP_KEY\fP = 1 << 5, \fBKEY_FLAG_MMAP_DATA\fP = 1 << 6 }"
+.br
+.RI "Key Flags\&. "
+.ti -1c
+.RI "enum \fBksflag_t\fP { \fBKS_FLAG_SYNC\fP = 1, \fBKS_FLAG_MMAP_STRUCT\fP = 1 << 2, \fBKS_FLAG_MMAP_ARRAY\fP = 1 << 3 }"
+.br
+.RI "Ks Flags\&. "
+.ti -1c
+.RI "enum \fBsplitflag_t\fP { \fBSPLIT_FLAG_SYNC\fP = 1, \fBSPLIT_FLAG_CASCADING\fP = 1 << 1 }"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Split * \fBsplitNew\fP (void)"
+.br
+.RI "Allocates a new split object\&. "
+.ti -1c
+.RI "void \fBsplitDel\fP (Split *keysets)"
+.br
+.RI "Delete a split object\&. "
+.ti -1c
+.RI "void \fBsplitRemove\fP (Split *split, size_t where)"
+.br
+.RI "Remove one part of split\&. "
+.ti -1c
+.RI "ssize_t \fBsplitAppend\fP (Split *split, Backend *backend, Key *parentKey, int syncbits)"
+.br
+.RI "Increases the size of split and appends a new empty keyset\&. "
+.ti -1c
+.RI "int \fBsplitBuildup\fP (Split *split, KDB *handle, Key *parentKey)"
+.br
+.RI "Walks through kdb->split and adds all backends below parentKey to split\&. "
+.ti -1c
+.RI "void \fBsplitUpdateFileName\fP (Split *split, KDB *handle, Key *key)"
+.br
+.RI "Update the (configuration) file name for the parent key\&. "
+.ti -1c
+.RI "int \fBsplitAppoint\fP (Split *split, KDB *handle, KeySet *ks)"
+.br
+.RI "Appoints all keys from ks to yet unsynced splits\&. "
+.ti -1c
+.RI "int \fBsplitGet\fP (Split *split, Key *warningKey, KDB *handle)"
+.br
+.RI "Does some work after getting of backends is finished\&. "
+.ti -1c
+.RI "int \fBsplitMergeBackends\fP (Split *split, KeySet *dest)"
+.br
+.RI "Merges together the backend based parts of split into dest, but bypasses the default split\&. "
+.ti -1c
+.RI "int \fBsplitMergeDefault\fP (Split *split, KeySet *dest)"
+.br
+.RI "Merges the default split into dest\&. "
+.ti -1c
+.RI "int \fBsplitDivide\fP (Split *split, KDB *handle, KeySet *ks)"
+.br
+.RI "Splits up the keysets and search for a sync bit in every key\&. "
+.ti -1c
+.RI "int \fBsplitSync\fP (Split *split)"
+.br
+.RI "Add sync bits everywhere keys were removed/added\&. "
+.ti -1c
+.RI "void \fBsplitPrepare\fP (Split *split)"
+.br
+.RI "Prepares for \fBkdbSet()\fP mainloop afterwards\&. "
+.ti -1c
+.RI "int \fBsplitUpdateSize\fP (Split *split)"
+.br
+.RI "Also update sizes after \fBkdbSet()\fP to recognize multiple \fBkdbSet()\fP attempts\&. "
+.ti -1c
+.RI "Backend * \fBbackendOpen\fP (KeySet *elektra_config, KeySet *modules, KeySet *global, Key *errorKey)"
+.br
+.RI "Builds a backend out of the configuration supplied from: "
+.ti -1c
+.RI "Backend * \fBbackendOpenDefault\fP (KeySet *modules, KeySet *global, const char *file, Key *errorKey)"
+.br
+.RI "Opens a default backend using the plugin named KDB_RESOLVER and KDB_STORAGE\&. "
+.ti -1c
+.RI "Backend * \fBbackendOpenModules\fP (KeySet *modules, KeySet *global, Key *errorKey)"
+.br
+.ti -1c
+.RI "Backend * \fBbackendOpenVersion\fP (KeySet *global, Key *errorKey)"
+.br
+.RI "Opens the internal version backend\&. "
+.ti -1c
+.RI "int \fBbackendUpdateSize\fP (Backend *backend, Key *parent, int size)"
+.br
+.RI "Update internal size in backend\&. "
+.ti -1c
+.RI "Plugin * \fBelektraPluginOpen\fP (const char *backendname, KeySet *modules, KeySet *config, Key *errorKey)"
+.br
+.RI "Opens a plugin\&. "
+.ti -1c
+.RI "int \fBelektraProcessPlugin\fP (Key *cur, int *pluginNumber, char **pluginName, char **referenceName, Key *errorKey)"
+.br
+.ti -1c
+.RI "int \fBelektraProcessPlugins\fP (Plugin **plugins, KeySet *modules, KeySet *referencePlugins, KeySet *config, KeySet *systemConfig, KeySet *global, Key *errorKey)"
+.br
+.RI "Load a plugin\&. "
+.ti -1c
+.RI "size_t \fBelektraPluginGetFunction\fP (Plugin *plugin, const char *name)"
+.br
+.RI "Retrieves a function exported by a plugin\&. "
+.ti -1c
+.RI "Plugin * \fBelektraPluginFindGlobal\fP (KDB *handle, const char *pluginName)"
+.br
+.RI "Searches the global plugins for a given plugin name\&. "
+.ti -1c
+.RI "int \fBtrieClose\fP (Trie *trie, Key *errorKey)"
+.br
+.RI "Closes the trie and all opened backends within\&. "
+.ti -1c
+.RI "Backend * \fBtrieLookup\fP (Trie *trie, const Key *key)"
+.br
+.RI "The Trie structure\&. "
+.ti -1c
+.RI "Trie * \fBtrieInsert\fP (Trie *trie, const char *name, Backend *value)"
+.br
+.RI "Insert into trie\&. "
+.ti -1c
+.RI "int \fBmountOpen\fP (KDB *kdb, KeySet *config, KeySet *modules, Key *errorKey)"
+.br
+.RI "Creates a trie from a given configuration\&. "
+.ti -1c
+.RI "int \fBmountDefault\fP (KDB *kdb, KeySet *modules, int inFallback, Key *errorKey)"
+.br
+.RI "Reopens the default backend and mounts the default backend if needed\&. "
+.ti -1c
+.RI "int \fBmountModules\fP (KDB *kdb, KeySet *modules, Key *errorKey)"
+.br
+.RI "Mount all module configurations\&. "
+.ti -1c
+.RI "int \fBmountVersion\fP (KDB *kdb, Key *errorKey)"
+.br
+.RI "Mount the version backend\&. "
+.ti -1c
+.RI "int \fBmountBackend\fP (KDB *kdb, Backend *backend, Key *errorKey)"
+.br
+.RI "Mounts a backend into the trie\&. "
+.ti -1c
+.RI "Key * \fBmountGetMountpoint\fP (KDB *handle, const Key *where)"
+.br
+.RI "Lookup a mountpoint in a handle for a specific key\&. "
+.ti -1c
+.RI "Backend * \fBmountGetBackend\fP (KDB *handle, const Key *key)"
+.br
+.RI "Lookup a backend handle for a specific key\&. "
+.ti -1c
+.RI "Key * \fBelektraKsPopAtCursor\fP (KeySet *ks, cursor_t pos)"
+.br
+.RI "Pop key at given cursor position\&. "
+.ti -1c
+.RI "ssize_t \fBelektraMemcpy\fP (Key **array1, Key **array2, size_t size)"
+.br
+.RI "Internal Methods for Elektra\&. "
+.ti -1c
+.RI "ssize_t \fBelektraMemmove\fP (Key **array1, Key **array2, size_t size)"
+.br
+.RI "Copies the key array2 into where array1 points\&. "
+.ti -1c
+.RI "int \fBelektraValidateKeyName\fP (const char *name, size_t size)"
+.br
+.RI "Validates whether the supplied keyname is valid\&. "
+.ti -1c
+.RI "KeySet * \fBksRenameKeys\fP (KeySet *config, const char *name)"
+.br
+.RI "Takes the first key and cuts off this common part for all other keys, instead name will be prepended\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorCreate\fP (const char *code, const char *description, const char *module, const char *file, kdb_long_t line)"
+.br
+.RI "Creates a new ElektraError using the provided values\&. "
+.ti -1c
+.RI "void \fBelektraErrorAddWarning\fP (ElektraError *error, ElektraError *warning)"
+.br
+.RI "Adds a warning to an existing ElektraError struct\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorFromKey\fP (Key *key)"
+.br
+.RI "Extracts the error and all warnings from the given key\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorKeyNotFound\fP (const char *keyname)"
+.br
+.RI "Creates a 'Key not found' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorWrongType\fP (const char *keyname, KDBType expectedType, KDBType actualType)"
+.br
+.RI "Creates a 'Wrong type' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorNullError\fP (const char *function)"
+.br
+.RI "Creates a 'Null error argument' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorEnsureFailed\fP (const char *reason)"
+.br
+.RI "Creates a 'kdbEnsure failed' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorMinimalValidationFailed\fP (const char *function)"
+.br
+.RI "Creates a 'minimal validation failed' error\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Private declarations\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define clear_bit(var, bit)   ((var) &= ~(bit))"
+
+.PP
+Clear a bit\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBset_bit()\fP 
+.RE
+.PP
+
+.SS "#define KDB_SYSTEM_ELEKTRA   'system/elektra'"
+
+.PP
+Backend mounting information\&. This key directory tells you where each backend is mounted to which mountpoint\&. 
+.SS "#define KEYSET_SIZE   16"
+
+.PP
+The minimal allocation size of a keyset inclusive NULL byte\&. ksGetAlloc() will return one less because it says how much can actually be stored\&. 
+.SS "#define MAX_LEN_INT   31"
+
+.PP
+The maximum of how many characters an integer needs as decimal number\&. 
+.SS "#define NR_OF_PLUGINS   10"
+
+.PP
+How many plugins can exist in an backend\&. 
+.SS "#define set_bit(var, bit)   ((var) |= (bit))"
+
+.PP
+Set a bit\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBclear_bit()\fP 
+.RE
+.PP
+
+.SS "#define test_bit(var, bit)   ((var) & (bit))"
+
+.PP
+Test a bit\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBset_bit()\fP, \fBclear_bit()\fP 
+.RE
+.PP
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBkeyflag_t\fP"
+
+.PP
+Key Flags\&. Store a synchronizer state so that the Elektra knows if something has changed or not\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKEY_FLAG_SYNC \fP\fP
+Key need sync\&. If name, value or metadata are changed this flag will be set, so that the backend will sync the key to database\&. 
+.TP
+\fB\fIKEY_FLAG_RO_NAME \fP\fP
+Read only flag for name\&. Key name is read only and not allowed to be changed\&. All attempts to change the name will lead to an error\&. Needed for metakeys and keys that are in a data structure that depends on name ordering\&. 
+.TP
+\fB\fIKEY_FLAG_RO_VALUE \fP\fP
+Read only flag for value\&. Key value is read only and not allowed to be changed\&. All attempts to change the value will lead to an error\&. Needed for metakeys 
+.TP
+\fB\fIKEY_FLAG_RO_META \fP\fP
+Read only flag for meta\&. Key meta is read only and not allowed to be changed\&. All attempts to change the value will lead to an error\&. Needed for metakeys\&. 
+.TP
+\fB\fIKEY_FLAG_MMAP_STRUCT \fP\fP
+Key struct lies inside a mmap region\&. This flag is set for Keys inside a mapped region\&. It prevents erroneous free() calls on these keys\&. 
+.TP
+\fB\fIKEY_FLAG_MMAP_KEY \fP\fP
+Key name lies inside a mmap region\&. This flag is set once a Key name has been moved to a mapped region, and is removed if the name moves out of the mapped region\&. It prevents erroneous free() calls on these keys\&. 
+.TP
+\fB\fIKEY_FLAG_MMAP_DATA \fP\fP
+Key value lies inside a mmap region\&. This flag is set once a Key value has been moved to a mapped region, and is removed if the value moves out of the mapped region\&. It prevents erroneous free() calls on these keys\&. 
+.SS "enum \fBksflag_t\fP"
+
+.PP
+Ks Flags\&. Store a synchronizer state so that the Elektra knows if something has changed or not\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKS_FLAG_SYNC \fP\fP
+KeySet need sync\&. If keys were popped from the Keyset this flag will be set, so that the backend will sync the keys to database\&. 
+.TP
+\fB\fIKS_FLAG_MMAP_STRUCT \fP\fP
+KeySet struct lies inside a mmap region\&. This flag is set for KeySets inside a mapped region\&. It prevents erroneous free() calls on these KeySets\&. 
+.TP
+\fB\fIKS_FLAG_MMAP_ARRAY \fP\fP
+Array of the KeySet lies inside a mmap region\&. This flag is set for KeySets where the array is in a mapped region, and is removed if the array is moved out from the mapped region\&. It prevents erroneous free() calls on these arrays\&. 
+.SS "enum \fBsplitflag_t\fP"
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fISPLIT_FLAG_SYNC \fP\fP
+KeySet in Split need sync\&. Is there any key in there which need to be synced? If keys were popped from the Keyset this flag will be set, so that the backend will sync the keys to database\&. 
+.TP
+\fB\fISPLIT_FLAG_CASCADING \fP\fP
+Do we need relative checks? Is this a cascading backend? 
+.SH "Function Documentation"
+.PP 
+.SS "Backend* backendOpen (KeySet * elektraConfig, KeySet * modules, KeySet * global, Key * errorKey)"
+
+.PP
+Builds a backend out of the configuration supplied from: 
+.PP
+.nf
+system/elektra/mountpoints/<name>
+
+.fi
+.PP
+.PP
+The root key must be like the above example\&. You do not need to rewind the keyset\&. But every key must be below the root key\&.
+.PP
+The internal consistency will be checked in this function\&. If necessary parts are missing, like no plugins, they cant be loaded or similar 0 will be returned\&.
+.PP
+\fBksCut()\fP is perfectly suitable for cutting out the configuration like needed\&.
+.PP
+\fBNote:\fP
+.RS 4
+The given KeySet will be deleted within the function, don't use it afterwards\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIelektraConfig\fP the configuration to work with\&. It is used to build up this backend\&. 
+.br
+\fImodules\fP used to load new modules or get references to existing one 
+.br
+\fIglobal\fP the global keyset of the KDB instance 
+.br
+\fIerrorKey\fP the key where an error and warnings are added
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to a freshly allocated backend this could be the requested backend or a so called 'missing backend'\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if out of memory 
+.RE
+.PP
+
+.SS "Backend* backendOpenDefault (KeySet * modules, KeySet * global, const char * file, Key * errorKey)"
+
+.PP
+Opens a default backend using the plugin named KDB_RESOLVER and KDB_STORAGE\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fImodules\fP the modules to work with 
+.br
+\fIglobal\fP the global keyset of the KDB instance 
+.br
+\fIerrorKey\fP the key to issue warnings and errors to 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the fresh allocated default backend or 0 if it failed 
+.RE
+.PP
+
+.SS "Backend* backendOpenModules (KeySet * modules, KeySet * global, Key * errorKey)"
+
+.PP
+\fBReturns:\fP
+.RS 4
+a backend which gives plugin configuration of the module which is currently point to\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fImodules\fP the modules to work with 
+.br
+\fIglobal\fP the global keyset of the KDB instance 
+.br
+\fIerrorKey\fP the key to issue warnings and errors to 
+.RE
+.PP
+
+.SS "Backend* backendOpenVersion (KeySet * global, Key * errorKey)"
+
+.PP
+Opens the internal version backend\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIglobal\fP the global keyset of the KDB instance 
+.br
+\fIerrorKey\fP the key to issue warnings and errors to 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the fresh allocated default backend or 0 if it failed 
+.RE
+.PP
+
+.SS "int backendUpdateSize (Backend * backend, Key * parent, int size)"
+
+.PP
+Update internal size in backend\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIbackend\fP the backend to update 
+.br
+\fIparent\fP for parent 
+.br
+\fIsize\fP to update (-1 default, 0 empty, >0 otherwise)
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+parent must be serializable namespace
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP if invalid parent (assert) 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "void elektraErrorAddWarning (ElektraError * error, ElektraError * warning)"
+
+.PP
+Adds a warning to an existing ElektraError struct\&. If you want to report a warning without an error, create a dummy error with \fBelektraErrorPureWarning()\fP and then add a warning to it\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerror\fP The error to which \fCwarning\fP shall be added\&. 
+.br
+\fIwarning\fP The warning to add\&. Once added it is owned by \fCerror\fP\&. DO NOT call \fBelektraErrorReset()\fP on it afterwards\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorCreate (const char * code, const char * description, const char * module, const char * file, kdb_long_t line)"
+
+.PP
+Creates a new ElektraError using the provided values\&. The returned value will be allocated with \fBelektraCalloc()\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcode\fP The error code of the error\&. Must be compile-time constant\&. 
+.br
+\fIdescription\fP The description of the error\&. Will be copied and stored in the struct\&. 
+.br
+\fImodule\fP The module that raised the error\&. Must be compile-time constant\&. 
+.br
+\fIfile\fP The file that raised the error\&. Must be compile-time constant\&. 
+.br
+\fIline\fP The line in which the error was raised\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorEnsureFailed (const char * reason)"
+
+.PP
+Creates a 'kdbEnsure failed' error\&. This intended for the case when \fBkdbEnsure()\fP returns 1\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreason\fP The error/reason metadata returned by \fBkdbEnsure()\fP\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorFromKey (Key * key)"
+
+.PP
+Extracts the error and all warnings from the given key\&. If no error exists, a pure warning error will be used\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraErrorPureWarning\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP The to extract error and warnings from\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorKeyNotFound (const char * keyname)"
+
+.PP
+Creates a 'Key not found' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkeyname\fP The name of the key that wasn't found\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorMinimalValidationFailed (const char * application)"
+
+.PP
+Creates a 'minimal validation failed' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIapplication\fP parent key as passed to \fBelektraOpen()\fP
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorNullError (const char * function)"
+
+.PP
+Creates a 'Null error argument' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfunction\fP The name of the function that was called with a null pointer error argument\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorWrongType (const char * keyname, KDBType expectedType, KDBType actualType)"
+
+.PP
+Creates a 'Wrong type' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkeyname\fP The name of the key that had the wrong type\&. 
+.br
+\fIexpectedType\fP The type that was expected\&. 
+.br
+\fIactualType\fP The type that was actually found\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "Key* elektraKsPopAtCursor (KeySet * ks, cursor_t pos)"
+
+.PP
+Pop key at given cursor position\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset to pop key from 
+.br
+\fIc\fP where to pop
+.RE
+.PP
+The internal cursor will be rewinded using \fBksRewind()\fP\&. You can use \fBksGetCursor()\fP and \fBksSetCursor()\fP jump back to the previous position\&. e\&.g\&. to pop at current position within \fBksNext()\fP loop: 
+.PP
+.nf
+cursor_t c = ksGetCursor(ks);
+keyDel (ksPopAtCursor(ks, c));
+ksSetCursor(ks, c);
+ksPrev(ks); // to have correct key after next ksNext()
+
+.fi
+.PP
+.PP
+\fBWarning:\fP
+.RS 4
+do not use, will be superseded by external iterator API
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the popped key 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if ks is 0 
+.RE
+.PP
+
+.SS "ssize_t elektraMemcpy (Key ** array1, Key ** array2, size_t size)"
+
+.PP
+Internal Methods for Elektra\&. To use them: 
+.PP
+.nf
+#include <kdbinternal\&.h>
+
+.fi
+.PP
+.PP
+There are some areas where libraries have to reimplement some basic functions to archive support for non-standard systems, for testing purposes or to provide a little more convenience\&.Copies the key array2 into where array1 points\&. It copies size elements\&.
+.PP
+Overlapping is prohibited, use \fBelektraMemmove()\fP instead\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIarray1\fP the destination 
+.br
+\fIarray2\fP the source 
+.br
+\fIsize\fP how many pointer to Keys to copy 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on null pointers 
+.br
+\fI0\fP if nothing was done 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+size how many keys were copied 
+.RE
+.PP
+
+.SS "ssize_t elektraMemmove (Key ** array1, Key ** array2, size_t size)"
+
+.PP
+Copies the key array2 into where array1 points\&. It copies size elements\&.
+.PP
+Overlapping is ok\&. If they do not overlap consider \fBelektraMemcpy()\fP instead\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIarray1\fP the destination 
+.br
+\fIarray2\fP the source 
+.br
+\fIsize\fP how many pointer to Keys to copy 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on null pointers 
+.br
+\fI0\fP if nothing was done 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+size how many keys were copied 
+.RE
+.PP
+
+.SS "Plugin* elektraPluginFindGlobal (KDB * handle, const char * pluginName)"
+
+.PP
+Searches the global plugins for a given plugin name\&. NOTE: if the list plugin occupies the prerollback position, this queries the list plugin first, and only if we don't find anything there, we look directly in the global plugins array
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP The KDB handle to search 
+.br
+\fIpluginName\fP The plugin name to look for
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the plugin handle, if found or NULL otherwise 
+.RE
+.PP
+
+.SS "size_t elektraPluginGetFunction (Plugin * plugin, const char * name)"
+
+.PP
+Retrieves a function exported by a plugin\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIplugin\fP Plugin handle 
+.br
+\fIname\fP Function name 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+Pointer to function\&. NULL if function not found or not enough memory available 
+.RE
+.PP
+
+.SS "Plugin* elektraPluginOpen (const char * name, KeySet * modules, KeySet * config, Key * errorKey)"
+
+.PP
+Opens a plugin\&. The config will be used as is\&. So be sure to transfer ownership of the config to it, with e\&.g\&. \fBksDup()\fP\&. elektraPluginClose() will delete the config\&.
+.PP
+\fBReturns:\fP
+.RS 4
+a pointer to a new created plugin or 0 on error 
+.RE
+.PP
+
+.SS "int elektraProcessPlugin (Key * cur, int * pluginNumber, char ** pluginName, char ** referenceName, Key * errorKey)"
+
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP and an allocated string of the pluginName if a new plugins should be created\&. 
+.br
+\fI2\fP and an allocated string of the referenceName if an old plugin should be used 
+.br
+\fI3\fP and both if a new plugin should be created and made available for later back referencing\&. 
+.br
+\fI-1\fP on error 
+.RE
+.PP
+
+.SS "int elektraProcessPlugins (Plugin ** plugins, KeySet * modules, KeySet * referencePlugins, KeySet * config, KeySet * systemConfig, KeySet * global, Key * errorKey)"
+
+.PP
+Load a plugin\&. The array of plugins must be set to 0\&. Its length is NR_OF_PLUGINS\&.
+.PP
+systemConfig will only be used, not deleted\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIconfig\fP the config with the information how the plugins should be put together 
+.br
+\fIsystemConfig\fP the shared (system) config for the plugins\&. Every plugin additional get this config\&. 
+.br
+\fIglobal\fP the global keyset of the KDB instance
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on failure 
+.RE
+.PP
+
+.SS "int elektraValidateKeyName (const char * name, size_t size)"
+
+.PP
+Validates whether the supplied keyname is valid\&. The function looks for tangling escape characters in the end and for a minimum length\&.
+.PP
+Does not check for valid namespaces
+.PP
+\fBPrecondition:\fP
+.RS 4
+size must be at least 2
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIname\fP the key name that is to be checked 
+.br
+\fIsize\fP a elektraStrLen of the key name 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fItrue\fP if the supplied keyname part is valid 
+.br
+\fIfalse\fP if its invalid 
+.RE
+.PP
+
+.SS "int mountBackend (KDB * kdb, Backend * backend, Key * errorKey)"
+
+.PP
+Mounts a backend into the trie\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+user must pass correctly allocated backend 
+.RE
+.PP
+\fBPostcondition:\fP
+.RS 4
+sets reference counter of backend
+.RE
+.PP
+\fBWarning:\fP
+.RS 4
+in case of init and default backends, the reference counter needs to be modified \fIafter\fP calling mountBackend\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fIbackend\fP the backend to mount 
+.br
+\fIerrorKey\fP the key used to report warnings 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on failure 
+.br
+\fI1\fP on success 
+.RE
+.PP
+
+.SS "int mountDefault (KDB * kdb, KeySet * modules, int inFallback, Key * errorKey)"
+
+.PP
+Reopens the default backend and mounts the default backend if needed\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+Default Backend is closed\&. mountOpen was executed before\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIerrorKey\fP the key used to report warnings 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on error 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "Backend* mountGetBackend (KDB * handle, const Key * key)"
+
+.PP
+Lookup a backend handle for a specific key\&. The required canonical name is ensured by using a key as parameter, which will transform the key to canonical representation\&.
+.PP
+Will return handle when no more specific KDB could be found\&.
+.PP
+If key is 0 or invalid the default backend will be returned\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP is the data structure, where the mounted directories are saved\&. 
+.br
+\fIkey\fP the key, that should be looked up\&. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the backend handle associated with the key 
+.RE
+.PP
+
+.SS "Key* mountGetMountpoint (KDB * handle, const Key * where)"
+
+.PP
+Lookup a mountpoint in a handle for a specific key\&. Will return a key representing the mountpoint or null if there is no appropriate mountpoint e\&.g\&. its the root mountpoint\&.
+.PP
+\fBExample:\fP
+.RS 4
+
+.PP
+.nf
+Key * key = keyNew ("system/template");
+KDB * handle = kdbOpen();
+Key *mountpoint=0;
+mountpoint=kdbGetMountpoint(handle, key);
+
+printf("The backend I am using is %s mounted in %s\n",
+        keyValue(mountpoint),
+        keyName(mountpoint));
+kdbClose (handle);
+keyDel (key);
+
+.fi
+.PP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIhandle\fP is the data structure, where the mounted directories are saved\&. 
+.br
+\fIwhere\fP the key, that should be looked up\&. 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the mountpoint associated with the key 
+.RE
+.PP
+
+.SS "int mountModules (KDB * kdb, KeySet * modules, Key * errorKey)"
+
+.PP
+Mount all module configurations\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIerrorKey\fP the key used to report warnings
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP if not rootkey was found 
+.br
+\fI0\fP otherwise 
+.RE
+.PP
+
+.SS "int mountOpen (KDB * kdb, KeySet * config, KeySet * modules, Key * errorKey)"
+
+.PP
+Creates a trie from a given configuration\&. The config will be deleted within this function\&.
+.PP
+\fBNote:\fP
+.RS 4
+mountDefault is not allowed to be executed before
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIconfig\fP the configuration which should be used to build up the trie\&. 
+.br
+\fIerrorKey\fP the key used to report warnings 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on failure 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "int mountVersion (KDB * kdb, Key * errorKey)"
+
+.PP
+Mount the version backend\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkdb\fP the handle to work with 
+.br
+\fIerrorKey\fP the key used to report warnings
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "ssize_t splitAppend (Split * split, Backend * backend, Key * parentKey, int syncbits)"
+
+.PP
+Increases the size of split and appends a new empty keyset\&. Initializes the element with the given parameters at size-1 to be used\&.
+.PP
+Will automatically resize split if needed\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIbackend\fP the backend which should be appended 
+.br
+\fIparentKey\fP the parentKey which should be appended 
+.br
+\fIsyncbits\fP the initial syncstate which should be appended
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP if no split is found 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the position of the new element: size-1 
+.RE
+.PP
+
+.SS "int splitAppoint (Split * split, KDB * handle, KeySet * ks)"
+
+.PP
+Appoints all keys from ks to yet unsynced splits\&. 
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBsplitBuildup()\fP need to be executed before\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIhandle\fP to determine to which backend a key belongs 
+.br
+\fIks\fP the keyset to appoint to split
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI-1\fP if no backend was found for a key 
+.RE
+.PP
+
+.SS "int splitBuildup (Split * split, KDB * kdb, Key * parentKey)"
+
+.PP
+Walks through kdb->split and adds all backends below parentKey to split\&. Sets syncbits to 2 if it is a default or root backend (which needs splitting)\&. The information is copied from kdb->split\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+split needs to be empty, directly after creation with \fBsplitNew()\fP\&.
+.PP
+there needs to be a valid defaultBackend but its ok not to have a trie inside KDB\&.
+.PP
+parentKey must be a valid key! (could be implemented more generally, but that would require splitting up of keysets of the same backend)
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP will get all backends appended 
+.br
+\fIkdb\fP the handle to get information about backends 
+.br
+\fIparentKey\fP the information below which key the backends are from interest
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP always 
+.RE
+.PP
+
+.SS "void splitDel (Split * keysets)"
+
+.PP
+Delete a split object\&. Will free all allocated resources of a split keyset\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkeysets\fP the split object to work with 
+.RE
+.PP
+
+.SS "int splitDivide (Split * split, KDB * handle, KeySet * ks)"
+
+.PP
+Splits up the keysets and search for a sync bit in every key\&. It does not check if there were removed keys, see \fBsplitSync()\fP for the next step\&.
+.PP
+It does not create new backends, this has to be done by buildup before\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBsplitBuildup()\fP need to be executed before\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIhandle\fP to get information where the individual keys belong 
+.br
+\fIks\fP the keyset to divide
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if there were no sync bits 
+.br
+\fI1\fP if there were sync bits 
+.br
+\fI-1\fP if no backend was found for any key 
+.RE
+.PP
+
+.SS "int splitGet (Split * split, Key * warningKey, KDB * handle)"
+
+.PP
+Does some work after getting of backends is finished\&. 
+.IP "\(bu" 2
+Update sizes
+.IP "\(bu" 2
+Removal of wrong keys
+.PP
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fBsplitAppoint()\fP needs to be executed before\&.
+.RE
+.PP
+.IP "\(bu" 2
+check if keys are in correct backend
+.IP "\(bu" 2
+remove syncbits
+.IP "\(bu" 2
+update sizes in the backends
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIwarningKey\fP postcondition violations are reported here 
+.br
+\fIhandle\fP the handle to preprocess the keys 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI-1\fP if no backend was found for a key or split->parents has invalid namespace 
+.RE
+.PP
+
+.SS "int splitMergeBackends (Split * split, KeySet * dest)"
+
+.PP
+Merges together the backend based parts of split into dest, but bypasses the default split\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIdest\fP the destination keyset where all keysets are appended\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.RE
+.PP
+
+.SS "int splitMergeDefault (Split * split, KeySet * dest)"
+
+.PP
+Merges the default split into dest\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIdest\fP the destination keyset where all keysets are appended\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.RE
+.PP
+
+.SS "Split* splitNew (void)"
+
+.PP
+Allocates a new split object\&. Splits up a keyset into multiple keysets where each of them will passed to the correct \fBkdbSet()\fP\&.
+.PP
+Initially the size is 0 and alloc is APPROXIMATE_NR_OF_BACKENDS\&.
+.PP
+\fBReturns:\fP
+.RS 4
+a fresh allocated split object
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBsplitDel()\fP 
+.RE
+.PP
+
+.SS "void splitPrepare (Split * split)"
+
+.PP
+Prepares for \fBkdbSet()\fP mainloop afterwards\&. All splits which do not need sync are removed and a deep copy of the remaining keysets is done\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.RE
+.PP
+
+.SS "void splitRemove (Split * split, size_t where)"
+
+.PP
+Remove one part of split\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.br
+\fIwhere\fP the position to cut away
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+where must be within the size of the split 
+.RE
+.PP
+\fBPostcondition:\fP
+.RS 4
+split will be removed 
+.RE
+.PP
+
+.SS "int splitSync (Split * split)"
+
+.PP
+Add sync bits everywhere keys were removed/added\&. 
+.IP "\(bu" 2
+checks if the size of a previous \fBkdbGet()\fP is unchanged\&.
+.IP "\(bu" 2
+checks if in correct state (\fBkdbGet()\fP needs to be executed before)
+.PP
+.PP
+Only \fBsplitDivide()\fP together with this function can really decide if sync is needed or not\&.
+.PP
+\fBPrecondition:\fP
+.RS 4
+split needs to be processed with \fBsplitDivide()\fP before\&.
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP if \fBkdbSet()\fP is not needed 
+.br
+\fI1\fP if \fBkdbSet()\fP is needed 
+.br
+\fI-1\fP on wrong keys (also has assert, should not happen) 
+.br
+\fI-2\fP wrong spec state: \fBkdbGet()\fP was not executed before 
+.br
+\fI-3\fP wrong dir state: \fBkdbGet()\fP was not executed before 
+.br
+\fI-4\fP wrong user state: \fBkdbGet()\fP was not executed before 
+.br
+\fI-5\fP wrong system state: \fBkdbGet()\fP was not executed before 
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+user/system was split before\&. 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split object to work with 
+.RE
+.PP
+
+.SS "void splitUpdateFileName (Split * split, KDB * handle, Key * key)"
+
+.PP
+Update the (configuration) file name for the parent key\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsplit\fP the split to work with 
+.br
+\fIhandle\fP the handle to work with 
+.br
+\fIkey\fP the parentKey that should be updated (name must be correct) 
+.RE
+.PP
+
+.SS "int splitUpdateSize (Split * split)"
+
+.PP
+Also update sizes after \fBkdbSet()\fP to recognize multiple \fBkdbSet()\fP attempts\&. 
+.PP
+\fBWarning:\fP
+.RS 4
+cant use the same code with splitGet because there is no default split part for \fBkdbSet()\fP\&. 
+.RE
+.PP
+
+.SS "int trieClose (Trie * trie, Key * errorKey)"
+
+.PP
+Closes the trie and all opened backends within\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fItrie\fP the trie to close 
+.br
+\fIerrorKey\fP the key used to report warnings
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "Trie* trieInsert (Trie * trie, const char * name, Backend * value)"
+
+.PP
+Insert into trie\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fItrie\fP the trie to insert to (0 to create a new trie) 
+.br
+\fIname\fP the key's name to insert 
+.br
+\fIvalue\fP the value to insert
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fItrie\fP on success 
+.RE
+.PP
+
+.SS "Backend* trieLookup (Trie * trie, const Key * key)"
+
+.PP
+The Trie structure\&. Lookups a backend inside the trie\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the backend if found 
+.PP
+0 otherwise 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fItrie\fP the trie object to work with 
+.br
+\fIkey\fP the name of this key will be looked up 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

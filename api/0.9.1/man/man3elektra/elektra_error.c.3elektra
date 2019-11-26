@@ -1,0 +1,277 @@
+.TH "elektra_error.c" 3elektra "Tue Nov 26 2019" "Version 0.9.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+elektra_error.c \- Elektra error codes\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'elektra/conversion\&.h'\fP
+.br
+\fC#include 'elektra/error\&.h'\fP
+.br
+\fC#include 'kdberrors\&.h'\fP
+.br
+\fC#include 'kdbhelper\&.h'\fP
+.br
+\fC#include 'kdbprivate\&.h'\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "ElektraError * \fBelektraErrorCreate\fP (const char *code, const char *description, const char *module, const char *file, kdb_long_t line)"
+.br
+.RI "Creates a new ElektraError using the provided values\&. "
+.ti -1c
+.RI "void \fBelektraErrorAddWarning\fP (ElektraError *error, ElektraError *warning)"
+.br
+.RI "Adds a warning to an existing ElektraError struct\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorFromKey\fP (Key *key)"
+.br
+.RI "Extracts the error and all warnings from the given key\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorKeyNotFound\fP (const char *keyname)"
+.br
+.RI "Creates a 'Key not found' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorWrongType\fP (const char *keyname, KDBType expectedType, KDBType actualType)"
+.br
+.RI "Creates a 'Wrong type' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorNullError\fP (const char *function)"
+.br
+.RI "Creates a 'Null error argument' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorConversionToString\fP (KDBType sourceType, const char *keyname)"
+.br
+.RI "Creates a 'Conversion to string failed' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorConversionFromString\fP (KDBType targetType, const char *keyname, const char *sourceValue)"
+.br
+.RI "Creates a 'Conversion from string failed' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorEnsureFailed\fP (const char *reason)"
+.br
+.RI "Creates a 'kdbEnsure failed' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorMinimalValidationFailed\fP (const char *application)"
+.br
+.RI "Creates a 'minimal validation failed' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorPureWarning\fP (void)"
+.br
+.RI "Creates a dummy ElektraError struct to store warnings in\&. "
+.ti -1c
+.RI "const char * \fBelektraErrorCode\fP (const ElektraError *error)"
+.br
+.ti -1c
+.RI "const char * \fBelektraErrorDescription\fP (const ElektraError *error)"
+.br
+.ti -1c
+.RI "void \fBelektraErrorReset\fP (ElektraError **error)"
+.br
+.RI "Frees the memory used by the error and sets the referenced error variable to NULL\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Elektra error codes\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see doc/LICENSE\&.md or http://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "void elektraErrorAddWarning (ElektraError * error, ElektraError * warning)"
+
+.PP
+Adds a warning to an existing ElektraError struct\&. If you want to report a warning without an error, create a dummy error with \fBelektraErrorPureWarning()\fP and then add a warning to it\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerror\fP The error to which \fCwarning\fP shall be added\&. 
+.br
+\fIwarning\fP The warning to add\&. Once added it is owned by \fCerror\fP\&. DO NOT call \fBelektraErrorReset()\fP on it afterwards\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorConversionFromString (KDBType targetType, const char * keyname, const char * sourceValue)"
+
+.PP
+Creates a 'Conversion from string failed' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fItargetType\fP The type into which \fCsourceValue\fP couldn't be converted\&. 
+.br
+\fIkeyname\fP The name of the key that couldn't be converted\&. 
+.br
+\fIsourceValue\fP The value that couldn't be converted\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorConversionToString (KDBType sourceType, const char * keyname)"
+
+.PP
+Creates a 'Conversion to string failed' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsourceType\fP The type which failed to be converted to string\&. 
+.br
+\fIkeyname\fP The name of the key that couldn't be converted\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorCreate (const char * code, const char * description, const char * module, const char * file, kdb_long_t line)"
+
+.PP
+Creates a new ElektraError using the provided values\&. The returned value will be allocated with \fBelektraCalloc()\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcode\fP The error code of the error\&. Must be compile-time constant\&. 
+.br
+\fIdescription\fP The description of the error\&. Will be copied and stored in the struct\&. 
+.br
+\fImodule\fP The module that raised the error\&. Must be compile-time constant\&. 
+.br
+\fIfile\fP The file that raised the error\&. Must be compile-time constant\&. 
+.br
+\fIline\fP The line in which the error was raised\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorEnsureFailed (const char * reason)"
+
+.PP
+Creates a 'kdbEnsure failed' error\&. This intended for the case when \fBkdbEnsure()\fP returns 1\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreason\fP The error/reason metadata returned by \fBkdbEnsure()\fP\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorFromKey (Key * key)"
+
+.PP
+Extracts the error and all warnings from the given key\&. If no error exists, a pure warning error will be used\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBelektraErrorPureWarning\fP
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP The to extract error and warnings from\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorKeyNotFound (const char * keyname)"
+
+.PP
+Creates a 'Key not found' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkeyname\fP The name of the key that wasn't found\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorMinimalValidationFailed (const char * application)"
+
+.PP
+Creates a 'minimal validation failed' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIapplication\fP parent key as passed to \fBelektraOpen()\fP
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorNullError (const char * function)"
+
+.PP
+Creates a 'Null error argument' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfunction\fP The name of the function that was called with a null pointer error argument\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorWrongType (const char * keyname, KDBType expectedType, KDBType actualType)"
+
+.PP
+Creates a 'Wrong type' error\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkeyname\fP The name of the key that had the wrong type\&. 
+.br
+\fIexpectedType\fP The type that was expected\&. 
+.br
+\fIactualType\fP The type that was actually found\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

@@ -1,0 +1,39 @@
+\hypertarget{autotoc_md442_src_plugins_mmapstorage_shelltests_md}{}\section{Additional shell tests for mmapstorage}\label{autotoc_md442_src_plugins_mmapstorage_shelltests_md}
+This file contains important shell tests for mmapstorage which do not fit well into the plugin R\+E\+A\+D\+ME.\hypertarget{autotoc_md442_autotoc_md443}{}\section{Test kdb export \& import (stat\+: pipe size known)}\label{autotoc_md442_autotoc_md443}
+\`{}\`{}\`{} \hypertarget{autotoc_md442_autotoc_md444}{}\section{Make temp file}\label{autotoc_md442_autotoc_md444}
+kdb set system/tests/mmaptempfile \hypertarget{autotoc_md442_autotoc_md445}{}\section{Mount mmapstorage to $<$tt$>$user/tests/mmapstorage$<$/tt$>$}\label{autotoc_md442_autotoc_md445}
+sudo kdb mount config.\+mmap user/tests/mmapstorage mmapstorage\hypertarget{autotoc_md442_autotoc_md446}{}\section{Add some values via $<$tt$>$kdb set$<$/tt$>$}\label{autotoc_md442_autotoc_md446}
+kdb set user/tests/mmapstorage/test1 test1 kdb set user/tests/mmapstorage/test2 test2 kdb set user/tests/mmapstorage/test1/test3 test3\hypertarget{autotoc_md442_autotoc_md447}{}\section{List the configuration tree below $<$tt$>$user/tests/mmapstorage$<$/tt$>$}\label{autotoc_md442_autotoc_md447}
+kdb ls user/tests/mmapstorage \#$>$ user/tests/mmapstorage/test1 \#$>$ user/tests/mmapstorage/test1/test3 \#$>$ user/tests/mmapstorage/test2\hypertarget{autotoc_md442_autotoc_md448}{}\section{Retrieve the new values}\label{autotoc_md442_autotoc_md448}
+kdb get user/tests/mmapstorage/test1 \#$>$ test1 kdb get user/tests/mmapstorage/test2 \#$>$ test2 kdb get user/tests/mmapstorage/test1/test3 \#$>$ test3
+
+kdb export user/tests/mmapstorage mmapstorage $>$ \$(kdb get system/tests/mmaptempfile) kdb rm -\/r user/tests/mmapstorage
+
+kdb ls user/tests/mmapstorage \#$>$
+
+kdb import user/tests/mmapstorage mmapstorage $<$ \$(kdb get system/tests/mmaptempfile)\hypertarget{autotoc_md442_autotoc_md449}{}\section{List the configuration tree below $<$tt$>$user/tests/mmapstorage$<$/tt$>$}\label{autotoc_md442_autotoc_md449}
+kdb ls user/tests/mmapstorage \#$>$ user/tests/mmapstorage/test1 \#$>$ user/tests/mmapstorage/test1/test3 \#$>$ user/tests/mmapstorage/test2\hypertarget{autotoc_md442_autotoc_md450}{}\section{Retrieve the new values}\label{autotoc_md442_autotoc_md450}
+kdb get user/tests/mmapstorage/test1 \#$>$ test1 kdb get user/tests/mmapstorage/test2 \#$>$ test2 kdb get user/tests/mmapstorage/test1/test3 \#$>$ test3\hypertarget{autotoc_md442_autotoc_md451}{}\section{Undo modifications to the database}\label{autotoc_md442_autotoc_md451}
+kdb rm -\/r user/tests/mmapstorage\hypertarget{autotoc_md442_autotoc_md452}{}\section{Unmount mmapstorage}\label{autotoc_md442_autotoc_md452}
+sudo kdb umount user/tests/mmapstorage\hypertarget{autotoc_md442_autotoc_md453}{}\section{Remove temp file}\label{autotoc_md442_autotoc_md453}
+rm \$(kdb get system/tests/mmaptempfile) kdb rm -\/r system/tests/mmaptempfile 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Test kdb export \& import (stat: pipe size unknown)}
+\end{DoxyCode}
+ \hypertarget{autotoc_md442_autotoc_md454}{}\section{Make temp file}\label{autotoc_md442_autotoc_md454}
+kdb set system/tests/mmaptempfile \hypertarget{autotoc_md442_autotoc_md455}{}\section{Mount mmapstorage to $<$tt$>$user/tests/mmapstorage$<$/tt$>$}\label{autotoc_md442_autotoc_md455}
+sudo kdb mount config.\+mmap user/tests/mmapstorage mmapstorage\hypertarget{autotoc_md442_autotoc_md456}{}\section{Add some values via $<$tt$>$kdb set$<$/tt$>$}\label{autotoc_md442_autotoc_md456}
+kdb set user/tests/mmapstorage/test1 test1 kdb set user/tests/mmapstorage/test2 test2 kdb set user/tests/mmapstorage/test1/test3 test3\hypertarget{autotoc_md442_autotoc_md457}{}\section{List the configuration tree below $<$tt$>$user/tests/mmapstorage$<$/tt$>$}\label{autotoc_md442_autotoc_md457}
+kdb ls user/tests/mmapstorage \#$>$ user/tests/mmapstorage/test1 \#$>$ user/tests/mmapstorage/test1/test3 \#$>$ user/tests/mmapstorage/test2\hypertarget{autotoc_md442_autotoc_md458}{}\section{Retrieve the new values}\label{autotoc_md442_autotoc_md458}
+kdb get user/tests/mmapstorage/test1 \#$>$ test1 kdb get user/tests/mmapstorage/test2 \#$>$ test2 kdb get user/tests/mmapstorage/test1/test3 \#$>$ test3
+
+kdb export user/tests/mmapstorage mmapstorage $>$ \$(kdb get system/tests/mmaptempfile) kdb rm -\/r user/tests/mmapstorage
+
+kdb ls user/tests/mmapstorage \#$>$
+
+cat \$(kdb get system/tests/mmaptempfile) $\vert$ kdb import user/tests/mmapstorage mmapstorage\hypertarget{autotoc_md442_autotoc_md459}{}\section{List the configuration tree below $<$tt$>$user/tests/mmapstorage$<$/tt$>$}\label{autotoc_md442_autotoc_md459}
+kdb ls user/tests/mmapstorage \#$>$ user/tests/mmapstorage/test1 \#$>$ user/tests/mmapstorage/test1/test3 \#$>$ user/tests/mmapstorage/test2\hypertarget{autotoc_md442_autotoc_md460}{}\section{Retrieve the new values}\label{autotoc_md442_autotoc_md460}
+kdb get user/tests/mmapstorage/test1 \#$>$ test1 kdb get user/tests/mmapstorage/test2 \#$>$ test2 kdb get user/tests/mmapstorage/test1/test3 \#$>$ test3\hypertarget{autotoc_md442_autotoc_md461}{}\section{Undo modifications to the database}\label{autotoc_md442_autotoc_md461}
+kdb rm -\/r user/tests/mmapstorage\hypertarget{autotoc_md442_autotoc_md462}{}\section{Unmount mmapstorage}\label{autotoc_md442_autotoc_md462}
+sudo kdb umount user/tests/mmapstorage\hypertarget{autotoc_md442_autotoc_md463}{}\section{Remove temp file}\label{autotoc_md442_autotoc_md463}
+rm \$(kdb get system/tests/mmaptempfile) kdb rm -\/r system/tests/mmaptempfile \`{}\`{}\`{} 

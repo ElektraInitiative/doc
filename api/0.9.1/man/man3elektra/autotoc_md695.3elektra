@@ -1,0 +1,300 @@
+.TH "autotoc_md695" 3elektra "Tue Nov 26 2019" "Version 0.9.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md695 \- Plugin: type 
+
+.IP "\(bu" 2
+infos = Information about type plugin is in keys below
+.IP "\(bu" 2
+infos/author = Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = recommended maintained unittest tested nodep libc
+.IP "\(bu" 2
+infos/metadata = check/type type check/enum check/enum/# check/enum/delimiter check/boolean/true check/boolean/false
+.IP "\(bu" 2
+infos/description = type checker using COBRA data types
+.PP
+.PP
+This plugin is a type checker plugin using the \fCCORBA\fP data types\&.
+.PP
+A common and successful type system happens to be CORBA\&. The system is well suited because of the many well-defined mappings it provides to other programming languages\&.
+.PP
+The type checker plugin supports these types: \fCshort\fP, \fCunsigned_short\fP, \fClong\fP, \fCunsigned_long\fP, \fClong_long\fP, \fCunsigned_long_long\fP, \fCfloat\fP, \fCdouble\fP, \fCchar\fP, \fCwchar\fP, \fCboolean\fP, \fCany\fP, \fCenum\fP, \fCstring\fP, \fCwstring\fP and \fCoctet\fP\&.
+.PP
+.IP "\(bu" 2
+Checking \fCany\fP will always be successful, regardless of the content\&.
+.IP "\(bu" 2
+\fCstring\fP matches any non-empty key value\&.
+.IP "\(bu" 2
+\fCoctet\fP and \fCchar\fP are equivalent to each other\&.
+.IP "\(bu" 2
+\fCenum\fP will do enum checking as described below\&.
+.IP "\(bu" 2
+\fCboolean\fP only allows the values \fC1\fP and \fC0\fP\&. See also \fCNormalization\fP\&.
+.IP "\(bu" 2
+To use \fCwchar\fP and \fCwstring\fP the function \fCmbstowcs(3)\fP must be able convert the key value into a wide character string\&. \fCwstring\fPs can be of any non-zero length, \fCwchar\fP must have exactly length 1\&.
+.PP
+.PP
+If a key is set to the type \fCenum\fP the plugin will look for the metadata array \fCcheck/enum/#\fP\&.
+.PP
+For example:
+.PP
+.PP
+.nf
+check/enum = #3
+check/enum/#0 = small
+check/enum/#1 = middle
+check/enum/#2 = large
+check/enum/#3 = huge
+.fi
+.PP
+.PP
+Only the values listed in this array will be accepted\&. The array indices don't have to be continuous, using e\&.g\&. only \fC#1\fP, \fC#2\fP and \fC#4\fP is also allowed\&. Just make sure \fCcheck/enum\fP is set to the largest index in the array\&.
+.PP
+Furthermore \fCcheck/enum/delimiter\fP may contain a separator character, that separates multiple allowed occurrences\&. If \fCcheck/enum/delimiter\fP contain more than a single character validation will fail\&.
+.PP
+For example:
+.PP
+.PP
+.nf
+check/enum/delimiter = _
+.fi
+.PP
+.PP
+Then the value \fCmiddle_small\fP would validate\&. \fCmiddle_small_small\fP would be allowed as well, because multi-values are treated like bitfields\&.
+.PP
+Some types support normalization in addition to the standard type checking\&. This means that an extended set of allowed values is normalized into a different (in most cases standardized) set before type checking\&. The normalized values will be passed on from \fCkdbGet\fP to the rest of Elektra and your application\&. During \fCkdbSet\fP changed values are also normalized before type checking and at the end of \fCkdbSet\fP, if everything was successful, the values are restored to the ones originally provided by the user (no matter if they were changed before \fCkdbSet\fP or already present in \fCkdbGet\fP)\&.
+.PP
+The full normalization/restore procedure can be described by the following cases:
+.PP
+.IP "\(bu" 2
+\fBCase 1:\fP The Key existed in kdbGet and is unchanged between \fCkdbGet\fP and \fCkdbSet\fP
+.PP
+This is the easiest and most obvious case\&. The value is normalized in \fCkdbGet\fP and the original value is restored in \fCkdbSet\fP, so that the underlying storage file remains unchanged (w\&.r\&.t\&. the key in question)\&.
+.IP "\(bu" 2
+\fBCase 2:\fP The Key didn't exist in \fCkdbGet\fP, i\&.e\&. it was added
+.PP
+Here the value is normalized to verify the type and then restored immediately (all inside of \fCkdbSet\fP)\&.
+.IP "\(bu" 2
+\fBCase 3:\fP The Key existed in \fCkdbGet\fP, but its value was changed between kdbGet and kdbSet
+.PP
+This is essential the same as Case 2\&. \fCkeySetString\fP removes the \fCorigvalue\fP metadata used to store the original value, so as far as this plugin is concerned, the key didn't exist in \fCkdbGet\fP\&.
+.PP
+.PP
+Note: If normalization is used, often times you will get a normalization error instead of a type checking error\&.
+.PP
+The values that are accepted as \fCboolean\fPs are configured during mounting:
+.PP
+.PP
+.nf
+sudo kdb mount typetest\&.dump user/tests/type dump type booleans=#1 booleans/#0/true=a booleans/#0/false=b booleans/#1/true=t booleans/#1/false=f
+.fi
+.PP
+.PP
+The above line defines that the array of allowed boolean pairs\&. \fCbooleans=#1\fP defines the last element of the array as \fC#1\fP\&. For each element \fC#\fP the keys \fCbooleans/#/true\fP and \fCbooleans/#/false\fP define the true and false value respectively\&. True values are normalized to \fC1\fP, false values to \fC0\fP\&.
+.PP
+Even though we didn't specify them the values \fC1\fP and \fC0\fP are still accepted\&. The normalized values are always okay to use\&. If no configuration is given, the allowed values default to \fC1\fP, \fCyes\fP, \fCon\fP, \fCtrue\fP, \fCenabled\fP and \fCenable\fP as true values and \fC0\fP, \fCno\fP, \fCoff\fP, \fCfalse\fP, \fCdisabled\fP and \fCdisable\fP as false values\&.
+.PP
+The accepted values can also be overridden on a per-key-basis\&. Simply add the metakey \fCcheck/boolean/true\fP and \fCcheck/boolean/false\fP to set the accepted true and false values\&. Only a single true/false value can be chosen\&. This is intended for use cases, where normally you prefer to use only e\&.g\&. \fC1\fP, \fC0\fP and \fCtrue\fP, \fCfalse\fP, but what to override that for a key where e\&.g\&. \fCenabled\fP and \fCdisabled\fP make more sense contextually (e\&.g\&. for something like \fC/log/debug\fP)\&. Because of this intention restoring also works differently, when \fCcheck/boolean/true\fP and \fCcheck/boolean/false\fP are used\&. In this case we will always restore to the chosen override values\&.
+.PP
+Note: The values \fC1\fP and \fC0\fP are accepted, even if overrides are used\&. This means you can set a key with overrides to \fC0\fP (or \fC1\fP) and during \fCkdbSet\fP it will be restored to the false (or true) override value\&. (This is useful for the high-level API\&.)
+.PP
+It is an error to specify only one of \fCbooleans/#/true\fP and \fCbooleans/#/false\fP or \fCcheck/boolean/true\fP and \fCcheck/boolean/false\fP\&. \fIBoolean always come in pairs!\fP
+.PP
+You can also change how values shall be restored in \fCkdbSet\fP:
+.PP
+.PP
+.nf
+sudo kdb mount typetest\&.dump user/tests/type dump type booleans=#0 booleans/#0/true=true booleans/#0/false=false boolean/restoreas=#0
+.fi
+.PP
+.PP
+The config key \fCboolean/restoreas\fP must be a valid index of the \fCbooleans\fP array or the special value \fCnone\fP\&. If \fCboolean/restoreas\fP was set to an index, the chosen boolean pair will be used when values are restored in \fCkdbSet\fP\&. So in the above example the plugin accepts \fC1\fP, \fCtrue\fP, \fC0\fP and \fCfalse\fP as boolean values, on \fCkdbGet\fP it turns \fCtrue\fP into \fC1\fP and \fCfalse\fP into \fC0\fP and on \fCkdbSet\fP it turns \fC1\fP into \fCtrue\fP and \fC0\fP into \fCfalse\fP\&.
+.PP
+If no \fCbooleans\fP array was given the allowed values for \fCboolean/restoreas\fP are:
+.PP
+.IP "\(bu" 2
+\fC#0\fP for \fCyes\fP/\fCno\fP
+.IP "\(bu" 2
+\fC#1\fP for \fCtrue\fP/\fCfalse\fP
+.IP "\(bu" 2
+\fC#2\fP for \fCon\fP/\fCoff\fP
+.IP "\(bu" 2
+\fC#3\fP for \fCenabled\fP/\fCdisabled\fP
+.IP "\(bu" 2
+\fC#4\fP for \fCenable\fP/\fCdisable\fP
+.PP
+.PP
+The special value \fCboolean/restoreas=none\fP completely disables the restore procedure\&. In other words, \fCkdbSet\fP will always return either \fC0\fP or \fC1\fP for boolean values\&. This is useful, if a storage format with built-in support for boolean values is used\&.
+.PP
+Enums also support normalization\&. Contrary to boolean normalization, enum normalization is always configured on a per-key-basis\&.
+.PP
+Simply set the metakey \fCcheck/enum/normalize\fP to \fC1\fP in order to normalize the string values to there indexes\&. Any other value is ignored\&.
+.PP
+Take for example a key with the following enum configuration:
+.PP
+.PP
+.nf
+check/enum = #3
+check/enum/#0 = small
+check/enum/#1 = medium
+check/enum/#3 = huge
+.fi
+.PP
+.PP
+The value \fCsmall\fP will be normalized to \fC0\fP, \fCmedium\fP to \fC1\fP and \fChuge\fP to \fC3\fP\&. During restore the values \fC0\fP, \fC1\fP and \fC3\fP will be restored to \fCsmall\fP, \fCmedium\fP and \fChuge\fP\&.
+.PP
+If you use normalization, you can pass string values or indices to \fCkdbGet\fP and \fCkdbSet\fP, but you will always get back indices from \fCkdbGet\fP and string values from \fCkdbSet\fP\&. (Therefore you can seamlessly use \fCelektraGetUnsignedLongLong\fP from high-level API for normalized enums\&.)
+.PP
+The plugin also supports normalizing enums that use \fCcheck/enum/delimiter\fP, however be careful which indexes you use in this case\&. The indexes of all values are simple bitwise or-ed (using \fC|\fP)\&. In the above example \fCsmall_medium\fP would be normalized to \fC1\fP (\fC0 | 1 == 1\fP), the same value as \fCmedium\fP\&. This means during restore the value emitted will be \fCmedium\fP\&.
+.PP
+A version that would work with delimiter and normalization is:
+.PP
+.PP
+.nf
+check/enum = #4
+check/enum/#0 = none
+check/enum/#1 = small
+check/enum/#2 = medium
+check/enum/#4 = huge
+.fi
+.PP
+.PP
+Here \fCsmall_medium\fP is normalized to \fC3\fP, which is a unique value\&. During restore with delimiters the values might not be restored to there original form, but may be restored to an equivalent representation\&. e\&.g\&. \fCsmall_none\fP may be restored to just \fCsmall\fP or \fCsmall_medium\fP may be restored to \fCmedium_small\fP This has technical reasons and we do not guarantee any restriction on what representation is produced during restore, other than the normalized value being the same as for the user provided representation\&.
+.PP
+**_IMPORTANT:_** Do \fBnot\fP use normalization together with enums, whose string values start with digits (e\&.g\&. \fCcheck/enum/#0 = 1abc\fP)\&. This breaks normalization! Indices are differentiated from string value by whether they start with a digit\&.
+.PP
+.PP
+.nf
+#Mount the plugin
+sudo kdb mount typetest\&.dump user/tests/type dump type
+
+#Store a character value
+kdb set user/tests/type/key a
+
+#Only allow character values
+kdb meta-set user/tests/type/key type char
+kdb get user/tests/type/key
+#> a
+
+#If we store another character everything works fine
+kdb set user/tests/type/key b
+kdb get user/tests/type/key
+#> b
+
+#If we try to store a string Elektra will not change the value
+kdb set user/tests/type/key 'Not a char'
+# RET:5
+# ERROR:C03200
+kdb get user/tests/type/key
+#> b
+
+#Undo modifications to the database
+kdb rm user/tests/type/key
+sudo kdb umount user/tests/type
+.fi
+.PP
+.PP
+For enums:
+.PP
+.PP
+.nf
+# Backup-and-Restore:/tests/enum
+
+sudo kdb mount typeenum\&.ecf user/tests/type dump type
+
+# valid initial value + setup valid enum list
+kdb set user/tests/type/value middle
+kdb meta-set user/tests/type/value check/enum '#2'
+kdb meta-set user/tests/type/value 'check/enum/#0' 'low'
+kdb meta-set user/tests/type/value 'check/enum/#1' 'middle'
+kdb meta-set user/tests/type/value 'check/enum/#2' 'high'
+kdb meta-set user/tests/type/value type enum
+
+# should succeed
+kdb set user/tests/type/value low
+
+# should fail with error C03200
+kdb set user/tests/type/value no
+# RET:5
+# ERROR:C03200
+.fi
+.PP
+.PP
+Or with multi-enums:
+.PP
+.PP
+.nf
+# valid initial value + setup array with valid enums
+kdb set user/tests/type/multivalue middle_small
+kdb meta-set user/tests/type/multivalue check/enum/#0 small
+kdb meta-set user/tests/type/multivalue check/enum/#1 middle
+kdb meta-set user/tests/type/multivalue check/enum/#2 large
+kdb meta-set user/tests/type/multivalue check/enum/#3 huge
+kdb meta-set user/tests/type/multivalue check/enum/delimiter _
+kdb meta-set user/tests/type/multivalue check/enum "#3"
+kdb meta-set user/tests/type/multivalue type enum
+
+# should succeed
+kdb set user/tests/type/multivalue small_middle
+
+# should fail with error C03200
+kdb set user/tests/type/multivalue all_small
+# RET:5
+# ERROR:C03200
+
+# cleanup
+kdb rm -r user/tests/type
+sudo kdb umount user/tests/type
+.fi
+.PP
+.PP
+For booleans:
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.ecf user/tests/type dump type
+
+# By default the plugin uses `1` (true) and `0` (false) to represent boolean values
+kdb set user/tests/type/truthiness false
+kdb meta-set user/tests/type/truthiness type boolean
+kdb get user/tests/type/truthiness
+#> 0
+
+# The plugin does not change ordinary values
+kdb set user/tests/type/key value
+kdb get user/tests/type/key
+#> value
+
+# Undo changes
+kdb rm -r user/tests/type
+sudo kdb umount user/tests/type
+.fi
+.PP
+.PP
+.PP
+.nf
+sudo kdb mount config\&.ecf user/tests/type dump type
+kdb set user/tests/type/truthiness 0
+kdb meta-set user/tests/type/truthiness type boolean
+ kdb set user/tests/type/truthiness yes
+# RET: 0
+ # Undo changes
+kdb rm -r user/tests/type
+sudo kdb umount user/tests/type
+.fi
+.PP
+.PP
+Records are part of other plugins\&.
+.PP
+The \fCCORBA\fP type system also has its limits\&. The types \fCstring\fP and \fCenum\fP can be unsatisfactory\&. While string is too general and makes no limit on how the sequence of characters is structured, the enumeration is too finite\&. For example, it is not possible to say that a string is not allowed to have a specific symbol in it\&. Combine this plugin with other type checker plugins to circumvent such limitations\&. 

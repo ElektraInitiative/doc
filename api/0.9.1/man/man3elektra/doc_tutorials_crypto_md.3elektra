@@ -1,0 +1,310 @@
+.TH "doc_tutorials_crypto_md" 3elektra "Tue Nov 26 2019" "Version 0.9.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_crypto_md \- Cryptographic Methods in Elektra 
+Elektra can protect the following aspects of your configuration:
+.PP
+.IP "1." 4
+confidentiality (i\&.e\&. protection against unauthorized access), and
+.IP "2." 4
+integrity (i\&.e\&. protection against unauthorized modification)\&.
+.PP
+.PP
+Elektra provides two plugins to achieve this protection:
+.PP
+.IP "1." 4
+\fCcrypto\fP, and
+.IP "2." 4
+\fCfcrypt\fP\&.
+.PP
+.PP
+For the rest of this tutorial we assume that you are somewhat familiar with GnuPG (GPG)\&. The documentation of GnuPG can be found \fChere\fP\&.
+.PP
+In order to find your GPG private key(s) you can use:
+.PP
+.PP
+.nf
+gpg2 --list-secret-keys
+.fi
+.PP
+.PP
+If GPG private keys are available, you see an output, that looks similar to this:
+.PP
+.PP
+.nf
+sec   rsa1024 2016-08-20 [SC]
+          DDEBEF9EE2DC931701338212DAF635B17F230E8D
+uid           [ultimate] Elektra Unit Tests (DO NOT USE IN PRODUCTION) <unit-tests@libelektra\&.org>
+ssb   rsa1024 2016-08-20 [E]
+.fi
+.PP
+.PP
+The GPG key we use in this tutorial has the ID \fCDDEBEF9EE2DC931701338212DAF635B17F230E8D\fP\&.
+.PP
+A GPG private key is mandatory for the plugins to work\&. If you have no GPG private key available, you can generate one by entering the following command:
+.PP
+.PP
+.nf
+gpg2 --generate-key
+.fi
+.PP
+.PP
+The \fCfcrypt\fP plugin and the \fCcrypto\fP plugin support both versions (version 1 and version 2) of GPG\&.
+.PP
+In this tutorial we explain the use of the \fCcrypto\fP plugin and the \fCfcrypt\fP plugin by a simple example: We want to protect a password that is contained in an INI-file\&.
+.PP
+The following example demonstrates how the INI-file is mounted without encryption enabled\&. We create the password at \fCuser/tests/password\fP and display the contents of \fCtest\&.ini\fP\&.
+.PP
+\fIStep 1:\fP Mount \fCtest\&.ini\fP
+.PP
+.PP
+.nf
+kdb mount test\&.ini user/tests ini
+.fi
+.PP
+.PP
+\fIStep 2:\fP Set the password at \fCuser/tests/password\fP and display the contents of \fCtest\&.ini\fP
+.PP
+.PP
+.nf
+kdb set user/tests/password 1234
+kdb file user/tests/password | xargs cat
+#> password=1234
+.fi
+.PP
+.PP
+\fIStep 3:\fP (Optional) Cleanup
+.PP
+.PP
+.nf
+kdb rm user/tests/password
+kdb umount user/tests
+.fi
+.PP
+.PP
+As you can see the password is stored in plain text\&. In this tutorial we demonstrate two different approaches towards confidentiality:
+.PP
+.IP "1." 4
+with the \fCfcrypt\fP plugin, which encrypts the entire INI-file, and
+.IP "2." 4
+with the \fCcrypto\fP plugin, which allows the encryption of specific key values only\&.
+.PP
+.PP
+We also show how to approach integrity with the signature features of the \fCfcrypt\fP plugin\&.
+.PP
+The \fCfcrypt\fP plugin enables the encryption and decryption of entire configuration files, thus protecting the confidentiality of the configuration keys and values\&. \fCfcrypt\fP utilizes GPG for all cryptographic operations\&. The GPG key, which is used for encryption and decryption, is specified in the backend configuration under \fCencrypt/key\fP\&.
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ini user/tests fcrypt "encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" ini
+.fi
+.PP
+.PP
+If the above command fails, please take a look at the \fCReadMe of the \fCfcrypt\fP plugin\fP\&.
+.PP
+As a result the file \fCtest\&.ini\fP is encrypted using GnuPG\&. \fCfcrypt\fP will call the \fCgpg2\fP or \fCgpg\fP binary as follows:
+.PP
+.PP
+.nf
+gpg2 -o test\&.ini -a -r DDEBEF9EE2DC931701338212DAF635B17F230E8D -e test\&.ini\&.tmp
+.fi
+.PP
+.PP
+Note that \fCtest\&.ini\fP can not only be decrypted by Elektra, but it is also possible to decrypt it with GnuPG directly\&. You can try to decrypt \fCtest\&.ini\fP with GPG:
+.PP
+.PP
+.nf
+gpg2 -d test\&.ini
+.fi
+.PP
+.PP
+The complete procedure looks like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ini user/tests fcrypt "encrypt/key=$(kdb gen-gpg-testkey)" ini
+kdb set user/tests/password 1234
+kdb file user/tests/password | xargs cat
+.fi
+.PP
+.PP
+To clean up the environment we run:
+.PP
+.PP
+.nf
+kdb rm user/tests/password
+kdb umount user/tests
+.fi
+.PP
+.PP
+\fCfcrypt\fP also offers the option to sign and verify configuration files, thus protecting the integrity of the configuration values\&. If \fCsign/key\fP is specified in the backend configuration, \fCfcrypt\fP will forward the key ID for signing the configuration file\&.
+.PP
+An example backend configuration is given as follows:
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ini user/tests fcrypt "sign/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" ini
+.fi
+.PP
+.PP
+As a result the file \fCtest\&.ini\fP will be signed using GPG\&. \fCfcrypt\fP will call the \fCgpg2\fP or \fCgpg\fP binary as follows:
+.PP
+.PP
+.nf
+gpg2 -o test\&.ini -a -u DDEBEF9EE2DC931701338212DAF635B17F230E8D -r DDEBEF9EE2DC931701338212DAF635B17F230E8D -s test\&.ini\&.tmp
+.fi
+.PP
+.PP
+If \fCtest\&.ini\fP is modified, all following calls of \fCkdb get\fP will fail with an error message stating that the signature of the file could not be verified\&.
+.PP
+The complete example looks like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ini user/tests fcrypt "sign/key=$(kdb gen-gpg-testkey)" ini
+kdb set user/tests/password 1234
+kdb file user/tests/password | xargs cat
+.fi
+.PP
+.PP
+To clean up the environment we run:
+.PP
+.PP
+.nf
+kdb rm user/tests/password
+kdb umount user/tests
+.fi
+.PP
+.PP
+The options \fCsign/key\fP and \fCencrypt/key\fP can be combined together, resulting in configuration files, that are signed and encrypted\&.
+.PP
+Mounting \fCtest\&.ini\fP with signatures and encryption enabled can be done like this:
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ini user/tests fcrypt "sign/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D,encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" ini
+.fi
+.PP
+.PP
+The complete example looks like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ini user/tests fcrypt "sign/key=$(kdb gen-gpg-testkey),encrypt/key=$(kdb gen-gpg-testkey)" ini
+kdb set user/tests/password 1234
+kdb file user/tests/password | xargs cat
+.fi
+.PP
+.PP
+To clean up the environment we run:
+.PP
+.PP
+.nf
+kdb rm user/tests/password
+kdb umount user/tests
+.fi
+.PP
+.PP
+So far we learned how to encrypt and decrypt entry configuration files\&. Sometimes we only want to protect a smaller subset of configuration values in a bigger configuration setting\&. For this reason the \fCcrypto\fP plugin was developed\&.
+.PP
+The \fCcrypto\fP plugin is actually a family of plugins and comes with three different providers:
+.PP
+.IP "1." 4
+\fCcrypto_gcrypt\fP using \fClibgcrypt\fP,
+.IP "2." 4
+\fCcrypto_openssl\fP using \fClibcrypto\fP, and
+.IP "3." 4
+\fCcrypto_botan\fP using \fCBotan\fP\&.
+.PP
+.PP
+We recommend that you use \fCcrypto_gcrypt\fP as it is the fastest variant\&. The variants of the \fCcrypto\fP plugin work the same internally, but use a different crypto library for cryptographic operations\&.
+.PP
+The \fCcrypto\fP plugins provide the option to encrypt and decrypt single configuration values (Keys) in a Keyset\&. GPG is required for the key-handling\&.
+.PP
+To follow our example of an encrypted password in \fCtest\&.ini\fP, we first mount the INI-file with the \fCcrypto_gcrypt\fP plugin enabled, like this:
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ini user/tests crypto_gcrypt "crypto/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" base64 ini
+.fi
+.PP
+.PP
+We recommend adding the \fCbase64\fP plugin to the backend, because \fCcrypto\fP will output binary data\&. Having binary data in configuration files is hardly ever feasible\&. \fCbase64\fP encodes all binary values within a configuration file and transforms them into Base64 strings\&.
+.PP
+To tell the \fCcrypto\fP plugin which Keys it should process, the metakey \fCcrypto/encrypt\fP is used\&. The \fCcrypto\fP plugin searches for the metakey \fCcrypto/encrypt\fP\&. If the value is equal to \fC1\fP, the value of the Key will be encrypted\&.
+.PP
+We want to protect the password, that is stored under \fCuser/test/password\fP\&. So we set the metakey as follows:
+.PP
+.PP
+.nf
+kdb meta-set user/tests/password crypto/encrypt 1
+.fi
+.PP
+.PP
+Now we are safe to set the actual password:
+.PP
+.PP
+.nf
+kdb set user/tests/password "1234"
+.fi
+.PP
+.PP
+The resulting INI-file contains the following data:
+.PP
+.PP
+.nf
+#@META crypto/encrypt = 1
+password=@BASE64IyFjcnlwdG8wMBEAAADwPI+lqp+X2b6BIfLdRYgwxmAhVUPurqkQVAI78Pn4OYONbei4NfykMPvx9C9w91KT
+.fi
+.PP
+.PP
+You can access the password as usual with \fCkdb get\fP:
+.PP
+.PP
+.nf
+kdb get user/tests/password
+.fi
+.PP
+.PP
+As a result you get '1234'\&.
+.PP
+You can disable the encryption by setting \fCcrypto/encrypt\fP to a value other than \fC1\fP, for example:
+.PP
+.PP
+.nf
+kdb meta-set user/tests/password crypto/encrypt 0
+.fi
+.PP
+.PP
+The complete example looks like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ini user/tests crypto_gcrypt "crypto/key=$(kdb gen-gpg-testkey)" base64 ini
+kdb meta-set user/tests/password crypto/encrypt 1
+kdb set user/tests/password 1234
+kdb set user/tests/unencrypted "I am not encrypted"
+kdb file user/tests/password | xargs cat
+.fi
+.PP
+.PP
+To disable encryption on \fCuser/tests/password\fP, we can run:
+.PP
+.PP
+.nf
+kdb meta-set user/tests/password crypto/encrypt 0
+kdb file user/tests/password | xargs cat
+.fi
+.PP
+.PP
+To clean up the environment we run:
+.PP
+.PP
+.nf
+kdb rm user/tests/unencrypted
+kdb rm user/tests/password
+kdb umount user/tests
+.fi
+.PP
+ 

@@ -1,0 +1,138 @@
+.TH "autotoc_md657" 3elektra "Tue Nov 26 2019" "Version 0.9.1" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md657 \- Plugin: specload 
+
+.IP "\(bu" 2
+infos = Information about the specload plugin is in keys below
+.IP "\(bu" 2
+infos/author = Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/specload
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained nodep libc configurable unfinished
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = loads a specification from an external application
+.PP
+.PP
+In order to optimally use Elektra an application has to provide a specification\&. This specification has to be mounted in the \fCspec\fP namespace by the user (or automatically during the install process)\&. However, this specification should in most cases not be modified by the user\&. If it is modified the user has to be sure it is still compatible to the original specification\&. Otherwise the application might crash because it e\&.g\&. expected a default value to be provided by the specification that the user changed or removed\&.
+.PP
+This is were this plugin comes in\&. Unlike other storage plugins \fCspecload\fP doesn't use the file given during mounting for most of the configuration\&. Instead \fCspecload\fP requests the specification with which an application was compiled from the application itself\&. On top of this base specifications the user can make some modifications, which are the only keys stored in the mounted file\&. All modifications made by the user are verified by the plugin\&. The user can never modify the specification in a way to would break application compatibility\&.
+.PP
+NOTE: currently the modifications a user can make are very limited/not possible\&. See \fCLimitations\fP below\&.
+.PP
+The plugin relies heavily on the \fCquickdump\fP plugin\&. It is used for storing the overridden values as well as the data transfer between \fCspecload\fP and an application\&.
+.PP
+To check whether \fCquickdump\fP is available you can use:
+.PP
+.PP
+.nf
+kdb plugin-list quickdump
+#> quickdump
+.fi
+.PP
+.PP
+To mount \fCspecload\fP use (note: only the \fCspec\fP namespace is supported):
+.PP
+.PP
+.nf
+# specload will call '/usr/bin/exampleapp --elektra-spec'
+kdb mount specload\&.eqd spec/tests/specload/example specload 'app=/usr/bin/exampleapp'
+.fi
+.PP
+.PP
+You always have to specify the \fCapp\fP that shall be called\&. This application will be called with the single argument \fC--elektra-spec\fP\&. This can be configured by using \fCapp/args/#\fP during mounting:
+.PP
+.PP
+.nf
+# specload will call '/usr/bin/exampleapp -o spec'
+kdb mount specload\&.eqd spec/tests/specload/example specload 'app=/usr/bin/exampleapp' 'app/args=#1' 'app/args/#0=-o' 'app/args/#1=spec'
+.fi
+.PP
+.PP
+To inhibit the default \fC--elektra-spec\fP argument and call an application without any arguments use `'app/args='`\&.
+.PP
+The app must only output the expected base specification to \fCstdout\fP and then exit, when called by \fCspecload\fP\&. We use the \fCquickdump\fP plugin for communication, so the application should call \fCelektraQuickdumpSet\fP\&. Because this dependency may change in future, it is recommended you use the function \fCelektraSpecloadSendSpec\fP exported as \fC'system/elektra/modules/specload/exports/sendspec'\fP:
+.PP
+.PP
+.nf
+Key * errorKey = keyNew (0, KEY_END);
+
+// add 'system/sendspec' key to suppress checking the 'app' key in elektraSpecloadOpen
+KeySet * specloadConf = ksNew (1, keyNew ("system/sendspec", KEY_END), KS_END);
+ElektraInvokeHandle * specload = elektraInvokeOpen ("specload", specloadConf, errorKey);
+
+int result = elektraInvoke2Args (specload, "sendspec", ks, NULL);
+
+elektraInvokeClose (specload, errorKey);
+keyDel (errorKey);
+ksDel (specloadConf);
+.fi
+.PP
+.PP
+The code above will automatically print the KeySet \fCks\fP to stdout in exactly the way \fCspecload\fP expects it\&.
+.PP
+Once the mounting is done you can inspect you specification like you would with any other mounted configuration\&. If you call \fCkdb set\fP (or \fCkdb meta-set\fP or anything else that calls \fC\fBkdbSet()\fP\fP), however, \fCspecload\fP will verify that the modifications you made are compatible with the original specification\&. Currently this verification is very restrictive and doesn't allow a lot of changes that would be safe\&. This is because the necessary verification becomes very complex very quickly\&. For example adding \fCopt/arg\fP is only safe, if \fCopt\fP was also added by the user, because the application might rely on the default \fCopt/arg=none\fP\&. See also \fCLimitations\fP\&.
+.PP
+Instead of loading the specification via \fCstdin\fP/\fCstdout\fP from another app, you can also instruct \fCspecload\fP to directly load a \fCquickdump\fP file\&. This can be done by setting the \fCfile\fP config key instead of \fCapp\fP\&. The provided path must be absolute, same as an \fCapp\fP path\&.
+.PP
+Note: If \fCfile\fP is specified, \fCapp\fP will be ignored\&.
+.PP
+This assumes you compiled the file \fC\fCtestapp\&.c\fP\fP and it is available as the executable \fCtestapp\fP in the current folder\&.
+.PP
+.PP
+.nf
+sudo kdb mount -R noresolver specload\&.eqd spec/tests/specload specload "app=$(pwd)/testapp"
+
+kdb meta-ls spec/tests/specload/mykey
+#> default
+
+kdb get /tests/specload/mykey
+#> 7
+
+sudo kdb umount spec/tests/specload
+.fi
+.PP
+.PP
+Or in direct file mode:
+.PP
+.PP
+.nf
+# This assumes that `$PWD` is the root of the Elektra source tree\&.
+sudo kdb mount -R noresolver specload\&.eqd spec/tests/specload specload "file=$(pwd)/src/plugins/specload/specload/spec\&.quickdump"
+
+kdb meta-ls spec/tests/specload/mykey
+#> default
+
+kdb get /tests/specload/mykey
+#> 7
+
+sudo kdb umount spec/tests/specload
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+The plugin only allows the following modifications right now:
+.IP "  \(bu" 4
+add/edit/remove \fCdescription\fP or \fCopt/help\fP
+.IP "  \(bu" 4
+add/edit \fCdefault\fP
+.IP "  \(bu" 4
+add \fCtype\fP
+.PP
+
+.IP "\(bu" 2
+The plugin must be mounted using \fCnoresolver\fP or another resolver that always calls the storage plugin\&. To work around this limitation, \fCspecload\fP prefixes relative paths with \fCKDB_DB_SPEC\fP before passing the path on to \fCquickdump\fP\&. This means that your overlay files will be stored in the same directory as any other \fCspec\fP configurations\&. 
+.PP
+

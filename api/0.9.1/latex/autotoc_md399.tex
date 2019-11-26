@@ -1,0 +1,80 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mathcheck plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/provides = check
+\item infos/needs =
+\item infos/placements = presetstorage
+\item infos/status = maintained unittest shelltest nodep discouraged
+\item infos/metadata = check/math
+\item infos/description = validates a set of keys through a mathematical expression
+\end{DoxyItemize}
+
+Compares a key value to a mathematical expression using polish prefix notation defined in the {\ttfamily check/math} metakey. Operations are {\ttfamily + -\/ / $\ast$} . Operants are keys with names relative to the parent key. How the values are compared is specified at the beginning of the metakey using the conditions {\ttfamily $<$, $<$=, ==, !=, =$>$, $>$, \+:=} {\ttfamily \+:=} is used to set key values. All values are interpreted as {\ttfamily double} floating point values.
+
+Keynames are all either relative to to-\/be-\/tested key (starting with {\ttfamily ./} or {\ttfamily ../}), relative to the parentkey (starting with {\ttfamily @/}) or absolute (e.\+g. {\ttfamily system/key}).
+
+{\ttfamily check/math = \char`\"{}== + ../testval1 + ../testval2 ../testval3\char`\"{}} compares the keyvalue to the sum of testval1-\/3 and yields an error if the values are not equal. {\ttfamily check/math = \char`\"{}$<$= -\/ @/testval1 $\ast$ @/testval2 @/testval3\char`\"{}} tests if the keyvalue is less than or equal to {\ttfamily testval1 -\/ (testval2 $\ast$ testval3)} and yields an error if not.
+
+Full example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-and-Restore:user/tests/mathcheck}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount mathcheck.dump user/tests/mathcheck mathcheck}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user/tests/mathcheck/a 3.1}
+\DoxyCodeLine{kdb set user/tests/mathcheck/b 4.5}
+\DoxyCodeLine{kdb set user/tests/mathcheck/k 7.6}
+\DoxyCodeLine{kdb meta-set user/tests/mathcheck/k check/math "== + ../a ../b"}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set user/tests/mathcheck/k 7.7}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{\# Set string to "7.7"}
+\DoxyCodeLine{\# Sorry, module mathcheck issued the error C03200:}
+\DoxyCodeLine{\# invalid value: 7.7 != 7.6}
+\end{DoxyCode}
+
+
+To calculate values on-\/demand you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-set user/tests/mathcheck/k check/math ":= + @/a @/b"}
+\DoxyCodeLine{kdb set user/tests/mathcheck/a 8.0}
+\DoxyCodeLine{kdb set user/tests/mathcheck/b 4.5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user/tests/mathcheck/k}
+\DoxyCodeLine{\#> 12.5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user/tests/mathcheck/a 5.5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user/tests/mathcheck/k}
+\DoxyCodeLine{\#> 10}
+\end{DoxyCode}
+
+
+It also works with constants\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-set user/tests/mathcheck/k check/math ":= + ../a '5'"}
+\DoxyCodeLine{kdb set user/tests/mathcheck/a 5.5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user/tests/mathcheck/k}
+\DoxyCodeLine{\#> 10.5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user/tests/mathcheck/a 8.0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user/tests/mathcheck/k}
+\DoxyCodeLine{\#> 13}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#cleanup}
+\DoxyCodeLine{kdb rm -r user/tests/mathcheck}
+\DoxyCodeLine{sudo kdb umount user/tests/mathcheck}
+\end{DoxyCode}
+ 

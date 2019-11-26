@@ -1,0 +1,109 @@
+
+\begin{DoxyItemize}
+\item author\+: Markus Raab
+\item pub\+Date\+: Sat, 21 Jun 2014 12\+:00\+:00 +0100
+\item short\+Desc\+: adds technical previews \& other improvements
+\end{DoxyItemize}
+
+The Elektra Initiative moved to Github for following reasons\+:
+
+
+\begin{DoxyItemize}
+\item We were seriously missing a bug tracker
+\item It may make collaboration easier
+\item Build Server Integration\+:
+\begin{DoxyItemize}
+\item Build on Merge\+Requests waits for the first merge request to be built!
+\item And the build status is now published for this job
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+The main entrance point and U\+RL for any advertisement and linking stays
+
+\href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}
+
+(which points to github at the moment).
+
+Additionally (not related to github), we now have a \href{https://doc.libelektra.org/coverage/master/debian-buster-full}{\texttt{ L\+C\+OV code coverage report}}!
+
+The hosts plugin got documentation and several bug fixes. Multiline comments now remove the comment start sequences within the metadata comment. Additionally the kdb tool has an improved error message on invalid filenames. (thanks to Manuel Mausz)
+
+Fix an issue that the resolver plugin did not delete tmpfile in some error situations and add test cases with error plugin.
+
+Fix K\+S\+\_\+\+E\+ND in C++ that did not specify the namespace.
+
+\char`\"{}kdb run\+\_\+all\char`\"{} will now run all tests using Elektra from your system. Because not all testdata will be installed, some test cases fail unless you copy the data manually. Those are\+: \begin{DoxyVerb}testmod_yajl testmod_augeas testmod_fstab testmod_hosts test_xml
+\end{DoxyVerb}
+
+
+Virtually all clang compiler warnings were fixed (thanks to Felix Berlakovich).
+
+kdb mv now is atomic. (A\+PI was used wrongly in the tool)
+
+Clang, icc and gcc are now all supported and tested.
+
+A plugin that logs write operations and errors via the native journald interface was added (thanks to Felix Berlakovich).
+
+A preview of the augeas plugin was added. In cmake add \char`\"{}augeas\char`\"{} to P\+L\+U\+G\+I\+NS and then run \char`\"{}kdb info augeas\char`\"{} for further instructions. Additionally, see Outlook below (thanks to Felix Berlakovich).
+
+A preview of python3 and lua bindings were added. In cmake enable the options {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+W\+IG B\+U\+I\+L\+D\+\_\+\+S\+W\+I\+G\+\_\+\+L\+UA B\+U\+I\+L\+D\+\_\+\+S\+W\+I\+G\+\_\+\+P\+Y\+T\+H\+ON} so that they are compiled (thanks to Manuel Mausz).
+
+The code generator was extended to support contextual values, more information about that topic later.
+
+The libtools library is back to life again! It has the same idea as its predecessor, but it is much more powerful. Because of the plugin system libtools is able to export and import any configuration format Elektra supports. Additionally it adds support for mounting backends. While most of its functionality is mature, the A\+PI is not final, though.
+
+The A\+PI and A\+BI is as always backwards-\/compatible within the 0.\+8 series.
+
+This time it is, however, not forward-\/compatible (that means programs linked against 0.\+8.\+6 might not work with 0.\+8.\+5), because \mbox{\hyperlink{group__keyset_ga3604cc41505f7e19db945cece67190b6}{ks\+At\+Cursor()}} was added.
+
+\mbox{\hyperlink{group__keyset_ga3604cc41505f7e19db945cece67190b6}{ks\+At\+Cursor()}} provides the means for an external iterator. This was immediately exploited by an implementation of the C++ iterators. These new C++(11) (reverse)iterators allow multi-\/pass algorithm over the same Key\+Set.
+
+ks\+Sort was in the kdb.\+h header file, even though it never was needed nor available in 0.\+8. Automatic compatibility checkers may wrongly tell that the A\+PI is not compatible, but this is not the case (thanks to Manuel Mausz).
+
+The C++ A\+PI changed, including\+:
+
+
+\begin{DoxyItemize}
+\item does not wrongly convert garbage to default types using {\ttfamily get$<$T$>$}
+\item get\+Meta now internally uses {\ttfamily get$<$T$>$} and both throw the Key\+Type\+Conversion Exception
+\item Key\+Set\+::at directly allows one to use \mbox{\hyperlink{group__keyset_ga3604cc41505f7e19db945cece67190b6}{ks\+At\+Cursor()}}
+\item Key\+Type\+Conversion (or former Key\+Bad\+Meta) is not thrown anymore if key is not available
+\item Key\+::has\+Meta allows one to directly check if metadata is available
+\end{DoxyItemize}
+
+C\+Make\+: E\+N\+A\+B\+L\+E\+\_\+\+C\+X\+X11 is now default O\+FF (because gcc 4.\+6 and older won\textquotesingle{}t work with it). It disables some tests, though. {\ttfamily unique\+\_\+ptr} will automatically be used instead of {\ttfamily auto\+\_\+ptr} in this mode.
+
+Note for maintainers\+: libelektratools now needs to be installed so that the kdb tool will work.
+
+One drawback of Elektra is the small number of available storage plugins. While writing storage plugins isn\textquotesingle{}t too hard, it still requires knowledge of Elektra’s plugin architecture. In addition it is always necessary to keep both translation directions in mind (from file to Elektra and back). In order to mitigate this issue Felix Berlakovich is working on an Elektra storage plugin which uses Augeas \mbox{[}1\mbox{]} to read and manipulate configuration files. Augeas uses a concept called lenses to translate between files and abstract trees (i.\+e. trees that hide unimportant details like whitespaces). In brief, what makes lenses special is the fact that they automatically disallow translations that cannot be reversed. This means that one of the translation directions comes for free as it is implicitly described by the other one. Therefore writing lenses is much simpler than programming both directions explicitly as done in traditional Elektra storage plugins. Furthermore many lenses for common applications like Apache, My\+S\+QL, D\+H\+C\+Pd and many more \mbox{[}2\mbox{]} already exist. Besides these benefits, Augeas lacks many features of Elektra. Although this is mostly intended because Augeas aims to concentrate just on configuration file manipulation some of these features would be valuable for administrators and developers. Some of these mentioned Elektra features include but are not limited to\+: logging of all configuration changes done, transformation of character encoding as needed, import and export of configuration data in any format, e.\+g. X\+ML or J\+S\+ON (Augeas has a similar feature for X\+ML), file conflict detection and several different validations for configuration options (see \mbox{[}3\mbox{]} for a full list of features). With the Augeas storage plugin these features cannot be used with only the applications already integrated into Elektra, but with all applications for which lenses exist. This storage plugin targets system administrators as well as developers, that wish to take advantage of Elektra’s features, but were unable to do so because of missing plugins. If no lens exists already, writing a new one requires neither programming skills nor knowledge of Elektra’s plugin architecture. Furthermore, implementing a new configuration file format is just a matter of writing a lens instead of writing a full-\/fledged parser. \mbox{[}1\mbox{]} \href{http://augeas.net/}{\texttt{ http\+://augeas.\+net/}} \mbox{[}2\mbox{]} \href{http://augeas.net/stock_lenses.html}{\texttt{ http\+://augeas.\+net/stock\+\_\+lenses.\+html}} \mbox{[}3\mbox{]} \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}
+
+Since Elektra is written in C, integration is limited to projects written in C and languages compatible with C like C++. In order to change this situation Manuel Mausz is working on the implementation of language bindings using two different techniques. The first technique uses S\+W\+IG as a generic generator for various languages. In a nutshell, S\+W\+IG is a compiler that takes C/\+C++ declarations and creates the wrappers needed to access those declarations from other languages. The second technique is called G\+Object Introspection. In contrast to S\+W\+IG, G\+Object Introspection generates a language independent metadata file. For dynamic languages the G\+Object Introspection support in the target language will load this metadata file to generate bindings at run-\/time. In order to provide bindings for static languages a compiler on the metadate file will be used. This is comparable to using S\+W\+IG. Manuel will focus on implementing language bindings for Python and Lua though both techniques will support various other languages. As language bindings only allow to call into Elektra’s A\+PI Manuel will also embed the interpreters of both Python and Lua into two generic plugins. Using these plugins in combination with the languages bindings it will be fully possible to write plugins for Elektra in languages other than C/\+C++.
+
+While Elektra offers sophisticated methods to store and manipulate configuration, currently there is only a command line tool (kdb) available to interact with the database. This requires the user to study and learn the possible commands and does not allow free exploration of the options of the application. To enable new ways to interact with Elektra, Raffael Pancheri is designing and implementing a Graphical User Interface (G\+UI). To increase the probability to create a G\+UI that is indeed usable and beneficial, Pancheri is following the design principles proposed by Ben Shneiderman and Jakob Nielson.
+
+Finally, as you already noticed, Ian Donnelly is working on a semantic 3-\/way merge to make distribution and package upgrades smoother. This is done as G\+S\+OC project. The progress is documented here\+: \href{http://community.libelektra.org/wp/}{\texttt{ http\+://community.\+libelektra.\+org/wp/}}
+
+You can download the release at\+: \href{http://www.markus-raab.org/ftp/elektra/releases/elektra-0.8.6.tar.gz}{\texttt{ http\+://www.\+markus-\/raab.\+org/ftp/elektra/releases/elektra-\/0.\+8.\+6.\+tar.\+gz}}
+
+
+\begin{DoxyItemize}
+\item size\+: 1188337
+\item md5sum\+: 4a59824e70a29295e9ef9ae7605d9299
+\item sha1\+: 2570710b0057470223611ca00d61a0196e54e7b2
+\item sha256\+: e815cf69b070c339784472841aa0ee0b169fab7c78f41cbbd7044f53fa9ed216
+\end{DoxyItemize}
+
+Docu can be found here\+: \href{https://doc.libelektra.org/api/0.8.6/html/}{\texttt{ https\+://doc.\+libelektra.\+org/api/0.\+8.\+6/html/}}
+
+You can install the debian packages for debian (wheezy, amd64 only, some packages will be added later) by adding following lines to your /etc/apt/sources.list\+: deb \href{http://markus-raab.org/ftp/wheezy}{\texttt{ http\+://markus-\/raab.\+org/ftp/wheezy}} wheezy main
+
+and install or upgrade the packages with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo apt-get update}
+\DoxyCodeLine{sudo apt-get install libelektra-core4 libelektra-full4 libelektra-bin libelektra-dev libelektra-test libelektra-xmltool4 libelektra-json4 libelektra-dbus4 libelektra-doc}
+\end{DoxyCode}
+
+
+Best regards, Markus 

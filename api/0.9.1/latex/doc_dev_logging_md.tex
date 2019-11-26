@@ -1,0 +1,147 @@
+Enable logging by compiling with the C\+Make option {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+L\+O\+G\+G\+ER=ON} (e.\+g. {\ttfamily cmake -\/D\+E\+N\+A\+B\+L\+E\+\_\+\+L\+O\+G\+G\+ER=ON}).
+
+By default errors and warnings are logged to stderr and syslog, while notice and info message are only logged to syslog. Debug level message are not logged by default, but will be logged to syslog, if {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+D\+E\+B\+UG=ON} is set in C\+Make.
+
+The file sink behaves like syslog, if it has been enabled (see below).
+
+
+\begin{DoxyEnumerate}
+\item Import the logging library in your code\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <\mbox{\hyperlink{kdblogger_8h}{kdblogger.h}}>}}
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Insert logging statements\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ELEKTRA\_LOG(\textcolor{stringliteral}{"Hello, \%s!"}, \textcolor{stringliteral}{"🌎"});}
+\end{DoxyCode}
+
+
+If Elektra should display all log messages, then please follow the steps below.
+
+
+\begin{DoxyEnumerate}
+\item Uncomment the line\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// \#define NO\_FILTER}}
+\end{DoxyCode}
+
+
+in the file {\ttfamily \mbox{\hyperlink{log_8c}{src/libs/elektra/log.\+c}}}. (Alternatively you may define this macro via C\+Make.)
+
+
+\begin{DoxyEnumerate}
+\item Optional\+: The logging levels are set in {\ttfamily \mbox{\hyperlink{kdblogger_8h}{src/include/kdblogger.\+h}}}. For example, if you want to see everything (including debug messages) on stderr, then change the line
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{int} ELEKTRA\_LOG\_LEVEL\_STDERR = \mbox{\hyperlink{kdblogger_8h_a4096a2ccd61c6f5ad60e9015fd1bbb4ba0524fff5c46e0cf07287c473c46cc8e2}{ELEKTRA\_LOG\_LEVEL\_WARNING}};}
+\end{DoxyCode}
+
+
+to
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{int} ELEKTRA\_LOG\_LEVEL\_STDERR = \mbox{\hyperlink{kdblogger_8h_a4096a2ccd61c6f5ad60e9015fd1bbb4ba24c7a4c44a8b99b978dc99806d083386}{ELEKTRA\_LOG\_LEVEL\_DEBUG}};}
+\end{DoxyCode}
+
+
+If you want to only log messages below a specific directory prefix, then please follow the steps below.
+
+
+\begin{DoxyEnumerate}
+\item Search for the code\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifndef NO\_FILTER}}
+\DoxyCodeLine{     \textcolor{comment}{// XXX Filter level …}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif}}
+\end{DoxyCode}
+
+
+in the file {\ttfamily \mbox{\hyperlink{log_8c}{src/libs/elektra/log.\+c}}}.
+
+
+\begin{DoxyEnumerate}
+\item Replace the code with something like\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifndef NO\_FILTER}}
+\DoxyCodeLine{     \textcolor{keywordflow}{if} (strncmp (file, \textcolor{stringliteral}{"src/postfix/"}, \textcolor{keyword}{sizeof} (\textcolor{stringliteral}{"src/postfix"}))) \textcolor{keywordflow}{return} -1;}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif}}
+\end{DoxyCode}
+
+
+, where {\ttfamily src/postfix} contains all source files with logging statements that Elektra should log. For example, if you want to log everything from the {\ttfamily yamlcpp} plugin, then use the following code.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifndef NO\_FILTER}}
+\DoxyCodeLine{     \textcolor{keywordflow}{if} (strncmp (file, \textcolor{stringliteral}{"src/plugins/yamlcpp/"}, \textcolor{keyword}{sizeof} (\textcolor{stringliteral}{"src/plugins/yamlcpp"}))) \textcolor{keywordflow}{return} -1;}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif}}
+\end{DoxyCode}
+
+
+. To log messages from multiple source you can use the operator {\ttfamily \&\&} to chain multiple calls to {\ttfamily strncmp}. For example, to log messages from the {\ttfamily directoryvalue} and {\ttfamily yamlcpp} plugin use the code\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifndef NO\_FILTER}}
+\DoxyCodeLine{     \textcolor{keywordflow}{if} (strncmp (file, \textcolor{stringliteral}{"src/plugins/directoryvalue/"}, \textcolor{keyword}{sizeof} (\textcolor{stringliteral}{"src/plugins/directoryvalue"})) \&\&}
+\DoxyCodeLine{         strncmp (file, \textcolor{stringliteral}{"src/plugins/yamlcpp/"}, \textcolor{keyword}{sizeof} (\textcolor{stringliteral}{"src/plugins/yamlcpp"})))}
+\DoxyCodeLine{             \textcolor{keywordflow}{return} -1;}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif}}
+\end{DoxyCode}
+
+
+The logging framework has 3 sinks\+: stderr, syslog and file.
+
+The first to are enabled by default, while file is disabled. To enable it uncomment the line
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// \#define USE\_FILE\_SINK}}
+\end{DoxyCode}
+
+
+in {\ttfamily \mbox{\hyperlink{log_8c}{src/libs/elektra/log.\+c}}}. The file that log messages are written to is defined in this line
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{elektraLoggerFileHandle = fopen (\textcolor{stringliteral}{"elektra.log"}, \textcolor{stringliteral}{"a"});}
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Enable the logger\+: e.\+g. run {\ttfamily cmake} with the switch {\ttfamily -\/D\+E\+N\+A\+B\+L\+E\+\_\+\+L\+O\+G\+G\+ER=ON}
+\item Build Elektra
+\end{DoxyEnumerate}
+
+There are four log levels (E\+R\+R\+OR is reserved for aborts within {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+A\+S\+S\+E\+RT})\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+W\+A\+R\+N\+I\+NG}, something critical that should be shown to the user (e.\+g. A\+PI misuse), see \mbox{\hyperlink{kdblogger_8h_a4096a2ccd61c6f5ad60e9015fd1bbb4ba0524fff5c46e0cf07287c473c46cc8e2}{E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+L\+E\+V\+E\+L\+\_\+\+W\+A\+R\+N\+I\+NG}}
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+N\+O\+T\+I\+CE}, something important developers are likely interested in, see \mbox{\hyperlink{kdblogger_8h_a4096a2ccd61c6f5ad60e9015fd1bbb4ba329fc1e04c797ab8e54a137b21f41baf}{E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+L\+E\+V\+E\+L\+\_\+\+N\+O\+T\+I\+CE}}
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+OG}, standard level gives information what the code is doing without flooding the log, see \mbox{\hyperlink{kdblogger_8h_a4096a2ccd61c6f5ad60e9015fd1bbb4ba01618746c91d9d1090f599f604b9b832}{E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+L\+E\+V\+E\+L\+\_\+\+I\+N\+FO}}
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+D\+E\+B\+UG}, for less important logs, see \mbox{\hyperlink{kdblogger_8h_a4096a2ccd61c6f5ad60e9015fd1bbb4ba24c7a4c44a8b99b978dc99806d083386}{E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+L\+E\+V\+E\+L\+\_\+\+D\+E\+B\+UG}} 
+\end{DoxyItemize}

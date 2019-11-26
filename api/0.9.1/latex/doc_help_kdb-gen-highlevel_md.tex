@@ -1,0 +1,75 @@
+{\ttfamily kdb gen highlevel $<$parent\+Key$>$ $<$output\+Name$>$ \mbox{[}parameters...\mbox{]}}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily $<$parent\+Key$>$}\+: the parent key to use, M\+U\+ST be in the {\ttfamily spec} namespace
+\item {\ttfamily $<$output\+Name$>$}\+: the base name of the output files. {\ttfamily .c} will be appended for the source file and {\ttfamily .h} for the header file.
+\item {\ttfamily \mbox{[}parameters...\mbox{]}}\+: see \href{\#parameters}{\texttt{ below}}
+\end{DoxyItemize}
+
+This command invokes the code-\/generator with the template for the high-\/level A\+PI.
+
+The input for this template is a specification. Keys below the {\ttfamily parent\+Key} which have a {\ttfamily type} metakey are considered part of this specification. Every such key must also either have a {\ttfamily default} metadata or alternatively must be marked with the {\ttfamily require} metakey. Keys marked with {\ttfamily require} must be set by the user, otherwise the initialization of the Elektra handle will fail.
+
+The {\ttfamily type} metakey may only have one of the following values\+: {\ttfamily enum}, {\ttfamily string}, {\ttfamily boolean}, {\ttfamily char}, {\ttfamily octet}, {\ttfamily short}, {\ttfamily unsigned\+\_\+short}, {\ttfamily long}, {\ttfamily unsigned\+\_\+long}, {\ttfamily long\+\_\+long}, {\ttfamily unsigned\+\_\+long\+\_\+long}, {\ttfamily float}, {\ttfamily double}, {\ttfamily long\+\_\+double}, {\ttfamily struct}, {\ttfamily struct\+\_\+ref} and {\ttfamily discriminator}. Most of these values correspond to the values supported by the high-\/level A\+PI, the remaining values ({\ttfamily enum}, {\ttfamily struct}, {\ttfamily struct\+\_\+ref}, {\ttfamily discriminator}) are treated specially and are part of advanced concepts. For more information on these concepts take a look at \mbox{\hyperlink{doc_help_elektra-highlevel-gen_md}{elektra-\/highlevel-\/gen(7)}}. If one of the advanced {\ttfamily type} values is used, you should also set {\ttfamily check/type = any}; otherwise the {\ttfamily type} plugin may produce an error.
+
+The template produces at least three output files\+: {\ttfamily $<$output\+Name$>$.c}, {\ttfamily $<$output\+Name$>$.h} and {\ttfamily $<$output\+Name$>$.mount.\+sh}. The {\ttfamily .c} file only contains implementations, therefore its precise content will not be documented.
+
+The header ({\ttfamily .h}) file contains the following parts\+:
+
+
+\begin{DoxyEnumerate}
+\item Generated {\ttfamily enum}s and {\ttfamily struct}s
+\item Declarations for generated accessor functions
+\item Tags for accessing keys
+\item {\ttfamily static inline} accessor functions for all tags
+\item Declarations of initialization functions
+\item Convenience accessor macros
+\end{DoxyEnumerate}
+
+Anything else that may be part of the header file is not considered public A\+PI and may be subject to change at any point in time. There is also no guarantee of full compatibility between Elektra version for the documented parts of the header, however, we try to have as little breaking changes as possible for the six parts listed above.
+
+The {\ttfamily .mount.\+sh} file is a shell script that can be used to mount the specification for the application. You can either use it as a basis for your own script, or wrap it in another script that correctly sets {\ttfamily A\+P\+P\+\_\+\+P\+A\+TH} or {\ttfamily S\+P\+E\+C\+\_\+\+F\+I\+LE} (depending on your configuration). If the generated script happens to use the correct paths already, you can of course use it directly as well.
+
+For detailed information about the contents of the header file see \mbox{\hyperlink{doc_help_elektra-highlevel-gen_md}{elektra-\/highlevel-\/gen(7)}}.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily init\+Fn}\+: Changes the name of the initialization function (default\+: {\ttfamily load\+Configuration})
+\item {\ttfamily help\+Fn}\+: Changes the name of the function that prints the generated help message (default\+: {\ttfamily print\+Help\+Message})
+\item {\ttfamily specload\+Fn}\+: Changes the name of the function that checks for \char`\"{}specload mode\char`\"{} (default\+: {\ttfamily exit\+For\+Specload})
+\item {\ttfamily tag\+Prefix}\+: Changes the prefix of the generated tags (default\+: {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+T\+A\+G\+\_\+})
+\item {\ttfamily embed\+Help\+Fallback}\+: Switches whether a fallback help message should be embedded; allowed values\+: {\ttfamily 1} (default), {\ttfamily 0} If enabled ({\ttfamily 1}), a help message will be generated from the specification passed to the code-\/generator and embedded into the application. This message will be used, if the normal help message could not be generated at runtime.
+\item {\ttfamily enum\+Conv}\+: Switches how enum conversion should be done; allowed values\+: {\ttfamily default} (default), {\ttfamily switch}, {\ttfamily strcmp}
+\begin{DoxyItemize}
+\item {\ttfamily strcmp}\+: uses a simple series of {\ttfamily if (strcmp($\ast$, $\ast$) == 0)} to convert strings into enums
+\item {\ttfamily switch}\+: constructs a series of {\ttfamily switch} statements to convert strings into enums
+\item {\ttfamily auto}\+: uses a {\ttfamily switch} up to a depth of 2, then switches to {\ttfamily strcmp}
+\end{DoxyItemize}
+\item {\ttfamily headers}\+: Comma-\/separated ({\ttfamily ,}) list of additional header files to include. For each of the listed headers we will generate an {\ttfamily \#include \char`\"{}$\ast$\char`\"{}} statement
+\item {\ttfamily gen\+Setters}\+: Switches whether setters should be generated at all; allowed values\+: {\ttfamily 1} (default), {\ttfamily 0}
+\item {\ttfamily embedded\+Spec}\+: Changes how much of the specification is embedded into the application; allowed values\+: {\ttfamily full} (default), {\ttfamily defaults}, {\ttfamily none}. see \mbox{\hyperlink{doc_help_elektra-highlevel-gen_md}{elektra-\/highlevel-\/gen(7)}}
+\item {\ttfamily spec\+Validation}\+: Changes how the specification will be validated on application start-\/up; allowed values\+: {\ttfamily none} (default), {\ttfamily minimal}. see \mbox{\hyperlink{doc_help_elektra-highlevel-gen_md}{elektra-\/highlevel-\/gen(7)}}
+\end{DoxyItemize}
+
+The simplest invocation is\+:
+
+{\ttfamily kdb gen highlevel /sw/org/app/\#0/current config}
+
+However, it is not recommended to have the code-\/generator read from the K\+DB, so one should instead use\+:
+
+{\ttfamily kdb gen -\/F ni=spec.\+ini highlevel /sw/org/app/\#0/current config}
+
+If you don\textquotesingle{}t want to embed the full specification in your binary, we recommend\+:
+
+{\ttfamily kdb gen -\/F ni=spec.\+ini highlevel /sw/org/app/\#0/current config embedded\+Spec=defaults spec\+Validation=minimal}
+
+For the minimal binary size you may use (this comes with its own drawbacks, see \mbox{\hyperlink{doc_help_elektra-highlevel-gen_md}{elektra-\/highlevel-\/gen(7)}})\+:
+
+{\ttfamily kdb gen -\/F ni=spec.\+ini highlevel /sw/org/app/\#0/current config embedded\+Spec=none spec\+Validation=minimal}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_kdb_md}{kdb(1)}} for general information about the {\ttfamily kdb} tool.
+\item \mbox{\hyperlink{doc_help_elektra-spec_md}{elektra-\/spec(7)}} for an explanation of the {\ttfamily spec} namespace. 
+\end{DoxyItemize}
