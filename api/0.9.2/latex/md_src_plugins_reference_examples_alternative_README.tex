@@ -1,0 +1,99 @@
+\hypertarget{md_src_plugins_reference_examples_alternative_README_src_plugins_reference_examples_alternative_README_md}{}\doxysection{Example\+: Alternative References}\label{md_src_plugins_reference_examples_alternative_README_src_plugins_reference_examples_alternative_README_md}
+For this example the following configuration is used\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{; this example uses the ni plugin syntax}
+\DoxyCodeLine{; 1. metadata}
+\DoxyCodeLine{[rootkey/ref]}
+\DoxyCodeLine{check/reference = recursive}
+\DoxyCodeLine{}
+\DoxyCodeLine{[otherkey/newref]}
+\DoxyCodeLine{check/reference = alternative}
+\DoxyCodeLine{}
+\DoxyCodeLine{; 2. configuration data}
+\DoxyCodeLine{rootkey/ref = ../otherkey}
+\DoxyCodeLine{}
+\DoxyCodeLine{otherkey/ref = ../yetanotherkey}
+\DoxyCodeLine{otherkey/newref = ../otherotherkey}
+\DoxyCodeLine{}
+\DoxyCodeLine{otherotherkey/ref = ../nonexistent}
+\DoxyCodeLine{otherotherkey/newref = ../mergekey}
+\DoxyCodeLine{}
+\DoxyCodeLine{yetanotherkey/ref = ../mergekey}
+\DoxyCodeLine{yetanotherkey/newref = ../nonexistent}
+\DoxyCodeLine{}
+\DoxyCodeLine{mergekey/ref = ../finalkey}
+\DoxyCodeLine{mergekey/newref = ../finalkey}
+\DoxyCodeLine{}
+\DoxyCodeLine{finalkey = ""}
+\end{DoxyCode}
+
+
+We mount it by executing\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat << EOF > alternative.ini}
+\DoxyCodeLine{; this example uses the ni plugin syntax}
+\DoxyCodeLine{; 1. metadata}
+\DoxyCodeLine{[rootkey/ref]}
+\DoxyCodeLine{check/reference = recursive}
+\DoxyCodeLine{}
+\DoxyCodeLine{[otherkey/newref]}
+\DoxyCodeLine{check/reference = alternative}
+\DoxyCodeLine{}
+\DoxyCodeLine{; 2. configuration data}
+\DoxyCodeLine{rootkey/ref = ../otherkey}
+\DoxyCodeLine{}
+\DoxyCodeLine{otherkey/ref = ../yetanotherkey}
+\DoxyCodeLine{otherkey/newref = ../otherotherkey}
+\DoxyCodeLine{}
+\DoxyCodeLine{otherotherkey/ref = ../nonexistent}
+\DoxyCodeLine{otherotherkey/newref = ../mergekey}
+\DoxyCodeLine{}
+\DoxyCodeLine{yetanotherkey/ref = ../mergekey}
+\DoxyCodeLine{yetanotherkey/newref = ../nonexistent}
+\DoxyCodeLine{}
+\DoxyCodeLine{mergekey/ref = ../finalkey}
+\DoxyCodeLine{mergekey/newref = ../finalkey}
+\DoxyCodeLine{}
+\DoxyCodeLine{finalkey = ""}
+\DoxyCodeLine{EOF}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb mount alternative.ini user/tests/reference/alternative ni reference}
+\end{DoxyCode}
+
+
+The file contains a specification, which marks {\ttfamily user/tests/reference/alternative/rootkey/ref} as our root reference key and {\ttfamily user/tests/reference/alternative/otherkey/newref} as an alternative reference.
+
+The actual configuration contains then a structure which is processed by the plugin like follows\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily user/tests/reference/alternative/rootkey/ref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/otherkey/ref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/otherkey/newref} is discovered as an alternative reference and stored for later.
+\item {\ttfamily user/tests/reference/alternative/yetanotherkey/ref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/mergekey/ref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/finalkey} does not contain a reference, so we stop here.
+\item Processing of the alternative reference chain from {\ttfamily user/tests/reference/alternative/otherkey/newref} starts.
+\item {\ttfamily user/tests/reference/alternative/otherkey/newref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/otherotherkey/newref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/mergekey/newref} is read and its reference validated.
+\item {\ttfamily user/tests/reference/alternative/finalkey} does not contain a reference, so we stop here.
+\end{DoxyEnumerate}
+
+The resulting reference graph looks like this\+:
+
+
+
+As you can see, the plugin completely ignores {\ttfamily user/tests/reference/alternative/yetanotherkey/newref} as well as {\ttfamily user/tests/reference/alternative/otherother/ref} and in turn does not throw an error because {\ttfamily user/tests/reference/alternative/nonexistent} does not exist. However, the plugin does still exhaustively check both of the alternative reference chains. If you want to prohibit this, you can set the metakey {\ttfamily check/reference/restrict} to an empty value on whichever key you want to be a leaf node in the graph.
+
+After we are done we can unmount the example with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb umount user/tests/reference/alternative}
+\end{DoxyCode}
+ 

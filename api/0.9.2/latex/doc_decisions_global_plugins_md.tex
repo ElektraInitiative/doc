@@ -1,0 +1,183 @@
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1196}{}\doxysection{Problem}\label{doc_decisions_global_plugins_md_autotoc_md1196}
+
+\begin{DoxyItemize}
+\item Checker plugins see only part of the configuration and cannot check constraints between keys of different mount points
+\item Notification does not happen once after final commit, but for every plugin
+\item Some plugins are not implementable, e.\+g. global locks (that lock before any other plugin and unlock after any other), but also journal plugins that keep track of actions to be done and already done
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1197}{}\doxysection{Constraints}\label{doc_decisions_global_plugins_md_autotoc_md1197}
+
+\begin{DoxyItemize}
+\item Use list-\/plugin in configuration and allow arbitrary number of global plugins
+\item Plugin interface should be the same. Many plugins, e.\+g. dbus, should work as global plugins w/o any change in code (i.\+e. only changes in contract)
+\item Global plugins might depend on specific applications or specific mount points (it should be possible to enforce global plugins for specific applications).
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1198}{}\doxysection{Assumptions}\label{doc_decisions_global_plugins_md_autotoc_md1198}
+
+\begin{DoxyItemize}
+\item we can enumerate all positions that are useful for global plugins
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1199}{}\doxysection{Considered Alternatives}\label{doc_decisions_global_plugins_md_autotoc_md1199}
+
+\begin{DoxyItemize}
+\item using different plugin interface (like hooks)
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1200}{}\doxysection{Decision}\label{doc_decisions_global_plugins_md_autotoc_md1200}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1201}{}\doxysubsection{Positions}\label{doc_decisions_global_plugins_md_autotoc_md1201}
+Configuration will be in arrays below the keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system/elektra/globalplugins}
+\DoxyCodeLine{                             /prerollback}
+\DoxyCodeLine{                             /rollback}
+\DoxyCodeLine{                             /postrollback}
+\DoxyCodeLine{                             /getresolver}
+\DoxyCodeLine{                             /pregetcache}
+\DoxyCodeLine{                             /pregetstorage}
+\DoxyCodeLine{                             /getstorage}
+\DoxyCodeLine{                             /postgetstorage}
+\DoxyCodeLine{                             /postgetcache}
+\DoxyCodeLine{                             /setresolver}
+\DoxyCodeLine{                             /presetstorage}
+\DoxyCodeLine{                             /setstorage}
+\DoxyCodeLine{                             /precommit}
+\DoxyCodeLine{                             /commit}
+\DoxyCodeLine{                             /postcommit}
+\end{DoxyCode}
+
+
+Additionally, below every of these position following subpositions exist\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/init}
+\DoxyCodeLine{/deinit}
+\DoxyCodeLine{/foreach}
+\end{DoxyCode}
+
+
+With different semantics each\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily init} is always paired with {\ttfamily deinit} and can be used for locking purposes. It is guaranteed that {\ttfamily deinit} will be called, if {\ttfamily init} was called before.
+\item {\ttfamily foreach} will be called for every single mount point.
+\item {\ttfamily max once} (without any subposition) will be called maximum once per {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}/kdb\+Set()} outside the loop. It must be called after {\ttfamily init}, and before {\ttfamily deinit}.
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1202}{}\doxysubsection{Return Values}\label{doc_decisions_global_plugins_md_autotoc_md1202}
+If a global plugin returns\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/1}\+: {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}/kdb\+Set()} will return with an error
+\item {\ttfamily 0}\+: {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}/kdb\+Set()} will be aborted without an error (except {\ttfamily deinit} and {\ttfamily rollback} plugins are executed)
+\item {\ttfamily 1}\+: {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}/kdb\+Set()} will continue as if no hook was executed
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1203}{}\doxysubsection{Detection Within Plugins}\label{doc_decisions_global_plugins_md_autotoc_md1203}
+So that plugins know in which position they currently are, the name of the position will be written as string in parentkey (not starting with slash to distinguish with file names).
+
+Exception\+: {\ttfamily foreach} plugins only get filenames, so to know in which foreach loop you are, you need to add additional {\ttfamily once} placements to correctly track your state.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1204}{}\doxysubsection{Contract}\label{doc_decisions_global_plugins_md_autotoc_md1204}
+Next to positioning information plugins have to state in their contract that they will work as global plugin, i.\+e. do not need to work on individual config files, when following contract is present\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{infos/status global}
+\end{DoxyCode}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1205}{}\doxysubsection{Application-\/\+Specific Global Plugins}\label{doc_decisions_global_plugins_md_autotoc_md1205}
+If you need a global plugin for your application {\ttfamily kdb\+Add\+Global\+Plugin} from libtools can be used. If the global plugin is already present, it should be a N\+OP. For this functionality \#684 is needed.
+
+Use cases\+:
+
+
+\begin{DoxyItemize}
+\item internal notification within program
+\item if applications depend on a global plugin to be present, e.\+g. \#689
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1206}{}\doxysection{Rationale}\label{doc_decisions_global_plugins_md_autotoc_md1206}
+Some nice features that will be implemented as global plugins.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1207}{}\doxysubsection{Transformation}\label{doc_decisions_global_plugins_md_autotoc_md1207}
+Transformation keys which are read and transformed to be usable by the application\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[dir/a]}
+\DoxyCodeLine{transform=/x}
+\DoxyCodeLine{transform/python=...upper()}
+\DoxyCodeLine{         /lua=..}
+\end{DoxyCode}
+
+
+(actually two plugins are involved\+: one that fetches transformation keys, the other that executes the transformation code)
+
+
+\begin{DoxyItemize}
+\item preget\+: fetch all foreign keys (kdb\+Get)
+\item postget\+: run transformation for all foreign keys
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1208}{}\doxysubsection{Global Lock}\label{doc_decisions_global_plugins_md_autotoc_md1208}
+simplifies threading and process locking by not having to think about recursive cases.
+
+Now called {\ttfamily semlock}-\/plugin.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1209}{}\doxysubsection{Shell Plugins}\label{doc_decisions_global_plugins_md_autotoc_md1209}
+Run shell code at end of all plugins, e.\+g. especially doing
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git add}
+\DoxyCodeLine{git commit}
+\end{DoxyCode}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1210}{}\doxysubsection{Inference Plugins}\label{doc_decisions_global_plugins_md_autotoc_md1210}
+The globbing would be more natural (derived from specification). Or even more advanced ways to copy information from specification to the keys, e.\+g. type inference
+
+Now called {\ttfamily spec}-\/plugin.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1211}{}\doxysubsection{Journalling Plugins}\label{doc_decisions_global_plugins_md_autotoc_md1211}
+It should be possible to write plugins which need all file names of all resolver plugins. E.\+g. journalling, global mmap.
+
+For mmap it could work the following way\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{getresolver/after/foreach}
+\end{DoxyCode}
+
+
+is responsible to check if all files resolved are still the same file (and same number of files), and if the {\ttfamily mtime} of the mmap file is newer than the resolved file. Iff this is the case for every mount point we will (try) to load the mmaped file in\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{getresolver/after/once}
+\end{DoxyCode}
+
+
+The loading of the mmap might fail\+:
+
+
+\begin{DoxyItemize}
+\item some checksums missing/wrong (file was tampered with)
+\item endianness different
+\item size of types different
+\end{DoxyItemize}
+
+If the loading failed, we will continue by returning 1, if the loading was successful we prematurely abort {\ttfamily kdb\+Get} by returning 0.
+
+If we continued with {\ttfamily kdb\+Get} we want to persist the Key\+Set for the next {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} with the same parameters using the global hook\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{getresolver/after/once}
+\end{DoxyCode}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1212}{}\doxysection{Implications}\label{doc_decisions_global_plugins_md_autotoc_md1212}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1213}{}\doxysubsection{Default Global Plugins}\label{doc_decisions_global_plugins_md_autotoc_md1213}
+Its useful to have some important global plugins, e.\+g. locking by default. See \#690.
+
+Internal list to be used when no system/elektra/global\+\_\+mountpoints/ exists.
+
+State diagrams of plugins need to be redrawn to also include global plugin states.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1214}{}\doxysection{Related Decisions}\label{doc_decisions_global_plugins_md_autotoc_md1214}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1215}{}\doxysection{Notes}\label{doc_decisions_global_plugins_md_autotoc_md1215}
+\hypertarget{doc_decisions_global_plugins_md_autotoc_md1216}{}\doxysubsection{Open Points}\label{doc_decisions_global_plugins_md_autotoc_md1216}
+
+\begin{DoxyItemize}
+\item How to test global plugins? (Test plugin that mounts itself on every position and checks if it is called correctly?)
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1217}{}\doxysection{Implementation Hints}\label{doc_decisions_global_plugins_md_autotoc_md1217}
+
+\begin{DoxyItemize}
+\item add {\ttfamily Plugin $\ast$global\+Plugins \mbox{[}N\+R\+\_\+\+O\+F\+\_\+\+P\+L\+U\+G\+I\+NS\mbox{]}} to {\ttfamily \+\_\+\+K\+DB}
+\item during {\ttfamily kdb\+Open}, {\ttfamily system/elektra/globalplugins/} is read and plugins are constructed and placed into {\ttfamily global\+Plugins}.
+\item In kdb\+Get and kdb\+Set hooks execute one of these plugins
+\item by default
+\begin{DoxyItemize}
+\item the plugins are all the same {\ttfamily list} plugins, and their subplugins are executed, when {\ttfamily system/elektra/globalplugins/\+\_\+} states they should be executed
+\item a {\ttfamily lock} plugin that executes at begin and end of kdb\+Get and kdb\+Set, respective, i.\+e. postrollback preget postget preset postcommit
+\item the {\ttfamily lock} plugin contains the code currently found in resolver 
+\end{DoxyItemize}
+\end{DoxyItemize}

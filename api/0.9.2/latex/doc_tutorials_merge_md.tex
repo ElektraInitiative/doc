@@ -1,0 +1,164 @@
+\hypertarget{doc_tutorials_merge_md_autotoc_md2698}{}\doxysection{Introduction}\label{doc_tutorials_merge_md_autotoc_md2698}
+The kdb tool allows users to access and perform functions on the Elektra Key Database from the command line. We added a new command to this very useful tool, the {\ttfamily merge} command. This command allows a user to perform a three-\/way merge of Key\+Sets from the {\ttfamily kdb} tool.
+
+The command to use this tool is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb merge [options] ourpath theirpath basepath resultpath}
+\end{DoxyCode}
+
+
+The standard naming scheme for a three-\/way merge consists of {\ttfamily ours}, {\ttfamily theirs}, and {\ttfamily base}\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily ours} refers to the local copy of a file
+\item {\ttfamily theirs} refers to a remote copy
+\item {\ttfamily base} refers to their common ancestor.
+\end{DoxyItemize}
+
+This works very similarly for Key\+Sets, especially ones that consist of mounted configuration files.
+
+For mounted configuration files\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily ours} should be the user\textquotesingle{}s copy
+\item {\ttfamily theirs} would be the maintainers copy,
+\item {\ttfamily base} would be the previous version of the maintainer\textquotesingle{}s copy.
+\end{DoxyItemize}
+
+If the user is just trying to accomplish a three-\/way merge using any two arbitrary keysets that share a base, it doesn\textquotesingle{}t matter which ones are defined as {\ttfamily ours} or {\ttfamily theirs} as long as they use the correct base Key\+Set. In {\ttfamily kdb merge}, {\ttfamily ourpath}, {\ttfamily theirpath}, and {\ttfamily basepath} work just like {\ttfamily ours}, {\ttfamily theirs}, and {\ttfamily base} except each one represents the root of a Key\+Set. The argument {\ttfamily resultpath} is pretty self-\/explanatory, it is just where you want the result of the merge to be saved under. It\textquotesingle{}s worth noting, {\ttfamily resultpath} should be empty before attempting a merge, otherwise there can be unintended consequences.\hypertarget{doc_tutorials_merge_md_autotoc_md2699}{}\doxysection{Options}\label{doc_tutorials_merge_md_autotoc_md2699}
+As for the options, there are a few basic options\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/i}, {\ttfamily -\/-\/interactive}\+: which attempts the merge in an interactive way
+\item {\ttfamily -\/t}, {\ttfamily -\/-\/test}\+: which tests the proposed merge and informs you about possible conflicts
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: which overwrites any Keys in {\ttfamily resultpath}
+\end{DoxyItemize}\hypertarget{doc_tutorials_merge_md_autotoc_md2700}{}\doxysubsection{Strategies}\label{doc_tutorials_merge_md_autotoc_md2700}
+Additionally there is an option to specify a merge strategy, which is very important.
+
+The option for strategy is\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/s $<$name$>$}, {\ttfamily -\/-\/strategy $<$name$>$}\+: which is used to specify a strategy to use in case of a conflict
+\end{DoxyItemize}
+
+The current list of strategies are\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily preserve}\+: the merge will fail if a conflict is detected
+\item {\ttfamily ours}\+: the merge will use our version during a conflict
+\item {\ttfamily theirs}\+: the merge will use their version during a conflict
+\item {\ttfamily base}\+: the merge will use the base version during a conflict
+\end{DoxyItemize}
+
+If no strategy is specified, the merge will default to the preserve strategy as to not risk making the wrong decision. If any of the other strategies are specified, when a conflict is detected, merge will use the Key specified by the strategy ({\ttfamily ours}, {\ttfamily theirs}, or {\ttfamily base}) for the resulting Key.\hypertarget{doc_tutorials_merge_md_autotoc_md2701}{}\doxysection{Basic Example}\label{doc_tutorials_merge_md_autotoc_md2701}
+Basic Usage\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb merge system/hosts/ours system/hosts/theirs system/hosts/base system/hosts/result}
+\end{DoxyCode}
+\hypertarget{doc_tutorials_merge_md_autotoc_md2702}{}\doxysection{Examples Using Strategies}\label{doc_tutorials_merge_md_autotoc_md2702}
+Here are examples of the same Key\+Sets being merged using different strategies. The Key\+Sets are mounted using a property format, the left side of \textquotesingle{}=\textquotesingle{} is the name of the Key, the right side is its string value.
+
+We start with the base Key\+Set, {\ttfamily system/base}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=1}
+\DoxyCodeLine{key2=2}
+\DoxyCodeLine{key3=3}
+\DoxyCodeLine{key4=4}
+\DoxyCodeLine{key5=5}
+\end{DoxyCode}
+
+
+Here is our Key\+Set, {\ttfamily system/ours}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=apple}
+\DoxyCodeLine{key2=2}
+\DoxyCodeLine{key3=3}
+\DoxyCodeLine{key5=fish}
+\end{DoxyCode}
+
+
+Here is their Key\+Set, {\ttfamily system/theirs}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=1}
+\DoxyCodeLine{key2=pie}
+\DoxyCodeLine{key4=banana}
+\DoxyCodeLine{key5=5}
+\end{DoxyCode}
+
+
+Now we will examine the result Key\+Set with the different strategies.\hypertarget{doc_tutorials_merge_md_autotoc_md2703}{}\doxysubsection{Preserve}\label{doc_tutorials_merge_md_autotoc_md2703}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb merge -\/s preserve system/ours system/theirs system/base system/result}
+\end{DoxyCode}
+
+
+The merge will fail because of a conflict for {\ttfamily key4} since {\ttfamily key4} was deleted in our Key\+Set and edited in their Key\+Set. Since we used preserve, the merge fails and the result Key\+Set is not saved.\hypertarget{doc_tutorials_merge_md_autotoc_md2704}{}\doxysubsection{Ours}\label{doc_tutorials_merge_md_autotoc_md2704}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb merge -\/s ours system/ours system/theirs system/base system/result}
+\end{DoxyCode}
+
+
+The result Key\+Set, system/result will be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=apple}
+\DoxyCodeLine{key2=pie}
+\DoxyCodeLine{key5=fish}
+\end{DoxyCode}
+
+
+Because the conflict of {\ttfamily key4} (it was deleted in {\ttfamily ours} but changed in {\ttfamily theirs}) is solved by using our copy thus deleting the key.\hypertarget{doc_tutorials_merge_md_autotoc_md2705}{}\doxysubsection{Theirs}\label{doc_tutorials_merge_md_autotoc_md2705}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb merge -\/s theirs system/ours system/theirs system/base system/result}
+\end{DoxyCode}
+
+
+The result Key\+Set, {\ttfamily system/result} will be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=apple}
+\DoxyCodeLine{key2=pie}
+\DoxyCodeLine{key4=banana}
+\DoxyCodeLine{key5=fish}
+\end{DoxyCode}
+
+
+Here, the conflict of {\ttfamily key4} is solved by using their copy, thus {\ttfamily key4=banana}.\hypertarget{doc_tutorials_merge_md_autotoc_md2706}{}\doxysubsection{Base}\label{doc_tutorials_merge_md_autotoc_md2706}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb merge -\/s base system/ours system/theirs system/base system/result}
+\end{DoxyCode}
+
+
+The result Key\+Set, {\ttfamily system/result} will be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key1=apple}
+\DoxyCodeLine{key2=pie}
+\DoxyCodeLine{key4=4}
+\DoxyCodeLine{key5=5}
+\end{DoxyCode}
+
+
+The same conflict is found in {\ttfamily key4}, but here we use the {\ttfamily base} version to solve it so {\ttfamily key4=4}. 

@@ -1,0 +1,22 @@
+.TH "md_src_plugins_ini_crash_test_crash_test" 3elektra "Tue May 26 2020" "Version 0.9.2" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_ini_crash_test_crash_test \- Plugin: ini 
+
+.SH "Crash Test"
+.PP
+The following Markdown Shell Recorder test checks that the INI plugin does not crash, if the input file contains invalid characters or is not properly formatted\&.
+.PP
+.PP
+.nf
+for file in $(find src/plugins/ini/crash_test -regex '\&.*crash[0-9][0-9]*\&.ini$' | sort); do                \
+        cat "$file" | kdb import user/tests/ini ini 2>&1 | grep -q 'SIG' && echo "File $file caused a crash"    \
+        kdb rm -rf user/tests/ini 2>&1 | grep -q 'SIG' && echo "File $file caused a crash"                      \
+        # Check if we successfully removed all keys                                                             \
+        kdb ls user/tests/ini                                                                                   \
+done
+#>
+.fi
+.PP
+ 

@@ -1,0 +1,97 @@
+\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2676}{}\doxysection{Introduction}\label{doc_tutorials_java-kdb_md_autotoc_md2676}
+When programming in Java it is possible to access the key database, changing values of existing keys or adding new ones and a few other things. It is also possible to write plugins for Elektra in Java but we will focus on using the Java binding in this tutorial.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2677}{}\doxysection{First Steps}\label{doc_tutorials_java-kdb_md_autotoc_md2677}
+In order to use {\ttfamily kdb} you need to include the dependency in your project. Here you can find a detailed tutorial on how to do that.
+
+After that you can start loading a {\ttfamily K\+DB} object as follows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key key = Key.create(\textcolor{stringliteral}{"user/kdbsession/javabinding"});}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open(key)) \{}
+\DoxyCodeLine{    \textcolor{comment}{//Your code to manipulate keys}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDB.KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+Note that {\ttfamily K\+DB} implements {\ttfamily Auto\+Closable} which allows \href{https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html}{\texttt{ try-\/with-\/resouces}}.
+
+You can also pass a {\ttfamily Key} object with an empty string on the first line. The passed key ({\ttfamily user/kdbsession/javabinding} in this case) is being used for the session and stores warnings and error information.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2678}{}\doxysection{Fetching keys}\label{doc_tutorials_java-kdb_md_autotoc_md2678}
+First I will show you how you can retrieve a key which is already part of the database. The first thing we need to do is to create a {\ttfamily Key\+Set} in which our keys will be stored.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet \textcolor{keyword}{set} = KeySet.create();}
+\end{DoxyCode}
+
+
+Now we load all keys and provide a parent key from which all keys below will be loaded
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{namespacekdb}{kdb}}.get(\textcolor{keyword}{set}, Key.create(\textcolor{stringliteral}{"user"}));}
+\end{DoxyCode}
+
+
+Now we can simply fetch the desired key\textquotesingle{}s value as follows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{String str = \textcolor{keyword}{set}.lookup(\textcolor{stringliteral}{"user/my/presaved/key"}).getString()}
+\end{DoxyCode}
+
+
+So for example if you have executed before the application starts {\ttfamily kdb set user/my/test it\+\_\+works!}, the method call {\ttfamily set.\+lookup(\char`\"{}user/my/test\char`\"{}).get\+String()} would return {\ttfamily it\+\_\+works!}.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2679}{}\doxysection{Saving Keys}\label{doc_tutorials_java-kdb_md_autotoc_md2679}
+Next I will show you how to save a new key into the database. First we need need to create an empty {\ttfamily Key\+Set} again. We also {\bfseries{need to fetch}} all keys for the namespace before we will be able to save a new key.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet \textcolor{keyword}{set} = KeySet.create();}
+\DoxyCodeLine{Key \textcolor{keyword}{namespace }= Key.create("user");}
+\DoxyCodeLine{\mbox{\hyperlink{namespacekdb}{kdb}}.get(\textcolor{keyword}{set}, \textcolor{keyword}{namespace});    \textcolor{comment}{//Fetch all keys for the namespace}}
+\DoxyCodeLine{\textcolor{keyword}{set}.append(Key.create(\textcolor{stringliteral}{"user/somekey"}, \textcolor{stringliteral}{"myValue"}));}
+\DoxyCodeLine{\mbox{\hyperlink{namespacekdb}{kdb}}.set(\textcolor{keyword}{set}, key);}
+\end{DoxyCode}
+
+
+If you try to save a key without fetching it beforehand, a {\ttfamily K\+D\+B\+Exception} will be thrown, telling you to call get before set.
+
+The {\itshape user} namespace is accessible without special rights, but if you try to write to {\itshape system} you will need to have root privileges. Take a look at \mbox{\hyperlink{doc_TESTING_md}{T\+E\+S\+T\+I\+NG.md}} to see how to access the system namespace as non-\/root user. This should only be done in testing environments though as it is not intended for productive systems.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2680}{}\doxysection{Examples}\label{doc_tutorials_java-kdb_md_autotoc_md2680}
+\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2681}{}\doxysubsection{Traversing Keys in a $<$tt$>$\+Key\+Set$<$/tt$>$}\label{doc_tutorials_java-kdb_md_autotoc_md2681}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key key = Key.create(\textcolor{stringliteral}{"user/errors"});}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open(key)) \{}
+\DoxyCodeLine{    KeySet \textcolor{keyword}{set} = KeySet.create();}
+\DoxyCodeLine{    Key \textcolor{keyword}{namespace }= Key.create("user");       \textcolor{comment}{//Select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{    \mbox{\hyperlink{namespacekdb}{kdb}}.get(\textcolor{keyword}{set}, \textcolor{keyword}{namespace});                  \textcolor{comment}{//Fetch all keys into the set object}}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} (\textcolor{keywordtype}{int} i = 0; i < \textcolor{keyword}{set}.length(); i++) \{  \textcolor{comment}{//Traverse the set}}
+\DoxyCodeLine{        String keyAndValue = String.format(\textcolor{stringliteral}{"\%s: \%s"},}
+\DoxyCodeLine{                \textcolor{keyword}{set}.at(i).getName(),          \textcolor{comment}{//Fetch the key's name}}
+\DoxyCodeLine{                \textcolor{keyword}{set}.at(i).getString());       \textcolor{comment}{//Fetch the key's value}}
+\DoxyCodeLine{        System.out.println(keyAndValue);}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDB.KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+First we create a new {\ttfamily K\+DB} object and fetch all keys for the desired namespace, in this example the {\ttfamily user} namespace. Since it saves all keys in our passed {\ttfamily set} variable we can then iterate through it by a simple for loop. The {\ttfamily at(int)} method gives us the key on the corresponding position which we will print out in this example.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2682}{}\doxysubsection{Read Multiple Keys From K\+DB}\label{doc_tutorials_java-kdb_md_autotoc_md2682}
+This example shows how to read multiple keys. It provides comments for further clarification. Before building and running this example, add first your jar file like described here. Then build the project with this command from the root directory\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mvn clean package}
+\end{DoxyCode}
+
+
+Afterwards run it with (change V\+E\+R\+S\+I\+ON in the command below!)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{java -\/cp target/read-\/keys-\/example-\/jar-\/with-\/dependencies.jar:lib/libelektra4j-\/VERSION.jar org.libelektra.app.App}
+\end{DoxyCode}
+\hypertarget{doc_tutorials_java-kdb_md_autotoc_md2683}{}\doxysection{Java Plugin Tutorial}\label{doc_tutorials_java-kdb_md_autotoc_md2683}
+For the tutorial on how to write java plugins, please check out \mbox{\hyperlink{doc_tutorials_java-plugins_md}{this}} page. 

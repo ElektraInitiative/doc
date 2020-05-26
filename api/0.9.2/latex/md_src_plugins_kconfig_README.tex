@@ -1,0 +1,88 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the kconfig plugin is in keys below
+\item infos/author = Dardan Haxhimustafa \href{mailto:mail@dardan.im}{\texttt{ mail@dardan.\+im}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/kconfig
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = recommended maintained compatible specific experimental unfinished nodoc concept
+\item infos/metadata =
+\item infos/description = Reads and writes the K\+Config I\+NI format
+\end{DoxyItemize}\hypertarget{md_src_plugins_kconfig_README_src_plugins_kconfig_README_md}{}\doxysection{Introduction}\label{md_src_plugins_kconfig_README_src_plugins_kconfig_README_md}
+This plugin can be used to parse and serialize a \href{https://cgit.kde.org/kconfig.git}{\texttt{ K\+Config}} I\+NI file.
+
+Information about the syntax\+:
+
+
+\begin{DoxyItemize}
+\item Files are expected to be encoded in {\ttfamily U\+T\+F-\/8}.
+\item Empty lines are ignored.
+\item Lines that start with a {\ttfamily \#} character are considered comments. Comments are ignored too.
+\item Configurations consist of groups and keys. Only keys can have values.
+\item Key names can\textquotesingle{}t start with a {\ttfamily \mbox{[}} character
+\item Keys can contain spaces and any special characters except {\ttfamily =}.
+\item If a key has a value, then it will be followed with an {\ttfamily =} symbol and then the value will be read until the end of the line. The white space characters around the {\ttfamily =} symbol are ignored.
+\item In values, the following escape sequences can be used\+:
+\begin{DoxyItemize}
+\item {\ttfamily \textbackslash{}n} and {\ttfamily \textbackslash{}r} are mapped to newline
+\item {\ttfamily \textbackslash{}t} is mapped to tab
+\item {\ttfamily \textbackslash{}\textbackslash{}} is mapped to {\ttfamily \textbackslash{}}
+\end{DoxyItemize}
+\item Values can contain any character from the {\ttfamily U\+T\+F-\/8} set except for newline and {\ttfamily \textbackslash{}} followed by an invalid escape sequence.
+\item Keys can be localized. The locale is surrounded with {\ttfamily \mbox{[}} and {\ttfamily \mbox{]}} and cannot start with {\ttfamily \$}.
+\item Same key names can be used multiple times if it has different locales. The following example is valid\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{greeting[en] = Hello}
+\DoxyCodeLine{greeting[de] = Hallo}
+\end{DoxyCode}
+
+\item Keys can have metadata. Those are one byte long, start with {\ttfamily \$} and are surrounded with {\ttfamily \mbox{[}} and {\ttfamily \mbox{]}}.
+\item The same key name can\textquotesingle{}t be used multiple times with different metadata (different to locales). The following example is invalid\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key.name[\$a] = Something}
+\DoxyCodeLine{key.name[\$i] = Something else}
+\end{DoxyCode}
+
+\item Group names begin have a {\ttfamily \mbox{[}} symbol at the beginning of a line and every key that follows them is part of this group (until the next group is declared)
+\end{DoxyItemize}
+
+An example of how a valid config file might look like\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[group][subgroup]}
+\DoxyCodeLine{key.name[en][\$i][\$e]=Key Value}
+\DoxyCodeLine{key.name[de]=Key Wert}
+\end{DoxyCode}
+
+
+And how it will be represented in kdb\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{keyNew (PREFIX "group/subgroup/key.name[en]", KEY\_VALUE, "Key Value", KEY\_META, "kconfig", "ie", KEY\_END)}
+\DoxyCodeLine{keyNew (PREFIX "group/subgroup/key.name[de]", KEY\_VALUE, "Key Wert", KEY\_END)}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_kconfig_README_autotoc_md351}{}\doxysection{Usage}\label{md_src_plugins_kconfig_README_autotoc_md351}
+The following example shows you how you can read data using this plugin.
+
+\`{}\`{}{\ttfamily  @section autotoc\+\_\+md352 Mount the plugin to the cascading namespace}/tests/kconfig\`{} sudo kdb mount configrc /tests/kconfig kconfig\hypertarget{md_src_plugins_kconfig_README_autotoc_md353}{}\doxysection{Manually add a key-\/value pair to the database}\label{md_src_plugins_kconfig_README_autotoc_md353}
+echo \textquotesingle{}key=Value\textquotesingle{} $>$ {\ttfamily kdb file /tests/kconfig}\hypertarget{md_src_plugins_kconfig_README_autotoc_md354}{}\doxysection{Retrieve the new value}\label{md_src_plugins_kconfig_README_autotoc_md354}
+kdb get /tests/kconfig/key \#$>$ Value\hypertarget{md_src_plugins_kconfig_README_autotoc_md355}{}\doxysection{Set the value to Example}\label{md_src_plugins_kconfig_README_autotoc_md355}
+kdb set /tests/kconfig/key Example\hypertarget{md_src_plugins_kconfig_README_autotoc_md356}{}\doxysection{Verify that the value has changed in the file too}\label{md_src_plugins_kconfig_README_autotoc_md356}
+cat {\ttfamily kdb file /tests/kconfig} \#$>$ key=Example\hypertarget{md_src_plugins_kconfig_README_autotoc_md357}{}\doxysection{Manually add a gorup to the database}\label{md_src_plugins_kconfig_README_autotoc_md357}
+echo \textquotesingle{}\mbox{[}group\mbox{]}\mbox{[}subgroup\mbox{]}\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/kconfig}\hypertarget{md_src_plugins_kconfig_README_autotoc_md358}{}\doxysection{Manually add a key that contains metas to that group}\label{md_src_plugins_kconfig_README_autotoc_md358}
+echo \textquotesingle{}key.\+name\mbox{[}\$a\mbox{]}\mbox{[}\$i\mbox{]}=New Value\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/kconfig}\hypertarget{md_src_plugins_kconfig_README_autotoc_md359}{}\doxysection{Retrieve the new value}\label{md_src_plugins_kconfig_README_autotoc_md359}
+kdb get /tests/kconfig/group/subgroup/key.name \#$>$ New Value\hypertarget{md_src_plugins_kconfig_README_autotoc_md360}{}\doxysection{Retrieve the meta values}\label{md_src_plugins_kconfig_README_autotoc_md360}
+kdb meta-\/get /tests/kconfig/group/subgroup/key.name kconfig \#$>$ ai\hypertarget{md_src_plugins_kconfig_README_autotoc_md361}{}\doxysection{Manually add a group and a localized key}\label{md_src_plugins_kconfig_README_autotoc_md361}
+echo \textquotesingle{}\mbox{[}localized keys\mbox{]}\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/kconfig} echo \textquotesingle{}greeting\mbox{[}en\mbox{]}=Hello\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/kconfig} echo \textquotesingle{}greeting\mbox{[}de\mbox{]}=Hallo\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/kconfig}\hypertarget{md_src_plugins_kconfig_README_autotoc_md362}{}\doxysection{Retrieve the english greeting}\label{md_src_plugins_kconfig_README_autotoc_md362}
+kdb get \textquotesingle{}/tests/kconfig/localized keys/greeting\mbox{[}en\mbox{]}\textquotesingle{} \#$>$ Hello\hypertarget{md_src_plugins_kconfig_README_autotoc_md363}{}\doxysection{Retrieve the german greeting}\label{md_src_plugins_kconfig_README_autotoc_md363}
+kdb get \textquotesingle{}/tests/kconfig/localized keys/greeting\mbox{[}de\mbox{]}\textquotesingle{} \#$>$ Hallo\hypertarget{md_src_plugins_kconfig_README_autotoc_md364}{}\doxysection{Undo modifications to the database}\label{md_src_plugins_kconfig_README_autotoc_md364}
+sudo kdb umount /tests/kconfig \`{}\`{}\`{}\hypertarget{md_src_plugins_kconfig_README_autotoc_md365}{}\doxysubsection{Limitations}\label{md_src_plugins_kconfig_README_autotoc_md365}
+
+\begin{DoxyItemize}
+\item Comments from the file are discarded on save (same as the default K\+Config functionality)
+\item No validation for meta values or locale codes 
+\end{DoxyItemize}

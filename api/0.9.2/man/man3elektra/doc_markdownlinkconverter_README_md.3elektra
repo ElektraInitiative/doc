@@ -1,0 +1,57 @@
+.TH "doc_markdownlinkconverter_README_md" 3elektra "Tue May 26 2020" "Version 0.9.2" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_markdownlinkconverter_README_md \- Markdown Link Converter 
+The Markdown link Converter, which filters Markdown pages before the processing of doxygen, converts the links in Markdown pages\&. It is set up as input filter in doxygen, if a Markdown file is desired to be in the API documentation it only must have the extension \fC\&.md\fP and be in the \fCINPUT\fP path\&.
+.PP
+The Markdown link Converter gives each Markdown file a header \fC{ #header }\fP which is attached to a title and converts the links to refer to this headers\&. This conversion happens in 2 passes, which is needed because there can be files with no title\&.
+.SH "Usage for Manual Invocation"
+.PP
+.PP
+.nf
+markdownlinkconverter [<cmake-cache-file>] <input-file>
+.fi
+.PP
+.PP
+\fBThe <input-file> parameter must be an absolute path!\fP
+.SH "Conventions"
+.PP
+.IP "\(bu" 2
+Links starting with \fC@ref\fP, \fC#\fP for anchors and \fChttp\fP, \fChttps\fP or \fCftp\fP for extern links wont be touched\&.
+.IP "\(bu" 2
+All other links to Markdown or arbitrary source files will be converted\&.
+.IP "\(bu" 2
+All links to folders will be altered to the README\&.md in the Folder\&. This feature was introduced to be compatible with GitHub, where you can show the content of a folder in combination with the README\&.md of the containing folder\&.
+.IP "\(bu" 2
+Anchors wont work in imported Markdown pages\&.
+.PP
+.SH "GitHub Specialities"
+.PP
+.IP "\(bu" 2
+GitHub supports source code fences with syntax highlighting which are not recognized by Doxygen\&. Thus \fCsh\fP after the fence is removed for Doxygen\&.
+.PP
+.SH "Link Validation"
+.PP
+.SS "Internal Links"
+The link validation works with a simple try to \fCfopen\fP the file, which the link refers to\&.
+.SS "External Links"
+Every link starting with \fChttp\fP, \fChttps\fP or \fCftp\fP will be written to a file named \fCexternal-links\&.txt\fP located in your build folder\&. With the following syntax:
+.PP
+.PP
+.nf
+<file>:<line>:0 <url>
+.fi
+.PP
+.PP
+Note: Due to the nature of the Markdown Link Converter the file can only be opened in append mode\&. So delete it and rerun the html build process (\fCmake clean\fP could be needed) to get a list without duplicates\&.
+.PP
+In the script folder is a script named \fClink-checker\fP\&. This script can be used to validate the links\&. Broken links will be printed\&. False positive not excluded (very rare)\&.
+.SH "Further Improvements (Which Will be Introduced in a Later Version):"
+.PP
+.IP "\(bu" 2
+optimize pdf output (also UTF-8 encoding)
+.IP "\(bu" 2
+if title contains --, this should be- also remove other fences doxygen does not understand 
+.PP
+

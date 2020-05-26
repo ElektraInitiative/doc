@@ -1,0 +1,109 @@
+.TH "md_src_plugins_line_README" 3elektra "Tue May 26 2020" "Version 0.9.2" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_line_README \- Plugin: line 
+
+.IP "\(bu" 2
+infos = Information about line plugin is in keys below
+.IP "\(bu" 2
+infos/author = Ian Donnelly ian.s.donnelly@gmail.com
+.IP "\(bu" 2
+infos/provides = storage/line
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs = null
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep libc final limited
+.IP "\(bu" 2
+infos/description = storage plugin which stores each line from a file
+.PP
+.SH "Introduction"
+.PP
+This plugin is useful if you have a file in a format not supported by any other plugin and want to use the Elektra tools to edit individual lines\&.
+.PP
+This plugin is designed to save each line from a file as a key\&. The keys form an array\&. The key names are determined by the line number such as \fC#3\fP or \fC#_12\fP for lines 4 and 13\&. The plugin considers \fC#0\fP to be the first line\&. The plugin will automatically add \fC_\fP to the beginning of key names in order to keep them in numerical order (like specified for Elektra arrays)\&.
+.PP
+The value of each key hold the content of the actual file line-by-line\&.
+.SH "Examples"
+.PP
+For example, consider the following content of the file \fC~/\&.config/line\fP where the numbers on the left represent the line numbers:
+.PP
+.PP
+.nf
+1  setting1 true
+2  setting2 false
+3  setting3 1000
+4  #comment
+5
+6
+7  //some other comment
+8
+9  setting4 -1
+.fi
+.PP
+.PP
+We mount that file by:
+.PP
+.PP
+.nf
+sudo kdb mount line user/line line
+.fi
+.PP
+.PP
+This file would result in the following keyset which is being displayed as \fCkey: value\fP, e\&.g\&. with:
+.PP
+.PP
+.nf
+kdb export -c "format=%s: %s" user/line simpleini
+#> 0: setting1 true
+#> 1: setting2 false
+#> 2: setting3 1000
+#> 3: #comment
+#> 4:
+#> 5:
+#> 6: //some other comment
+#> 7:
+#> 8: setting4 -l
+.fi
+.PP
+.SS "Creating Files"
+``` 
+.SH "Backup-and-Restore:/tests/line"
+.PP
+sudo kdb mount line /tests/line line
+.PP
+kdb set /tests/line/add something kdb set /tests/line/ignored huhu kdb set /tests/line ignored # adding parent key does nothing kdb set /tests/line/add here
+.PP
+cat \fCkdb file /tests/line\fP #> something #> huhu #> here
+.PP
+kdb ls /tests/line 
+.SH "STDOUT-REGEX: line\&.+line/#0\&.+line/#1\&.+line/#2"
+.PP
+kdb set /tests/line/#1 huhu 
+.SH "STDOUT-REGEX: \&.+Set string to 'huhu'"
+.PP
+kdb export /tests/line line #> something #> huhu #> here
+.PP
+sudo kdb umount /tests/line 
+.PP
+.nf
+### Other Tests
+
+.fi
+.PP
+.SH "Backup-and-Restore:/tests/line"
+.PP
+sudo kdb mount line /tests/line line
+.SH "create and initialize testfile"
+.PP
+echo 'setting1 true' > \fCkdb file /tests/line\fP echo 'setting2 false' >> \fCkdb file /tests/line\fP echo 'setting3 1000' >> \fCkdb file /tests/line\fP echo '#comment' >> \fCkdb file /tests/line\fP echo >> \fCkdb file /tests/line\fP echo >> \fCkdb file /tests/line\fP echo '//some other comment' >> \fCkdb file /tests/line\fP echo >> \fCkdb file /tests/line\fP echo 'setting4 -1' >> \fCkdb file /tests/line\fP
+.SH "output filecontent and display line numbers"
+.PP
+awk '{print NR-1 '-' $0}' < \fCkdb file /tests/line\fP #> 0-setting1 true #> 1-setting2 false #> 2-setting3 1000 #> 3-#comment #> 4- #> 5- #> 6-//some other comment #> 7- #> 8-setting4 -1
+.SH "cleanup"
+.PP
+kdb rm -r /tests/line sudo kdb umount /tests/line ``` 

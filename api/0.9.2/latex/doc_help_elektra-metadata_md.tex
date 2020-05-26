@@ -1,0 +1,23 @@
+{\bfseries{Metadata}} is data about data. In earlier versions of Elektra, there has been a limited number of metadata entries suited for {\ttfamily filesys}. For {\ttfamily filesys} this was efficient, but it was of limited use for every other backend. This situation has now changed fundamentally by introducing arbitrary metadata.\hypertarget{doc_help_elektra-metadata_md_autotoc_md1568}{}\doxysection{Rationale}\label{doc_help_elektra-metadata_md_autotoc_md1568}
+Metadata has different purposes\+:
+
+
+\begin{DoxyItemize}
+\item Traditionally Elektra used metadata to carry file system semantics. The backend {\ttfamily filesys} stores file metadata (File metadata in P\+O\+S\+IX is returned by {\ttfamily stat()}) in a {\itshape struct} with the same name. It contains a file type (directory, symbolic link,..) as well as other metadata like uid, gid, owner, mode, atime, mtime and ctime. into the {\ttfamily Key} objects. This solution, however, only makes sense when each file shelters only one {\ttfamily Key} object.
+\item The metaname {\ttfamily binary} shows if a {\ttfamily Key} object contains binary data. Otherwise it has a null-\/terminated C string.
+\item An application can set and get a flag in {\ttfamily Key} objects.
+\item Comments and owner, together with the items above, were the only metadata possible before arbitrary metadata was introduced.
+\item Further metadata can hold information on how to check and validate keys using types or regular expressions. Additional constraints concerning the validity of values can be convenient. Maximum length, forbidden characters and a specified range are examples of further constraints.
+\item They can denote when the value has changed or can be informal comments about the content or the character set being used.
+\item They can express the information the user has about the key, for example, comments in different languages. Language specific information can be supported by simply adding a unique language code to the metaname.
+\item They can represent information to be used by storage plugins. Information can be stored as syntactic, semantic or additional information rather than text in the key database. This could be ordering or version information.
+\item They can be interpreted by plugins, which is the most important purpose of metadata. Nearly all kinds of metadata mentioned above can belong to this category.
+\item Metadata is used to pass error or warning information from plugins to the application. The application can decide to present it to the user. The information is uniquely identified by numerical codes. Metadata can also embed descriptive text specifying a reason for the error.
+\item Applications can remember something about keys in metadata. Such metadata generalizes the application-\/defined flag.
+\item A more advanced idea is to use metadata to generate forms in a programmatic way. While it is certainly possible to store the necessary expressive metadata, it is plenty of work to define the semantics needed to do that.
+\end{DoxyItemize}\hypertarget{doc_help_elektra-metadata_md_autotoc_md1569}{}\doxysection{Usage}\label{doc_help_elektra-metadata_md_autotoc_md1569}
+Every key-\/value pair can have an arbitrary number of metakeys with metavalues attached. Identical to keys, metakeys are unique, but only within its key they are attached to.
+
+To create a metakey, use \mbox{\hyperlink{doc_help_kdb-meta-set_md}{kdb-\/meta-\/set(1)}}, to get metadata \mbox{\hyperlink{doc_help_kdb-meta-get_md}{kdb-\/meta-\/get(1)}}.
+
+The preferred way to use metadata is to set all metadata in the {\ttfamily spec} namespace and let the {\ttfamily spec} plugin copy the metadata to all other namespaces. 

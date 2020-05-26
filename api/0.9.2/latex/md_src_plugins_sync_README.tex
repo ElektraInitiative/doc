@@ -1,0 +1,73 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the sync plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/provides = sync
+\item infos/needs =
+\item infos/placements = precommit
+\item infos/status = recommended productive maintained tested nodep libc final
+\item infos/description = Makes sure that config file is written to disc
+\end{DoxyItemize}\hypertarget{md_src_plugins_sync_README_src_plugins_sync_README_md}{}\doxysection{Introduction}\label{md_src_plugins_sync_README_src_plugins_sync_README_md}
+Storage plugins usually do not use fsync (2) for writing their file to disc. That means that the content of the file could be in some buffer and not on the hard disc.
+
+This is good for power saving on laptops, but not a good idea on production use otherwise. So it is strongly recommended to always add this plugin.\hypertarget{md_src_plugins_sync_README_autotoc_md665}{}\doxysection{Usage}\label{md_src_plugins_sync_README_autotoc_md665}
+Just add this plugin to the list of plugins during mounting, e.\+g.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.dump /important dump sync}
+\end{DoxyCode}
+
+
+Then when you observe the change of a value, e.\+g.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{strace kdb set user/important/key value}
+\end{DoxyCode}
+
+
+you can see, done by storage\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{open("/home/markus/.kdb/file.dump.16874:1409592592.95084.tmp",}
+\DoxyCodeLine{        O\_WRONLY|O\_CREAT|O\_TRUNC, 0666) = 4}
+\DoxyCodeLine{write(4, "kdbOpen 1\(\backslash\)n", 10)             = 10}
+\DoxyCodeLine{write(4, "ksNew 1\(\backslash\)n", 8)                = 8}
+\DoxyCodeLine{write(4, "keyNew 19 6\(\backslash\)n", 12)           = 12}
+\DoxyCodeLine{write(4, "user/important/key\(\backslash\)0value\(\backslash\)0\(\backslash\)n", 26) = 26}
+\DoxyCodeLine{write(4, "keyEnd\(\backslash\)n", 7)                 = 7}
+\DoxyCodeLine{write(4, "ksEnd\(\backslash\)n", 6)                  = 6}
+\DoxyCodeLine{close(4)                                = 0}
+\end{DoxyCode}
+
+
+then done by sync\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{open("/home/markus/.kdb/file.dump.16874:1409592592.95084.tmp",}
+\DoxyCodeLine{        O\_RDWR) = 4}
+\DoxyCodeLine{fsync(4)                                = 0}
+\DoxyCodeLine{close(4)                                = 0}
+\end{DoxyCode}
+
+
+and finally commit + sync of directory by resolver\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{rename("/home/markus/.kdb/file.dump.16874:1409592592.95084.tmp",}
+\DoxyCodeLine{        "/home/markus/.kdb/file.dump") = 0}
+\DoxyCodeLine{stat("/home/markus/.kdb/file.dump", \{st\_mode=S\_IFREG|0644,}
+\DoxyCodeLine{        st\_size=69, ...\}) = 0}
+\DoxyCodeLine{fcntl(3, F\_SETLK, \{type=F\_UNLCK, whence=SEEK\_SET, start=0,}
+\DoxyCodeLine{        len=0\}) = 0}
+\DoxyCodeLine{close(3)                                = 0}
+\DoxyCodeLine{open("/home/markus/.kdb",}
+\DoxyCodeLine{        O\_RDONLY|O\_NONBLOCK|O\_DIRECTORY|O\_CLOEXEC) = 3}
+\DoxyCodeLine{fsync(3)                                = 0}
+\end{DoxyCode}
+ 

@@ -1,0 +1,344 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the yamlcpp plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\texttt{ sanssecours@me.\+com}}
+\item infos/licence = B\+SD
+\item infos/needs = base64 directoryvalue
+\item infos/provides = storage/yaml
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest preview unfinished concept discouraged
+\item infos/metadata =
+\item infos/description = This storage plugin reads and writes data in the Y\+A\+ML format
+\end{DoxyItemize}\hypertarget{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}{}\doxysection{Y\+A\+M\+L C\+PP}\label{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md759}{}\doxysubsection{Introduction}\label{md_src_plugins_yamlcpp_README_autotoc_md759}
+The Y\+A\+ML C\+PP plugin reads and writes configuration data via the \href{https://github.com/jbeder/yaml-cpp}{\texttt{ yaml-\/cpp}} library.\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md760}{}\doxysubsection{Usage}\label{md_src_plugins_yamlcpp_README_autotoc_md760}
+You can mount this plugin via {\ttfamily kdb mount}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount config.yaml /tests/yamlcpp yamlcpp}
+\end{DoxyCode}
+
+
+. To unmount the plugin use {\ttfamily kdb umount}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount /tests/yamlcpp}
+\end{DoxyCode}
+
+
+. The following examples show how you can store and retrieve data via {\ttfamily yamlcpp}.
+
+\`{}\`{}{\ttfamily  @section autotoc\+\_\+md761 Mount yamlcpp plugin to cascading namespace}/tests/yamlcpp\`{} sudo kdb mount config.\+yaml /tests/yamlcpp yamlcpp\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md762}{}\doxysection{Manually add a mapping to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md762}
+echo \char`\"{}🔑 \+: 🐳\char`\"{} $>$ {\ttfamily kdb file /tests/yamlcpp} \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md763}{}\doxysection{Retrieve the value of the manually added key}\label{md_src_plugins_yamlcpp_README_autotoc_md763}
+kdb get /tests/yamlcpp/🔑 \#$>$ 🐳\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md764}{}\doxysection{Manually add syntactically incorrect data}\label{md_src_plugins_yamlcpp_README_autotoc_md764}
+echo \char`\"{}some key\+: @some  value\char`\"{} $>$$>$ {\ttfamily kdb file /tests/yamlcpp} kdb get \char`\"{}/tests/yamlcpp/some key\char`\"{} \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md765}{}\doxysection{S\+T\+D\+E\+R\+R\+: .$\ast$yaml-\/cpp\+: error at line 2, column 11\+: unknown token.$\ast$}\label{md_src_plugins_yamlcpp_README_autotoc_md765}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md766}{}\doxysection{E\+R\+R\+O\+R\+: C03100}\label{md_src_plugins_yamlcpp_README_autotoc_md766}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md767}{}\doxysection{R\+E\+T\+: 5}\label{md_src_plugins_yamlcpp_README_autotoc_md767}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md768}{}\doxysection{Overwrite incorrect data}\label{md_src_plugins_yamlcpp_README_autotoc_md768}
+echo \char`\"{}🔑\+: value\char`\"{} $>$ {\ttfamily kdb file /tests/yamlcpp}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md769}{}\doxysection{Add some values via $<$tt$>$kdb set$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md769}
+kdb set /tests/yamlcpp 🎵 kdb set /tests/yamlcpp/fleetwood mac kdb set /tests/yamlcpp/the chain\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md770}{}\doxysection{Retrieve the new values}\label{md_src_plugins_yamlcpp_README_autotoc_md770}
+kdb get /tests/yamlcpp \#$>$ 🎵 kdb get /tests/yamlcpp/the \#$>$ chain kdb get /tests/yamlcpp/fleetwood \#$>$ mac\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md771}{}\doxysection{Undo modifications}\label{md_src_plugins_yamlcpp_README_autotoc_md771}
+kdb rm -\/r /tests/yamlcpp sudo kdb umount /tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Arrays}
+\DoxyCodeLine{}
+\DoxyCodeLine{YAML CPP provides support for Elektra’s array data type.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md772}{}\doxysection{Mount yamlcpp plugin to $<$tt$>$user/tests/yamlcpp$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md772}
+sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md773}{}\doxysection{Manually add an array to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md773}
+echo \textquotesingle{}sunny\+:\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yamlcpp} echo \textquotesingle{} -\/ Charlie\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yamlcpp} echo \textquotesingle{} -\/ Dee\textquotesingle{} $>$$>$ {\ttfamily kdb file user/tests/yamlcpp}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md774}{}\doxysection{List the array entries}\label{md_src_plugins_yamlcpp_README_autotoc_md774}
+kdb ls user/tests/yamlcpp \#$>$ user/tests/yamlcpp/sunny \#$>$ user/tests/yamlcpp/sunny/\#0 \#$>$ user/tests/yamlcpp/sunny/\#1\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md775}{}\doxysection{Read an array entry}\label{md_src_plugins_yamlcpp_README_autotoc_md775}
+kdb get user/tests/yamlcpp/sunny/\#1 \#$>$ Dee\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md776}{}\doxysection{You can retrieve the last index of an array by reading the metakey $<$tt$>$array$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md776}
+kdb meta-\/get user/tests/yamlcpp/sunny array \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md777}{}\doxysection{1}\label{md_src_plugins_yamlcpp_README_autotoc_md777}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md778}{}\doxysection{Extend the array}\label{md_src_plugins_yamlcpp_README_autotoc_md778}
+kdb set user/tests/yamlcpp/sunny/\#2 Dennis kdb set user/tests/yamlcpp/sunny/\#3 Frank kdb set user/tests/yamlcpp/sunny/\#4 Mac\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md779}{}\doxysection{The plugin supports empty array fields}\label{md_src_plugins_yamlcpp_README_autotoc_md779}
+kdb set user/tests/yamlcpp/sunny/\#\+\_\+10 \textquotesingle{}The Waitress\textquotesingle{} kdb meta-\/get user/tests/yamlcpp/sunny array \#$>$ \#\+\_\+10 kdb get user/tests/yamlcpp/sunny/\#\+\_\+9 \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md780}{}\doxysection{R\+E\+T\+: 11}\label{md_src_plugins_yamlcpp_README_autotoc_md780}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md781}{}\doxysection{Retrieve the last array entry}\label{md_src_plugins_yamlcpp_README_autotoc_md781}
+kdb get user/tests/yamlcpp/sunny/\$(kdb meta-\/get user/tests/yamlcpp/sunny array) \#$>$ The Waitress\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md782}{}\doxysection{The plugin also supports empty arrays (arrays without any elements)}\label{md_src_plugins_yamlcpp_README_autotoc_md782}
+kdb meta-\/set user/tests/yamlcpp/empty array \textquotesingle{}\textquotesingle{} kdb export user/tests/yamlcpp/empty yamlcpp \#$>$ \mbox{[}\mbox{]}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md783}{}\doxysection{Arrays in Elektra always require the $<$tt$>$array$<$/tt$>$ metakey.}\label{md_src_plugins_yamlcpp_README_autotoc_md783}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md784}{}\doxysection{Otherwise the keys will be interpreted as normal key-\/value mappings.}\label{md_src_plugins_yamlcpp_README_autotoc_md784}
+kdb set user/tests/yamlcpp/movies kdb set user/tests/yamlcpp/movies/\#0 \textquotesingle{}A Silent Voice\textquotesingle{} kdb export user/tests/yamlcpp/movies yamlcpp \#$>$ \char`\"{}\#0\char`\"{}\+: A Silent Voice kdb meta-\/set user/tests/yamlcpp/movies array \textquotesingle{}\textquotesingle{} kdb export user/tests/yamlcpp/movies yamlcpp \#$>$ -\/ A Silent Voice\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md785}{}\doxysection{Undo modifications to the key database}\label{md_src_plugins_yamlcpp_README_autotoc_md785}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\#\# Nested Arrays}
+\DoxyCodeLine{}
+\DoxyCodeLine{The plugin also supports nested arrays.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md786}{}\doxysection{Mount yamlcpp plugin to $<$tt$>$user/tests/yamlcpp$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md786}
+sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md787}{}\doxysection{Add some key value pairs}\label{md_src_plugins_yamlcpp_README_autotoc_md787}
+kdb set user/tests/yamlcpp/key value kdb set user/tests/yamlcpp/array kdb set user/tests/yamlcpp/array/\#0 scalar kdb set user/tests/yamlcpp/array/\#1/key value kdb set user/tests/yamlcpp/array/\#1/🔑 🙈 kdb meta-\/set user/tests/yamlcpp/array array \textquotesingle{}\#1\textquotesingle{}
+
+kdb ls user/tests/yamlcpp \#$>$ user/tests/yamlcpp/array \#$>$ user/tests/yamlcpp/array/\#0 \#$>$ user/tests/yamlcpp/array/\#1/key \#$>$ user/tests/yamlcpp/array/\#1/🔑 \#$>$ user/tests/yamlcpp/key\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md788}{}\doxysection{Retrieve part of an array value}\label{md_src_plugins_yamlcpp_README_autotoc_md788}
+kdb get user/tests/yamlcpp/array/\#1/key \#$>$ value\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md789}{}\doxysection{Since an array saves a list of values, an array parent}\label{md_src_plugins_yamlcpp_README_autotoc_md789}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md790}{}\doxysection{-\/ which represent the array -\/ does not store a value!}\label{md_src_plugins_yamlcpp_README_autotoc_md790}
+echo \char`\"{}user/tests/yamlcpp/array\+: “\`{}kdb get user/tests/yamlcpp/array\`{}”\char`\"{} \#$>$ user/tests/yamlcpp/array\+: “”\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md791}{}\doxysection{Remove part of an array value}\label{md_src_plugins_yamlcpp_README_autotoc_md791}
+kdb rm user/tests/yamlcpp/array/\#1/key
+
+kdb ls user/tests/yamlcpp \#$>$ user/tests/yamlcpp/array \#$>$ user/tests/yamlcpp/array/\#0 \#$>$ user/tests/yamlcpp/array/\#1/🔑 \#$>$ user/tests/yamlcpp/key\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md792}{}\doxysection{The plugin stores array keys using Y\+A\+M\+L sequences.}\label{md_src_plugins_yamlcpp_README_autotoc_md792}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md793}{}\doxysection{Since yaml-\/cpp stores keys in arbitrary order -\/}\label{md_src_plugins_yamlcpp_README_autotoc_md793}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md794}{}\doxysection{either $<$tt$>$key$<$/tt$>$ or $<$tt$>$array$<$/tt$>$ could be the “first” key -\/}\label{md_src_plugins_yamlcpp_README_autotoc_md794}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md795}{}\doxysection{we remove $<$tt$>$key$<$/tt$>$ before we retrieve the data. This way}\label{md_src_plugins_yamlcpp_README_autotoc_md795}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md796}{}\doxysection{we make sure that the output below will always look}\label{md_src_plugins_yamlcpp_README_autotoc_md796}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md797}{}\doxysection{the same.}\label{md_src_plugins_yamlcpp_README_autotoc_md797}
+kdb rm user/tests/yamlcpp/key kdb file user/tests/yamlcpp $\vert$ xargs cat \#$>$ array\+: \#$>$ -\/ scalar \#$>$ -\/ 🔑\+: 🙈\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md798}{}\doxysection{Undo modifications to the key database}\label{md_src_plugins_yamlcpp_README_autotoc_md798}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\#\# Sparse Arrays}
+\DoxyCodeLine{}
+\DoxyCodeLine{Since Elektra allows [“holes”](@ref doc\_decisions\_holes\_md) in a key set, YAML CPP has to support small key sets that describe relatively complex data.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md799}{}\doxysection{Mount yamlcpp plugin}\label{md_src_plugins_yamlcpp_README_autotoc_md799}
+sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp
+
+kdb set user/tests/yamlcpp/\#0/map/\#1/\#0 value kdb set user/tests/yamlcpp kdb meta-\/set user/tests/yamlcpp array \textquotesingle{}\#0\textquotesingle{} kdb set user/tests/yamlcpp/\#0/map kdb meta-\/set user/tests/yamlcpp/\#0/map array \textquotesingle{}\#1\textquotesingle{} kdb set user/tests/yamlcpp/\#0/map/\#1 kdb meta-\/set user/tests/yamlcpp/\#0/map/\#1 array \textquotesingle{}\#0\textquotesingle{} kdb file user/tests/yamlcpp $\vert$ xargs cat \#$>$ -\/ map\+: \#$>$ -\/ $\sim$ \#$>$ -\/ \#$>$ -\/ value\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md800}{}\doxysection{The plugin adds the missing array parents to the key set}\label{md_src_plugins_yamlcpp_README_autotoc_md800}
+kdb ls user/tests/yamlcpp \#$>$ user/tests/yamlcpp \#$>$ user/tests/yamlcpp/\#0/map \#$>$ user/tests/yamlcpp/\#0/map/\#0 \#$>$ user/tests/yamlcpp/\#0/map/\#1 \#$>$ user/tests/yamlcpp/\#0/map/\#1/\#0\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md801}{}\doxysection{Undo modifications to the key database}\label{md_src_plugins_yamlcpp_README_autotoc_md801}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Metadata}
+\DoxyCodeLine{}
+\DoxyCodeLine{The plugin supports metadata. The example below shows how a basic `Key` including some metadata, looks inside the YAML configuration file:}
+\DoxyCodeLine{}
+\DoxyCodeLine{```yaml}
+\DoxyCodeLine{key without metadata: value}
+\DoxyCodeLine{key with metadata: !elektra/meta}
+\DoxyCodeLine{  -\/ value2}
+\DoxyCodeLine{  -\/ metakey: metavalue}
+\DoxyCodeLine{    empty metakey:}
+\DoxyCodeLine{    another metakey: another metavalue}
+\end{DoxyCode}
+
+
+. As we can see above the value containing metadata is marked by the tag handle {\ttfamily !elektra/meta}. The data type contains a list with two elements. The first element of this list specifies the value of the key, while the second element contains a map saving the metadata for the key. The data above represents the following key set in Elektra if we mount the file directly to the namespace {\ttfamily user}\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Name }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Value }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Metaname }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Metavalue  }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Name }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Value }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Metaname }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Metavalue  }\\\cline{1-4}
+\endhead
+\PBS\centering user/key without metadata &\PBS\centering value1 &\PBS\centering — &\PBS\centering —  \\\cline{1-4}
+\PBS\centering user/key with metadata &\PBS\centering value2 &\PBS\centering metakey &\PBS\centering metavalue  \\\cline{1-4}
+\PBS\centering &\PBS\centering &\PBS\centering empty metakey &\PBS\centering —  \\\cline{1-4}
+\PBS\centering &\PBS\centering &\PBS\centering another metakey &\PBS\centering another metavalue  \\\cline{1-4}
+\end{longtabu}
+
+
+. The example below shows how we can read and write metadata using the {\ttfamily yamlcpp} plugin via {\ttfamily kdb}.
+
+\`{}\`{}{\ttfamily  @section autotoc\+\_\+md802 Mount yamlcpp plugin to}user/tests/yamlcpp\`{} sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md803}{}\doxysection{Manually add a key including metadata to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md803}
+echo \char`\"{}🔑\+: !elektra/meta \mbox{[}🦄, \{comment\+: Unicorn\}\mbox{]}\char`\"{} $>$ {\ttfamily kdb file user/tests/yamlcpp} kdb meta-\/ls user/tests/yamlcpp/🔑 \#$>$ comment kdb meta-\/get user/tests/yamlcpp/🔑 comment \#$>$ Unicorn\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md804}{}\doxysection{Add a new key and add some metadata to the new key}\label{md_src_plugins_yamlcpp_README_autotoc_md804}
+kdb set user/tests/yamlcpp/brand new kdb meta-\/set user/tests/yamlcpp/brand comment \char`\"{}\+The Devil And God Are Raging Inside Me\char`\"{} kdb meta-\/set user/tests/yamlcpp/brand rationale \char`\"{}\+Because I Love It\char`\"{}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md805}{}\doxysection{Retrieve metadata}\label{md_src_plugins_yamlcpp_README_autotoc_md805}
+kdb meta-\/ls user/tests/yamlcpp/brand \#$>$ comment \#$>$ rationale kdb meta-\/get user/tests/yamlcpp/brand rationale \#$>$ Because I Love It\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md806}{}\doxysection{Undo modifications to the key database}\label{md_src_plugins_yamlcpp_README_autotoc_md806}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{We can also invoke additional plugins that use metadata like `type`.}
+\end{DoxyCode}
+
+
+sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp type kdb set user/tests/yamlcpp/typetest/number 21 kdb meta-\/set user/tests/yamlcpp/typetest/number check/type short
+
+kdb set user/tests/yamlcpp/typetest/number \char`\"{}\+One\char`\"{} \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md807}{}\doxysection{R\+E\+T\+: 5}\label{md_src_plugins_yamlcpp_README_autotoc_md807}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md808}{}\doxysection{S\+T\+D\+E\+R\+R\+: .$\ast$\+Validation Semantic.$\ast$}\label{md_src_plugins_yamlcpp_README_autotoc_md808}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md809}{}\doxysection{E\+R\+R\+O\+R\+: C03200}\label{md_src_plugins_yamlcpp_README_autotoc_md809}
+kdb get user/tests/yamlcpp/typetest/number \#$>$ 21\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md810}{}\doxysection{Undo modifications to the key database}\label{md_src_plugins_yamlcpp_README_autotoc_md810}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Binary Data}
+\DoxyCodeLine{}
+\DoxyCodeLine{YAML CPP also supports [base64](https://tools.ietf.org/html/rfc4648) encoded data via the [Base64](@ref src\_plugins\_base64\_README\_md) plugin.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md811}{}\doxysection{Mount Y\+A\+M\+L C\+P\+P plugin at $<$tt$>$user/tests/binary$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md811}
+sudo kdb mount test.\+yaml user/tests/binary yamlcpp \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md812}{}\doxysection{Manually add binary data}\label{md_src_plugins_yamlcpp_README_autotoc_md812}
+echo \textquotesingle{}bin\+: !!binary a\+Gk=\textquotesingle{} $>$ {\ttfamily kdb file user/tests/binary}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md813}{}\doxysection{Base 64 decodes the data $<$tt$>$a\+Gk=$<$/tt$>$ to $<$tt$>$hi$<$/tt$>$ and stores the value in binary form.}\label{md_src_plugins_yamlcpp_README_autotoc_md813}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md814}{}\doxysection{The command $<$tt$>$kdb get$<$/tt$>$ prints the data as hexadecimal byte values.}\label{md_src_plugins_yamlcpp_README_autotoc_md814}
+kdb get user/tests/binary/bin \#$>$ \textbackslash{}x68\textbackslash{}x69\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md815}{}\doxysection{Add a string value to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md815}
+kdb set user/tests/binary/text mate \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md816}{}\doxysection{Base 64 does not modify textual values}\label{md_src_plugins_yamlcpp_README_autotoc_md816}
+kdb get user/tests/binary/text \#$>$ mate\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md817}{}\doxysection{The Base 64 plugin re-\/encodes binary data before Y\+A\+M\+L C\+P\+P stores the key set. Hence the}\label{md_src_plugins_yamlcpp_README_autotoc_md817}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md818}{}\doxysection{configuration file contains the value $<$tt$>$a\+Gk=$<$/tt$>$ even after Y\+A\+M\+L C\+P\+P wrote a new configuration.}\label{md_src_plugins_yamlcpp_README_autotoc_md818}
+grep -\/q \textquotesingle{}bin\+: !.$\ast$ a\+Gk=\textquotesingle{} {\ttfamily kdb file user/tests/binary} \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md819}{}\doxysection{R\+E\+T\+: 0}\label{md_src_plugins_yamlcpp_README_autotoc_md819}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md820}{}\doxysection{Undo modifications to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md820}
+kdb rm -\/r user/tests/binary sudo kdb umount user/tests/binary 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Null \& Empty}
+\DoxyCodeLine{}
+\DoxyCodeLine{Sometimes you only want to save a key without a value (null key) or a key with an empty value. The commands below show that YAML CPP supports this scenario properly.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md821}{}\doxysection{Mount Y\+A\+M\+L C\+P\+P plugin at $<$tt$>$user/tests/yamlcpp$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md821}
+sudo kdb mount test.\+yaml user/tests/yamlcpp yamlcpp\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md822}{}\doxysection{Check if the plugin saves null keys correctly}\label{md_src_plugins_yamlcpp_README_autotoc_md822}
+kdb set user/tests/yamlcpp/null kdb set user/tests/yamlcpp/null/level1/level2 kdb meta-\/set user/tests/yamlcpp/null/level1/level2 comment \textquotesingle{}Null key\textquotesingle{}
+
+kdb ls user/tests/yamlcpp/null \#$>$ user/tests/yamlcpp/null \#$>$ user/tests/yamlcpp/null/level1/level2 kdb get -\/v user/tests/yamlcpp/null $\vert$ grep -\/q \textquotesingle{}The key is null.\textquotesingle{} kdb get -\/v user/tests/yamlcpp/null/level1/level2 $\vert$ grep -\/q \textquotesingle{}The key is null.\textquotesingle{}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md823}{}\doxysection{Check if the plugin saves empty keys correctly}\label{md_src_plugins_yamlcpp_README_autotoc_md823}
+kdb set user/tests/yamlcpp/empty \char`\"{}\char`\"{} kdb set user/tests/yamlcpp/empty/level1/level2
+
+kdb ls user/tests/yamlcpp/empty \#$>$ user/tests/yamlcpp/empty \#$>$ user/tests/yamlcpp/empty/level1/level2 kdb get -\/v user/tests/yamlcpp/empty $\vert$ grep -\/vq \textquotesingle{}The key is null.\textquotesingle{}\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md824}{}\doxysection{Undo modifications to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md824}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Binary Values}
+\DoxyCodeLine{}
+\DoxyCodeLine{Elektra [saves binary data as either `0` or `1`](@ref doc\_decisions\_boolean\_md). The YAML CPP plugin supports this design decision by converting between YAML’s and Elektra’s boolean type.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md825}{}\doxysection{Mount Y\+A\+M\+L C\+P\+P plugin at $<$tt$>$user/tests/yamlcpp$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md825}
+sudo kdb mount config.\+yaml user/tests/yamlcpp yamlcpp \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md826}{}\doxysection{Manually add boolean key}\label{md_src_plugins_yamlcpp_README_autotoc_md826}
+echo \textquotesingle{}truth\+: true\textquotesingle{} $>$ {\ttfamily kdb file user/tests/yamlcpp}
+
+kdb get user/tests/yamlcpp/truth \#$>$ 1\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md827}{}\doxysection{A boolean in Elektra has the type $<$tt$>$boolean$<$/tt$>$}\label{md_src_plugins_yamlcpp_README_autotoc_md827}
+kdb meta-\/get user/tests/yamlcpp/truth type \#$>$ boolean\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md828}{}\doxysection{Add another boolean value}\label{md_src_plugins_yamlcpp_README_autotoc_md828}
+kdb set user/tests/yamlcpp/success 0 kdb meta-\/set user/tests/yamlcpp/success type boolean kdb get user/tests/yamlcpp/success \#$>$ 0 kdb export user/tests/yamlcpp/success yamlcpp \#$>$ false\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md829}{}\doxysection{Undo modifications to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md829}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\# Dependencies}
+\DoxyCodeLine{}
+\DoxyCodeLine{This plugin requires [yaml-\/cpp][]. On a Debian based OS the package for the library is called [`libyaml-\/cpp-\/dev`](https://packages.debian.org/libyaml-\/cpp-\/dev). On macOS you can install the package [`yaml-\/cpp`](https://repology.org/project/yaml-\/cpp) via [HomeBrew](https://brew.sh).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\# Limitations}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\#\# Leaf Values}
+\DoxyCodeLine{}
+\DoxyCodeLine{One of the limitations of this plugin is, that it only supports values inside [leaf nodes](https://github.com/ElektraInitiative/libelektra/issues/106). Let us look at an example to show what that means. The YAML file below:}
+\DoxyCodeLine{}
+\DoxyCodeLine{```yaml}
+\DoxyCodeLine{root:}
+\DoxyCodeLine{  subtree: 🍂}
+\DoxyCodeLine{  below root: leaf}
+\DoxyCodeLine{level 1:}
+\DoxyCodeLine{  level 2:}
+\DoxyCodeLine{    level 3: 🍁}
+\end{DoxyCode}
+
+
+stores all of the values ({\ttfamily 🍂}, {\ttfamily leaf} and {\ttfamily 🍁}) in the leaves of the mapping. The drawing below makes this situation a little bit clearer.
+
+
+
+The key set that this plugin creates using the data above looks like this (assuming we mount the plugin to {\ttfamily user/tests/yamlcpp})\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Name }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Value  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Name }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Value  }\\\cline{1-2}
+\endhead
+user/tests/yamlcpp/level &\\\cline{1-2}
+user/tests/yamlcpp/level 1/level 2 &\\\cline{1-2}
+user/tests/yamlcpp/level 1/level 2/level 3 &🍁  \\\cline{1-2}
+user/tests/yamlcpp/root &\\\cline{1-2}
+user/tests/yamlcpp/root/below root &leaf  \\\cline{1-2}
+user/tests/yamlcpp/root/subtree &🍂  \\\cline{1-2}
+\end{longtabu}
+
+
+. Now why is this plugin unable to store values outside leaf nodes? For example, why can we not store a value inside {\ttfamily user/tests/yamlcpp/level 1/level 2}? To answer this question we need to look at the Y\+A\+ML representation\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{level 1:}
+\DoxyCodeLine{  level 2:}
+\DoxyCodeLine{    level 3: 🍁}
+\end{DoxyCode}
+
+
+. In a naive approach we might just try to add a value e.\+g. {\ttfamily 🙈} right next to level 2\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{level 1:}
+\DoxyCodeLine{  level 2: 🙈}
+\DoxyCodeLine{    level 3:  🍁}
+\end{DoxyCode}
+
+
+. This however would be not correct, since then the Y\+A\+ML node {\ttfamily level 2} would contain both a scalar value ({\ttfamily 🙈}) and a mapping ({\ttfamily \{ level 3\+: 🍁 \}}). We could solve this dilemma using a list\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{level 1:}
+\DoxyCodeLine{  level 2:}
+\DoxyCodeLine{    -\/ 🙈}
+\DoxyCodeLine{    -\/ level 3: 🍁}
+\end{DoxyCode}
+
+
+. However, if we use this approach we are not able to support Elektra’s array type properly.\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md830}{}\doxyparagraph{Directory Values}\label{md_src_plugins_yamlcpp_README_autotoc_md830}
+To overcome the limitation described above, the Y\+A\+ML C\+PP plugin requires the \mbox{\hyperlink{md_src_plugins_directoryvalue_README_src_plugins_directoryvalue_README_md}{Directory Value}} plugin. This plugin converts the value of a non-\/leaf node to a leaf node with the name {\ttfamily \+\_\+\+\_\+\+\_\+dirdata}. For example, let us assume we have the following key set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{directory      = Directory Data}
+\DoxyCodeLine{directory/file = Leaf Data}
+\end{DoxyCode}
+
+
+. The Directory Value plugin will convert the key set in the set (write) direction to
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{directory            =}
+\DoxyCodeLine{directory/\_\_\_dirdata = Directory Data}
+\DoxyCodeLine{directory/file       = Leaf Data}
+\end{DoxyCode}
+
+
+. Consequently the Y\+A\+ML plugin will store the key set as
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{directory: \_\_\_dirdata = Directory Data}
+\DoxyCodeLine{  file       = Leaf Data}
+\end{DoxyCode}
+
+
+. A user of the Y\+A\+ML plugin will not notice this feature unless he edits the configuration file by hand, as the following example shows\+:
+
+\`{}\`{}{\ttfamily  @section autotoc\+\_\+md831 Mount Y\+A\+ML C\+PP plugin at}user/tests/yamlcpp\`{} sudo kdb mount test.\+yaml user/tests/yamlcpp yamlcpp
+
+kdb set user/tests/yamlcpp/directory \textquotesingle{}Directory Data\textquotesingle{} kdb meta-\/set user/tests/yamlcpp/directory comment \textquotesingle{}Directory Metadata\textquotesingle{} kdb set user/tests/yamlcpp/directory/file \textquotesingle{}Leaf Data\textquotesingle{}
+
+kdb ls user/tests/yamlcpp/directory \#$>$ user/tests/yamlcpp/directory \#$>$ user/tests/yamlcpp/directory/file
+
+kdb get user/tests/yamlcpp/directory \#$>$ Directory Data kdb meta-\/get user/tests/yamlcpp/directory comment \#$>$ Directory Metadata kdb get user/tests/yamlcpp/directory/file \#$>$ Leaf Data\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md832}{}\doxysection{Undo modifications to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md832}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{.}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\#\# Special Values}
+\DoxyCodeLine{}
+\DoxyCodeLine{Due to the way the plugin writes data}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/ first converting the key set into yaml-\/cpp’s `Node` data structure, and then}
+\DoxyCodeLine{-\/ writing this data structure into a file,}
+\DoxyCodeLine{}
+\DoxyCodeLine{and the way the yaml-\/cpp library handles writing `Nodes`, the plugin does currently not handle data with special meaning according to the [YAML spec](https://yaml.org/spec/1.2/spec.html) correctly. For example, if you use the `kdb` tool to save the value `true` in a key, then the plugin will not quote this value and you will end up with a boolean value.}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md833}{}\doxysection{Mount plugin}\label{md_src_plugins_yamlcpp_README_autotoc_md833}
+sudo kdb mount test.\+yaml user/tests/yamlcpp yamlcpp
+
+kdb set user/tests/yamlcpp/boolean true \hypertarget{md_src_plugins_yamlcpp_README_autotoc_md834}{}\doxysection{The following command should print a quoted Y\+A\+M\+L scalar}\label{md_src_plugins_yamlcpp_README_autotoc_md834}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md835}{}\doxysection{(e.\+g. $<$tt$>$\char`\"{}true\char`\"{}$<$/tt$>$ or ‘\textquotesingle{}true’\`{}).}\label{md_src_plugins_yamlcpp_README_autotoc_md835}
+kdb export user/tests/yamlcpp/boolean yamlcpp \#$>$ true\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md836}{}\doxysection{Since the value is not quoted the Y\+A\+M\+L C\+P\+P plugin will}\label{md_src_plugins_yamlcpp_README_autotoc_md836}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md837}{}\doxysection{correctly convert the Y\+A\+M\+L data into one of Elektra’s}\label{md_src_plugins_yamlcpp_README_autotoc_md837}
+\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md838}{}\doxysection{boolean values ($<$tt$>$0$<$/tt$>$ or $<$tt$>$1$<$/tt$>$).}\label{md_src_plugins_yamlcpp_README_autotoc_md838}
+kdb get user/tests/yamlcpp/boolean \#$>$ 1\hypertarget{md_src_plugins_yamlcpp_README_autotoc_md839}{}\doxysection{Undo modifications to the database}\label{md_src_plugins_yamlcpp_README_autotoc_md839}
+kdb rm -\/r user/tests/yamlcpp sudo kdb umount user/tests/yamlcpp 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\#\# Other Limitations}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/ Adding and removing keys does remove **comments** inside the configuration file}
+\DoxyCodeLine{-\/ The plugin currently lacks proper **type support** for scalars.}
+\DoxyCodeLine{-\/ If Elektra uses YAML CPP as **default storage** plugin, multiple tests of the test suite fail. However, if you mount YAML CPP at `/`:}
+\end{DoxyCode}
+
+
+kdb mount default.\+yaml / yamlcpp \`{}\`{}\`{}
+
+all tests should work correctly. The problem here is that Elektra does not load additional required plugins ({\ttfamily infos/needs}) for a default storage plugin. 

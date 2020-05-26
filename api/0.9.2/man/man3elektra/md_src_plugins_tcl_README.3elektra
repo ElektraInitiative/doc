@@ -1,0 +1,104 @@
+.TH "md_src_plugins_tcl_README" 3elektra "Tue May 26 2020" "Version 0.9.2" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_tcl_README \- Plugin: tcl 
+
+.IP "\(bu" 2
+infos = Information about the tcl plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/tcl
+.IP "\(bu" 2
+infos/needs = code null binary
+.IP "\(bu" 2
+infos/placements = setstorage getstorage
+.IP "\(bu" 2
+infos/status = unfinished concept
+.IP "\(bu" 2
+infos/description = Serialize tcl lists
+.PP
+.SH "Introduction"
+.PP
+This plugin is a storage plugin which writes keys to lists \fIin the style of\fP the Tcl programming language\&.
+.SH "Format"
+.PP
+The format does not have significant spaces\&. The advantage of TCL style lists is that also arbitrary metadata can be embedded in a natural and distinguish-able style\&. It looks like:
+.PP
+.PP
+.nf
+{
+    {
+        key=val
+        {
+            metakey = b
+        }
+        {
+            comment = huhu
+        }
+    }
+}
+.fi
+.PP
+.SH "Basic Usage"
+.PP
+``\fC @section autotoc_md670 Mount Tcl plugin to namespace\fPuser/examples/tcl` 
+.SH "We add the required plugins (instead of the plugin providers)"
+.PP
+.SH "for <tt>tcl</tt> manually, since otherwise this command leaks memory\&."
+.PP
+sudo kdb mount config\&.tcl user/tests/tcl tcl ccode null base64
+.SH "Add a key value pair to the database"
+.PP
+kdb set user/tests/tcl/key value 
+.SH "The Tcl plugin also supports metadata"
+.PP
+kdb meta-set user/tests/tcl/key comment 'This key contains example data\&.' 
+.SH "A known limitation of the plugin is that it discards whitespace characters"
+.PP
+kdb meta-get user/tests/tcl/key comment #> Thiskeycontainsexampledata\&.
+.PP
+kdb export user/tests/tcl tcl #> { #> { #> key = value #> { #> comment = Thiskeycontainsexampledata\&. #> } #> } #> }
+.SH "Undo modifications"
+.PP
+kdb rm -r user/tests/tcl sudo kdb umount user/tests/tcl 
+.PP
+.nf
+## Binary Data
+
+The plugin also supports binary data via the [base64 plugin](@ref src_plugins_base64_README_md) and null keys via the [null plugin](@ref src_plugins_null_README_md)\&.
+
+.fi
+.PP
+.SH "Mount plugin"
+.PP
+sudo kdb mount config\&.tcl user/tests tcl ccode null base64
+.SH "Import some data"
+.PP
+kdb import user/tests/dump xmltool < src/plugins/xmltool/xmltool/dump\&.xml
+.SH "Take a look at imported data"
+.PP
+kdb ls user/tests/dump #> user/tests/dump/\&.HiddenBinaryKey #> user/tests/dump/\&.HiddenDirectoryKey #> user/tests/dump/\&.HiddenStringKey #> user/tests/dump/PerfectBinaryKey #> user/tests/dump/PerfectDirectoryKey #> user/tests/dump/PerfectStringKey #> user/tests/dump/Ug\&.ly:Bin\fI\fP €ryKey #> user/tests/dump/Ug\&.ly:Dir@ect€oryKey #> user/tests/dump/Ug\&.ly:St@ri€n\&.gKey
+.SH "The plugin supports binary data…"
+.PP
+kdb get user/tests/dump/PerfectBinaryKey #> \\x42\\x69\\x6e\\x61\\x72\\x79\\x56\\x61\\x6c\\x75\\x65\\x0
+.SH "… and empty keys"
+.PP
+kdb get user/tests/dump/Ug\&.ly:Bin\fI\fP €ryKey
+.SH "Undo modifications"
+.PP
+kdb rm -r user/tests sudo kdb umount user/tests ```
+.SS "Limitations"
+.IP "\(bu" 2
+whitespaces are discarded
+.IP "\(bu" 2
+no comments
+.PP
+.SS "Dependencies"
+.IP "\(bu" 2
+\fClibboost-dev\fP 
+.PP
+

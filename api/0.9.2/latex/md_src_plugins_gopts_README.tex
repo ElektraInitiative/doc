@@ -1,0 +1,35 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the gopts plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\texttt{ k.\+boeswirth+git@gmail.\+com}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = procgetstorage
+\item infos/status = recommended productive maintained nodep libc
+\item infos/metadata = args args/index command opt opt/long opt/arg opt/flagvalue opt/help opt/hidden opt/\# opt/\#/long opt/\#/arg opt/\#/flagvalue opt/\#/hidden env env/\#
+\item infos/description = Parses command-\/line options using elektra-\/opts
+\end{DoxyItemize}\hypertarget{md_src_plugins_gopts_README_src_plugins_gopts_README_md}{}\doxysection{Introduction}\label{md_src_plugins_gopts_README_src_plugins_gopts_README_md}
+This plugin is very simple in what it does. It uses system specific methods of accessing {\ttfamily argc} and {\ttfamily argv} outside of {\ttfamily main} and then calls {\ttfamily elektra\+Get\+Opts} to do options processing.
+
+The config key {\ttfamily /offset} may be given to ignore a number of arguments at the start of {\ttfamily argv}. This is useful, if {\ttfamily gopts} was called from a script via an interpreter (e.\+g. in python scripts).\hypertarget{md_src_plugins_gopts_README_autotoc_md244}{}\doxysection{Usage}\label{md_src_plugins_gopts_README_autotoc_md244}
+The preferred way of using this plugin is via {\ttfamily kdb\+Ensure}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB * \mbox{\hyperlink{namespacekdb}{kdb}} = \mbox{\hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdbOpen}} (parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{KeySet * contract = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (1, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"system/elektra/ensure/plugins/global/gopts"}, \mbox{\hyperlink{group__key_gga91fb3178848bd682000958089abbaf40ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"mounted"}, \mbox{\hyperlink{group__key_gga91fb3178848bd682000958089abbaf40aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}), \mbox{\hyperlink{kdbenum_8c_a7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{\textcolor{keywordtype}{int} rc = \mbox{\hyperlink{group__kdb_ga0955373877575fa21275891518f8ab31}{kdbEnsure}} (\mbox{\hyperlink{namespacekdb}{kdb}}, contract, parentKey);}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (rc != 0)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{comment}{// error handling}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// gopts now mounted}}
+\DoxyCodeLine{KeySet * ks = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{kdbenum_8c_a7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, parentKey);}
+\end{DoxyCode}
+\hypertarget{md_src_plugins_gopts_README_autotoc_md245}{}\doxysection{Help message}\label{md_src_plugins_gopts_README_autotoc_md245}
+If {\ttfamily elektra\+Get\+Opts} determined that the application is in help mode (i.\+e. {\ttfamily -\/-\/help} was used), {\ttfamily gopts} will set the key {\ttfamily proc/elektra/gopts/help} to {\ttfamily 1}. It will also invoke {\ttfamily elektra\+Get\+Opts\+Help\+Message} and write the result into the key {\ttfamily proc/elektra/gopts/help/message}. The {\ttfamily usage} and {\ttfamily prefix} values used for this call can be configured, via the {\ttfamily /help/usage} and {\ttfamily /help/prefix} config keys. 

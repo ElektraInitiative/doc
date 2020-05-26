@@ -1,0 +1,321 @@
+.TH "doc_news_2015-11-19_0_8_14_md" 3elektra "Tue May 26 2020" "Version 0.9.2" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2015-11-19_0_8_14_md \- 0\&.8\&.14 Release 
+
+.IP "\(bu" 2
+guid: 519cbfac-6db5-4594-8a38-dec4c84b134f
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Thu, 19 Nov 2015 17:48:14 +0100
+.IP "\(bu" 2
+shortDesc: adds massive documentation improvements & new or overhauled plugins
+.PP
+.PP
+Again we managed to release with many new features and plugins (lua, enum, list, crypto, csvstorage, conditionals, mathcheck, filecheck, logchange) many fixes, and especially with a vastly improved polished documentation\&.
+.SH "Documentation Initiative"
+.PP
+The Documentation Initiative is a huge success and now the documentation of Elektra is in a state where someone (preferable a linux guru), never heard of Elektra, still can use Elektra only by reading man pages\&.
+.PP
+There are now many ways to show a man page:
+.PP
+.IP "\(bu" 2
+\fCon github\fP
+.IP "\(bu" 2
+\fCin the API docu\fP
+.IP "\(bu" 2
+by using \fCkdb --help\fP or \fCkdb help <command>\fP
+.IP "\(bu" 2
+by using \fCman kdb\fP
+.PP
+.SS "Help system"
+Ian Donnelly wrote man pages for all the tools delivered with Elektra\&. Additionally, nearly all README\&.md are now also converted to man pages and also to Doxygen\&.
+.SS "Doxygen Filter"
+Kurt Micheli did an amazing work with a new doxygen filter\&. The filter allows all Elektra markdown pages to be also included in the doxygen documentation\&. Thus all technical concepts are now explained in Markdown pages, this filter is essential\&.
+.PP
+But even more, the filter also includes all man pages written for the tools, giving a nice html view for them\&. (In addition to the markdown rendering on github)\&.
+.PP
+Enjoy the \fCresult\fP\&.
+.PP
+A big thanks to Kurt Micheli!
+.SS "Further Docu fixes"
+.IP "\(bu" 2
+getenv debugging docu was improved
+.IP "\(bu" 2
+typo fix: Specify, thanks to Pino Toscano
+.IP "\(bu" 2
+\fCDesign decisions\fP Definition of Bool, capabilities and Publish Subscribe (thanks to Daniel Bugl)
+.IP "\(bu" 2
+Improve iconv docu
+.IP "\(bu" 2
+usage examples for many plugins
+.IP "\(bu" 2
+improve README for line plugin (thanks to Ian Donnelly)
+.IP "\(bu" 2
+add docu about dependencies for some plugins (thanks to Ian Donnelly)
+.IP "\(bu" 2
+create many new links within the documentation
+.PP
+.SH "Simplicity"
+.PP
+We shifted our \fCgoals\fP a bit: We want to prefer simplicity to flexibility\&. Not because we do no like flexibility, but because we think we achieved enough of it\&. Currently (and in future) you can use Elektra:
+.PP
+.IP "\(bu" 2
+obviously as primitive key-value storage
+.IP "\(bu" 2
+with specifications and dozens of plugins driven by it
+.IP "\(bu" 2
+with code generation
+.IP "\(bu" 2
+\&.\&.\&.
+.PP
+.PP
+But we cut flexibility regarding:
+.PP
+.IP "\(bu" 2
+namespaces are only useful for configuration (not for arbitrary key-value)
+.IP "\(bu" 2
+the semantics of \fCmetadata\fP
+.IP "\(bu" 2
+mounting functionality
+.IP "\(bu" 2
+error code meanings are fixed, if a resolver detects a conflict, our defined error must be used
+.IP "\(bu" 2
+of course ABI, API
+.PP
+.SH "Qt-gui 0\&.0\&.9"
+.PP
+Raffael Pancheri again updated his qt-gui to version 0\&.0\&.9 (beta) with important of fixes and improvements:
+.PP
+.IP "\(bu" 2
+Fixes for Qt 5\&.5
+.IP "\(bu" 2
+Handling of merge-conflicts improved
+.IP "\(bu" 2
+Avoid rewriting on merge-conflicts
+.IP "\(bu" 2
+Allow QML to destroy C++ owned model
+.IP "\(bu" 2
+Dialog at startup
+.IP "\(bu" 2
+Reduce memory footprint
+.IP "\(bu" 2
+add man page
+.PP
+.PP
+A bit thanks to Raffael Pancheri!
+.SH "Compatibility"
+.PP
+As always, the API and API is fully forward-compatible, i\&.e\&. programs compiled against an older 0\&.8 versions of Elektra will continue to work\&.
+.PP
+The behaviour of some plugins, however, changed:
+.PP
+.IP "\(bu" 2
+the INI plugin, the section handling was improved\&.
+.IP "\(bu" 2
+in the NI plugin, the symbol Ni_GetVersion vanished
+.IP "\(bu" 2
+in the resolver plugin files of other namespaces which are not mounted are not resolved anymore
+.PP
+.SS "Build System"
+ENABLE_CXX11 does not exist anymore, it is always on\&. We do not care about 199711L compilers anymore, which makes development easier, without losing any actually used platform\&.
+.PP
+Some programs that are only used in-source are not installed anymore\&. (by Pino Toscano)
+.PP
+Python and Lua plugins are enabled now in \fC-DPLUGINS=ALL\fP\&.
+.PP
+Python3 plugin was renamed to python\&.
+.SH "Lua Plugin"
+.PP
+Manuel Mausz add a lightweight alternative to the python plugin: \fCthe lua plugin\fP\&. In a similar way, someone can write scripts, which are executed on every access to the \fCkey database\fP\&.
+.PP
+To mount a lua based filter, you can use:
+.PP
+.PP
+.nf
+kdb mount file\&.ini /lua ini lua script=/path/to/lua/lua_filter\&.lua
+.fi
+.PP
+.PP
+Even though it works well, it is classified as technical preview\&.
+.PP
+Thanks to Manuel Mausz for this plugin!
+.SH "Cryptography Plugin"
+.PP
+In this technical preview, Peter Nirschl \fCdemonstrates how a plugin\fP can encrypt Elektra’s values\&. In test cases it is already able to do so, but for the end user an easy way for key derivation is missing\&.
+.PP
+A big thanks to Peter Nirschl!
+.SH "INI Plugin"
+.PP
+The INI plugin got a near rewrite\&. Now it handles many situations better, has many more options and features, including:
+.PP
+.IP "\(bu" 2
+preserving the order
+.IP "\(bu" 2
+using keys as metadata
+.IP "\(bu" 2
+many new test cases
+.IP "\(bu" 2
+fix escaping
+.PP
+.PP
+Thanks to Thomas Waser for this work!
+.SH "Mathcheck plugin"
+.PP
+This plugin allows you to check and even calculate keys from other keys using an polish prefix notation\&. It supports the typical operations \fC+ - / *\fP and \fC<, <=, ==, !=, =>, >, :=\fP\&. To mount, check and calculate values, one would use:
+.PP
+.PP
+.nf
+kdb mount mathcheck\&.dump /example/mathcheck dump mathcheck
+kdb setmeta user/example/mathcheck/k check/math "== + a b"
+kdb setmeta user/example/mathcheck/k check/math ":= + a b"
+.fi
+.PP
+.PP
+For details \fCsee the documentation\fP\&.
+.PP
+Thanks to Thomas Waser for this important plugin!
+.SH "List Plugin"
+.PP
+Currently, Elektra has some limitations on how many plugins can be added to certain \fCplacement\fP\&. Because of the rapidly growing number of plugins, some combinations are not possible anymore\&.
+.PP
+This plugin tackles the issue, by delegating the work to an arbitrary number of subplugins\&. As a bonus, it works lazily and thus might avoid the loading of some plugins all together\&.
+.PP
+Thanks to Thomas Waser for this plugin!
+.SH "Conditionals"
+.PP
+Brings \fCif\fP inside Elektra\&. It lets you check if some keys have the values they should have\&.
+.PP
+.PP
+.nf
+kdb mount conditionals\&.dump /tmount/conditionals conditionals dump
+kdb set user/tmount/conditionals/fkey 3\&.0
+kdb set user/tmount/conditionals/hkey hello
+kdb setmeta user/tmount/conditionals/key check/condition "(hkey == 'hello') ? (fkey == '3\&.0')" # success
+kdb setmeta user/tmount/conditionals/key check/condition "(hkey == 'hello') ? (fkey == '5\&.0')" # fail
+.fi
+.PP
+.PP
+For details \fCsee the documentation\fP\&.
+.PP
+Again, thanks to Thomas Waser for this plugin!
+.SH "Csvstorage Plugin"
+.PP
+You can now mount csv-files\&. To mount \fCtest\&.csv\fP simply use:
+.PP
+.PP
+.nf
+kdb mount test\&.csv /csv csvstorage
+.fi
+.PP
+.PP
+There are many options, e\&.g\&. changing the delimiter, use header for the key names or predefine how the columns should be named\&. For details \fCsee the documentation\fP\&.
+.PP
+Thanks to Thomas Waser!
+.SH "Filecheck plugin"
+.PP
+This plugin lets you validate lineendings, encodings, null, bom and unprintable characters\&.
+.PP
+The also new plugin lineendings is already superseded by the filecheck plugin\&.
+.PP
+Thanks to Thomas Waser!
+.SH "Enum plugin"
+.PP
+The Enum plugin checks string values of Keys by comparing it against a list of valid values\&.
+.PP
+Thanks to Thomas Waser!
+.SH "Elektrify Machinekit\&.io"
+.PP
+We are proud that \fCMachinekit\fP starts using Elektra\&.
+.PP
+Alexander Rössler is digging into all details, and already enhanced the DBUS Plugin for their needs\&. DBus now can emit a message for every changed key\&.
+.PP
+A big thanks to Alexander Rössler!
+.SH "Bugfixes"
+.PP
+.IP "\(bu" 2
+libgetenv did not reinitalized its mutexes on forks
+.IP "\(bu" 2
+add needSync also in C++ binding
+.IP "\(bu" 2
+handle removed current working directories (fallback to /)
+.IP "\(bu" 2
+avoid segfault on missing version keys (when doing \fCkdb rm system/elektra/version\fP)
+.IP "\(bu" 2
+fix glob plugin + kdb mount with \fCconfig/needs usage\fP
+.IP "\(bu" 2
+fix different handling of strerror_r in macOS (thanks to Daniel Bugl)
+.IP "\(bu" 2
+do not change the users parentKey in early-error scenarios
+.IP "\(bu" 2
+do not try to interpret some binary keys as function keys
+.PP
+.SH "Other Gems"
+.PP
+.IP "\(bu" 2
+getenv example: do not link to elektra/elektratools, thanks to Pino Toscano
+.IP "\(bu" 2
+fixes in other examples
+.IP "\(bu" 2
+avoid useless UTF-8 chars and fix typos, thanks to Kurt Micheli
+.IP "\(bu" 2
+fix kdb check return code (open fail)
+.IP "\(bu" 2
+pdf now also allows UTF-8 characters if added to elektraSpecialCharacters\&.sty, thanks to Kurt Micheli
+.IP "\(bu" 2
+libgetenv: lookup also used for layers
+.IP "\(bu" 2
+handle wrong arguments of metals better, thanks to Ian Donnelly
+.IP "\(bu" 2
+Improvement of error messages in the augeas plugin
+.IP "\(bu" 2
+\fCkdb set\fP avoids fetching unnecessary namespaces
+.IP "\(bu" 2
+verbose unmount
+.IP "\(bu" 2
+logchange: small demonstration plugin to show how to log added, removed and changed keys
+.IP "\(bu" 2
+setmeta will use spec as default
+.IP "\(bu" 2
+libtools: avoid useless getName, add verbosity flag for findBackend
+.IP "\(bu" 2
+Improve iconv error messages
+.IP "\(bu" 2
+That mount needs permissions to /etc should now really be obvious with new error message
+.IP "\(bu" 2
+many fixes in the template for new plugins
+.PP
+.SH "Get It!"
+.PP
+You can download the release from \fChere\fP and now also \fChere on github\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.14\&.tar\&.gz
+.IP "\(bu" 2
+size: 2252008
+.IP "\(bu" 2
+md5sum: a87cd3845e590bf413959dfd555e3704
+.IP "\(bu" 2
+sha1: 2360603c347ae3f3a28e827eb9260ff0b9881e46
+.IP "\(bu" 2
+sha256: af681a38c9c2921b8d249f98ab851c3d51371735471d8a1f833a224c4446fe2e
+.PP
+.PP
+This release tarball now is also available \fCsigned by me using gpg\fP
+.PP
+already built API-Docu can be found \fChere\fP
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the \fCMailing List\fP the issue tracker \fCon github\fP or by mail elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Btw\&. the whole release happened with \fCelektrify-getenv\fP enabled\&.
+.PP
+Best regards, Markus 

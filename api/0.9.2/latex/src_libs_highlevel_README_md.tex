@@ -1,0 +1,296 @@
+\hypertarget{src_libs_highlevel_README_md_autotoc_md5}{}\doxysection{Introduction}\label{src_libs_highlevel_README_md_autotoc_md5}
+The goal of the high-\/level A\+PI is to increase the usability of libelektra for developers who want to integrate Elektra into their applications. Applications usually do not want to use low-\/level A\+P\+Is. {\ttfamily K\+DB} and {\ttfamily Key\+Set} are useful for plugins and to implement A\+P\+Is, but not to be directly used in applications. The high-\/level A\+PI should be extremely easy to get started with and at the same time it should be hard to use it in a wrong way. This tutorial gives an introduction for developers who want to elektrify their application using the high-\/level A\+PI.
+
+The A\+PI supports all C\+O\+R\+BA Basic Data Types, except for {\ttfamily wchar}, as well as the {\ttfamily string} type (see also \href{\#data-types}{\texttt{ Data Types}} below).\hypertarget{src_libs_highlevel_README_md_autotoc_md6}{}\doxysection{Setup}\label{src_libs_highlevel_README_md_autotoc_md6}
+First you have to add {\ttfamily elektra-\/highlevel}, {\ttfamily elektra-\/kdb} and {\ttfamily elektra-\/ease} to the linked libraries of your application. To be able to use it in your source file, just include the main header with {\ttfamily \#include $<$\mbox{\hyperlink{elektra_8h}{elektra.\+h}}$>$} at the top of your file.\hypertarget{src_libs_highlevel_README_md_autotoc_md7}{}\doxysection{Quickstart}\label{src_libs_highlevel_README_md_autotoc_md7}
+The quickest way to get started is to adapt the following piece of code to your needs\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ElektraError * error = NULL;}
+\DoxyCodeLine{Elektra * elektra = \mbox{\hyperlink{group__highlevel_ga45de58b05c7a8ab02f6c54ddd31a56e1}{elektraOpen}} (\textcolor{stringliteral}{"/sw/org/myapp/\#0/current"}, NULL, NULL, \&error);}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (elektra == NULL)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"An error occurred: \%s"}, \mbox{\hyperlink{group__highlevel_ga781cda83af3981a55321e7c613afbef0}{elektraErrorDescription}} (error));}
+\DoxyCodeLine{        \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}} (\&error);}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} -\/1;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb\_long\_t mylong = \mbox{\hyperlink{group__highlevel_gad4198ec223f01c3a6cfb1b78de34bc9e}{elektraGetLong}} (elektra, \textcolor{stringliteral}{"mylong"});}
+\DoxyCodeLine{printf (\textcolor{stringliteral}{"got long "} ELEKTRA\_LONG\_F \textcolor{stringliteral}{"\(\backslash\)n"}, mylong);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__highlevel_ga3d703756b43b1ca85296f894e80e22e2}{elektraSetBoolean}} (elektra, \textcolor{stringliteral}{"mybool"}, \textcolor{keyword}{true}, \&error);}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (error != NULL)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"An error occurred: \%s"}, \mbox{\hyperlink{group__highlevel_ga781cda83af3981a55321e7c613afbef0}{elektraErrorDescription}} (error));}
+\DoxyCodeLine{        \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}} (\&error);}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__highlevel_ga9b688b7250e5f9d8ea6701cc2cc269af}{elektraClose}} (elektra);}
+\end{DoxyCode}
+
+
+To run the application, the configuration should be specified\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb meta-\/set /sw/org/myapp/\#0/current/mylong type long}
+\DoxyCodeLine{sudo kdb meta-\/set /sw/org/myapp/\#0/current/mylong default 5}
+\end{DoxyCode}
+
+
+The getter and setter functions follow the simple naming scheme {\ttfamily elektra}({\ttfamily Get}/{\ttfamily Set})\mbox{[}Type\mbox{]}. Additionally for each one there is a variant to access array elements with the suffix {\ttfamily Array\+Element}. For more information see \href{\#reading-and-writing-values}{\texttt{ below}}.
+
+You can find a complete example at the end of this document and here.\hypertarget{src_libs_highlevel_README_md_autotoc_md8}{}\doxysection{Core Concepts}\label{src_libs_highlevel_README_md_autotoc_md8}
+\hypertarget{src_libs_highlevel_README_md_autotoc_md9}{}\doxysubsection{Metadata and Specification}\label{src_libs_highlevel_README_md_autotoc_md9}
+In Elektra keys may have \mbox{\hyperlink{doc_help_elektra-metadata_md}{attached metadata}} describing additional properties of the key. By using \mbox{\hyperlink{doc_tutorials_namespaces_md}{Elektra\textquotesingle{}s}}namespaces\char`\"{} and @ref doc\+\_\+tutorials\+\_\+cascading\+\_\+md \char`\"{}cascading keys" it is also possible to have a full specification of your applications configuration.
+
+This specification should be placed into the {\ttfamily spec} namespace. From there the high-\/level A\+PI and Elektra\textquotesingle{}s plugins will access it. A specification for use with the high-\/level A\+PI has to define at least the {\ttfamily default} and the {\ttfamily type} metadata for each key the application is going to use. The {\ttfamily default} metakey simple defines which value will be returned, if the user didn\textquotesingle{}t set a value. {\ttfamily type} defines the data type of key. For more information on data types \href{\#data-types}{\texttt{ see below}}.
+
+The A\+PI also supports passing a {\ttfamily Key\+Set} to {\ttfamily elektra\+Open} that contains the specification. This is, however, not recommended for general use and is mainly useful for debugging and testing purposes.\hypertarget{src_libs_highlevel_README_md_autotoc_md10}{}\doxysubsection{Struct $<$tt$>$\+Elektra$<$/tt$>$}\label{src_libs_highlevel_README_md_autotoc_md10}
+{\ttfamily Elektra} is the handle you use to access the underlying K\+DB (hierarchical key database) that stores the configuration key-\/value pairs. All key-\/value read and write operations expect this handle to be passed as in as a parameter. To create the handle, you simply write\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ElektraError * error = NULL;}
+\DoxyCodeLine{Elektra * elektra = \mbox{\hyperlink{group__highlevel_ga45de58b05c7a8ab02f6c54ddd31a56e1}{elektraOpen}} (\textcolor{stringliteral}{"/sw/org/myapp/\#0/current"}, NULL, NULL, \&error);}
+\end{DoxyCode}
+
+
+Please replace {\ttfamily \char`\"{}/sw/org/myapp/\#0/current\char`\"{}} with an appropriate value for your application (see \mbox{\hyperlink{doc_tutorials_application-integration_md}{here}} for more information). You can use the parameter {\ttfamily defaults} to pass a {\ttfamily Key\+Set} containing {\ttfamily Key}s with default values to the {\ttfamily Elektra} instance.
+
+The {\ttfamily Elektra\+Error} can be used to check for initialization errors. You can detect initialization errors by comparing the result of {\ttfamily elektra\+Open} to N\+U\+LL\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (elektra == NULL)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  \textcolor{comment}{// handle the error, e.g. print description}}
+\DoxyCodeLine{  \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}}(\&error);}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+If an error occurred, you must call {\ttfamily elektra\+Error\+Reset} before using the same error pointer in any other function calls (e.\+g. {\ttfamily elektra\+Set$\ast$} calls). It is also safe to call {\ttfamily elektra\+Error\+Reset}, if no error occurred.
+
+In order to give Elektra the chance to clean up all its allocated resources, you have to close your instance, when you are done using it, by calling\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__highlevel_ga9b688b7250e5f9d8ea6701cc2cc269af}{elektraClose}} (elektra);}
+\end{DoxyCode}
+
+
+{\itshape N\+O\+TE\+:} Elektra is only thread-\/safe when you use one handle per thread or protect your handle. If you have multiple threads accessing key-\/values, create a separate handle for each thread to avoid concurrency issues.\hypertarget{src_libs_highlevel_README_md_autotoc_md11}{}\doxysubsection{Struct $<$tt$>$\+Elektra\+Error$<$/tt$>$}\label{src_libs_highlevel_README_md_autotoc_md11}
+The library is designed to shield developers from the many errors one can encounter when using K\+DB directly. However it is not possible to hide all those issues. As with every library, things can go wrong and there needs to be a way to react to errors once they have occurred at runtime. Therefore the high-\/level A\+PI introduces a struct called {\ttfamily Elektra\+Error}, which encapsulates all information necessary for the developer to handle runtime-\/errors appropriately in the application.
+
+Functions that can produce errors, despite correct use of the A\+PI, accept an {\ttfamily Elektra\+Error} pointer as parameter, for example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Elektra * \mbox{\hyperlink{group__highlevel_ga45de58b05c7a8ab02f6c54ddd31a56e1}{elektraOpen}} (\textcolor{keyword}{const} \textcolor{keywordtype}{char} * application, KeySet * defaults, KeySet * contract, ElektraError ** error);}
+\end{DoxyCode}
+
+
+In most cases you\textquotesingle{}ll want to set the error variable to {\ttfamily N\+U\+LL} before passing it to the function. You can do this either by declaring and initializing a new variable with {\ttfamily Elektra\+Error $\ast$ error = N\+U\+LL} or by reusing an already existing error variable by resetting it with {\ttfamily elektra\+Error\+Reset (\&error)}.
+
+Notice, that you should always check if an error occurred by comparing it to {\ttfamily N\+U\+LL} after the function call.
+
+If an error happened, it is often useful to show an error message to the user. A description of what went wrong is provided in the {\ttfamily Elektra\+Error} struct and can be accessed using {\ttfamily elektra\+Error\+Description (error)}. Additionally the error code can be accessed through {\ttfamily elektra\+Error\+Code (error)}. N\+O\+TE\+: The error A\+PI is still a work in progress, so more functions will likely be added in the future.
+
+To avoid leakage of memory, you have to call {\ttfamily elektra\+Error\+Reset (\&error)} (ideally as soon as you are finished resolving the error)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ElektraError * error = NULL;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// Call a function and pass the error variable as an argument.}}
+\DoxyCodeLine{\textcolor{comment}{// ...}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (error != NULL)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \textcolor{comment}{// An error occurred, do something about it.}}
+\DoxyCodeLine{  \textcolor{comment}{// ...}}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}} (\&error);}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+\hypertarget{src_libs_highlevel_README_md_autotoc_md12}{}\doxysubsection{Configuration}\label{src_libs_highlevel_README_md_autotoc_md12}
+Currently there is only one way to configure an {\ttfamily Elektra} instance\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{void} \mbox{\hyperlink{group__highlevel_ga496441e9e1dd80ed14a239dfc4c08c40}{elektraFatalErrorHandler}} (Elektra * elektra, ElektraErrorHandler fatalErrorHandler);}
+\end{DoxyCode}
+
+
+This allows you to set the callback called by Elektra, when a fatal error occurs. Technically a fatal error could occur at any time, but the most common use case for this callback is inside of functions that do not take a separate {\ttfamily Elektra\+Error} argument. For example, this function will be called, when any of the getter-\/functions is called on a non-\/existent key which is not part of any specification, and therefore has no specified default value.
+
+If you provide your own callback, it must interrupt the thread of execution in some way (e.\+g. by calling {\ttfamily exit()} or throwing an exception in C++). It {\itshape must not} return to the calling function.
+
+The handler will also be called whenever you pass {\ttfamily N\+U\+LL} where a function expects an {\ttfamily Elektra\+Error $\ast$$\ast$}. In this case the error code will be {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+E\+R\+R\+O\+R\+\_\+\+C\+O\+D\+E\+\_\+\+N\+U\+L\+L\+\_\+\+E\+R\+R\+OR}.
+
+The default callback simply logs the error with {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+L\+O\+G\+\_\+\+D\+E\+B\+UG} and then calls {\ttfamily exit()} with exit code {\ttfamily E\+X\+I\+T\+\_\+\+F\+A\+I\+L\+U\+RE} It is expected that you implement your own callback, so that you get proper error message logged in your applications preferred format. Using the default callback is only viable for very simple applications, because you won\textquotesingle{}t get any indication as to which key caused the error (unless you compiled Elektra with debug logging enabled).\hypertarget{src_libs_highlevel_README_md_autotoc_md13}{}\doxysection{Data Types}\label{src_libs_highlevel_README_md_autotoc_md13}
+The A\+PI determines the data type of a given key, by reading its {\ttfamily type} metadata. The A\+PI supports the following types, which are taken from the C\+O\+R\+BA specification\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{String}}\+: a string of characters, represented by {\ttfamily string} in metadata
+\item {\bfseries{Boolean}}\+: a boolean value {\ttfamily true} or {\ttfamily false}, represented by {\ttfamily boolean} in metadata, in the K\+DB the raw value {\ttfamily \char`\"{}1\char`\"{}} is regarded as true, {\ttfamily \char`\"{}0\char`\"{}} regarded as false and any other value is an error
+\item {\bfseries{Char}}\+: a single character, represented by {\ttfamily char} in metadata
+\item {\bfseries{Octet}}\+: a single byte, represented by {\ttfamily octet} in metadata
+\item $\ast$$\ast$(Unsigned) Short$\ast$$\ast$\+: a 16-\/bit (unsigned) integer, represented by {\ttfamily short} ({\ttfamily unsigned\+\_\+short}) in metadata
+\item $\ast$$\ast$(Unsigned) Long$\ast$$\ast$\+: a 32-\/bit (unsigned) integer, represented by {\ttfamily long} ({\ttfamily unsigned\+\_\+long}) in metadata
+\item $\ast$$\ast$(Unsigned) Long Long$\ast$$\ast$\+: a 64-\/bit (unsigned) integer, represented by {\ttfamily long\+\_\+long} ({\ttfamily unsigned\+\_\+long\+\_\+long}) in metadata
+\item {\bfseries{Float}}\+: whatever your compiler treats as {\ttfamily float}, probably I\+E\+E\+E-\/754 single-\/precision, represented by {\ttfamily float} in metadata
+\item {\bfseries{Double}}\+: whatever your compiler treats as {\ttfamily double}, probably I\+E\+E\+E-\/754 double-\/precision, represented by {\ttfamily double} in metadata
+\item {\bfseries{Long Double}}\+: whatever your compiler treats as {\ttfamily long double}, not always available, represented by {\ttfamily long\+\_\+double} in metadata
+\end{DoxyItemize}
+
+The A\+PI contains one header that is not automatically included from {\ttfamily \mbox{\hyperlink{elektra_8h}{elektra.\+h}}}. You can use it with {\ttfamily \#include $<$\mbox{\hyperlink{conversion_8h}{elektra/conversion.\+h}}$>$}. The header provides the functions Elektra uses to convert your configuration values to and from strings. In most cases, you won\textquotesingle{}t need to use these functions directly, but they might still be useful sometimes (e.\+g. in combination with {\ttfamily elektra\+Get\+Type} and {\ttfamily elektra\+Get\+Raw\+String}). We also provide a {\ttfamily K\+D\+B\+\_\+\+T\+P\+Y\+E\+\_\+$\ast$} constant for each of the types listed above. Again, most users won\textquotesingle{}t use these but, if you ever do need to use the raw type metadata using constants enables code completion and protects against typos.
+
+There is also the type {\ttfamily enum} with constant {\ttfamily K\+D\+B\+\_\+\+T\+Y\+P\+E\+\_\+\+E\+N\+UM}. It is only supported via the \mbox{\hyperlink{doc_help_elektra-highlevel-gen_md}{code-\/generation A\+PI}}.\hypertarget{src_libs_highlevel_README_md_autotoc_md14}{}\doxyparagraph{Note about Floating Point Types}\label{src_libs_highlevel_README_md_autotoc_md14}
+We enforce a few minimum properties for floating point types. They are taken from the I\+E\+E-\/754 specification and are\+:
+
+
+\begin{DoxyItemize}
+\item For {\ttfamily float}\+: 32 bits, binary, 24 mantissa digits and exponent range of at least -\/125 to 128
+\item For {\ttfamily double}\+: 64 bits, binary, 53 mantissa digits and exponent range of at least -\/1021 to 1024
+\item For {\ttfamily long double}\+: at least 80 bits, binary, at least 64 mantissa digits and exponent range of at least -\/2$^\wedge$14 + 3 to 2$^\wedge$14
+\end{DoxyItemize}
+
+Additionally for C++ compilers we use a {\ttfamily static\+\_\+assert} that will fail if {\ttfamily std\+::numeric\+\_\+limits$<$T$>$\+::is\+\_\+iec559} is {\ttfamily false} when {\ttfamily T} is any of {\ttfamily float}, {\ttfamily double} or {\ttfamily long double}.
+
+While these checks won\textquotesingle{}t ensure actual I\+E\+E\+E-\/754 arithmetic, they will at least ensure all values can be represented correctly.
+
+\label{_reading-and-writing-values}%
+\hypertarget{src_libs_highlevel_README_md_autotoc_md15}{}\doxysection{Reading and Writing Values}\label{src_libs_highlevel_README_md_autotoc_md15}
+\hypertarget{src_libs_highlevel_README_md_autotoc_md16}{}\doxysubsection{Key Names}\label{src_libs_highlevel_README_md_autotoc_md16}
+When calling {\ttfamily elektra\+Open} you pass the parent key for your application. Afterwards getters and setters get passed in only the part below that key in the K\+DB. For example, if you call {\ttfamily elektra\+Open} with {\ttfamily \char`\"{}/sw/org/myapp/\#0/current\char`\"{}}, you can access your applications configuration value for the key {\ttfamily \char`\"{}/sw/org/myapp/\#0/current/message\char`\"{}} with the provided getters and setters by passing them only {\ttfamily \char`\"{}message\char`\"{}} as the name for the configuration value.
+
+\label{_read-values-from-the-kdb}%
+\hypertarget{src_libs_highlevel_README_md_autotoc_md17}{}\doxysubsection{Read Values from the K\+DB}\label{src_libs_highlevel_README_md_autotoc_md17}
+A typical application wants to read some configuration values at start. This should be made as easy as possible for the developer. Reading configuration data in most cases is not part of the business logic of the application and therefore should not \char`\"{}pollute\char`\"{} the applications source code with cumbersome setup and file-\/parsing code. This is exactly where Elektra comes in handy, because you can leave all the configuration file handling and parsing to the underlying layers of Elektra and just use the high-\/level A\+PI to access the desired data. Reading values from K\+DB can be done with elektra-\/getter functions that follow a simple naming scheme\+:
+
+{\ttfamily elektra\+Get} + the type of the value you want to read.
+
+For example, you can get the value for the key named \char`\"{}message\char`\"{} like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} * message = \mbox{\hyperlink{group__highlevel_ga08df058ca39c5ac17c26924d301bb742}{elektraGetString}} (elektra, \textcolor{stringliteral}{"message"});}
+\end{DoxyCode}
+
+
+Sometimes you\textquotesingle{}ll want to access arrays as well. You can access single elements of an array using the provided array-\/getters following again a simple naming scheme\+:
+
+{\ttfamily elektra\+Get} + the type of the value you want to read + {\ttfamily Array\+Element}.
+
+For example, you can get the value at index 3 for the array \char`\"{}message\char`\"{} like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} * message = \mbox{\hyperlink{group__highlevel_gaf445216facccfc7ad6740b594e7a8f6e}{elektraGetStringArrayElement}} (elektra, \textcolor{stringliteral}{"message"}, 3);}
+\end{DoxyCode}
+
+
+To get the size of the array you would like to access you can use the function {\ttfamily elektra\+Array\+Size}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb\_long\_long\_t arraySize = \mbox{\hyperlink{group__highlevel_gaf0413286c6faebdc951b739924111909}{elektraArraySize}} (elektra, \textcolor{stringliteral}{"message"});}
+\end{DoxyCode}
+
+
+For some background information on arrays in Elektra see the \mbox{\hyperlink{doc_tutorials_arrays_md}{Array}} tutorial, as well as our \mbox{\hyperlink{doc_decisions_array_md}{decision document}} on this topic. Please note that the high level A\+PI does not support arrays with missing elements. If an element is missing (and the specification provides no default value), getters will fail.
+
+Notice that both the getters for primitive types and the getters for array types do not accept error parameters. The library expects you to run a correct Elektra setup. If the configuration is well specified, no runtime errors can occur when reading a value. Therefore the getters do not accept an error variable as argument. If there is however a severe internal error, or you try to access a key which you have not specified correctly, then the library will call the error callback set with {\ttfamily elektra\+Fatal\+Error\+Handler} to prevent data inconsistencies or exceptions further down in your application.
+
+You can find the complete list of the available functions for all supported value types in \href{/home/mpranj/workspace/libelektra/src/include/elektra.h}{\texttt{ elektra.\+h}}\hypertarget{src_libs_highlevel_README_md_autotoc_md18}{}\doxysubsection{Writing Values to the K\+DB}\label{src_libs_highlevel_README_md_autotoc_md18}
+Sometimes, after having read a value from the K\+DB, you will want to write back a modified value. As described in \href{\#read-values-from-the-kdb}{\texttt{ Read values from the K\+DB}} we follow a naming scheme for getters. The high-\/level A\+PI provides setters follow an analogous naming scheme as well. For example, to write back a modified \char`\"{}message\char`\"{}, you can call {\ttfamily elektra\+Set\+String}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__highlevel_ga563a695658e8e6f74183cca674edd1a7}{elektraSetString}} (elektra, \textcolor{stringliteral}{"message"}, \textcolor{stringliteral}{"This is the new message"}, NULL);}
+\end{DoxyCode}
+
+
+The counterpart for array-\/getters again follows the same naming scheme\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__highlevel_gaa5bba7a5c811437562d947420034fd03}{elektraSetStringArrayElement}} (elektra, \textcolor{stringliteral}{"message"}, \textcolor{stringliteral}{"This is the third new message"}, NULL);}
+\end{DoxyCode}
+
+
+Because even the best specification and perfect usage as intended can not prevent any error from occurring, when saving the configuration, all setter-\/functions take an additional {\ttfamily Elektra\+Error} argument, which will be set if an error occurs.\hypertarget{src_libs_highlevel_README_md_autotoc_md19}{}\doxysubsection{Raw Values}\label{src_libs_highlevel_README_md_autotoc_md19}
+You can use {\ttfamily const char $\ast$ elektra\+Get\+Raw\+String (Elektra $\ast$ elektra, const char $\ast$ name)} to read the raw (string) value of a key. No type checking or type conversion will be attempted. Additionally this function does not call the fatal error handler. It will simply return {\ttfamily N\+U\+LL}, if the key was not found.
+
+If you want to set a raw value, use {\ttfamily void elektra\+Set\+Raw\+String (Elektra $\ast$ elektra, const char $\ast$ name, const char $\ast$ value, K\+D\+B\+Type type, Elektra\+Error $\ast$$\ast$ error)}. Obviously you have to provide a type for the value you set, so that the A\+PI can perform type checking, when reading the value next time.
+
+Similar functions are provided for array elements\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} * \mbox{\hyperlink{group__highlevel_ga1b704f49a8e87262b670cd191ba61bb3}{elektraGetRawStringArrayElement}} (Elektra * elektra, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name, kdb\_long\_long\_t index);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void} \mbox{\hyperlink{group__highlevel_ga965e0b2ce7d5e8938965259c3f584600}{elektraSetRawStringArrayElement}} (Elektra * elektra, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name, kdb\_long\_long\_t index, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * value, KDBType type, ElektraError ** error);}
+\end{DoxyCode}
+\hypertarget{src_libs_highlevel_README_md_autotoc_md20}{}\doxysubsubsection{Type Information}\label{src_libs_highlevel_README_md_autotoc_md20}
+The type information is stored in the {\ttfamily \char`\"{}type\char`\"{}} metakey. {\ttfamily K\+D\+B\+Type elektra\+Get\+Type (Elektra $\ast$ elektra, const char $\ast$ keyname)} (or {\ttfamily K\+D\+B\+Type elektra\+Get\+Array\+Element\+Type (Elektra $\ast$ elektra, const char $\ast$ name, kdb\+\_\+long\+\_\+long\+\_\+t index)} for array elements) lets you access this information. A setter is not provided, because Elektra assumes keys to always have the same type (as specified).\hypertarget{src_libs_highlevel_README_md_autotoc_md21}{}\doxysubsubsection{Use cases for raw values}\label{src_libs_highlevel_README_md_autotoc_md21}
+{\ttfamily elektra\+Get\+Type}, {\ttfamily elektra\+Get\+Raw\+String} and {\ttfamily elektra\+Set\+Raw\+String} can be used together to create custom data types. If your application for example uses arbitrary-\/precision integers, you could something similar to these functions\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{bignum * elektraGetBigNum (Elektra * elektra, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * keyname)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  KDBType type = \mbox{\hyperlink{group__highlevel_ga34afc074c83cf9ccd0a183573f8498a1}{elektraGetType}} (elektra, keyname);}
+\DoxyCodeLine{  \textcolor{keywordflow}{if} (strcmp (type, \textcolor{stringliteral}{"bignum"}) != 0)}
+\DoxyCodeLine{  \{}
+\DoxyCodeLine{    \textcolor{keywordflow}{return} NULL;}
+\DoxyCodeLine{  \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \textcolor{keyword}{const} \textcolor{keywordtype}{char} * rawValue = \mbox{\hyperlink{group__highlevel_gae6c8eff14fb431cce5afb405fa2511e3}{elektraGetRawString}} (elektra, keyname);}
+\DoxyCodeLine{  \textcolor{keywordflow}{return} rawValue == NULL ? NULL : stringToBigNum (rawValue);}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void} elektraSetBigNum (Elektra * elektra, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * keyname, bignum * value, ElektraError ** error)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  \textcolor{keyword}{const} \textcolor{keywordtype}{char} * rawValue = bigNumToString (value);}
+\DoxyCodeLine{  \mbox{\hyperlink{group__highlevel_ga67d2f8d48b040d79c3d4a665c4f6410f}{elektraSetRawString}} (elektra, keyname, rawValue, \textcolor{stringliteral}{"bignum"}, error);}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+To get the {\ttfamily type} plugin to validate your custom types you should make sure the {\ttfamily check/type} metadata is set to {\ttfamily string} (or {\ttfamily any}) on all keys that use custom types. This works, because the {\ttfamily type} plugin prefers the value of {\ttfamily check/type} over that of {\ttfamily type}.\hypertarget{src_libs_highlevel_README_md_autotoc_md22}{}\doxysubsection{Binary Values}\label{src_libs_highlevel_README_md_autotoc_md22}
+The high-\/level A\+PI does not support binary key values at this time.\hypertarget{src_libs_highlevel_README_md_autotoc_md23}{}\doxysection{Example}\label{src_libs_highlevel_README_md_autotoc_md23}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <stdio.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <\mbox{\hyperlink{elektra_8h}{elektra.h}}>}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main}} ()}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  ElektraError * error = NULL;}
+\DoxyCodeLine{  Elektra * elektra = \mbox{\hyperlink{group__highlevel_ga45de58b05c7a8ab02f6c54ddd31a56e1}{elektraOpen}} (\textcolor{stringliteral}{"/sw/org/myapp/\#0/current"}, NULL, NULL, \&error);}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \textcolor{keywordflow}{if} (elektra == NULL)}
+\DoxyCodeLine{  \{}
+\DoxyCodeLine{    printf (\textcolor{stringliteral}{"Sorry, there seems to be an error with your Elektra setup: \%s\(\backslash\)n"}, \mbox{\hyperlink{group__highlevel_ga781cda83af3981a55321e7c613afbef0}{elektraErrorDescription}} (error));}
+\DoxyCodeLine{    \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}} (\&error);}
+\DoxyCodeLine{}
+\DoxyCodeLine{    printf (\textcolor{stringliteral}{"Will exit now...\(\backslash\)n"});}
+\DoxyCodeLine{    exit (EXIT\_FAILURE);}
+\DoxyCodeLine{  \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \textcolor{keyword}{const} \textcolor{keywordtype}{char} * message = \mbox{\hyperlink{group__highlevel_ga08df058ca39c5ac17c26924d301bb742}{elektraGetString}} (elektra, \textcolor{stringliteral}{"message"});}
+\DoxyCodeLine{}
+\DoxyCodeLine{  printf (\textcolor{stringliteral}{"\%s"}, message);}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \mbox{\hyperlink{group__highlevel_ga9b688b7250e5f9d8ea6701cc2cc269af}{elektraClose}} (elektra);}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \textcolor{keywordflow}{return} 0;}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+ 

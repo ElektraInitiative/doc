@@ -1,0 +1,96 @@
+.TH "md_src_plugins_mathcheck_README" 3elektra "Tue May 26 2020" "Version 0.9.2" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_mathcheck_README \- Plugin: mathcheck 
+
+.IP "\(bu" 2
+infos = Information about the mathcheck plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest shelltest nodep discouraged
+.IP "\(bu" 2
+infos/metadata = check/math
+.IP "\(bu" 2
+infos/description = validates a set of keys through a mathematical expression
+.PP
+.SH "Introduction"
+.PP
+Compares a key value to a mathematical expression using polish prefix notation defined in the \fCcheck/math\fP metakey\&. Operations are \fC+ - / *\fP \&. Operants are keys with names relative to the parent key\&. How the values are compared is specified at the beginning of the metakey using the conditions \fC<, <=, ==, !=, =>, >, :=\fP \fC:=\fP is used to set key values\&. All values are interpreted as \fCdouble\fP floating point values\&.
+.SS "Keynames"
+Keynames are all either relative to to-be-tested key (starting with \fC\&./\fP or \fC\&.\&./\fP), relative to the parentkey (starting with \fC@/\fP) or absolute (e\&.g\&. \fCsystem/key\fP)\&.
+.SH "Examples"
+.PP
+\fCcheck/math = '== + \&.\&./testval1 + \&.\&./testval2 \&.\&./testval3'\fP compares the keyvalue to the sum of testval1-3 and yields an error if the values are not equal\&. \fCcheck/math = '<= - @/testval1 * @/testval2 @/testval3'\fP tests if the keyvalue is less than or equal to \fCtestval1 - (testval2 * testval3)\fP and yields an error if not\&.
+.PP
+Full example:
+.PP
+.PP
+.nf
+# Backup-and-Restore:user/tests/mathcheck
+
+sudo kdb mount mathcheck\&.dump user/tests/mathcheck mathcheck
+
+kdb set user/tests/mathcheck/a 3\&.1
+kdb set user/tests/mathcheck/b 4\&.5
+kdb set user/tests/mathcheck/k 7\&.6
+kdb meta-set user/tests/mathcheck/k check/math "== + \&.\&./a \&.\&./b"
+
+# should fail
+kdb set user/tests/mathcheck/k 7\&.7
+# RET:5
+# ERROR:C03200
+# Set string to "7\&.7"
+# Sorry, module mathcheck issued the error C03200:
+# invalid value: 7\&.7 != 7\&.6
+.fi
+.PP
+.PP
+To calculate values on-demand you can use:
+.PP
+.PP
+.nf
+kdb meta-set user/tests/mathcheck/k check/math ":= + @/a @/b"
+kdb set user/tests/mathcheck/a 8\&.0
+kdb set user/tests/mathcheck/b 4\&.5
+
+kdb get user/tests/mathcheck/k
+#> 12\&.5
+
+kdb set user/tests/mathcheck/a 5\&.5
+
+kdb get user/tests/mathcheck/k
+#> 10
+.fi
+.PP
+.PP
+It also works with constants:
+.PP
+.PP
+.nf
+kdb meta-set user/tests/mathcheck/k check/math ":= + \&.\&./a '5'"
+kdb set user/tests/mathcheck/a 5\&.5
+
+kdb get user/tests/mathcheck/k
+#> 10\&.5
+
+kdb set user/tests/mathcheck/a 8\&.0
+
+kdb get user/tests/mathcheck/k
+#> 13
+
+#cleanup
+kdb rm -r user/tests/mathcheck
+sudo kdb umount user/tests/mathcheck
+.fi
+.PP
+ 

@@ -1,0 +1,234 @@
+Multiple plugins can be mounted into the \mbox{\hyperlink{doc_help_elektra-glossary_md}{key database}} (K\+DB). On every access to the key data base they are executed and thus can change the functionality and behavior.
+
+Unlike Elektra\textquotesingle{}s core the plugins have all kinds of dependencies. It is the responsibility of the plugin to find and check its dependencies using C\+Make. If a dependency cannot be found, the plugin will automatically disable itself.\hypertarget{src_plugins_README_md_autotoc_md577}{}\doxysection{Description}\label{src_plugins_README_md_autotoc_md577}
+Elektra has a wide range of different plugins. The plugin folders should contain a R\+E\+A\+D\+M\+E.\+md with further information. (Or follow links below.) The plugins are\+:
+
+ 
+\begin{DoxyImage}
+\includegraphics[width=\textwidth,height=\textheight/2,keepaspectratio=true]{plugins.png}
+\doxyfigcaption{Overview Plugins}
+\end{DoxyImage}
+  \hypertarget{src_plugins_README_md_autotoc_md578}{}\doxysubsection{C-\/\+Interface}\label{src_plugins_README_md_autotoc_md578}
+All plugins implement the same interface\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdb\+Open()}}} calls {\ttfamily \mbox{\hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}}} of every plugin to let them do their initialisation.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} requests {\ttfamily elektra\+Plugin\+Get()} of every plugin in the queried backends to return a key set.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} usually calls {\ttfamily elektra\+Plugin\+Set()} of every plugin in the queried backends to store the configuration.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} also calls {\ttfamily elektra\+Plugin\+Error()} for every plugin when an error happens. Because of {\ttfamily elektra\+Plugin\+Error()}, plugins are guaranteed to have their chance for necessary cleanups.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}} makes sure that plugins can finally free their own resources in {\ttfamily elektra\+Plugin\+Close()}.
+\end{DoxyItemize}
+
+Furthermore, plugins might export symbols\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily checkconf} can be called during mounting to ensure a plugin has valid configuration.
+\item {\ttfamily genconf} can be called to produce all valid configurations of a plugin.
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md579}{}\doxysubsection{K\+D\+B-\/\+Interface}\label{src_plugins_README_md_autotoc_md579}
+
+\begin{DoxyItemize}
+\item To list all plugins use \mbox{\hyperlink{doc_help_kdb-plugin-list_md}{kdb-\/plugin-\/list(1)}}.
+\item To check a plugin use \mbox{\hyperlink{doc_help_kdb-plugin-check_md}{kdb-\/plugin-\/check(1)}}.
+\item For information on a plugin use \mbox{\hyperlink{doc_help_kdb-plugin-info_md}{kdb-\/plugin-\/info(1)}}.
+\item For mount plugin(s) use \mbox{\hyperlink{doc_help_kdb-mount_md}{kdb-\/mount(1)}}.
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md580}{}\doxysection{See Also}\label{src_plugins_README_md_autotoc_md580}
+For an easy introduction, see \mbox{\hyperlink{doc_tutorials_plugins_md}{this tutorial how to write a storage plugin}}. For more background information of the \mbox{\hyperlink{doc_dev_plugins-framework_md}{plugins framework, continue here}}. Otherwise, you can visit the \href{https://doc.libelektra.org/api/current/html/group__plugin.html}{\texttt{ the A\+PI documentation}}.\hypertarget{src_plugins_README_md_autotoc_md581}{}\doxysection{Plugins}\label{src_plugins_README_md_autotoc_md581}
+\hypertarget{src_plugins_README_md_autotoc_md582}{}\doxysubsection{Resolver}\label{src_plugins_README_md_autotoc_md582}
+Before configuration is actually written, the file name needs to be determined (resolvers will be automatically added by kdb mount)\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_blockresolver_README_src_plugins_blockresolver_README_md}{blockresolver}} resolves tagged blocks inside config files
+\item \mbox{\hyperlink{md_src_plugins_curlget_README_src_plugins_curlget_README_md}{curlget}} fetches configuration file from a remote host
+\item \mbox{\hyperlink{md_src_plugins_gitresolver_README_src_plugins_gitresolver_README_md}{gitresolver}} checks out and commits files to a local git repository and afterwards the configuration file must be synced with harddisc (recommended to add at every kdb mount)\+:
+\item \mbox{\hyperlink{md_src_plugins_multifile_README_src_plugins_multifile_README_md}{multifile}}
+\item \mbox{\hyperlink{md_src_plugins_noresolver_README_src_plugins_noresolver_README_md}{noresolver}} does not resolve, but can act as one
+\item \mbox{\hyperlink{md_src_plugins_resolver_README_src_plugins_resolver_README_md}{resolver}} uses advanced P\+O\+S\+IX A\+P\+Is to handle conflicts gracefully
+\item \mbox{\hyperlink{md_src_plugins_sync_README_src_plugins_sync_README_md}{sync}} uses P\+O\+S\+IX A\+P\+Is to sync configuration files with the hard disk
+\item \mbox{\hyperlink{md_src_plugins_wresolver_README_src_plugins_wresolver_README_md}{wresolver}} minimalistic resolver for non-\/\+P\+O\+S\+IX systems
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md583}{}\doxysubsection{Storage}\label{src_plugins_README_md_autotoc_md583}
+Are responsible for reading writing the configuration to configuration files.
+
+Read and write everything a Key\+Set might contain\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_dump_README_src_plugins_dump_README_md}{dump}} makes a dump of a Key\+Set in an Elektra-\/specific format
+\item \mbox{\hyperlink{md_src_plugins_ini_README_src_plugins_ini_README_md}{ini}} supports a range of I\+NI file formats.
+\item \mbox{\hyperlink{md_src_plugins_quickdump_README_src_plugins_quickdump_README_md}{quickdump}} uses binary portable format based on \mbox{\hyperlink{md_src_plugins_dump_README_src_plugins_dump_README_md}{dump}}, but more efficient
+\end{DoxyItemize}
+
+Read (and write) standard config files\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_augeas_README_src_plugins_augeas_README_md}{augeas}} reads/writes many different configuration files using the augeas library
+\item \mbox{\hyperlink{md_src_plugins_hosts_README_src_plugins_hosts_README_md}{hosts}} reads/writes hosts files
+\item \mbox{\hyperlink{md_src_plugins_kconfig_README_src_plugins_kconfig_README_md}{kconfig}} reads/writes K\+Config ini files
+\item \mbox{\hyperlink{md_src_plugins_line_README_src_plugins_line_README_md}{line}} reads/writes any file line by line
+\item \mbox{\hyperlink{md_src_plugins_yajl_README_src_plugins_yajl_README_md}{yajl}} reads/writes J\+S\+ON.
+\end{DoxyItemize}
+
+Using semi-\/structured data for config files, mainly suitable for spec-\/namespace (put a focus on having nice syntax for metadata)\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_ni_README_src_plugins_ni_README_md}{ni}} parses I\+NI files based on (including metadata) \href{https://lab.burn.capital/chaz-attic/bohr/tree/master/include/bohr/ni.h}{\texttt{ ni}}.
+\item \mbox{\hyperlink{md_src_plugins_tcl_README_src_plugins_tcl_README_md}{tcl}}-\/like config files (including metadata).
+\end{DoxyItemize}
+
+Only suited for import/export\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_mini_README_src_plugins_mini_README_md}{mini}} dependency free, line based key-\/value storage plugin.
+\item \mbox{\hyperlink{md_src_plugins_simpleini_README_src_plugins_simpleini_README_md}{simpleini}} line-\/based key-\/value pairs with configurable format (without sections)
+\item \mbox{\hyperlink{md_src_plugins_xerces_README_src_plugins_xerces_README_md}{xerces}} uses X\+ML (without a specific schema).
+\item \mbox{\hyperlink{md_src_plugins_xmltool_README_src_plugins_xmltool_README_md}{xmltool}} uses X\+ML in the deprecated Elektra X\+ML schema for importing configuration from Elektra 0.\+7.
+\item \mbox{\hyperlink{md_src_plugins_yamlsmith_README_src_plugins_yamlsmith_README_md}{yamlsmith}} exports key sets in the Y\+A\+ML format
+\end{DoxyItemize}
+
+Plugins that just show some functionality, (currently) not intended for productive use\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_c_README_src_plugins_c_README_md}{c}} writes Elektra C-\/structures ({\ttfamily ks\+New(.. key\+New(...})
+\item \mbox{\hyperlink{md_src_plugins_csvstorage_README_src_plugins_csvstorage_README_md}{csvstorage}} for csv files
+\item \mbox{\hyperlink{md_src_plugins_dpkg_README_src_plugins_dpkg_README_md}{dpkg}} reads /var/lib/dpkg/\{available,status\}
+\item \mbox{\hyperlink{md_src_plugins_file_README_src_plugins_file_README_md}{file}} reads and writes a file from/to a single key
+\item \mbox{\hyperlink{md_src_plugins_fstab_README_src_plugins_fstab_README_md}{fstab}} for fstab files.
+\item \mbox{\hyperlink{md_src_plugins_mmapstorage_README_src_plugins_mmapstorage_README_md}{mmapstorage}} uses binary, not portable memory mapped file for a high performance storage
+\item \mbox{\hyperlink{md_src_plugins_mozprefs_README_src_plugins_mozprefs_README_md}{mozprefs}} for Mozilla preference files
+\item \mbox{\hyperlink{md_src_plugins_passwd_README_src_plugins_passwd_README_md}{passwd}} for passwd files
+\item \mbox{\hyperlink{md_src_plugins_specload_README_src_plugins_specload_README_md}{specload}} calls an external application to request its specification, depends on \mbox{\hyperlink{md_src_plugins_quickdump_README_src_plugins_quickdump_README_md}{quickdump}}
+\item \mbox{\hyperlink{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}{yamlcpp}} reads and writes data in the \href{http://www.yaml.org}{\texttt{ Y\+A\+ML}} format using \href{https://github.com/jbeder/yaml-cpp}{\texttt{ yaml-\/cpp}}
+\item \mbox{\hyperlink{md_src_plugins_yanlr_README_src_plugins_yanlr_README_md}{yanlr}} reads data using a parser generated by \href{http://www.antlr.org}{\texttt{ A\+N\+T\+LR}}
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md584}{}\doxysubsection{System Information}\label{src_plugins_README_md_autotoc_md584}
+Information compiled in Elektra\+:
+
+
+\begin{DoxyItemize}
+\item version is a built-\/in plugin directly within the core so that it cannot give wrong version information
+\item \mbox{\hyperlink{md_src_plugins_constants_README_src_plugins_constants_README_md}{constants}} various constants, including version information
+\item \mbox{\hyperlink{md_src_plugins_desktop_README_src_plugins_desktop_README_md}{desktop}} contains information which desktop is currently running
+\end{DoxyItemize}
+
+Providing information found on the system not available in persistent files\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_uname_README_src_plugins_uname_README_md}{uname}} information from the uname syscall.
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md585}{}\doxysubsection{Filter}\label{src_plugins_README_md_autotoc_md585}
+{\itshape Filter plugins} process keys and their values in both directions. In one direction they undo what they do in the other direction. Most filter plugins available now encode and decode values. Storage plugins that use characters to separate key names, values or metadata will not work without them.\hypertarget{src_plugins_README_md_autotoc_md586}{}\doxysubsubsection{Encoding}\label{src_plugins_README_md_autotoc_md586}
+Rewrite unwanted characters with different techniques\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_base64_README_src_plugins_base64_README_md}{base64}} using the Base64 encoding scheme (R\+F\+C4648)
+\item \mbox{\hyperlink{md_src_plugins_ccode_README_src_plugins_ccode_README_md}{ccode}} using the technique from arrays in the programming language C
+\item \mbox{\hyperlink{md_src_plugins_hexcode_README_src_plugins_hexcode_README_md}{hexcode}} using hex codes
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md587}{}\doxysubsubsection{Transformations}\label{src_plugins_README_md_autotoc_md587}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_directoryvalue_README_src_plugins_directoryvalue_README_md}{directoryvalue}} converts directory values to leaf values
+\item \mbox{\hyperlink{md_src_plugins_hexnumber_README_src_plugins_hexnumber_README_md}{hexnumber}} converts between hexadecimal and decimal
+\item \mbox{\hyperlink{md_src_plugins_keytometa_README_src_plugins_keytometa_README_md}{keytometa}} transforms keys to metadata
+\item \mbox{\hyperlink{md_src_plugins_rename_README_src_plugins_rename_README_md}{rename}} renames keys according to different rules
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md588}{}\doxysubsubsection{Others}\label{src_plugins_README_md_autotoc_md588}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_crypto_README_src_plugins_crypto_README_md}{crypto}} encrypts / decrypts confidential values
+\item \mbox{\hyperlink{md_src_plugins_fcrypt_README_src_plugins_fcrypt_README_md}{fcrypt}} encrypts / decrypts entire backend files
+\item \mbox{\hyperlink{md_src_plugins_gpgme_README_src_plugins_gpgme_README_md}{gpgme}} encrypts / decrypts confidential values (with G\+P\+G\+ME)
+\item \mbox{\hyperlink{md_src_plugins_hidden_README_src_plugins_hidden_README_md}{hidden}} hides keys whose names start with a {\ttfamily .}.
+\item \mbox{\hyperlink{md_src_plugins_iconv_README_src_plugins_iconv_README_md}{iconv}} makes sure the configuration will have correct character encoding
+\item \mbox{\hyperlink{md_src_plugins_null_README_src_plugins_null_README_md}{null}} takes care of null values and other binary specialities
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md589}{}\doxysubsection{Notification and Logging}\label{src_plugins_README_md_autotoc_md589}
+Log/\+Send out all changes to configuration to\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_dbus_README_src_plugins_dbus_README_md}{dbus}} sends notifications for every change via dbus {\ttfamily notification}
+\item \mbox{\hyperlink{md_src_plugins_dbusrecv_README_src_plugins_dbusrecv_README_md}{dbusrecv}} receives notifications via dbus {\ttfamily notification}
+\item \mbox{\hyperlink{md_src_plugins_journald_README_src_plugins_journald_README_md}{journald}} logs key database changes to journald
+\item \mbox{\hyperlink{md_src_plugins_logchange_README_src_plugins_logchange_README_md}{logchange}} prints the change of every key on the console
+\item \mbox{\hyperlink{md_src_plugins_syslog_README_src_plugins_syslog_README_md}{syslog}} logs key database changes to syslog
+\item \mbox{\hyperlink{md_src_plugins_zeromqsend_README_src_plugins_zeromqsend_README_md}{zeromqsend}} sends notifications for every change via Zero\+MQ sockets {\ttfamily notification}
+\item \mbox{\hyperlink{md_src_plugins_zeromqrecv_README_src_plugins_zeromqrecv_README_md}{zeromqrecv}} receives notifications via Zero\+MQ sockets {\ttfamily notification}
+\end{DoxyItemize}
+
+Notification of key changes\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_internalnotification_README_src_plugins_internalnotification_README_md}{internalnotification}} get updates automatically when registered keys were changed
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md590}{}\doxysubsection{Debug}\label{src_plugins_README_md_autotoc_md590}
+Trace everything that happens within K\+DB\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_counter_README_src_plugins_counter_README_md}{counter}} count and print how often a plugin is used
+\item \mbox{\hyperlink{md_src_plugins_timeofday_README_src_plugins_timeofday_README_md}{timeofday}} prints timestamps
+\item \mbox{\hyperlink{md_src_plugins_tracer_README_src_plugins_tracer_README_md}{tracer}} traces all calls
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md591}{}\doxysubsection{Checker}\label{src_plugins_README_md_autotoc_md591}
+Copies metadata to keys\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_glob_README_src_plugins_glob_README_md}{glob}} using globbing techniques (needed by some plugins)
+\item \mbox{\hyperlink{md_src_plugins_spec_README_src_plugins_spec_README_md}{spec}} copies metadata from spec namespace (the standard way)
+\end{DoxyItemize}
+
+Plugins that check if values are valid based on metadata (typically copied by the {\ttfamily spec} plugin just before)\+:
+
+{\bfseries{Value Validation}}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_conditionals_README_src_plugins_conditionals_README_md}{conditionals}} by using if-\/then-\/else like statements
+\item \mbox{\hyperlink{md_src_plugins_date_README_src_plugins_date_README_md}{date}} validates date and time data
+\item \mbox{\hyperlink{md_src_plugins_ipaddr_README_src_plugins_ipaddr_README_md}{ipaddr}} checks IP addresses using regular expressions
+\item \mbox{\hyperlink{md_src_plugins_mathcheck_README_src_plugins_mathcheck_README_md}{mathcheck}} by mathematical expressions using key values as operands
+\item \mbox{\hyperlink{md_src_plugins_network_README_src_plugins_network_README_md}{network}} by using network A\+P\+Is
+\item \mbox{\hyperlink{md_src_plugins_macaddr_README_src_plugins_macaddr_README_md}{macaddr}} checks if M\+AC addresses are valid and normalizes them
+\item \mbox{\hyperlink{md_src_plugins_path_README_src_plugins_path_README_md}{path}} by checking files on file system
+\item \mbox{\hyperlink{md_src_plugins_range_README_src_plugins_range_README_md}{range}} checks if a value is within a given range
+\item \mbox{\hyperlink{md_src_plugins_reference_README_src_plugins_reference_README_md}{reference}} checks if a value is a valid reference to another key
+\item \mbox{\hyperlink{md_src_plugins_rgbcolor_README_src_plugins_rgbcolor_README_md}{rgbcolor}} validates and normalizes hexcolors
+\item \mbox{\hyperlink{md_src_plugins_type_README_src_plugins_type_README_md}{type}} type checking (C\+O\+R\+BA types) with enum functionality
+\item \mbox{\hyperlink{md_src_plugins_unit_README_src_plugins_unit_README_md}{unit}} validates and normalizes units of memory (e.\+g. 20KB to 20000 Bytes)
+\item \mbox{\hyperlink{md_src_plugins_validation_README_src_plugins_validation_README_md}{validation}} by using regex
+\end{DoxyItemize}
+
+{\bfseries{Other Validation}}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_filecheck_README_src_plugins_filecheck_README_md}{filecheck}} does sanity checks on a file
+\item \mbox{\hyperlink{md_src_plugins_lineendings_README_src_plugins_lineendings_README_md}{lineendings}} tests file for consistent line endings
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md592}{}\doxysubsection{Interpreter}\label{src_plugins_README_md_autotoc_md592}
+These plugins start an interpreter and allow you to execute a script in an interpreted language whenever Elektra’s key database gets accessed. Note that they depend on the presence of the respective binding during run-\/time.
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_jni_README_src_plugins_jni_README_md}{jni}} java plugins started by jni, works with jna plugins
+\item \mbox{\hyperlink{md_src_plugins_lua_README_src_plugins_lua_README_md}{lua}} Lua plugins
+\item \mbox{\hyperlink{md_src_plugins_python_README_src_plugins_python_README_md}{python}} Python 3 plugins
+\item \mbox{\hyperlink{md_src_plugins_ruby_README_src_plugins_ruby_README_md}{ruby}} Ruby plugins
+\item \mbox{\hyperlink{md_src_plugins_shell_README_src_plugins_shell_README_md}{shell}} executes shell commandos
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md593}{}\doxysubsection{Others}\label{src_plugins_README_md_autotoc_md593}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_cache_README_src_plugins_cache_README_md}{cache}} caches keysets from previous {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} calls
+\item \mbox{\hyperlink{md_src_plugins_cpptemplate_README_src_plugins_cpptemplate_README_md}{cpptemplate}} a template for C++ based plugins
+\item \mbox{\hyperlink{md_src_plugins_doc_README_src_plugins_doc_README_md}{doc}} contains the documentation of the plugin interface
+\item \mbox{\hyperlink{md_src_plugins_error_README_src_plugins_error_README_md}{error}} yields errors as described in metadata (handy for test purposes)
+\item \mbox{\hyperlink{md_src_plugins_gopts_README_src_plugins_gopts_README_md}{gopts}} global plugin to automatically call {\ttfamily elektra\+Get\+Opts}
+\item \mbox{\hyperlink{md_src_plugins_iterate_README_src_plugins_iterate_README_md}{iterate}} iterate over all keys and run exported functions on tagged keys
+\item \mbox{\hyperlink{md_src_plugins_list_README_src_plugins_list_README_md}{list}} loads other plugins
+\item \mbox{\hyperlink{md_src_plugins_process_README_src_plugins_process_README_md}{process}} proxy plugin that executes other plugins in a separate process
+\item \mbox{\hyperlink{md_src_plugins_profile_README_src_plugins_profile_README_md}{profile}} links profile keys
+\item \mbox{\hyperlink{md_src_plugins_template_README_src_plugins_template_README_md}{template}} to be copied for new plugins 
+\end{DoxyItemize}

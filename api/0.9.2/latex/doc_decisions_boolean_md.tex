@@ -1,0 +1,62 @@
+\hypertarget{doc_decisions_boolean_md_autotoc_md1040}{}\doxysection{Problem}\label{doc_decisions_boolean_md_autotoc_md1040}
+Inconsistent use of bool in various parts of Elektra.\hypertarget{doc_decisions_boolean_md_autotoc_md1041}{}\doxysection{Constraints}\label{doc_decisions_boolean_md_autotoc_md1041}
+\hypertarget{doc_decisions_boolean_md_autotoc_md1042}{}\doxysection{Assumptions}\label{doc_decisions_boolean_md_autotoc_md1042}
+
+\begin{DoxyItemize}
+\item needs to be string
+\item convenience plugins can convert anything to 0 or 1
+\item type checker plugins can reject everything not 0 or 1
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1043}{}\doxysection{Considered Alternatives}\label{doc_decisions_boolean_md_autotoc_md1043}
+
+\begin{DoxyItemize}
+\item strictly only allow 0 and 1 (would move validation across the code)
+\item only check presence or absence (no cascading override of already present key possible)
+\item use as in C\+Make (would move convenience across the code)
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1044}{}\doxysection{Decision}\label{doc_decisions_boolean_md_autotoc_md1044}
+Use, depending on what your default should be\+:
+
+
+\begin{DoxyItemize}
+\item 0 is false, everything else is true (default is true)
+\item 1 is true, everything else is false (default is false)
+\end{DoxyItemize}
+
+Example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{if} ( strcmp(\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(k), \textcolor{stringliteral}{"0"})) \{\textcolor{comment}{/*true*/}\} \textcolor{keywordflow}{else} \{\textcolor{comment}{/*false*/}\}}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (!strcmp(\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(k), \textcolor{stringliteral}{"1"})) \{\textcolor{comment}{/*true*/}\} \textcolor{keywordflow}{else} \{\textcolor{comment}{/*false*/}\}}
+\end{DoxyCode}
+
+
+In the documentation it should mention that a bool is used and which is the default.
+
+The type checker plugin should allow
+
+
+\begin{DoxyItemize}
+\item non-\/presence (default)
+\item the string \char`\"{}0\char`\"{}
+\item the string \char`\"{}1\char`\"{}
+\end{DoxyItemize}
+
+The convenience plugin should transform (it might be combined with a plugin that transforms everything lower-\/case)\+:
+
+
+\begin{DoxyItemize}
+\item \char`\"{}false\char`\"{}, \char`\"{}off\char`\"{}, \char`\"{}no\char`\"{} to \char`\"{}0\char`\"{}
+\item \char`\"{}true\char`\"{}, \char`\"{}on\char`\"{}, \char`\"{}yes\char`\"{} to \char`\"{}1\char`\"{}
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1045}{}\doxysection{Rationale}\label{doc_decisions_boolean_md_autotoc_md1045}
+
+\begin{DoxyItemize}
+\item most easy to implement
+\item allows presence to be true
+\item plugins allow us to convert to any other behavior
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1046}{}\doxysection{Implications}\label{doc_decisions_boolean_md_autotoc_md1046}
+
+\begin{DoxyItemize}
+\item change code with different behavior
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1047}{}\doxysection{Related Decisions}\label{doc_decisions_boolean_md_autotoc_md1047}
+\hypertarget{doc_decisions_boolean_md_autotoc_md1048}{}\doxysection{Notes}\label{doc_decisions_boolean_md_autotoc_md1048}
+See \href{https://github.com/ElektraInitiative/libelektra/issues/308}{\texttt{ here}} 

@@ -1,0 +1,206 @@
+\hypertarget{backend_8c}{}\doxysection{backend.\+c File Reference}
+\label{backend_8c}\index{backend.c@{backend.c}}
+
+
+Everything related to a backend.  
+
+
+{\ttfamily \#include $<$kdbassert.\+h$>$}\newline
+{\ttfamily \#include $<$kdbinternal.\+h$>$}\newline
+Include dependency graph for backend.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{backend_8c__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{backend_8c_aa81c8c0b5a2d0c59ea501f15049699b6}{elektra\+Backend\+Set\+Mountpoint}} (Backend $\ast$backend, Key\+Set $\ast$elektra\+Config, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em sets mountpoint \end{DoxyCompactList}\item 
+Backend $\ast$ \mbox{\hyperlink{backend_8c_a18a6369d1c2af977107fe475925a3393}{backend\+Open}} (Key\+Set $\ast$elektra\+Config, Key\+Set $\ast$modules, Key\+Set $\ast$global, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Builds a backend out of the configuration supplied from\+: \end{DoxyCompactList}\item 
+Backend $\ast$ \mbox{\hyperlink{backend_8c_a5227608d302910f25fc3a5c8968ab542}{backend\+Open\+Default}} (Key\+Set $\ast$modules, Key\+Set $\ast$global, const char $\ast$file, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Opens a default backend using the plugin named K\+D\+B\+\_\+\+R\+E\+S\+O\+L\+V\+ER and K\+D\+B\+\_\+\+S\+T\+O\+R\+A\+GE. \end{DoxyCompactList}\item 
+Backend $\ast$ \mbox{\hyperlink{backend_8c_ae8fb4357da3f748492e9f5300a537369}{backend\+Open\+Modules}} (Key\+Set $\ast$modules, Key\+Set $\ast$global, Key $\ast$error\+Key)
+\item 
+Backend $\ast$ \mbox{\hyperlink{backend_8c_ad17f21b41a12609232573971823089e0}{backend\+Open\+Version}} (Key\+Set $\ast$global, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Opens the internal version backend. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{backend_8c_a051ae3b70fe43b1632b975fb4c26535c}{backend\+Update\+Size}} (Backend $\ast$backend, Key $\ast$parent, int size)
+\begin{DoxyCompactList}\small\item\em Update internal size in backend. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Everything related to a backend. 
+
+\begin{DoxyCopyright}{Copyright}
+B\+SD License (see L\+I\+C\+E\+N\+S\+E.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{backend_8c_a18a6369d1c2af977107fe475925a3393}\label{backend_8c_a18a6369d1c2af977107fe475925a3393}} 
+\index{backend.c@{backend.c}!backendOpen@{backendOpen}}
+\index{backendOpen@{backendOpen}!backend.c@{backend.c}}
+\doxysubsubsection{\texorpdfstring{backendOpen()}{backendOpen()}}
+{\footnotesize\ttfamily Backend$\ast$ backend\+Open (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{elektra\+Config,  }\item[{Key\+Set $\ast$}]{modules,  }\item[{Key\+Set $\ast$}]{global,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Builds a backend out of the configuration supplied from\+: 
+
+\begin{DoxyVerb}system/elektra/mountpoints/<name>
+\end{DoxyVerb}
+
+
+The root key must be like the above example. You do not need to rewind the keyset. But every key must be below the root key.
+
+The internal consistency will be checked in this function. If necessary parts are missing, like no plugins, they cant be loaded or similar 0 will be returned.
+
+\mbox{\hyperlink{group__keyset_ga6b00cf82b59af4d883a9bad6cf4a4a4a}{ks\+Cut()}} is perfectly suitable for cutting out the configuration like needed.
+
+\begin{DoxyNote}{Note}
+The given Key\+Set will be deleted within the function, don\textquotesingle{}t use it afterwards.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em elektra\+Config} & the configuration to work with. It is used to build up this backend. \\
+\hline
+{\em modules} & used to load new modules or get references to existing one \\
+\hline
+{\em global} & the global keyset of the K\+DB instance \\
+\hline
+{\em error\+Key} & the key where an error and warnings are added\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to a freshly allocated backend this could be the requested backend or a so called \char`\"{}missing backend\char`\"{}. 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if out of memory \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{backend_8c_a5227608d302910f25fc3a5c8968ab542}\label{backend_8c_a5227608d302910f25fc3a5c8968ab542}} 
+\index{backend.c@{backend.c}!backendOpenDefault@{backendOpenDefault}}
+\index{backendOpenDefault@{backendOpenDefault}!backend.c@{backend.c}}
+\doxysubsubsection{\texorpdfstring{backendOpenDefault()}{backendOpenDefault()}}
+{\footnotesize\ttfamily Backend$\ast$ backend\+Open\+Default (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{modules,  }\item[{Key\+Set $\ast$}]{global,  }\item[{const char $\ast$}]{file,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Opens a default backend using the plugin named K\+D\+B\+\_\+\+R\+E\+S\+O\+L\+V\+ER and K\+D\+B\+\_\+\+S\+T\+O\+R\+A\+GE. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em modules} & the modules to work with \\
+\hline
+{\em global} & the global keyset of the K\+DB instance \\
+\hline
+{\em error\+Key} & the key to issue warnings and errors to \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the fresh allocated default backend or 0 if it failed 
+\end{DoxyReturn}
+\mbox{\Hypertarget{backend_8c_ae8fb4357da3f748492e9f5300a537369}\label{backend_8c_ae8fb4357da3f748492e9f5300a537369}} 
+\index{backend.c@{backend.c}!backendOpenModules@{backendOpenModules}}
+\index{backendOpenModules@{backendOpenModules}!backend.c@{backend.c}}
+\doxysubsubsection{\texorpdfstring{backendOpenModules()}{backendOpenModules()}}
+{\footnotesize\ttfamily Backend$\ast$ backend\+Open\+Modules (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{modules,  }\item[{Key\+Set $\ast$}]{global,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+\begin{DoxyReturn}{Returns}
+a backend which gives plugin configuration of the module which is currently point to.
+\end{DoxyReturn}
+
+\begin{DoxyParams}{Parameters}
+{\em modules} & the modules to work with \\
+\hline
+{\em global} & the global keyset of the K\+DB instance \\
+\hline
+{\em error\+Key} & the key to issue warnings and errors to \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{backend_8c_ad17f21b41a12609232573971823089e0}\label{backend_8c_ad17f21b41a12609232573971823089e0}} 
+\index{backend.c@{backend.c}!backendOpenVersion@{backendOpenVersion}}
+\index{backendOpenVersion@{backendOpenVersion}!backend.c@{backend.c}}
+\doxysubsubsection{\texorpdfstring{backendOpenVersion()}{backendOpenVersion()}}
+{\footnotesize\ttfamily Backend$\ast$ backend\+Open\+Version (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{global,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Opens the internal version backend. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em global} & the global keyset of the K\+DB instance \\
+\hline
+{\em error\+Key} & the key to issue warnings and errors to \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the fresh allocated default backend or 0 if it failed 
+\end{DoxyReturn}
+\mbox{\Hypertarget{backend_8c_a051ae3b70fe43b1632b975fb4c26535c}\label{backend_8c_a051ae3b70fe43b1632b975fb4c26535c}} 
+\index{backend.c@{backend.c}!backendUpdateSize@{backendUpdateSize}}
+\index{backendUpdateSize@{backendUpdateSize}!backend.c@{backend.c}}
+\doxysubsubsection{\texorpdfstring{backendUpdateSize()}{backendUpdateSize()}}
+{\footnotesize\ttfamily int backend\+Update\+Size (\begin{DoxyParamCaption}\item[{Backend $\ast$}]{backend,  }\item[{Key $\ast$}]{parent,  }\item[{int}]{size }\end{DoxyParamCaption})}
+
+
+
+Update internal size in backend. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em backend} & the backend to update \\
+\hline
+{\em parent} & for parent \\
+\hline
+{\em size} & to update (-\/1 default, 0 empty, $>$0 otherwise)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+parent must be serializable namespace
+\end{DoxyPrecond}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & if invalid parent (assert) \\
+\hline
+{\em 0} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{backend_8c_aa81c8c0b5a2d0c59ea501f15049699b6}\label{backend_8c_aa81c8c0b5a2d0c59ea501f15049699b6}} 
+\index{backend.c@{backend.c}!elektraBackendSetMountpoint@{elektraBackendSetMountpoint}}
+\index{elektraBackendSetMountpoint@{elektraBackendSetMountpoint}!backend.c@{backend.c}}
+\doxysubsubsection{\texorpdfstring{elektraBackendSetMountpoint()}{elektraBackendSetMountpoint()}}
+{\footnotesize\ttfamily int elektra\+Backend\+Set\+Mountpoint (\begin{DoxyParamCaption}\item[{Backend $\ast$}]{backend,  }\item[{Key\+Set $\ast$}]{elektra\+Config,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+sets mountpoint 
+
+
+\begin{DoxyParams}[1]{Parameters}
+ & {\em backend} & where the mountpoint should be set \\
+\hline
+ & {\em elektra\+Config} & the config where the mountpoint can be found \\
+\hline
+\mbox{\texttt{ out}}  & {\em error\+Key} & the name also has the mountpoint set\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+\mbox{\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ks\+Current()}} is root key 
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+\mbox{\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ks\+Current()}} is root key
+\end{DoxyPostcond}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & if no mountpoint is found or memory allocation problem \\
+\hline
+{\em 0} & on success \\
+\hline
+\end{DoxyRetVals}

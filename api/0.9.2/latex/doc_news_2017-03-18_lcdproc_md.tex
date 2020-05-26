@@ -1,0 +1,200 @@
+
+\begin{DoxyItemize}
+\item guid\+: d52657b5-\/60da-\/4a21-\/9679-\/f8aacf6d6b72
+\item author\+: Markus Raab
+\item pub\+Date\+: Sat, 18 Mar 2017 20\+:43\+:03 +0100
+\item short\+Desc\+: Elektrify L\+C\+Dproc
+\end{DoxyItemize}
+
+\begin{quote}
+L\+C\+Dproc is a piece of open source software that displays real-\/time system information from your {\ttfamily Linux}/{\ttfamily $\ast$\+B\+SD} box on a L\+CD. \end{quote}
+
+
+L\+C\+Dproc\textquotesingle{}s \href{http://lcdproc.omnipotent.net/}{\texttt{ website}} is a bit outdated but L\+C\+Dproc itself is now well-\/maintained on \href{https://github.com/lcdproc/lcdproc}{\texttt{ Git\+Hub}} and had a \href{https://github.com/lcdproc/lcdproc/releases}{\texttt{ release recently}}.
+
+Like in many projects, it invented its own configuration access and I\+NI parser which did not evolve with the needs of the project. As a consequence inconsistencies and code duplication spread over the source. For example, the L\+C\+Dproc configuration access does not support values that represent display\textquotesingle{}s size (such as {\ttfamily 20x4}). Thus every L\+C\+Dproc\textquotesingle{}s module has its own parsing code for such values.
+
+Some days ago (16.\+03.\+2017), we met with Harald Geyer and discussed the current situation. We decided that we will elektrify L\+C\+Dproc and remove all the configuration access and parsing code within L\+C\+Dproc. To {\bfseries{elektrify}} an application means to change the application so that it uses Lib\+Elektra afterwards.\hypertarget{doc_news_2017-03-18_lcdproc_md_autotoc_md2127}{}\doxysection{Goals}\label{doc_news_2017-03-18_lcdproc_md_autotoc_md2127}
+We formulated three goals\+:
+
+
+\begin{DoxyEnumerate}
+\item We (Elektra Initiative, mainly Thomas Waser) remove as much code as possible from L\+C\+Dproc\textquotesingle{}s code base.
+\item Users of L\+C\+Dproc should be able to use {\ttfamily L\+C\+Dd.\+conf} as they use it now.
+\item We avoid the current duplications of configuration specifications. (Currently in {\ttfamily L\+C\+Dd.\+conf}, the docbook, in code checking the limits, and the default parameter in the code.)
+\end{DoxyEnumerate}
+
+Nice-\/to-\/have is\+:
+
+
+\begin{DoxyItemize}
+\item Safe updates\+: {\ttfamily make install} should not break the current {\ttfamily L\+C\+Dd.\+conf}. (As it is already done in Debian.)
+\item The robustness of L\+C\+Dproc on misconfiguration should be improved (Thomas Waser writes the specification).
+\item Automatic reloading of the daemon when using Elektra to update configuration. (Manual {\ttfamily S\+I\+G\+H\+UP}-\/signals will work in any case.)
+\item Have physical units with metric prefix like {\ttfamily 500ms} for {\ttfamily 0.\+5s} (seconds).
+\end{DoxyItemize}
+
+Possible limitations are\+:
+
+
+\begin{DoxyItemize}
+\item We break support for systems that only have very old compilers.
+\item The {\ttfamily -\/c} option to specify a different configuration file is against the abstraction Elektra should deliver. We might create a \href{https://github.com/ElektraInitiative/libelektra/issues/1416}{\texttt{ wrapper script}} that emulates {\ttfamily -\/c} via mountpoints.
+\item L\+C\+Dproc will depend on the yet-\/to-\/be-\/released \href{https://github.com/ElektraInitiative/libelektra/milestone/11}{\texttt{ 0.\+8.\+20}}. We will delay the 0.\+8.\+20 release until all parts for L\+C\+Dproc are tested and ready.
+\end{DoxyItemize}
+
+In any case, the \href{https://www.libelektra.org}{\texttt{ advertised benefits of Elektra}} will automatically apply (incomplete list)\+:
+
+
+\begin{DoxyItemize}
+\item Global key database\+: you can connect other configuration files with the L\+C\+Dproc\textquotesingle{}s configuration and validation.
+\item Allows users to easily modify the specifications, for example to have different command-\/line options, or support for environment variables.
+\item \href{https://www.libelektra.org/plugins/profile}{\texttt{ Profile support}}\+: Having multiple complete configuration settings you can easily choose from. (thanks to Thomas Waser)
+\item Introspectibility\+: you can check with {\ttfamily kdb}-\/tool which configuration settings L\+C\+Dproc will receive.
+\item Other configuration file formats can be used instead, e.\+g. J\+S\+ON or X\+ML. (Only if wanted as personal preference, by default I\+NI will be used to remain compatibility with {\ttfamily L\+C\+Dd.\+conf}.)
+\item Easy migration paths to use other configuration file formats such as Y\+A\+ML as default in future. (thanks to René Schwaiger)
+\item Elektra\textquotesingle{}s tool can be used to configure L\+C\+Dconf, including\+:
+\begin{DoxyItemize}
+\item {\ttfamily kdb set} to modify individual settings within scripts and validation.
+\item {\ttfamily kdb editor}, which spawns your favourite editor but validates the configuration file before writing it out.
+\item {\ttfamily kdb qt-\/gui}, the Qt G\+UI (thanks to Raffael Pancheri).
+\item The web UI of Elektra (thanks to Daniel Bugl).
+\end{DoxyItemize}
+\item Elektra\textquotesingle{}s website can be used to share L\+C\+Dproc\textquotesingle{}s configuration files, and you can use the \href{https://www.libelektra.org/plugins/curlget}{\texttt{ curlget plugin}} to mount files from the website. (thanks to Marvin Mall)
+\item You can use Shell, Python, or Lua to write small scripts that are executed on configuration access.
+\item Elektra allows you to directly read and write from git using the \href{https://www.libelektra.org/plugins/gitresolver}{\texttt{ git plugin}}. (Even if {\ttfamily L\+C\+Dd.\+conf} is not checked out, thanks to Thomas Waser)
+\item We extensively \href{https://www.libelektra.org/devgettingstarted/testing}{\texttt{ test}} Elektra with modern techniques such as fuzzing.
+\end{DoxyItemize}\hypertarget{doc_news_2017-03-18_lcdproc_md_autotoc_md2128}{}\doxysection{Validation}\label{doc_news_2017-03-18_lcdproc_md_autotoc_md2128}
+Instead of {\ttfamily if}s within the code, we will use Spec\+Elektra for validation. \href{https://www.libelektra.org/manpages/elektra-glossary}{\texttt{ Spec\+Elektra}} is a configuration specification language that allows us to describe which configuration is valid.
+
+This specification will be installed as part of L\+C\+Dproc to {\ttfamily /usr/share/elektra/specifications}. It uses the \href{https://www.libelektra.org/docgettingstarted/metadata}{\texttt{ metadata}} as defined by the plugins to validate configuration changed via Elektra.
+
+For broken installations or when executing L\+C\+Dproc from the source repository, there is also a built-\/in specification. The specification will only be used if the installed one cannot be found.
+
+Thus the configuration validation specification is a normal configuration file also integrated in Elektra, also the specification can be introspected\+: useful for system administrators who want to know about valid entries, but also for tools like our newly developed web-\/\+UI by Daniel Bugl.
+
+The web-\/\+UI automatically restricts the interface so that only valid entries can be entered. For example, if you should enter a boolean, only a check box is presented to you.
+
+
+\begin{DoxyItemize}
+\item For more information about validation, see the \href{https://www.libelektra.org/tutorials/validate-configuration}{\texttt{ tutorial}}
+\end{DoxyItemize}\hypertarget{doc_news_2017-03-18_lcdproc_md_autotoc_md2129}{}\doxysection{Code Generation}\label{doc_news_2017-03-18_lcdproc_md_autotoc_md2129}
+We (mainly Dominik Hofer) are currently developing \href{https://www.libelektra.org/decisions/high-level-api}{\texttt{ a high-\/level A\+PI}}, whose first user will be L\+C\+Dproc. In this A\+PI, we will make sure during compilation, that configuration access is done correctly.
+
+This is especially useful when configuration settings get renamed. Then all places where out-\/dated configuration settings are used will fail to compile.
+
+In particular using code generation developers do not need to use strings to refer to configuration settings and they get easy-\/to-\/use enums consistent with the configuration specification.
+
+Furthermore, code generation will make sure that a specification (and default configuration settings) will be found even if no {\ttfamily /etc} or no {\ttfamily /usr} is found.
+
+We also found that we cannot use code generation everywhere. In generic access code, code generation obviously is limited.
+
+
+\begin{DoxyItemize}
+\item For more information about code generation, see the \href{https://www.libelektra.org/tools/gen}{\texttt{ tutorial}}
+\end{DoxyItemize}\hypertarget{doc_news_2017-03-18_lcdproc_md_autotoc_md2130}{}\doxysection{Risks}\label{doc_news_2017-03-18_lcdproc_md_autotoc_md2130}
+Understandably, users might be concerned that such a change will not work or create problems in the future. Here we will discuss some of the concerns.
+
+\begin{quote}
+Elektra might be discontinued. \end{quote}
+
+
+From history perspective, Elektra received steady development since 2004. Elektra is a F\+L\+O\+SS project and welcomes everyone to join. In the last years several people did, with an increasing number per year. Currently following people are working on substantial new features in Elektra (sorted by first name)\+:
+
+
+\begin{DoxyItemize}
+\item Armin Wurzinger\+: Quality Improvements
+\item Bernhard Denner\+: \href{https://github.com/ElektraInitiative/puppet-libelektra}{\texttt{ Puppet Module}}
+\item Daniel Bugl\+: \href{https://www.libelektra.org/tools/web}{\texttt{ Web\+UI}}
+\item Dominik Hofer\+: \href{https://www.libelektra.org/decisions/high-level-api}{\texttt{ the high-\/level A\+PI}}
+\item Kurt Micheli\+: Order Preserving Minimal Hash Map
+\item Markus Raab\+: Maintainer
+\item Michael Zehender\+: Quality Improvements
+\item Mihael Pranjić\+: mmap plugin
+\item Peter Nirschl\+: \href{https://www.libelektra.org/plugins/crypto}{\texttt{ crypto plugin}}
+\item René Schwaiger\+: Y\+A\+ML plugin
+\item Sebastian Bachmann\+: Shell Completion
+\item Thomas Waht\+: Notification
+\item Thomas Waser\+: Validation and Transformations of Configuration
+\item Vanessa Kos\+: Misconfiguration Bug Database
+\end{DoxyItemize}
+
+Obviously, there are many more casual contributors.
+
+Elektra has a large set of \href{https://build.libelektra.org}{\texttt{ automated tests}} and only a small amount of technical dept. Elektra has no required external dependencies except libc. So without internal changes, only minimal maintenance cost is required.
+
+\begin{quote}
+Elektra is unfinished. \end{quote}
+
+
+Technically this is true\+: we did not reach \href{https://git.libelektra.org/milestone/12}{\texttt{ 1.\+0}}. We are, however, on track to reach this goal within this summer. Now is the best time to join because we can provide more support and are more flexible for changes and wishes.
+
+Some \href{https://www.libelektra.org/news/2016-06-14_0.8.17.md}{\texttt{ time ago}} we asked in a survey in which direction Elektra should develop. Most open issues are (in)direct responses from this wanted direction.
+
+Some plugins are experimental or proof-\/of-\/concept, but they are clearly marked as such.
+
+\begin{quote}
+It seems a bit to me like \href{https://xkcd.com/927/}{\texttt{ xkcd\+: Standards}}. \end{quote}
+
+
+Elektra does not invent a new configuration file format nor new standards where to store configuration files but abstracts over these issues.
+
+\begin{quote}
+Elektra not being available in my distribution. \end{quote}
+
+
+For the following Linux Distributions Elektra 0.\+8 packages are available\+:
+
+
+\begin{DoxyItemize}
+\item \href{http://packages.gentoo.org/package/app-admin/elektra}{\texttt{ Gentoo}}
+\item \href{https://aur.archlinux.org/packages/elektra/}{\texttt{ Arch Linux}}
+\item \href{https://packages.debian.org/de/jessie/libelektra4}{\texttt{ Debian}}
+\item \href{https://launchpad.net/ubuntu/+source/elektra}{\texttt{ Ubuntu}}
+\item \href{https://software.opensuse.org/package/elektra}{\texttt{ Open\+Suse}}
+\item P\+L\+D\+Linux
+\item \href{https://community.linuxmint.com/software/view/elektra-bin}{\texttt{ Linux Mint}}
+\item \href{https://openwrt.org/packages/pkgdata/libelektra-core?s[]=elektra}{\texttt{ Open\+W\+RT}}
+\end{DoxyItemize}
+
+See \href{https://www.libelektra.org/docgettingstarted/installation}{\texttt{ I\+N\+S\+T\+A\+LL}} for the complete and up-\/to-\/date list.
+
+\begin{quote}
+If Elektra does not take off and achieve world dominance, will we be worse off than before? \end{quote}
+
+
+Making sure that projects will not be worse off is what we did the last years\+: Not only offer an A\+PI and wait for world dominance but to offer an implementation that can compete with any configuration library out there. We are not completely there yet (there are some details where specific other libraries are better than Elektra in specific points) but these are not points that the current configuration system of L\+C\+Dproc supports (not even close). And the libraries that can compete with Elektra have a completely different level on which dependencies they have\+: Elektra is the only one only requiring libc.
+
+\begin{quote}
+Do we retain the old way of configuring things, i.\+e. manually editing an ini file in /etc? \end{quote}
+
+
+Absolutely, you can think of libelektra as a small library in C that reads a configuration file and returns a data structure if you do not use any of its advanced features.
+
+\begin{quote}
+Do we retain the old way reloading/restarting the system service? \end{quote}
+
+
+Elektra does not interfere with restarting. It is a passive library. It provides some techniques for reloading but they are optional (but we recommend that you keep the in-\/memory and persistent configuration in sync via notification).
+
+For more information, see the \href{https://www.libelektra.org/manpages/elektra-faq}{\texttt{ F\+AQ}}.\hypertarget{doc_news_2017-03-18_lcdproc_md_autotoc_md2131}{}\doxysection{Win-\/\+Win}\label{doc_news_2017-03-18_lcdproc_md_autotoc_md2131}
+We can both profit from it\+:
+
+
+\begin{DoxyEnumerate}
+\item For L\+C\+Dproc it will be a simplification of code while getting many more tools.
+\item For Elektra it will improve its adoption and packaging.
+\end{DoxyEnumerate}
+
+For oyranos it already worked well on both sides, see our discussions in the issue tracker, for example \href{https://issues.libelektra.org/1134}{\texttt{ \#1134}}.
+
+If you also maintain an free or open source (F\+L\+O\+SS) project with an out-\/dated configuration system, please contact us.
+
+Obviously, we cannot fully port every F\+L\+O\+SS project ourselves, instead we will handle requests on a first come, first serve basis. Earlier projects will also have an higher impact on the feature set of Elektra, thus you will less likely need to implement your own plugin.\hypertarget{doc_news_2017-03-18_lcdproc_md_autotoc_md2132}{}\doxysection{See Also}\label{doc_news_2017-03-18_lcdproc_md_autotoc_md2132}
+
+\begin{DoxyItemize}
+\item Progress can be viewed \href{https://git.libelektra.org/projects/7}{\texttt{ here}}
+\item We discussed about alternatives to Elektra \href{https://issues.libelektra.org/1266}{\texttt{ here}}.
+\end{DoxyItemize}
+
+Best regards, Markus 

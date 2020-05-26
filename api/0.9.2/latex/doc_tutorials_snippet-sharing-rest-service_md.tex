@@ -1,0 +1,270 @@
+This tutorial explains how to install, configure and run everything that is required for the Snippet Sharing service and website. As operating system we expect Debian Jessie to be used, although most parts should also be applicable to other systems.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2783}{}\doxysection{What is This?}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2783}
+The Snippet Sharing service consists of two parts, a backend (the R\+E\+ST server) and a frontend (an Angular\+JS application executed in the browser), which also includes the Elektra website. The service itself can be used to share configuration snippets, i.\+e. configuration files of arbitrary applications.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2784}{}\doxysection{Installation}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2784}
+\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2785}{}\doxysubsection{Install Dependencies}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2785}
+As first step we need to install some dependencies required by the applications.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2786}{}\doxysubsubsection{Backend}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2786}
+The backend requires the most dependencies and unfortunately some of them need to be installed manually because no A\+PT packages are available.
+
+The required dependencies with their own dependencies are\+:
+
+
+\begin{DoxyItemize}
+\item Cpp\+C\+MS $>$= v1.\+0.\+0
+\begin{DoxyItemize}
+\item Zlib library
+\item P\+C\+RE library
+\item Python $>$= v2.\+4 (but not v3)
+\item I\+CU library $>$= v3.\+6
+\item gcrypt or Open\+S\+SL library
+\end{DoxyItemize}
+\item Boost $>$= v1.\+45
+\item Open\+S\+SL
+\item Lib\+J\+WT $>$= v1.\+5
+\begin{DoxyItemize}
+\item Jansson
+\item Open\+S\+SL
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+You\textquotesingle{}ll also need C\+Make and a modern C/\+C++ compiler, so in case you don\textquotesingle{}t have them installed already, use {\ttfamily apt-\/get install build-\/essential cmake} to do so.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2787}{}\doxyparagraph{A\+P\+T Packages}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2787}
+To install all required A\+PT packages at once, simply run\+: {\ttfamily apt-\/get install libboost-\/all-\/dev libpcre3-\/dev zlib1g-\/dev libgcrypt11-\/dev libicu-\/dev python libssl-\/dev}\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2788}{}\doxyparagraph{Cpp\+C\+MS}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2788}
+To install Cpp\+C\+MS, there are two options available\+:
+
+
+\begin{DoxyItemize}
+\item Download and build from source
+\item Install via dependency manager
+\end{DoxyItemize}
+
+To install Cpp\+C\+MS manually without dependency manager\+:
+
+
+\begin{DoxyItemize}
+\item Download the (latest) Cpp\+C\+MS source from \href{https://sourceforge.net/projects/cppcms/files/cppcms/}{\texttt{ Source\+Forge}}
+\item Extract the archive\+: {\ttfamily tar -\/xjf cppcms-\/1.\+x.\+x.\+tar.\+bz2 \&\& cd cppcms-\/1.\+x.\+x} (replace 1.\+x.\+x with your version)
+\item Configure the build\+: {\ttfamily mkdir build \&\& cd build \&\& cmake ..}
+\item Execute the build, run tests and install\+: {\ttfamily make \&\& make test \&\& make install}
+\end{DoxyItemize}
+
+Further build and installation information can be found on their \href{http://cppcms.com/wikipp/en/page/cppcms_1x_build}{\texttt{ website}}. It contains also a \href{http://cppcms.com/wikipp/en/page/apt}{\texttt{ guide}} explaining the installation through a dependency manager. Unfortunately, no repository is available for Debian Jessie yet.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2789}{}\doxyparagraph{Jansson}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2789}
+The Jansson library supports working with J\+S\+ON data in C. To install it, use the following steps\+:
+
+
+\begin{DoxyItemize}
+\item Download the (latest) source from \href{http://www.digip.org/jansson/releases/}{\texttt{ their website}}
+\item Extract the archive\+: {\ttfamily bunzip2 -\/c jansson-\/2.\+x.\+tar.\+bz2 $\vert$ tar xf -\/ \&\& cd jansson-\/2.\+x} (replace 2.\+x with your version)
+\item Configure the build\+: {\ttfamily mkdir build \&\& cd build \&\& cmake ..}
+\item Execute the build, run tests and install\+: {\ttfamily make \&\& make check \&\& make install}
+\end{DoxyItemize}\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2790}{}\doxyparagraph{Lib\+J\+WT}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2790}
+Now we can also install Lib\+J\+WT\+:
+
+
+\begin{DoxyItemize}
+\item Download the (latest) source from \href{https://github.com/benmcollins/libjwt/releases}{\texttt{ Git\+Hub}}
+\item Extract the archive\+: {\ttfamily tar -\/xjf v1.\+x.\+x \&\& cd libjwt-\/1.\+x.\+x} (replace 1.\+x.\+x with your version)
+\item Configure the build\+: {\ttfamily autoreconf -\/i \&\& ./configure}
+\item Execute the build and run tests\+: {\ttfamily make all \&\& make check}
+\end{DoxyItemize}
+
+If you are using Ubuntu, Lib\+J\+WT can also be installed through a pre-\/built A\+PT package\+:
+
+
+\begin{DoxyItemize}
+\item Add A\+PT repository\+: {\ttfamily add-\/apt-\/repository ppa\+:ben-\/collins/libjwt}
+\item Install via apt-\/get\+: {\ttfamily apt-\/get update \&\& apt-\/get install libjwt}
+\end{DoxyItemize}\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2791}{}\doxysubsubsection{Frontend}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2791}
+The frontend does only require the package manager \href{https://www.npmjs.com/}{\texttt{ npm}} ($>$= v3). It is preferred to install it along with \href{https://nodejs.org/}{\texttt{ node\+JS}}, for example via \href{https://nodejs.org/en/download/package-manager/}{\texttt{ provided packages}}. The version that comes via Debian Jessie (v1.\+4) is insufficient. The installation was tested with npm version 3.\+10.\+8-\/9, but it should also work with other versions of 3+.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2792}{}\doxysubsection{Build \& Install the Applications}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2792}
+After installing the dependencies, we are ready to build the applications. To do so, we can follow the steps explained in the \mbox{\hyperlink{doc_COMPILE_md}{build guide}}. Make sure to include the two tools {\ttfamily website-\/backend} and {\ttfamily website-\/frontend}, e.\+g. by using the arguments {\ttfamily -\/D\+T\+O\+O\+LS=\char`\"{}\+A\+L\+L;website-\/backend;website-\/frontend\char`\"{}}.
+
+After building Elektra and the applications, we can use {\ttfamily make install} to install them. Further information and troubleshooting can be found in the \mbox{\hyperlink{doc_INSTALL_md}{install guide}}.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2793}{}\doxysection{Configuration}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2793}
+The applications configure themselves as much as possible during build, but some settings have to be set manually afterwards.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2794}{}\doxysubsection{Backend}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2794}
+After the installation, the configuration specification of the backend has to be mounted with the command {\ttfamily kdb mount-\/website-\/backend-\/config}. You can check if the mounting was successful by issuing {\ttfamily kdb mount}. There should be an entry in the list with a path like {\ttfamily spec/sw/elektra/restbackend/\#0} and a similar one without the leading {\ttfamily spec}. If you do not see this mount points, have a look at the mount script in the tool\+\_\+exec (which is defined during installation of Elektra). You can also run the commands manually.
+
+To complete the mounting, you also need to ensure that the {\ttfamily spec} plugin is used as global plugin. If you have not changed anything about the global plugins yet, you can simply use {\ttfamily kdb global-\/mount} to ensure that the {\ttfamily spec} plugin is added as global plugin. If not, you need to add all currently mounted global plugins to the command as they will be deleted otherwise.
+
+After that you need to set an additional configuration parameter that has no default value. It is recommended to set it for the system namespace if you will use a tool like {\ttfamily systemctl} to manage the services.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set -\/N system /sw/elektra/restbackend/\#0/current/backend/jwt/encryption/secret "use a secret key here"}
+\end{DoxyCode}
+
+
+To generate a secure key, you can also use {\ttfamily pwgen} (install via {\ttfamily apt-\/get install pwgen}). Use
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set -\/N system /sw/elektra/restbackend/\#0/current/backend/jwt/encryption/secret "\$(pwgen -\/1cns 30)"}
+\end{DoxyCode}
+
+
+to generate and set a strong random encryption secret.
+
+The option {\ttfamily -\/N system} for {\ttfamily kdb set} defines the used namespace (in this case it is {\ttfamily system}). In order for the configuration specification to work (e.\+g. validation), we have to use cascading key names. This is why we have to define the namespace by using this option instead of passing it as part of the key name.
+
+If you want to know the default values, you can get a list of used keys with {\ttfamily kdb ls /sw/elektra/restbackend/\#0}. You can then retrieve the configuration value for each key with {\ttfamily kdb get $<$key$>$}, e.\+g., {\ttfamily kdb get /sw/elektra/restbackend/\#0/current/backend/jwt/encryption/secret}
+
+Additionally to the settings above, Cpp\+C\+MS needs some configuration. All configuration options are listed on \href{http://cppcms.com/wikipp/en/page/cppcms_1x_config}{\texttt{ their website}}. A stand-\/alone installation of the service (without proxy server) requires following configuration\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set -\/N system /sw/elektra/restbackend/\#0/current/cppcms/service/api "http"}
+\DoxyCodeLine{kdb set -\/N system /sw/elektra/restbackend/\#0/current/cppcms/service/ip "0.0.0.0"}
+\DoxyCodeLine{kdb set -\/N system /sw/elektra/restbackend/\#0/current/cppcms/service/port 8080}
+\DoxyCodeLine{kdb set -\/N system /sw/elektra/restbackend/\#0/current/cppcms/http/script\_names/\#0 "/"}
+\end{DoxyCode}
+
+
+Note\+: here we have not used the option {\ttfamily -\/N system} because the Cpp\+C\+MS configuration is not part of the specification. That means it does not get validated.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2795}{}\doxysubsection{Frontend}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2795}
+The frontend does only require small mandatory changes in its configuration. Before they can be made, the configuration file has to be mounted though. This can be achieved by issuing {\ttfamily kdb mount-\/website-\/frontend-\/config}. The configuration should then be available at {\ttfamily system/sw/elektra/restfrontend/\#0/current}. To get a list of possible configuration parameters, use {\ttfamily kdb ls system/sw/elektra/restfrontend/\#0/current}.
+
+Note that the frontend is not elektrified, only changes within {\ttfamily system/sw/elektra/restfrontend/\#0/current} will work.
+
+The parameters that need to be changed in order for the frontend to work correctly, are\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily system/sw/elektra/restfrontend/\#0/current/backend/root}\+: set it to the U\+RL where the backend will be reachable, e.\+g. {\ttfamily \href{http://restapi.libelektra.org/}{\texttt{ http\+://restapi.\+libelektra.\+org/}}} (with trailing slash!)
+\item {\ttfamily system/sw/elektra/restfrontend/\#0/current/website/url}\+: set it to the U\+RL where the frontend will be reachable, e.\+g. {\ttfamily \href{https://libelektra.org/}{\texttt{ https\+://libelektra.\+org/}}} (with trailing slash!)
+\end{DoxyItemize}\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2796}{}\doxysection{Running the Applications}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2796}
+As last step we need to run the applications\+:
+
+
+\begin{DoxyItemize}
+\item First we start the backend server with {\ttfamily kdb run-\/website-\/backend}. To ensure the backend is accessible, you can use {\ttfamily curl \href{http://localhost:8080/version}{\texttt{ http\+://localhost\+:8080/version}}} (change port to your setting), which should show you some version information in J\+S\+ON format.
+\item Although the frontend was compiled during installation already, we want to have a freshly built homepage and use {\ttfamily kdb build-\/website-\/frontend} to do so.
+\item Then we run the frontend analogously with {\ttfamily kdb run-\/website-\/frontend}. It should now be reachable at the configured port.
+\end{DoxyItemize}
+
+If everything went smooth, both applications should now be online and reachable.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2797}{}\doxysection{Stopping the Applications}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2797}
+Both applications can be stopped with a simple command\+:
+
+
+\begin{DoxyItemize}
+\item Backend\+: {\ttfamily kdb stop-\/website-\/backend}
+\item Frontend\+: {\ttfamily kdb stop-\/website-\/frontend}
+\end{DoxyItemize}\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2798}{}\doxysection{Additional Tasks}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2798}
+\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2799}{}\doxysubsection{A\+P\+I Specification}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2799}
+For the backend a detailed description in the \href{https://apiblueprint.org/}{\texttt{ A\+PI blueprint}} format is available. To compile the blueprint we need the \href{https://github.com/apiaryio/apiary-client}{\texttt{ apiary-\/client}} to be installed, which in return is installed as Ruby gem\+:
+
+
+\begin{DoxyItemize}
+\item So we first install Ruby with gem\+: {\ttfamily apt-\/get install ruby}
+\item Then we install the apiary-\/cli\+: {\ttfamily gem install apiaryio}
+\item Finally we can use {\ttfamily apiary preview -\/-\/path=snippet-\/sharing.\+apib -\/-\/output=snippet-\/sharing-\/api.\+html} in the blueprints directory to generate the pretty version of the A\+PI description. This file can then be placed wherever it is accessible or needed.
+\end{DoxyItemize}
+
+In case you change the A\+PI description (and the backend), you may want to ensure that your A\+PI blueprint is still syntax conform. To do so, you can use the tool \href{https://github.com/apiaryio/drafter}{\texttt{ Drafter}}. After installing it, you can use {\ttfamily drafter $<$filename$>$} (e.\+g. {\ttfamily drafter snippet-\/sharing.\+apib}) to run the check.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2800}{}\doxysubsection{Use Other Webserver Than the Built-\/in Grunt Webserver}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2800}
+Of course it is possible to use another webserver instead of the built-\/in one. To do so, simply run {\ttfamily kdb build-\/website-\/frontend} and copy the content of the {\ttfamily /usr/local/share/elektra/tool\+\_\+data/website-\/frontend/public} directory to your desired target location.
+
+It is required that you set a rewrite rule that serves the {\ttfamily index.\+html} for every request that does not access a static file ({\ttfamily js}, {\ttfamily css}, {\ttfamily png}, {\ttfamily md}, etc.). If you omit this step, it will not be possible to use direct links to access resources of the frontend; accessing the frontend from the {\ttfamily index.\+html} will still work though.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2801}{}\doxysection{Example Structure}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2801}
+The following is a description of the setup we used for the Elektra website reachable at \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}.
+
+We assume that Elektra is now installed to the default path on Debian Jessie, which is {\ttfamily /usr/local}.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2802}{}\doxysubsection{Web Server}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2802}
+As web server we use Debian Jessie’s Apache2. Several domains are used for different tasks, whereas only two are relevant for the here described service\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily restapi.\+libelektra.\+org} for the A\+PI provided by the {\ttfamily website-\/backend}
+\item {\ttfamily www.\+libelektra.\+org} for the website and frontend provided by the {\ttfamily website-\/frontend}
+\end{DoxyItemize}
+
+The server redirects requests on port 80 (non-\/\+S\+SL) to 443 using a very simple configuration like
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# file: /etc/apache2/sites-\/available/www.libelektra.org.conf}
+\DoxyCodeLine{<VirtualHost *:80>}
+\DoxyCodeLine{    ServerName www.libelektra.org}
+\DoxyCodeLine{    Redirect permanent / https://www.libelektra.org/}
+\DoxyCodeLine{</VirtualHost>}
+\end{DoxyCode}
+
+
+for the {\ttfamily www.\+libelektra.\+org} domain (similar for {\ttfamily restapi.\+libelektra.\+org}).
+
+The secured variant of the configuration looks like
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# file: /etc/apache2/sites-\/available/www.libelektra.org-\/le-\/ssl.conf}
+\DoxyCodeLine{<IfModule mod\_ssl.c>}
+\DoxyCodeLine{<VirtualHost *:443>}
+\DoxyCodeLine{    ServerName www.libelektra.org}
+\DoxyCodeLine{}
+\DoxyCodeLine{    DocumentRoot "/usr/local/share/elektra/tool\_data/website-\/frontend/public"}
+\DoxyCodeLine{    <Directory />}
+\DoxyCodeLine{        FallbackResource /index.html}
+\DoxyCodeLine{        Options Indexes MultiViews}
+\DoxyCodeLine{        AllowOverride None}
+\DoxyCodeLine{        Require all granted}
+\DoxyCodeLine{        Allow from all}
+\DoxyCodeLine{    </Directory>}
+\DoxyCodeLine{}
+\DoxyCodeLine{    LogLevel info}
+\DoxyCodeLine{        ErrorLog \$\{APACHE\_LOG\_DIR\}/error.log}
+\DoxyCodeLine{        CustomLog \$\{APACHE\_LOG\_DIR\}/access.log combined}
+\DoxyCodeLine{}
+\DoxyCodeLine{    SSLCertificateFile /etc/letsencrypt/live/www.libelektra.org/fullchain.pem}
+\DoxyCodeLine{    SSLCertificateKeyFile /etc/letsencrypt/live/www.libelektra.org/privkey.pem}
+\DoxyCodeLine{    Include /etc/letsencrypt/options-\/ssl-\/apache.conf}
+\DoxyCodeLine{</VirtualHost>}
+\DoxyCodeLine{</IfModule>}
+\end{DoxyCode}
+
+
+Important is the {\ttfamily Directory} configuration because the {\ttfamily website-\/frontend} requires the {\ttfamily Fallback\+Resource} option to function correctly.
+
+For the {\ttfamily restapi.\+libelektra.\+org} domain we use an S\+C\+GI setup\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# file: /etc/apache2/sites-\/available/restapi.libelektra.org-\/le-\/ssl.conf}
+\DoxyCodeLine{<IfModule mod\_ssl.c>}
+\DoxyCodeLine{<VirtualHost *:443>}
+\DoxyCodeLine{    ServerName restapi.libelektra.org}
+\DoxyCodeLine{}
+\DoxyCodeLine{    SCGIMount / 127.0.0.1:8081}
+\DoxyCodeLine{}
+\DoxyCodeLine{    LogLevel info}
+\DoxyCodeLine{        ErrorLog \$\{APACHE\_LOG\_DIR\}/error.log}
+\DoxyCodeLine{        CustomLog \$\{APACHE\_LOG\_DIR\}/access.log combined}
+\DoxyCodeLine{}
+\DoxyCodeLine{    SSLCertificateFile /etc/letsencrypt/live/restapi.libelektra.org/fullchain.pem}
+\DoxyCodeLine{    SSLCertificateKeyFile /etc/letsencrypt/live/restapi.libelektra.org/privkey.pem}
+\DoxyCodeLine{    Include /etc/letsencrypt/options-\/ssl-\/apache.conf}
+\DoxyCodeLine{</VirtualHost>}
+\DoxyCodeLine{</IfModule>}
+\end{DoxyCode}
+\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2803}{}\doxysubsection{Rest-\/\+Backend}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2803}
+The {\ttfamily website-\/backend} itself is configured normally as described in the configuration section above, but with Cpp\+C\+MS using S\+C\+GI instead of H\+T\+TP as A\+PI variant. This requires setting the keys
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system/sw/elektra/restbackend/\#0/current/cppcms/service/api "scgi"}
+\DoxyCodeLine{kdb set system/sw/elektra/restbackend/\#0/current/cppcms/service/ip "127.0.0.1"}
+\DoxyCodeLine{kdb set system/sw/elektra/restbackend/\#0/current/cppcms/service/port 8081}
+\end{DoxyCode}
+
+
+Additionally we are using a worker process, which ensures that in case of a crash the backend restarts automatically (= basically supervisor + worker). Config\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system/sw/elektra/restbackend/\#0/current/cppcms/service/worker\_processes 1}
+\end{DoxyCode}
+
+
+Configuration snippets and users are stored at {\ttfamily system/configs} and {\ttfamily system/users}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system/sw/elektra/restbackend/\#0/current/backend/kdb/path/configs = system/configs}
+\DoxyCodeLine{kdb set system/sw/elektra/restbackend/\#0/current/backend/kdb/path/users = system/users}
+\end{DoxyCode}
+\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2804}{}\doxysubsection{Rest-\/\+Frontend}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2804}
+Because of the Apache server using the website-\/frontend installation directory as document root, there is no further configuration necessary other than already explained in the configuration section above.
+
+During the build, the frontend will be recompiled. It is not taken offline for this though and everything that is necessary to accomplish a clean deployment is taken care of by the compile script as well.\hypertarget{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2805}{}\doxysubsection{Jenkins Build Script}\label{doc_tutorials_snippet-sharing-rest-service_md_autotoc_md2805}
+The build script basically builds the applications, runs tests, installs everything and restarts the backend. Finally, it can run the configuration script for the frontend, which updates the website content.
+
+The current build script can be found here. 

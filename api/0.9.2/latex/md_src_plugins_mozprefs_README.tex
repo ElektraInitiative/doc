@@ -1,0 +1,49 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mozprefs plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained reviewed conformant compatible coverage specific unittest tested nodep libc preview experimental difficult limited unfinished concept
+\item infos/metadata =
+\item infos/description = storage plugin for mozilla preferences
+\end{DoxyItemize}\hypertarget{md_src_plugins_mozprefs_README_src_plugins_mozprefs_README_md}{}\doxysection{Basics}\label{md_src_plugins_mozprefs_README_src_plugins_mozprefs_README_md}
+This plugin works on \href{https://developer.mozilla.org/en-US/docs/Mozilla/Preferences/A_brief_guide_to_Mozilla_preferences}{\texttt{ Mozilla preference files}} and is used in Elektra’s \mbox{\hyperlink{md_src_plugins_mozprefs_autoconfig_README_src_plugins_mozprefs_autoconfig_README_md}{Firefox autoconfig script}}.\hypertarget{md_src_plugins_mozprefs_README_autotoc_md475}{}\doxysubsection{Preference Types}\label{md_src_plugins_mozprefs_README_autotoc_md475}
+
+\begin{DoxyItemize}
+\item Default preferences\+: {\ttfamily pref(....}, keys below {\ttfamily mountpoint/pref/}.
+\item User preferences\+: {\ttfamily user\+\_\+pref(....}, keys below {\ttfamily mountpoint/user/}.
+\item Lock preferences\+: {\ttfamily lock\+Pref(....}, keys below {\ttfamily mountpoint/lock/}.
+\item Sticky preferences\+: {\ttfamily sticky\+\_\+pref(....}, keys below {\ttfamily mountpoint/sticky/}.
+\end{DoxyItemize}
+
+Only Keys below one of these points are valid, everything else will be dropped\hypertarget{md_src_plugins_mozprefs_README_autotoc_md476}{}\doxysubsection{Data Types}\label{md_src_plugins_mozprefs_README_autotoc_md476}
+
+\begin{DoxyItemize}
+\item {\ttfamily integer}
+\item {\ttfamily string}
+\item {\ttfamily boolean}
+\end{DoxyItemize}\hypertarget{md_src_plugins_mozprefs_README_autotoc_md477}{}\doxysubsection{Hierarchy}\label{md_src_plugins_mozprefs_README_autotoc_md477}
+In Mozilla preference files {\ttfamily .} is used to separate sections, while elektra uses {\ttfamily /}. For simplification, and because {\ttfamily /} isn\textquotesingle{}t allowed in preference keys, the plugin treats {\ttfamily .} and {\ttfamily /} equally.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system/prefs/lock/a/lock/key lock}
+\DoxyCodeLine{kdb set system/prefs/lock/a/lock.key lock}
+\DoxyCodeLine{kdb set system/prefs/lock/a.lock.key lock}
+\end{DoxyCode}
+
+
+will all result in {\ttfamily lock\+Pref(\char`\"{}a.\+lock.\+key\char`\"{}, \char`\"{}lock\char`\"{});}\hypertarget{md_src_plugins_mozprefs_README_autotoc_md478}{}\doxysection{Example}\label{md_src_plugins_mozprefs_README_autotoc_md478}
+\`{}\`{}\`{} \hypertarget{md_src_plugins_mozprefs_README_autotoc_md479}{}\doxysection{Backup-\/and-\/\+Restore\+:user/tests/mozprefs}\label{md_src_plugins_mozprefs_README_autotoc_md479}
+sudo kdb mount prefs.\+js user/tests/mozprefs mozprefs
+
+kdb meta-\/set user/tests/mozprefs/lock/a/lock/key type boolean kdb set user/tests/mozprefs/lock/a/lock/key true kdb meta-\/set user/tests/mozprefs/pref/a/default/key type string kdb set user/tests/mozprefs/pref/a/default/key \char`\"{}i\textquotesingle{}m a default key\char`\"{} kdb meta-\/set user/tests/mozprefs/user/a/user/key type integer kdb set user/tests/mozprefs/user/a/user/key 123
+
+kdb export user/tests/mozprefs ini \#$>$ \mbox{[}lock/a/lock\mbox{]} \#$>$ \#@\+M\+E\+TA type = boolean \#$>$ key=true \#$>$ \mbox{[}pref/a/default\mbox{]} \#$>$ \#@\+M\+E\+TA type = string \#$>$ key=i\textquotesingle{}m a default key \#$>$ \mbox{[}user/a/user\mbox{]} \#$>$ \#@\+M\+E\+TA type = integer \#$>$ key=123
+
+cat {\ttfamily kdb file user/tests/mozprefs} \#$>$ lock\+Pref(\char`\"{}a.\+lock.\+key\char`\"{}, true); \#$>$ pref(\char`\"{}a.\+default.\+key\char`\"{}, \char`\"{}i\textquotesingle{}m a default key\char`\"{}); \#$>$ user\+\_\+pref(\char`\"{}a.\+user.\+key\char`\"{}, 123);\hypertarget{md_src_plugins_mozprefs_README_autotoc_md480}{}\doxysection{cleanup}\label{md_src_plugins_mozprefs_README_autotoc_md480}
+kdb rm -\/r user/tests/mozprefs sudo kdb umount user/tests/mozprefs \`{}\`{}\`{} 
