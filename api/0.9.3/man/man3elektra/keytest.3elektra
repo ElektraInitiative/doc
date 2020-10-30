@@ -1,0 +1,354 @@
+.TH "keytest" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keytest \- Methods to do various tests on Keys\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBkeyCmp\fP (const Key *k1, const Key *k2)"
+.br
+.RI "Compare the name of two keys\&. "
+.ti -1c
+.RI "int \fBkeyNeedSync\fP (const Key *key)"
+.br
+.RI "Test if a key needs to be synced to backend storage\&. "
+.ti -1c
+.RI "int \fBkeyIsBelow\fP (const Key *key, const Key *check)"
+.br
+.RI "Check if the key check is below the key key or not\&. "
+.ti -1c
+.RI "int \fBkeyIsDirectlyBelow\fP (const Key *key, const Key *check)"
+.br
+.RI "Check whether the key \fCcheck\fP is directly below the key \fCkey\fP\&. "
+.ti -1c
+.RI "int \fBkeyIsInactive\fP (const Key *key)"
+.br
+.RI "Check whether a key is inactive\&. "
+.ti -1c
+.RI "int \fBkeyIsBinary\fP (const Key *key)"
+.br
+.RI "Check if a key is binary type\&. "
+.ti -1c
+.RI "int \fBkeyIsString\fP (const Key *key)"
+.br
+.RI "Check if a key is string type\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to do various tests on Keys\&. 
+
+To use them: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+ 
+.SH "Function Documentation"
+.PP 
+.SS "int keyCmp (const Key * k1, const Key * k2)"
+
+.PP
+Compare the name of two keys\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+a number less than, equal to or greater than zero if k1 is found, respectively, to be less than, to match, or be greater than k2\&.
+.RE
+.PP
+The comparison is based on a strcmp of the keynames, and iff they match a strcmp of the owner will be used to distuingish\&. If even this matches the keys are found to be exactly the same and 0 is returned\&. These two keys can't be used in the same KeySet\&.
+.PP
+\fBkeyCmp()\fP defines the sorting order for a KeySet\&.
+.PP
+The following 3 points are the rules for null values:
+.PP
+.IP "\(bu" 2
+A null pointer will be found to be smaller than every other key\&. If both are null pointers, 0 is returned\&.
+.IP "\(bu" 2
+A null name will be found to be smaller than every other name\&. If both are null names, 0 is returned\&.
+.PP
+.PP
+If the name is equal then:
+.PP
+.IP "\(bu" 2
+No owner will be found to be smaller then every other owner\&. If both don't have an owner, 0 is returned\&.
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+the owner will only be used if the names are equal\&.
+.RE
+.PP
+Given any Keys k1 and k2 constructed with \fBkeyNew()\fP, following equation hold true:
+.PP
+.PP
+.nf
+     succeed_if (keyCmp (0, 0) == 0, "all null pointers same");
+        succeed_if (keyCmp (k1, 0) == 1, "null pointer is smaller");
+        succeed_if (keyCmp (0, k2) == -1, "null pointer is smaller");
+.fi
+.PP
+ Here are some more examples: 
+.PP
+.nf
+Key *k1 = keyNew("user/a", KEY_END);
+Key *k2 = keyNew("user/b", KEY_END);
+
+// keyCmp(k1,k2) < 0
+// keyCmp(k2,k1) > 0
+
+.fi
+.PP
+.PP
+And even more: 
+.PP
+.nf
+Key *k1 = keyNew("user/a", KEY_OWNER, "markus", KEY_END);
+Key *k2 = keyNew("user/a", KEY_OWNER, "max", KEY_END);
+
+// keyCmp(k1,k2) < 0
+// keyCmp(k2,k1) > 0
+
+.fi
+.PP
+.PP
+Do not strcmp the \fBkeyName()\fP yourself because the result differs from simple ascii comparison\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIk1\fP the first key object to compare with 
+.br
+\fIk2\fP the second key object to compare with
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksAppendKey()\fP, \fBksAppend()\fP will compare keys when appending 
+.PP
+\fBksLookup()\fP will compare keys during searching 
+.RE
+.PP
+
+.SS "int keyIsBelow (const Key * key, const Key * check)"
+
+.PP
+Check if the key check is below the key key or not\&. Example: 
+.PP
+.nf
+key user/sw/app
+check user/sw/app/key
+
+.fi
+.PP
+.PP
+returns true because check is below key
+.PP
+Example: 
+.PP
+.nf
+key user/sw/app
+check user/sw/app/folder/key
+
+.fi
+.PP
+.PP
+returns also true because check is indirect below key
+.PP
+Obviously, there is no key above a namespace (e\&.g\&. user, system, /):
+.PP
+.PP
+.nf
+key *
+check user
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIcheck\fP the key to find the relative position of 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if check is below key 
+.br
+\fI0\fP if it is not below or if it is the same key 
+.br
+\fI-1\fP if key or check is null 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeySetName()\fP, \fBkeyGetName()\fP, \fBkeyIsDirectlyBelow()\fP 
+.RE
+.PP
+
+.SS "int keyIsBinary (const Key * key)"
+
+.PP
+Check if a key is binary type\&. The function checks if the key is a binary\&. Opposed to string values binary values can have '\\0' inside the value and may not be terminated by a null character\&. Their disadvantage is that you need to pass their size\&.
+.PP
+Make sure to use this function and don't test the binary type another way to ensure compatibility and to write less error prone programs\&.
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if it is binary 
+.br
+\fI0\fP if it is not 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetBinary()\fP, \fBkeySetBinary()\fP 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key to check 
+.RE
+.PP
+
+.SS "int keyIsDirectlyBelow (const Key * key, const Key * check)"
+
+.PP
+Check whether the key \fCcheck\fP is directly below the key \fCkey\fP\&. 
+.PP
+.nf
+Example:
+key user/sw/app
+check user/sw/app/key
+
+returns true because check is below key
+
+Example:
+key user/sw/app
+check user/sw/app/folder/key
+
+does not return true, because there is only an indirect relation
+
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIcheck\fP the key to find the relative position of 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if check is below key 
+.br
+\fI0\fP if it is not below or if it is the same key 
+.br
+\fI-1\fP on null pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyIsBelow()\fP, \fBkeySetName()\fP, \fBkeyGetName()\fP 
+.RE
+.PP
+
+.SS "int keyIsInactive (const Key * key)"
+
+.PP
+Check whether a key is inactive\&. In Elektra terminology a hierarchy of keys is inactive if the rootkey's basename starts with '\&.'\&. So a key is also inactive if it is below an inactive key\&. For example, user/key/\&.hidden is inactive and so is user/\&.hidden/below\&.
+.PP
+Inactive keys should not have any meaning to applications, they are only a convention reserved for users and administrators\&. To automatically remove all inactive keys for an application, consider to use the hidden plugin\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if the key is inactive 
+.br
+\fI0\fP if the key is active 
+.br
+\fI-1\fP on NULL pointer or when key has no name 
+.RE
+.PP
+
+.SS "int keyIsString (const Key * key)"
+
+.PP
+Check if a key is string type\&. String values are null terminated and are not allowed to have any '\\0' characters inside the string\&.
+.PP
+Make sure to use this function and don't test the string type another way to ensure compatibility and to write less error prone programs\&.
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if it is string 
+.br
+\fI0\fP if it is not 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetString()\fP, \fBkeySetString()\fP 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key to check 
+.RE
+.PP
+
+.SS "int keyNeedSync (const Key * key)"
+
+.PP
+Test if a key needs to be synced to backend storage\&. If any key modification took place the key will be flagged so that \fBkdbSet()\fP knows which keys were modified and which not\&.
+.PP
+After \fBkeyNew()\fP the flag will normally be set, but after \fBkdbGet()\fP and \fBkdbSet()\fP the flag will be removed\&. When you modify the key the flag will be set again\&.
+.PP
+In your application you can make use of that flag to know if you changed something in a key after a \fBkdbGet()\fP or \fBkdbSet()\fP\&.
+.PP
+\fBNote:\fP
+.RS 4
+Note that the sync status will be updated on any change, including metadata\&.
+.RE
+.PP
+\fBDeprecated\fP
+.RS 4
+The handling of synchronization is done internally and does not need to be checked by neither application nor plugins\&.
+.RE
+.PP
+.PP
+\fBSee also:\fP
+.RS 4
+after \fBkeyNew()\fP, \fBkeyDup()\fP keys need sync
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP if \fCkey\fP was changed in memory, 0 otherwise 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

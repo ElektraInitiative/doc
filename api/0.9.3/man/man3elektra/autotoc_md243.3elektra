@@ -1,0 +1,52 @@
+.TH "autotoc_md243" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md243Plugin: gopts 
+ \- 
+.IP "\(bu" 2
+infos = Information about the gopts plugin is in keys below
+.IP "\(bu" 2
+infos/author = Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = procgetstorage
+.IP "\(bu" 2
+infos/status = recommended productive maintained nodep libc
+.IP "\(bu" 2
+infos/metadata = args args/index command opt opt/long opt/arg opt/flagvalue opt/help opt/hidden opt/# opt/#/long opt/#/arg opt/#/flagvalue opt/#/hidden env env/#
+.IP "\(bu" 2
+infos/description = Parses command-line options using elektra-opts
+.PP
+.PP
+This plugin is very simple in what it does\&. It uses system specific methods of accessing \fCargc\fP and \fCargv\fP outside of \fCmain\fP and then calls \fCelektraGetOpts\fP to do options processing\&.
+.PP
+The config key \fC/offset\fP may be given to ignore a number of arguments at the start of \fCargv\fP\&. This is useful, if \fCgopts\fP was called from a script via an interpreter (e\&.g\&. in python scripts)\&.
+.PP
+The preferred way of using this plugin is via \fCkdbEnsure\fP:
+.PP
+.PP
+.nf
+KDB * kdb = kdbOpen (parentKey);
+
+KeySet * contract = ksNew (1, keyNew ("system/elektra/ensure/plugins/global/gopts", KEY_VALUE, "mounted", KEY_END), KS_END);
+int rc = kdbEnsure (kdb, contract, parentKey);
+if (rc != 0)
+{
+        // error handling
+}
+
+// gopts now mounted
+KeySet * ks = ksNew (0, KS_END);
+kdbGet (kdb, ks, parentKey);
+.fi
+.PP
+.PP
+If \fCelektraGetOpts\fP determined that the application is in help mode (i\&.e\&. \fC--help\fP was used), \fCgopts\fP will set the key \fCproc/elektra/gopts/help\fP to \fC1\fP\&. It will also invoke \fCelektraGetOptsHelpMessage\fP and write the result into the key \fCproc/elektra/gopts/help/message\fP\&. The \fCusage\fP and \fCprefix\fP values used for this call can be configured, via the \fC/help/usage\fP and \fC/help/prefix\fP config keys\&. 

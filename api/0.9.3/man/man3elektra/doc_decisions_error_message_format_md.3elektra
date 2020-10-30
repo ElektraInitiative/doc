@@ -1,0 +1,84 @@
+.TH "doc_decisions_error_message_format_md" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_error_message_format_mdError message format 
+ \- Too verbose error message Currently for every error, 9 lines are shown in which most of them are not relevant to end users/administrators\&. One goal is to reduce the verbosity of such messages and let users/administrators see only information they need\&.
+.PP
+.IP "\(bu" 2
+Supporting multiple programming languages
+.IP "\(bu" 2
+Plugin System
+.IP "\(bu" 2
+Error Code should be preserved
+.PP
+.PP
+Possible variations on what message should be displayed, e\&.g\&., to keep the mountpoint information or on how wordings should be (with or without 'Sorry, \&.\&.\&.', coloring of certain parts of a message, etc\&.)
+.PP
+Examples would be to
+.PP
+.IP "\(bu" 2
+Leave out the 'Sorry' in the error message or leave the introduction sentence completely
+.IP "\(bu" 2
+Drop \fCAt\fP, \fCMountpoint\fP, \fCConfigfile\fP, \fCModule\fP\&. This information though yields useful information or was even added as a request
+.IP "\(bu" 2
+Show mountpoint, configfile, module, etc in beneath the general introduction message\&. Eg\&. \fCThe command kdb set failed while accessing the key database on mountpoint (\&.\&.\&.) with the info\fP
+.IP "\(bu" 2
+Incorporating the description in another ways: \fCReason: Validation of key '<key>' with string '<value>' failed\&. (validation failed)\fP
+.IP "\(bu" 2
+Use one command line option to show all additional info which gets hidden per default from now on instead of two
+.IP "\(bu" 2
+Color the main message differently compared to the general introduction message
+.IP "\(bu" 2
+Do not color messages as it might confuse users with overwhelming many colors
+.IP "\(bu" 2
+Do not print out the error code\&. It is useful though for googling
+.PP
+.PP
+The error message has the current format:
+.PP
+.PP
+.nf
+The command kdb set failed while accessing the key database with the info:
+Sorry, the error (#121) occurred ;(
+Description: validation failed
+Reason: Validation of key "<key>" with string "<value>" failed\&.
+Ingroup: plugin
+Module: enum
+At: \&.\&.\&.\&.\&.\&./src/plugins/enum/enum\&.c:218
+Mountpoint: <parentKey>
+Configfile: \&.\&.\&.\&.\&./<file>\&.25676:1549919217\&.284067\&.tmp
+.fi
+.PP
+.PP
+The new default message will look like this:
+.PP
+.PP
+.nf
+Sorry, module `MODULE` issued [error|warning] `NR`:
+`ERROR_CODE_DESCRIPTION`: Validation of key "<key>" with string "<value>" failed\&.
+.fi
+.PP
+.PP
+The \fCNR\fP will be the color red in case of an error or yellow in case of a warning while \fCMODULE\fP will be the color blue\&.
+.PP
+Optionally a third line indicating a solution can be added\&. Eg\&. for a permission related error there would be a third line:
+.PP
+.PP
+.nf
+Possible Solution: Retry the command as sudo (sudo !!)
+.fi
+.PP
+.PP
+To avoid losing information, the user can use the command line argument \fC-v\fP (verbose) to show \fCMountpoint\fP, \fCConfigfile\fP in addition to the current error message\&. Furthermore a developer can use the command line argument \fC-d\fP (debug) to show \fCAt\fP for debugging purposes\&.
+.PP
+The new error message is much more succinct which gives end users more relevant information\&. Furthermore the solution approach still holds all necessary information if requested by users\&.
+.PP
+\fCDescription\fP will be incorporated into \fCReason\fP whereas the \fCModule\fP will be incorporated into the general sentence starting the error message\&.
+.PP
+.IP "\(bu" 2
+\fBError Codes\fP Shows how the new error codes are meant to be
+.IP "\(bu" 2
+\fBIngroup Removal\fP Shows the decision of why the \fCingoup\fP field has been removed
+.PP
+

@@ -1,0 +1,327 @@
+Many applications use command-\/line options and environment variables as a way to override configuration values. In Elektra this can be automated by providing a specification that maps command-\/line options and environment variables to keys in the K\+DB.
+
+The function {\ttfamily elektra\+Get\+Opts} uses this specification together with {\ttfamily argv} and {\ttfamily envp} and creates new keys in the {\ttfamily proc} namespace for any command-\/line option or environment variable it finds. Because the {\ttfamily proc} namespace is used, these values will be preferred over any stored values in a cascading lookup.
+
+There is also the {\ttfamily gopts} plugin. It is a global plugin and should be mounted via {\ttfamily kdb\+Ensure}. This plugin extracts {\ttfamily argv} and {\ttfamily envp} via OS specific A\+P\+Is and then calls {\ttfamily elektra\+Get\+Opts}. The advantage of using {\ttfamily gopts} is that it retrieves command-\/line options before any validation plugins are called. This means that values passed on the command-\/line can be validated.
+
+To use {\ttfamily elektra\+Get\+Opts} you need to link against {\ttfamily elektra-\/opts}, {\ttfamily elektra-\/meta} and {\ttfamily elektra-\/ease}.
+
+To define a command-\/line option either set the {\ttfamily opt} metakey to the short option you want to use, or set {\ttfamily opt/long} to the long option you want to use. For short options, only the first character of the given value will be used (\textquotesingle{}\textbackslash{}0\textquotesingle{} is ignored). Short and long options can be used simultaneously.
+
+Additionally a key can also be associated with multiple short/long options. To achieve this treat {\ttfamily opt} as an array. For example for two options {\ttfamily -\/a} and {\ttfamily -\/b} you would set {\ttfamily opt=\#1}, {\ttfamily opt/\#0=a} and {\ttfamily opt/\#1=b}. If not explicitly stated otherwise, you can replace {\ttfamily opt} with any {\ttfamily opt/\#} array element in all meta-\/keys mentioned in this document. This of course includes long options (i.\+e. {\ttfamily opt/\#0/long}, etc.).
+
+While you can specify multiple options (or environment variables, see below) for a single key, only one of them can be used at the same time. Using two or more options (or variables) that are all linked to the same key, will result in an error.
+
+Per default an option is expected to have an argument. Arguments to short and long options are given in the same way as with {\ttfamily getopt\+\_\+long(3)} (i.\+e. {\ttfamily -\/oarg}, {\ttfamily -\/o arg}, {\ttfamily -\/-\/option arg} or {\ttfamily -\/-\/option=arg}).
+
+To change whether an option expects an argument set {\ttfamily opt/arg} to either {\ttfamily \char`\"{}none\char`\"{}} or {\ttfamily \char`\"{}optional\char`\"{}} (the default is {\ttfamily \char`\"{}required\char`\"{}}).
+
+
+\begin{DoxyItemize}
+\item If you choose {\ttfamily \char`\"{}none\char`\"{}}, the corresponding key will be set to {\ttfamily \char`\"{}1\char`\"{}}, if the option is used. This value can be changed by setting {\ttfamily opt/flagvalue}.
+\item An option that is set to {\ttfamily \char`\"{}optional\char`\"{}} is treated the same as with {\ttfamily \char`\"{}none\char`\"{}}, except that you can also set the value with the long option form {\ttfamily -\/-\/option=value}. This also means that {\ttfamily opt/flagvalue} is used, if no argument is given. Contrary to {\ttfamily getopt\+\_\+long(3)} options with optional arguments can still have short forms. They just cannot have an argument in this form.
+\end{DoxyItemize}
+
+Elektra also supports parsing environment variables in a similar manner. For these there are however, less configuration options. You can simply specify one or more environment variables for a key using the {\ttfamily env} metakey (or {\ttfamily env/\#} meta-\/array for multiple).
+
+Both options and environment variables expose special behavior, if used in combination with arrays.
+
+If an option is specified on a key with basename {\ttfamily \#}, the option can be used repeatedly. All occurrences will be collected into the array.
+
+Environment variables obviously cannot be repeated, instead a behavior similar that used for P\+A\+TH is adopted. On Windows the variable will be split at each \textquotesingle{};\textquotesingle{} character. On all other systems \textquotesingle{}\+:\textquotesingle{} is used as a separator.
+
+All unused elements of {\ttfamily argv} are be collected into an array. You can access this array by specifying {\ttfamily args=remaining} on a key with basename {\ttfamily \#}. The array will be copied into this key. As is the case with getopt(3) processing of options will stop, if {\ttfamily -\/-\/} is encountered in {\ttfamily argv}.
+
+If {\ttfamily elektra\+Get\+Opts} is called with a {\ttfamily parent\+Key} that has {\ttfamily posixly = 1} set, then processing of options will also stop, when a non-\/option argument is encountered. This is similar to the P\+O\+S\+IX version of getopt(3). N\+O\+TE\+: {\ttfamily posixly = 1} must be set on the parent key passed to {\ttfamily elektra\+Get\+Opts}, not in the specification itself.
+
+Additionally, there is {\ttfamily args=indexed}. If it is specified on a key, the key must also have the metakey {\ttfamily args/index=N} set to an integer {\ttfamily N}. Such a key will be set to the unused element at index {\ttfamily N}. If a key has {\ttfamily args=indexed} and {\ttfamily args/index=N}, then there must also be keys for all integers {\ttfamily 0 $<$= X $<$ N} with {\ttfamily args=indexed} and {\ttfamily args/index=N} set. For example, you cannot use {\ttfamily args/index=0} and {\ttfamily args/index=2} without {\ttfamily args/index=1}.
+
+Combining {\ttfamily args=indexed} and {\ttfamily args=remaining} in the same specification (on different keys) is also possible. The key with {\ttfamily args=remaining} will only contain those elements not used via {\ttfamily args=indexed}. E.\+g. if there are keys with {\ttfamily args/index=0} and {\ttfamily args/index=1} then the {\ttfamily args=remaining} array will start with the third (index 2) parameter argument. Note however, the {\ttfamily args=remaining} array {\bfseries always} starts with index {\ttfamily \#0}, even if it doesn\textquotesingle{}t contain the first parameter argument.
+
+
+\begin{DoxyCode}
+[from]
+args = indexed
+args/index = 0
+
+[to]
+args = indexed
+args/index = 1
+
+[more/#]
+args = remaining
+\end{DoxyCode}
+
+
+If an application {\ttfamily app} with the specification above is called as {\ttfamily ./app apple banana cherry date}, then the keys will be assigned as follows\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily from = apple}
+\item {\ttfamily to = banana}
+\item {\ttfamily more/\#0 = cherry}
+\item {\ttfamily more/\#1 = date}
+\end{DoxyItemize}
+
+{\ttfamily elektra\+Get\+Opts} also supports sub-\/commands. Explaining sub-\/commands is easiest through the help of an example\+: {\ttfamily add} and {\ttfamily commit} are both sub-\/commands of {\ttfamily git}, since we can call {\ttfamily git add} and {\ttfamily git commit} and they do entirely different things. The most important impact of using sub-\/commands is their effect on option arguments. For example calling {\ttfamily git -\/p add} and {\ttfamily git add -\/p} result in different behavior, since the {\ttfamily -\/p} option is interpreted differently. The options that {\ttfamily git} understands are separate from the options that its sub-\/command {\ttfamily add} knows. However, the option {\ttfamily -\/p} is understood by both. In {\ttfamily git} it is short for {\ttfamily -\/-\/paginate} and in {\ttfamily add} it is short for {\ttfamily -\/-\/patch}.
+
+An important thing to know about sub-\/commands in {\ttfamily elektra\+Get\+Opts} is that they turn on {\ttfamily posixly = 1} mode. This means {\bfseries all} options for a specific sub-\/command must be given before any non-\/option arguments (such as parameters or sub-\/commands). Otherwise, we couldn\textquotesingle{}t distinguish between {\ttfamily git -\/p add} and {\ttfamily git add -\/p}. In other words an option argument is always assigned to the first sub-\/command to its left. Any element of {\ttfamily argv} that is not the argument for an option argument, either switches to a new sub-\/command or is the start of the parameter arguments.
+
+A sub-\/command is created by specifying {\ttfamily command} on a key. To enable sub-\/command processing the parent key of the whole specification must have {\ttfamily command} set to an empty string. All keys marked with {\ttfamily command} {\bfseries directly} below another key {\ttfamily K} marked with {\ttfamily command} (e.\+g. the parent key) are sub-\/commands of {\ttfamily K}. It is an error, if the immediate parent of a key {\ttfamily X} marked with {\ttfamily command} is not marked with {\ttfamily command} and {\ttfamily X} is not the parent of the whole specification.
+
+To inform the application about the invoked sub-\/commands, {\ttfamily elektra\+Get\+Opts} sets each {\ttfamily command} key to one of two values\+:
+
+
+\begin{DoxyItemize}
+\item The basename of the key, whose command was invoked.
+\item An empty string otherwise.
+\end{DoxyItemize}
+
+For example consider {\ttfamily ./app add more}\+: The parent key will be set to the basename of whatever key {\ttfamily command=add} was specified on, the key for {\ttfamily add} will be set to the basename corresponding to {\ttfamily more} and the key for {\ttfamily more} is set to an empty string, because none of its sub-\/commands were invoked. A more detailed example is shown below.
+
+Every key considered by {\ttfamily elektra\+Get\+Opts} is assigned either to the root command, or a single sub-\/command. Specifically, each key is assigned to the command of its immediate parent. If sub-\/commands are used and the immediate parent of an {\ttfamily opt} or {\ttfamily args} key has no {\ttfamily command} metadata an error occurs. The value of a key will {\bfseries only} be set by {\ttfamily elektra\+Get\+Opts}, if the corresponding sub-\/command was invoked.
+
+Lastly, it is allowed to have keys with {\ttfamily args} and {\ttfamily command} below the same parent. If a matching sub-\/command is found among the {\ttfamily command} keys, processing will continue there. Otherwise, the {\ttfamily args} keys will be considered. This allows an application to implement dynamic commands (like {\ttfamily git} or {\ttfamily kdb}) by using the {\ttfamily args=remaining} array to invoke another application.
+
+If an unknown sub-\/command is encountered without an {\ttfamily args} key, an error is returned.
+
+All of this is best understood with an example\+:
+
+
+\begin{DoxyCode}
+[kdb]
+command = ""
+
+[kdb/printversion]
+description = "print version information and exit (ignoring all other options/commands/parameters)"
+opt = v
+opt/long = version
+opt/arg = none
+
+[kdb/getter]
+description = "get a key's value"
+command = get
+
+[kdb/getter/verbose]
+description = "print additional information about where the value comes from"
+opt = v
+opt/long = verbose
+opt/arg = none
+
+[kdb/getter/keyname]
+description = "name of the key to read"
+args = indexed
+args/index = 0
+
+[kdb/setter]
+description = "print additional information about where the value will be stored"
+command = set
+
+[kdb/setter/verbose]
+description = "name of the key to write"
+opt = v
+opt/long = verbose
+opt/arg = none
+
+[kdb/setter/keyname]
+description = "name of the key to write"
+args = indexed
+args/index = 0
+
+[kdb/setter/value]
+description = "value to be written"
+args = indexed
+args/index = 1
+
+[kdb/dynamic/#]
+description = "dynamically call a user-supplied command"
+args = remaining
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item If we invoke {\ttfamily kdb -\/v}, keys below {\ttfamily kdb/getter}, {\ttfamily kdb/setter} and {\ttfamily kdb/dynamic} are not touched. The result is\+:
+\begin{DoxyItemize}
+\item {\ttfamily kdb = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/printversion = 1}
+\item {\ttfamily kdb/getter = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/setter = \char`\"{}\char`\"{}}
+\end{DoxyItemize}
+\item If we invoke {\ttfamily kdb get -\/v name}, keys below {\ttfamily kdb/setter} and {\ttfamily kdb/dynamic} are not touched. The result is\+:
+\begin{DoxyItemize}
+\item {\ttfamily kdb = getter}
+\item {\ttfamily kdb/getter = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/getter/verbose = 1}
+\item {\ttfamily kdb/getter/keyname = name}
+\item {\ttfamily kdb/setter = \char`\"{}\char`\"{}}
+\end{DoxyItemize}
+\item If we invoke {\ttfamily kdb -\/v set -\/v}, keys below {\ttfamily kdb/getter} and {\ttfamily kdb/dynamic} are not touched. The result is\+:
+\begin{DoxyItemize}
+\item {\ttfamily kdb = setter}
+\item {\ttfamily kdb/printversion = 1}
+\item {\ttfamily kdb/setter = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/setter/verbose = 1}
+\item {\ttfamily kdb/getter = \char`\"{}\char`\"{}}
+\end{DoxyItemize}
+\item If we invoke {\ttfamily kdb -\/v custom -\/v -\/x z}, keys below {\ttfamily kdb/getter} and {\ttfamily kdb/setter} are not touched. The result is\+:
+\begin{DoxyItemize}
+\item {\ttfamily kdb = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/printversion = 1}
+\item {\ttfamily kdb/getter = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/setter = \char`\"{}\char`\"{}}
+\item {\ttfamily kdb/dynamic/\#0 = custom}
+\item {\ttfamily kdb/dynamic/\#1 = -\/v}
+\item {\ttfamily kdb/dynamic/\#2 = -\/x}
+\item {\ttfamily kdb/dynamic/\#3 = z}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+To determine what code to execute, an application would just start with the parent key {\ttfamily kdb} in the example above. It would then repeatedly look at the current key\textquotesingle{}s value, append that to the current key and continue, until the current key\textquotesingle{}s value was the empty string {\ttfamily \char`\"{}\char`\"{}}. Each of the examined keys corresponds to one of the sub-\/commands in the invocation and the keys directly below those, contain the relevant options (and for the last sub-\/command also parameters).
+
+The C code for this example is located in {\ttfamily examples/opts\+Commands.\+c}.
+
+When the help option {\ttfamily -\/-\/help} is encountered in {\ttfamily argv}, {\ttfamily elektra\+Get\+Opts} only reads the specification, but does not create any keys in the {\ttfamily proc} namespace. It will however, generate a help message that can be accessed with {\ttfamily elektra\+Get\+Opts\+Help\+Message}.
+
+The help message consists of a usage line and an options list. The program name for the usage line is taken from {\ttfamily argv\mbox{[}0\mbox{]}}. If the value contains a slash ({\ttfamily /}) it will be considered a path and only the part after the last slash will be used.
+
+The options list will contain exactly one entry for each key that has at least one option. Each entry has to parts. First all the options for the key are listed and then (possibly on the next line, if there are a lot of options), the description for the key is listed. The description is taken from the {\ttfamily opt/help} or alternatively the {\ttfamily description} metakey.
+
+{\bfseries Note\+:} {\ttfamily opt/help} is specified {\itshape only once per key}. That means even if the key uses {\ttfamily opt/\#0}, {\ttfamily opt/\#1}, etc. (unlike most other metadata) the description will always be taken from {\ttfamily opt/help} directly, because there can only be one description. In general we recommend using {\ttfamily description}, because it is used by other parts of Elektra as well. {\ttfamily opt/help} is intended to provide a less verbose description more suitable for the command-\/line.
+
+The help message can be modified in a few different ways\+:
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily usage} argument of {\ttfamily elektra\+Get\+Opts\+Help\+Message} can be used to replace the default usage line.
+\item The {\ttfamily prefix} argument of {\ttfamily elektra\+Get\+Opts\+Help\+Message} can be used to insert text between the usage line and the options list.
+\item An option can can be hidden from the help message by setting {\ttfamily opt/hidden} to {\ttfamily \char`\"{}1\char`\"{}}. This hides both the long and short form of the option. If you want to hide just one form, use an array of two options an hide just one index.
+\item If the option has an {\ttfamily \char`\"{}optional\char`\"{}} or {\ttfamily \char`\"{}required\char`\"{}} argument, the string {\ttfamily A\+RG} will be used as a placeholder by default. You can change this, by setting {\ttfamily opt/arg/help} for the corresponding option.
+\end{DoxyItemize}
+
+If sub-\/commands are in use, the help message returned by {\ttfamily elektra\+Get\+Opts\+Help\+Message} will apply to the invoked sub-\/command only. For example {\ttfamily ./app -\/-\/help} generates the general help message for {\ttfamily ./app} containing only options valid for the root command. In contrast, {\ttfamily ./app more -\/-\/help} generates the help message for the sub-\/command {\ttfamily more}.
+
+The order of precedence is simple\+:
+
+
+\begin{DoxyItemize}
+\item If a short option for a key is found, it will always be used.
+\item If none of the short options for a key are found, we look for long options.
+\item Neither short nor long options are found, environment variables are considered.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Both options and environment variables can only be specified on a single key. If you need to have the value of one option/environment variable in multiple keys, you may use {\ttfamily fallback}s.
+\item {\ttfamily -\/} cannot be used as short options, because it would collide with, the \char`\"{}option end marker\char`\"{}.
+\item {\ttfamily help} cannot be used as a long option, because it would collide with the help option.
+\end{DoxyItemize}
+
+The following specification describes the command line interface similar to the one used by {\ttfamily rm}. (It is based of {\ttfamily rm (G\+NU coreutils) 8.\+30}).
+
+
+\begin{DoxyCode}
+[force]
+opt = f
+opt/long = force
+opt/arg = none
+description = ignore nonexistent files and arguments, never prompt
+
+[interactive]
+opt = #1
+opt/#0 = i
+opt/#0/long = interactive
+opt/#0/arg = optional
+opt/#0/flagvalue = always
+opt/#1 = I
+opt/#1/flagvalue = once
+opt/#1/arg = none
+opt/arg/name = WHEN
+description = prompt according to WHEN: never, once (-I), or always (-i); without WHEN, prompt always
+
+[singlefs]
+opt/long = one-file-system
+opt/arg = none
+description = when removing a hierarchy recursively, skip any directory that is on a file system different
+       from that of the corresponding line argument
+
+[nopreserve]
+opt/long = no-preserve-root
+opt/arg = none
+description = do not treat '/' specially
+
+[preserve]
+opt/long = preserve-root
+opt/arg = optional
+opt/arg/name = all
+opt/flagvalue = root
+description = do not remove '/' (default); with 'all', reject any command line argument on a separate
+       device from its parent
+
+[recursive]
+opt = #1
+opt/#0 = r
+opt/#0/long = recursive
+opt/#0/arg = none
+opt/#1 = R
+opt/#1/arg = none
+description = remove directories and their contents recursively
+
+[emptydirs]
+opt = d
+opt/long = dir
+opt/arg = none
+description = remove empty directories
+
+[verbose]
+opt = v
+opt/long = verbose
+opt/arg = none
+env = VERBOSE
+description = explain what is being done
+
+[showversion]
+opt/long = version
+opt/arg = none
+description = output version information and exit
+
+[files/#]
+args = remaining
+env = FILES
+description = the files that shall be deleted
+\end{DoxyCode}
+
+
+If this specification is used in a program called {\ttfamily erm} (for Elektra rm), which is called like this\+:
+
+
+\begin{DoxyCode}
+FILES="one.txt:other.log" VERBOSE=1 erm -fi --recursive
+\end{DoxyCode}
+
+
+The following keys will be created by {\ttfamily elektra\+Get\+Opts} (assuming the specification is mounted at {\ttfamily spec/sw/org/erm/\#0/current})\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily proc/sw/org/erm/\#0/current/force = \char`\"{}1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/interactive = \char`\"{}always\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/recursive = \char`\"{}1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/verbose = \char`\"{}1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files \mbox{[}array\mbox{]} = \char`\"{}\#1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#0 = \char`\"{}one.\+txt\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#1 = \char`\"{}other.\+log\char`\"{}}
+\end{DoxyItemize}
+
+Calling {\ttfamily F\+I\+L\+ES=\char`\"{}abcd.\+txt\char`\"{} erm 123.\+txt 456.\+txt} meanwhile will result in\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files \mbox{[}array\mbox{]} = \char`\"{}\#1\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#0 = \char`\"{}123.\+txt\char`\"{}}
+\item {\ttfamily proc/sw/org/erm/\#0/current/files/\#1 = \char`\"{}456.\+txt\char`\"{}}
+\end{DoxyItemize}
+
+N\+O\+TE\+: {\ttfamily proc/sw/org/erm/\#0/current/files \mbox{[}array\mbox{]} = \char`\"{}\#1\char`\"{}} means the {\ttfamily array} metadata of {\ttfamily proc/sw/org/erm/\#0/current/files} is {\ttfamily \#1}.
+
+You can find a full working example \href{/home/jenkins/workspace/libelektra-release/examples/opts.c}{\tt here}. However, it uses a hard coded specification which is a bit harder to read. 

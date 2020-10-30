@@ -1,0 +1,123 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the specload plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\tt k.\+boeswirth+git@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/specload
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained nodep libc configurable unfinished
+\item infos/metadata =
+\item infos/description = loads a specification from an external application
+\end{DoxyItemize}
+
+In order to optimally use Elektra an application has to provide a specification. This specification has to be mounted in the {\ttfamily spec} namespace by the user (or automatically during the install process). However, this specification should in most cases not be modified by the user. If it is modified the user has to be sure it is still compatible to the original specification. Otherwise the application might crash because it e.\+g. expected a default value to be provided by the specification that the user changed or removed.
+
+This is were this plugin comes in. Unlike other storage plugins {\ttfamily specload} doesn\textquotesingle{}t use the file given during mounting for most of the configuration. Instead {\ttfamily specload} requests the specification with which an application was compiled from the application itself. On top of this base specifications the user can make some modifications, which are the only keys stored in the mounted file. All modifications made by the user are verified by the plugin. The user can never modify the specification in a way to would break application compatibility.
+
+N\+O\+TE\+: currently the modifications a user can make are very limited/not possible. See \href{#limitations}{\tt Limitations} below.
+
+The plugin relies heavily on the {\ttfamily quickdump} plugin. It is used for storing the overridden values as well as the data transfer between {\ttfamily specload} and an application.
+
+To check whether {\ttfamily quickdump} is available you can use\+:
+
+
+\begin{DoxyCode}
+kdb plugin-list quickdump
+#> quickdump
+\end{DoxyCode}
+
+
+To mount {\ttfamily specload} use (note\+: only the {\ttfamily spec} namespace is supported)\+:
+
+
+\begin{DoxyCode}
+# specload will call '/usr/bin/exampleapp --elektra-spec'
+kdb mount specload.eqd spec/tests/specload/example specload 'app=/usr/bin/exampleapp'
+\end{DoxyCode}
+
+
+You always have to specify the {\ttfamily app} that shall be called. This application will be called with the single argument {\ttfamily -\/-\/elektra-\/spec}. This can be configured by using {\ttfamily app/args/\#} during mounting\+:
+
+
+\begin{DoxyCode}
+# specload will call '/usr/bin/exampleapp -o spec'
+kdb mount specload.eqd spec/tests/specload/example specload 'app=/usr/bin/exampleapp' 'app/args=#1'
+       'app/args/#0=-o' 'app/args/#1=spec'
+\end{DoxyCode}
+
+
+To inhibit the default {\ttfamily -\/-\/elektra-\/spec} argument and call an application without any arguments use {\ttfamily \textquotesingle{}app/args=\textquotesingle{}}.
+
+The app must only output the expected base specification to {\ttfamily stdout} and then exit, when called by {\ttfamily specload}. We use the {\ttfamily quickdump} plugin for communication, so the application should call {\ttfamily elektra\+Quickdump\+Set}. Because this dependency may change in future, it is recommended you use the function {\ttfamily elektra\+Specload\+Send\+Spec} exported as {\ttfamily \char`\"{}system/elektra/modules/specload/exports/sendspec\char`\"{}}\+:
+
+
+\begin{DoxyCode}
+Key * errorKey = \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (0, \hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END});
+
+\textcolor{comment}{// add 'system/sendspec' key to suppress checking the 'app' key in elektraSpecloadOpen}
+KeySet * specloadConf = \hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew} (1, \hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew} (\textcolor{stringliteral}{"system/sendspec"}, \hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}), 
+      \hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END});
+ElektraInvokeHandle * specload = \hyperlink{group__invoke_ga3eb20131e9a8fc9a6cebf126927c09bc}{elektraInvokeOpen} (\textcolor{stringliteral}{"specload"}, specloadConf, errorKey);
+
+\textcolor{keywordtype}{int} result = \hyperlink{group__invoke_gaa257d93399c60f73c611205bbfa7c9a0}{elektraInvoke2Args} (specload, \textcolor{stringliteral}{"sendspec"}, ks, NULL);
+
+\hyperlink{group__invoke_ga684a21daa0b3c20783c55184a9157b3b}{elektraInvokeClose} (specload, errorKey);
+\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel} (errorKey);
+\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel} (specloadConf);
+\end{DoxyCode}
+
+
+The code above will automatically print the Key\+Set {\ttfamily ks} to stdout in exactly the way {\ttfamily specload} expects it.
+
+Once the mounting is done you can inspect you specification like you would with any other mounted configuration. If you call {\ttfamily kdb set} (or {\ttfamily kdb meta-\/set} or anything else that calls {\ttfamily \hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}), however, {\ttfamily specload} will verify that the modifications you made are compatible with the original specification. Currently this verification is very restrictive and doesn\textquotesingle{}t allow a lot of changes that would be safe. This is because the necessary verification becomes very complex very quickly. For example adding {\ttfamily opt/arg} is only safe, if {\ttfamily opt} was also added by the user, because the application might rely on the default {\ttfamily opt/arg=none}. See also \href{#limitations}{\tt Limitations}.
+
+Instead of loading the specification via {\ttfamily stdin}/{\ttfamily stdout} from another app, you can also instruct {\ttfamily specload} to directly load a {\ttfamily quickdump} file. This can be done by setting the {\ttfamily file} config key instead of {\ttfamily app}. The provided path must be absolute, same as an {\ttfamily app} path.
+
+Note\+: If {\ttfamily file} is specified, {\ttfamily app} will be ignored.
+
+This assumes you compiled the file \href{/home/jenkins/workspace/libelektra-release/src/plugins/specload/testapp.c}{\tt {\ttfamily testapp.\+c}} and it is available as the executable {\ttfamily testapp} in the current folder.
+
+
+\begin{DoxyCode}
+sudo kdb mount -R noresolver specload.eqd spec/tests/specload specload "app=$(pwd)/testapp"
+
+kdb meta-ls spec/tests/specload/mykey
+#> default
+
+kdb get /tests/specload/mykey
+#> 7
+
+sudo kdb umount spec/tests/specload
+\end{DoxyCode}
+
+
+Or in direct file mode\+:
+
+
+\begin{DoxyCode}
+# This assumes that `$PWD` is the root of the Elektra source tree.
+sudo kdb mount -R noresolver specload.eqd spec/tests/specload specload
+       "file=$(pwd)/src/plugins/specload/specload/spec.quickdump"
+
+kdb meta-ls spec/tests/specload/mykey
+#> default
+
+kdb get /tests/specload/mykey
+#> 7
+
+sudo kdb umount spec/tests/specload
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item The plugin only allows the following modifications right now\+:
+\begin{DoxyItemize}
+\item add/edit/remove {\ttfamily description} or {\ttfamily opt/help}
+\item add/edit {\ttfamily default}
+\item add {\ttfamily type}
+\end{DoxyItemize}
+\item The plugin must be mounted using {\ttfamily noresolver} or another resolver that always calls the storage plugin. To work around this limitation, {\ttfamily specload} prefixes relative paths with {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC} before passing the path on to {\ttfamily quickdump}. This means that your overlay files will be stored in the same directory as any other {\ttfamily spec} configurations. 
+\end{DoxyItemize}

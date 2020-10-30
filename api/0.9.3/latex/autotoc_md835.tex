@@ -1,0 +1,183 @@
+
+\begin{DoxyItemize}
+\item infos = Information about Y\+A\+JL plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/json
+\item infos/needs = directoryvalue type
+\item infos/recommends = rebase comment
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained coverage unittest
+\item infos/description = J\+S\+ON using Y\+A\+JL
+\end{DoxyItemize}
+
+This is a plugin reading and writing J\+S\+ON files using the library \href{http://lloyd.github.com/yajl/}{\tt yail}
+
+The plugin was tested with yajl version 1.\+0.\+8-\/1 from Debian 6 and yajl version 2.\+0.\+4-\/2 from Debian 7.
+
+Examples of files which are used for testing can be found below the folder in \char`\"{}src/plugins/yajl/yajl\char`\"{}.
+
+The J\+S\+ON grammar can be found \href{http://www.json.org}{\tt here}.
+
+A validator can be found \href{http://jsonlint.com/}{\tt here}.
+
+Supports every Key\+Set except when arrays are intermixed with other keys. Has only limited support for metadata.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libyajl-\/dev} (version 1 and 2 should work)
+\end{DoxyItemize}
+
+The type of the data is available via the metadata {\ttfamily type}\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily string}\+: The J\+S\+ON string type.
+\item {\ttfamily boolean}\+: The J\+S\+ON boolean type (true or false)
+\item {\ttfamily double}\+: For J\+S\+ON numbers.
+\end{DoxyItemize}
+
+If no metadata {\ttfamily type} is given, the type is either\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily null} on binary null-\/key
+\item {\ttfamily string} otherwise
+\end{DoxyItemize}
+
+Any other type/value will still be treated as string, but the warning {\ttfamily C03200} will be added because of the potential data loss.
+
+In J\+S\+ON it is possible to have empty arrays and objects. In Elektra this is mapped using the special names
+
+
+\begin{DoxyCode}
+###empty\_array
+\end{DoxyCode}
+
+
+and
+
+
+\begin{DoxyCode}
+\_\_\_empty\_map
+\end{DoxyCode}
+
+
+Arrays are mapped to Elektra’s array convention \#0, \#1,..
+
+
+\begin{DoxyItemize}
+\item Only U\+T\+F-\/8 is supported. Use the {\ttfamily iconv} plugin if your locale are not U\+T\+F-\/8. When using non-\/\+U\+T\+F-\/8 the plugin will be able to write the file, but cannot parse it back again. You will error C03100, invalid bytes in U\+T\+F8 string.
+\item Everything is string if not tagged by metakey \char`\"{}type\char`\"{} Only valid J\+S\+ON types can be used in type, otherwise there are some fall backs to string but warnings are produced.
+\item Arrays will be normalized (to \#0, \#1, ..)
+\item Comments of various J\+S\+O\+N-\/dialects are discarded.
+\item Mixing of arrays and maps is not detected and leads to corrupted J\+S\+ON files. Please specify arrays to avoid such situations.
+\item The plugin creates adds an empty root key to the database, even if you did not add this key (see \href{http://issues.libelektra.org/2132}{\tt http\+://issues.\+libelektra.\+org/2132}).
+\end{DoxyItemize}
+
+Because of these potential problems a type checker and comments filter are highly recommended.
+
+The following example shows you how you can read and write data using this plugin.
+
+``{\ttfamily  @section autotoc\+\_\+md841 Mount the plugin to the cascading namespace}/tests/yajl` sudo kdb mount config.\+json /tests/yajl yajl\hypertarget{autotoc_md835_autotoc_md842}{}\section{Manually add a key-\/value pair to the database}\label{autotoc_md835_autotoc_md842}
+printf \textquotesingle{}\{ \char`\"{}number\char`\"{}\+: 1337 \}\textquotesingle{} $>$ {\ttfamily kdb file /tests/yajl}\hypertarget{autotoc_md835_autotoc_md843}{}\section{Retrieve the new value}\label{autotoc_md835_autotoc_md843}
+kdb get /tests/yajl/number \#$>$ 1337\hypertarget{autotoc_md835_autotoc_md844}{}\section{Determine the data type of the value}\label{autotoc_md835_autotoc_md844}
+kdb meta-\/get /tests/yajl/number type \#$>$ double\hypertarget{autotoc_md835_autotoc_md845}{}\section{Add another key-\/value pair}\label{autotoc_md835_autotoc_md845}
+kdb set /tests/yajl/key value \hypertarget{autotoc_md835_autotoc_md846}{}\section{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+E\+X\+: .$\ast$\+Create a new key (user$\vert$system)/tests/yajl/key with string \char`\"{}value\char`\"{}}\label{autotoc_md835_autotoc_md846}
+\hypertarget{autotoc_md835_autotoc_md847}{}\section{Retrieve the new value}\label{autotoc_md835_autotoc_md847}
+kdb get /tests/yajl/key \#$>$ value\hypertarget{autotoc_md835_autotoc_md848}{}\section{Check the format of the configuration file}\label{autotoc_md835_autotoc_md848}
+kdb file /tests/yajl/ $\vert$ xargs cat \#$>$ \{ \#$>$ \char`\"{}key\char`\"{}\+: \char`\"{}value\char`\"{}, \#$>$ \char`\"{}number\char`\"{}\+: 1337 \#$>$ \}\hypertarget{autotoc_md835_autotoc_md849}{}\section{Add an array}\label{autotoc_md835_autotoc_md849}
+kdb set /tests/yajl/piggy/\#0 straw kdb set /tests/yajl/piggy/\#1 sticks kdb set /tests/yajl/piggy/\#2 bricks\hypertarget{autotoc_md835_autotoc_md850}{}\section{Retrieve an array key}\label{autotoc_md835_autotoc_md850}
+kdb get /tests/yajl/piggy/\#2 \#$>$ bricks\hypertarget{autotoc_md835_autotoc_md851}{}\section{Check the format of the configuration file}\label{autotoc_md835_autotoc_md851}
+kdb file /tests/yajl $\vert$ xargs cat \#$>$ \{ \#$>$ \char`\"{}key\char`\"{}\+: \char`\"{}value\char`\"{}, \#$>$ \char`\"{}number\char`\"{}\+: 1337, \#$>$ \char`\"{}piggy\char`\"{}\+: \mbox{[} \#$>$ \char`\"{}straw\char`\"{}, \#$>$ \char`\"{}sticks\char`\"{}, \#$>$ \char`\"{}bricks\char`\"{} \#$>$ \mbox{]} \#$>$ \}\hypertarget{autotoc_md835_autotoc_md852}{}\section{Undo modifications to the database}\label{autotoc_md835_autotoc_md852}
+kdb rm -\/r /tests/yajl sudo kdb umount /tests/yajl 
+\begin{DoxyCode}
+### Directory Values
+
+The YAJL plugin support values in directory keys via the [Directory Value](@ref
+       src\_plugins\_directoryvalue\_README\_md) plugin.
+\end{DoxyCode}
+ \hypertarget{autotoc_md835_autotoc_md853}{}\section{Mount the plugin to `user/tests/yajl`}\label{autotoc_md835_autotoc_md853}
+sudo kdb mount config.\+json user/tests/yajl yajl\hypertarget{autotoc_md835_autotoc_md854}{}\section{Add two directory keys and one leaf key}\label{autotoc_md835_autotoc_md854}
+kdb set user/tests/yajl/roots \textquotesingle{}Things Fall Apart\textquotesingle{} kdb set user/tests/yajl/roots/bloody \textquotesingle{}Radical Face\textquotesingle{} kdb set user/tests/yajl/roots/bloody/roots \textquotesingle{}No Roots\textquotesingle{}\hypertarget{autotoc_md835_autotoc_md855}{}\section{Add an array containing two elements}\label{autotoc_md835_autotoc_md855}
+kdb set user/tests/yajl/now \textquotesingle{}, Now\textquotesingle{} \hypertarget{autotoc_md835_autotoc_md856}{}\section{Elektra arrays require the metakey `array` to the parent.}\label{autotoc_md835_autotoc_md856}
+\hypertarget{autotoc_md835_autotoc_md857}{}\section{Otherwise the keys below `user/tests/yajl/now` would be}\label{autotoc_md835_autotoc_md857}
+\hypertarget{autotoc_md835_autotoc_md858}{}\section{interpreted as normal key-\/value pairs.}\label{autotoc_md835_autotoc_md858}
+kdb meta-\/set user/tests/yajl/now array \textquotesingle{}\textquotesingle{} kdb set user/tests/yajl/now/\#0 \textquotesingle{}Neighbors\textquotesingle{} kdb set user/tests/yajl/now/\#1 \textquotesingle{}Threads\textquotesingle{}
+
+kdb ls user/tests/yajl \#$>$ user/tests/yajl/now \#$>$ user/tests/yajl/now/\#0 \#$>$ user/tests/yajl/now/\#1 \#$>$ user/tests/yajl/roots \#$>$ user/tests/yajl/roots/bloody \#$>$ user/tests/yajl/roots/bloody/roots\hypertarget{autotoc_md835_autotoc_md859}{}\section{Retrieve directory values}\label{autotoc_md835_autotoc_md859}
+kdb get user/tests/yajl/roots \#$>$ Things Fall Apart kdb get user/tests/yajl/roots/bloody \#$>$ Radical Face\hypertarget{autotoc_md835_autotoc_md860}{}\section{Retrieve leaf value}\label{autotoc_md835_autotoc_md860}
+kdb get user/tests/yajl/roots/bloody/roots \#$>$ No Roots\hypertarget{autotoc_md835_autotoc_md861}{}\section{Check array}\label{autotoc_md835_autotoc_md861}
+kdb get user/tests/yajl/now \#$>$ , Now kdb meta-\/get user/tests/yajl/now array \#$>$ \#1 kdb get user/tests/yajl/now/\#0 \#$>$ Neighbors kdb get user/tests/yajl/now/\#1 \#$>$ Threads\hypertarget{autotoc_md835_autotoc_md862}{}\section{Undo modifications to the database}\label{autotoc_md835_autotoc_md862}
+kdb rm -\/r user/tests/yajl sudo kdb umount user/tests/yajl 
+\begin{DoxyCode}
+### Booleans
+
+The YAJL plugin maps "1" and "true" to its true bool type, and "0" and "false" to its false bool type.
+However, it always returns 1 or 0.
+
+You can take advantage of the [type](@ref src\_plugins\_type\_README\_md) plugin to map arbitrary values to
+       true and false.
+\end{DoxyCode}
+ \hypertarget{autotoc_md835_autotoc_md863}{}\section{Type plugin is automatically mounted since yajl depends on it}\label{autotoc_md835_autotoc_md863}
+kdb mount conf.\+json user/tests/yajl yajl kdb set user/tests/yajl 1 kdb get user/tests/yajl \#$>$ 1 kdb meta-\/set user/tests/yajl type boolean kdb set user/tests/yajl on kdb get user/tests/yajl \#$>$ 1 kdb set user/tests/yajl/subkey disable kdb meta-\/set user/tests/yajl/subkey type boolean kdb get user/tests/yajl/subkey \#$>$ 0\hypertarget{autotoc_md835_autotoc_md864}{}\section{Undo modifications to the database}\label{autotoc_md835_autotoc_md864}
+kdb rm -\/r user/tests/yajl sudo kdb umount user/tests/yajl 
+\begin{DoxyCode}
+## OpenICC Device Config
+
+This plugin was specifically designed and tested for the
+`OpenICC\_device\_config\_DB` although it is of course not limited
+to it.
+
+Mount the plugin:
+
+```bash
+kdb mount --resolver=resolver\_fm\_xhp\_x color/settings/openicc-devices.json \(\backslash\)
+  /org/freedesktop/openicc yajl rename cut=org/freedesktop/openicc
+\end{DoxyCode}
+
+
+or\+:
+
+
+\begin{DoxyCode}
+kdb mount-openicc
+\end{DoxyCode}
+
+
+Then you can copy the {\ttfamily Open\+I\+C\+C\+\_\+device\+\_\+config\+\_\+\+D\+B.\+json} to systemwide or user config, e.\+g.
+
+
+\begin{DoxyCode}
+cp src/plugins/yajl/examples/OpenICC\_device\_config\_DB.json /etc/xdg
+cp src/plugins/yajl/examples/OpenICC\_device\_config\_DB.json ~/.config
+
+kdb ls system/org/freedesktop/openicc
+\end{DoxyCode}
+
+
+prints out then all device entries available in the config
+
+
+\begin{DoxyCode}
+kdb get system/org/freedesktop/openicc/device/camera/0/EXIF\_manufacturer
+\end{DoxyCode}
+
+
+prints out \char`\"{}\+Glasshuette\char`\"{} with the example config in source
+
+You can export the whole system openicc config to ini with\+:
+
+
+\begin{DoxyCode}
+kdb export system/org/freedesktop/openicc simpleini > dump.ini
+\end{DoxyCode}
+
+
+or import it\+:
+
+
+\begin{DoxyCode}
+kdb import system/org/freedesktop/openicc ini < dump.ini
+\end{DoxyCode}
+ 

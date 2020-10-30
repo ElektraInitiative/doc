@@ -1,0 +1,46 @@
+.TH "doc_decisions_highlevel_help_message_md" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_highlevel_help_message_mdHigh-level API Help Message 
+ \- This decision \fIdoes not\fP assume code-generation is used\&. For the case of code-generation see the \fCNotes\fP section\&.
+.PP
+We want to allow to print the help message no matter what errors happened in \fCkdbOpen\fP or \fCkdbGet\fP\&.
+.PP
+.IP "\(bu" 2
+\fCelektraOpen\fP should not return a broken \fCElektra\fP instance\&.
+.IP "\(bu" 2
+The help message can only be printed, if \fCelektraOpen\fP returns an \fCElektra\fP instance and no \fCElektraError\fP\&.
+.PP
+.PP
+.IP "\(bu" 2
+We assume that the application in question was correctly installed\&.
+.IP "\(bu" 2
+We assume \fCgopts\fP was mounted\&. This is not the default right now, but the code-generator template \fChighlevel\fP contains code that will mount \fCgopts\fP, if it is missing\&.
+.IP "\(bu" 2
+We assume the application was called in \fIhelp mode\fP, i\&.e\&. with \fC--help\fP\&. Otherwise printing the help message is not possible, anyway\&.
+.PP
+.PP
+.IP "\(bu" 2
+Ignore all errors (in help mode): Not a feasible solution, because there may have been problems when reading the storage file and therefore, the help message may be broken or incomplete\&.
+.IP "\(bu" 2
+Ignore all errors (in help mode), which occurred after the \fCgopts\fP plugin ran: Complicated to implement (we need to know about plugin order, etc\&.)\&. Not actually necessary (see \fCRationale\fP)\&.
+.PP
+.PP
+Ignore missing \fCrequire\fPd keys (in help mode), but fail for every other error\&.
+.PP
+Required keys \fBmust\fP be provided by the user/admin and cannot come from another source (Elektra, app developer, etc\&.)\&. Therefore they will be missing until the user makes changes to the KDB\&. Before that, no other error should occur (we assumed a correct installation)\&. If a user runs \fCapp\fP for the first time and receives an error about a missing required key, they will:
+.PP
+.IP "1." 4
+know what to do and add the key, thereby fixing the problem\&.
+.IP "2." 4
+try \fCapp -h\fP and see that it doesn't show a help message\&. They will probably continue with 3\&.
+.IP "3." 4
+try \fCapp --help\fP to find out more\&. The help message may or may not contain useful information\&. If not they may try 4\&.
+.IP "4." 4
+read some other documentation to find out more\&. Ideally this leads them to 1\&.
+.PP
+.PP
+In any case after this the user definitely know how to interact with the KDB\&. Since we assumed that there won't be any errors before the KDB was changed, we can assume that the user caused other errors by changing the KDB\&.
+.PP
+If code-generation is used, the situation is a little different\&. If the parameter \fCembedHelpFallback\fP is set to \fC1\fP, a fallback help message will be created from the specification originally passed to the code-generator and embedded into the application\&. The parameter also changes, how help mode is detected and ultimately allows the help message function (\fCprintHelpMessage\fP by default) to always print a help message\&. Although it may not reflect changes, the user made to the specification\&. 

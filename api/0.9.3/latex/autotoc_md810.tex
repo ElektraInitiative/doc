@@ -1,0 +1,52 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the uname plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/info
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest shelltest nodep readonly limited concept
+\item infos/description = Includes uname information into the key database.
+\end{DoxyItemize}
+
+This plugin is a storage plugin that will use the syscall {\ttfamily uname (2)}. No resolver is needed for that plugin to work.
+
+This plugin defines following keynames below its mount point\+:
+
+
+\begin{DoxyItemize}
+\item sysname
+\item nodename
+\item release
+\item version
+\item machine
+\end{DoxyItemize}
+
+This plugin is read-\/only.
+
+
+\begin{DoxyCode}
+# To mount uname information using this plugin:
+kdb mount -R noresolver none user/tests/uname uname
+
+# List available data
+kdb ls user/tests/uname/
+#> user/tests/uname/machine
+#> user/tests/uname/nodename
+#> user/tests/uname/release
+#> user/tests/uname/sysname
+#> user/tests/uname/version
+
+# Read the OS name
+kdb get user/tests/uname/sysname
+# STDOUT-REGEX: CYGWIN\_NT.*|Darwin|DragonFly|FreeBSD|Linux|OpenBSD
+
+# Read the OS version number
+kdb get user/tests/uname/release
+# STDOUT-REGEX: [0-9]+(\(\backslash\).[0-9]+)*[[:alnum:][:punct:]]*
+
+# Unmount the plugin
+kdb umount user/tests/uname
+\end{DoxyCode}
+ 

@@ -1,0 +1,69 @@
+The version of Elektra is handled with the kdb.\+h macros {\ttfamily K\+D\+B\+\_\+\+V\+E\+R\+S\+I\+ON} which is a string and {\ttfamily K\+D\+B\+\_\+\+V\+E\+R\+S\+I\+O\+N\+\_\+\+M\+A\+J\+OR}, {\ttfamily K\+D\+B\+\_\+\+V\+E\+R\+S\+I\+O\+N\+\_\+\+M\+I\+N\+OR} and {\ttfamily K\+D\+B\+\_\+\+V\+E\+R\+S\+I\+O\+N\+\_\+\+P\+A\+T\+CH} which are numbers for the publicly announced versions.
+
+The version can also be retrieved at run-\/time from K\+DB\+:
+
+
+\begin{DoxyCode}
+system/elektra/version/constants/KDB\_VERSION
+system/elektra/version/constants/KDB\_VERSION\_MAJOR
+system/elektra/version/constants/KDB\_VERSION\_MINOR
+system/elektra/version/constants/KDB\_VERSION\_PATCH
+\end{DoxyCode}
+
+
+The version applies to following parts of Elektra\+:
+
+
+\begin{DoxyItemize}
+\item the A\+PI for programs using Elektra. Its interface is declared in src/include/kdb.h. Both applications and plugins use this A\+PI.
+\item the high-\/level A\+PI as declared in \href{/home/jenkins/workspace/libelektra-release/src/include/elektra.h}{\tt src/include/elektra.\+h}.
+\item the A\+PI to plugins as declared in \href{/home/jenkins/workspace/libelektra-release/src/plugins/doc/doc.h}{\tt src/plugins/doc/doc.\+h}.
+\item the A\+PI to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbease.h}{\tt libease}
+\item the A\+PI to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbmeta.h}{\tt libmeta}
+\item the A\+PI to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbmerge.h}{\tt libmerge}
+\item the A\+PI to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbmodule.h}{\tt module loading}
+\item the A\+PI to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbnotification.h}{\tt libnotification}
+\item the A\+PI to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbopts.h}{\tt libopts}
+\item plugins that have {\ttfamily infos/status} of {\ttfamily compatible}.
+\item the C\+LI tool {\ttfamily kdb} with its command-\/line arguments, K\+DB access and its return values.
+\end{DoxyItemize}
+
+The behavior of Elektra is defined by (in that order)\+:
+
+
+\begin{DoxyEnumerate}
+\item A\+BI test cases
+\item Non-\/\+A\+BI test cases (including Shell Recorder)
+\item The \href{https://doc.libelektra.org/api/latest/html/}{\tt A\+PI documentation}
+\item The man pages
+\item Tutorials (excluding Shell Recorder)
+\item Examples
+\end{DoxyEnumerate}
+
+Any inconsistency within this artifacts within each other or with the implementation constitutes a bug.
+
+This section describes under which circumstances A\+PI and A\+BI incompatibilities may occur. As Elektra developer your mission is to avoid any unwanted incompatibilities. The tool icheck which checks the interfaces mentioned in the Scope may help you.
+
+Elektra uses a stricter version of \href{https://semver.org/}{\tt Semantic Versioning 2.\+0.\+0}, with the extensions explained here.
+
+In {\ttfamily 1.\+0.$\ast$} the A\+PI and A\+BI must be always forward-\/compatible and backwards-\/compatible. That means that Elektra\textquotesingle{}s libraries may be upgraded and downgraded without any effect on applications, only bug or docu fixes are allowed.
+
+In minor or patch version updates the A\+PI and A\+BI must be always forward-\/compatible, but not backwards-\/compatible. That means that a program written and compiled against 1.\+0.\+0 compiles and links against 1.\+1.\+0. But because it is not necessarily backwards-\/compatible a program written for 1.\+1.\+0 may not link or compile against Elektra 1.\+0.\+0 (but it compiles if you use the compatible subset, maybe by using \#ifdefs). Also here applications must continue to work as originally intended.
+
+When you add a new function you break A\+BI and A\+PI backward-\/ compatibility (but not forward). You are only allowed to do so in a {\ttfamily 1.$\ast$} change.
+
+In the signature you are only allowed to add const to any parameter. You are {\itshape not} allowed to use subtypes to the objects, in C means you are not allowed to call any functions of an object which appear new. C does {\itshape not} type check that, it\textquotesingle{}s your responsibility.
+
+What C also does not check are the pre and postconditions. That means you are not allowed to demand more client code (e.\+g. first accept a N\+U\+LL pointer and in the next version you crash on it) and you are not allowed to return values that the previous version did not return. It is a complex topic, so better don\textquotesingle{}t underestimate it, but generally said the methods should behave on the same data the same way.
+
+As we use \hyperlink{doc_dev_symbol-versioning_md}{symbol versioning}, the S\+O\+\_\+\+V\+E\+R\+S\+I\+ON of Elektra always remains the same, even if the major version changes. That means, if we rename or remove a function in the {\ttfamily 2.\+0} release, applications that linked against Elektra {\ttfamily 1.\+0} can still link against Elektra {\ttfamily 2.\+0} but they do not necessarily compile with Elektra {\ttfamily 2.\+0} anymore. Once the code is adapted to use {\ttfamily 2.\+0}, it cannot link against {\ttfamily 1.\+0} anymore. Note that this feature is only available on platforms that support symbol versioning. For other platforms, all applications need to be recompiled for every major version.
+
+In major upgrades, changes of behavior is possible even if it might break some use cases of some applications. Furthermore, symbols that already have been deprecated before, might be removed. For example, in {\ttfamily 1.\+0} there is a deprecated method {\ttfamily ks\+Next} (not available in {\ttfamily kdb.\+h}). Thus in {\ttfamily 2.\+0} it is subject to be removed.
+
+References\+: \href{http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html}{\tt http\+://tldp.\+org/\+H\+O\+W\+T\+O/\+Program-\/\+Library-\/\+H\+O\+W\+T\+O/shared-\/libraries.\+html} \href{http://packages.debian.org/de/sid/icheck}{\tt http\+://packages.\+debian.\+org/de/sid/icheck}
+
+Bindings are in general tied to Elektra\textquotesingle{}s version number except for the patch level. So bindings can only add or change functionality when Elektra\textquotesingle{}s core does. This is a quite severe restriction but makes the version much easier to understand for users. It serves the goal that Elektra does not prefer any programming languages, instead people expect from Elektra version {\ttfamily x.\+y.$\ast$} identical functionality.
+
+The patch level can be chosen by bindings as wanted. Using the binding {\ttfamily x.\+y.\+z} does not mean that Elektra {\ttfamily x.\+y.\+z} will be used on the target system. Please read the changelog of the binding maintainers to know about which bug fixes are included.
+
+The patch level might also be used to fix bugs within bindings. This means that applications can only introspect the patch level of Elektra by getting {\ttfamily system/elektra/version/constants/\+K\+D\+B\+\_\+\+V\+E\+R\+S\+I\+O\+N\+\_\+\+P\+A\+T\+CH} but not by static patch levels the binding might provide. This should be no problem, as the patch level is supposed to not change the behavior. 

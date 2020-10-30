@@ -1,0 +1,63 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the tcl plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = storage/tcl
+\item infos/needs = code null binary
+\item infos/placements = setstorage getstorage
+\item infos/status = unfinished concept
+\item infos/description = Serialize tcl lists
+\end{DoxyItemize}
+
+This plugin is a storage plugin which writes keys to lists {\itshape in the style of} the Tcl programming language.
+
+The format does not have significant spaces. The advantage of T\+CL style lists is that also arbitrary metadata can be embedded in a natural and distinguish-\/able style. It looks like\+:
+
+
+\begin{DoxyCode}
+\{
+    \{
+        key=val
+        \{
+            metakey = b
+        \}
+        \{
+            comment = huhu
+        \}
+    \}
+\}
+\end{DoxyCode}
+
+
+``{\ttfamily  @section autotoc\+\_\+md670 Mount Tcl plugin to namespace}user/examples/tcl` \hypertarget{autotoc_md667_autotoc_md671}{}\section{We add the required plugins (instead of the plugin providers)}\label{autotoc_md667_autotoc_md671}
+\hypertarget{autotoc_md667_autotoc_md672}{}\section{for `tcl` manually, since otherwise this command leaks memory.}\label{autotoc_md667_autotoc_md672}
+sudo kdb mount config.\+tcl user/tests/tcl tcl ccode null base64\hypertarget{autotoc_md667_autotoc_md673}{}\section{Add a key value pair to the database}\label{autotoc_md667_autotoc_md673}
+kdb set user/tests/tcl/key value \hypertarget{autotoc_md667_autotoc_md674}{}\section{The Tcl plugin also supports metadata}\label{autotoc_md667_autotoc_md674}
+kdb meta-\/set user/tests/tcl/key comment \char`\"{}\+This key contains example data.\char`\"{} \hypertarget{autotoc_md667_autotoc_md675}{}\section{A known limitation of the plugin is that it discards whitespace characters}\label{autotoc_md667_autotoc_md675}
+kdb meta-\/get user/tests/tcl/key comment \#$>$ Thiskeycontainsexampledata.
+
+kdb export user/tests/tcl tcl \#$>$ \{ \#$>$ \{ \#$>$ key = value \#$>$ \{ \#$>$ comment = Thiskeycontainsexampledata. \#$>$ \} \#$>$ \} \#$>$ \}\hypertarget{autotoc_md667_autotoc_md676}{}\section{Undo modifications}\label{autotoc_md667_autotoc_md676}
+kdb rm -\/r user/tests/tcl sudo kdb umount user/tests/tcl 
+\begin{DoxyCode}
+## Binary Data
+
+The plugin also supports binary data via the [base64 plugin](@ref src\_plugins\_base64\_README\_md) and null
+       keys via the [null plugin](@ref src\_plugins\_null\_README\_md).
+\end{DoxyCode}
+ \hypertarget{autotoc_md667_autotoc_md677}{}\section{Mount plugin}\label{autotoc_md667_autotoc_md677}
+sudo kdb mount config.\+tcl user/tests tcl ccode null base64\hypertarget{autotoc_md667_autotoc_md678}{}\section{Import some data}\label{autotoc_md667_autotoc_md678}
+kdb import user/tests/dump xmltool $<$ src/plugins/xmltool/xmltool/dump.\+xml\hypertarget{autotoc_md667_autotoc_md679}{}\section{Take a look at imported data}\label{autotoc_md667_autotoc_md679}
+kdb ls user/tests/dump \#$>$ user/tests/dump/.Hidden\+Binary\+Key \#$>$ user/tests/dump/.Hidden\+Directory\+Key \#$>$ user/tests/dump/.Hidden\+String\+Key \#$>$ user/tests/dump/\+Perfect\+Binary\+Key \#$>$ user/tests/dump/\+Perfect\+Directory\+Key \#$>$ user/tests/dump/\+Perfect\+String\+Key \#$>$ user/tests/dump/\+Ug.\+ly\+:Bin{\itshape } €ry\+Key \#$>$ user/tests/dump/\+Ug.\+ly\+:Dir€ory\+Key \#$>$ user/tests/dump/\+Ug.\+ly\+:St€n.\+g\+Key\hypertarget{autotoc_md667_autotoc_md680}{}\section{The plugin supports binary data…}\label{autotoc_md667_autotoc_md680}
+kdb get user/tests/dump/\+Perfect\+Binary\+Key \#$>$ \hypertarget{autotoc_md667_autotoc_md681}{}\section{… and empty keys}\label{autotoc_md667_autotoc_md681}
+kdb get user/tests/dump/\+Ug.\+ly\+:Bin{\itshape } €ry\+Key\hypertarget{autotoc_md667_autotoc_md682}{}\section{Undo modifications}\label{autotoc_md667_autotoc_md682}
+kdb rm -\/r user/tests sudo kdb umount user/tests ```\hypertarget{autotoc_md667_autotoc_md683}{}\subsection{Limitations}\label{autotoc_md667_autotoc_md683}
+
+\begin{DoxyItemize}
+\item whitespaces are discarded
+\item no comments
+\end{DoxyItemize}\hypertarget{autotoc_md667_autotoc_md684}{}\subsection{Dependencies}\label{autotoc_md667_autotoc_md684}
+
+\begin{DoxyItemize}
+\item {\ttfamily libboost-\/dev} 
+\end{DoxyItemize}

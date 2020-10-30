@@ -1,0 +1,137 @@
+.TH "autotoc_md230" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md230Plugin: fstab 
+ \- 
+.IP "\(bu" 2
+infos = Information about FSTAB plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/fstab
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends = struct type path
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = unittest nodep difficult limited unfinished old
+.IP "\(bu" 2
+infos/description = Parses files in a syntax like /etc/fstab file
+.PP
+.PP
+This plugin is an implementation of a parser and generator of the /etc/fstab file\&.
+.PP
+(Deprecated, remove this section after it is reimplemented in the new way)
+.PP
+For each device in fstab elektra will store the following keys:
+.PP
+.PP
+.nf
+pseudoname/device
+pseudoname/mpoint
+pseudoname/type
+pseudoname/options
+pseudoname/dumpfreq
+pseudoname/passno
+.fi
+.PP
+.PP
+Each represents a column in fstab\&.
+.PP
+The pseudoname can be any name for setting keys, the will be generated when getting keys, so don't expect the same name\&.
+.PP
+the directory \fC/\fP will be called \fCrootfs\fP
+.PP
+all swap devices will be called \fCswapXX\fP with a number from 00 on for XX
+.PP
+otherwise the mount point without the '/' character will be used\&.
+.PP
+At the other point there is the issue with the pseudonames, you can't rely on the pseudoname you have set\&.
+.PP
+The biggest issue is that you can't change or delete existing entries\&. All entries you set will be appended to the other filesystems\&.
+.PP
+So if you get the filesystems and change the type of the file system of the rootfs and set it again the resulting fstab will be like:
+.PP
+.PP
+.nf
+/dev/sda6       /               ext3>----   >----defaults,errors=remount-ro 0 1
+/dev/sda6       /               jfs>----   >----defaults,errors=remount-ro 0 1
+.fi
+.PP
+.PP
+which will be not like you desired!
+.PP
+setmntent is used, so it is only conforming to BSD 4\&.3 and linux and you can't use any comments\&.
+.PP
+Specification:
+.PP
+.PP
+.nf
+[/_]
+type = array
+explanation = the name of the key is the mount point (so the former
+  mpoint is not needed); the value is the number of entries in the
+  array
+[/_/#]
+explanation = an entry in the array
+[/_/#/device]
+[/_/#/type]
+[/_/#/options]
+[/_/#/dumpfreq]
+[/_/#/passno]
+.fi
+.PP
+.PP
+Example: A fstab that looks like:
+.PP
+.PP
+.nf
+/dev/sr0        /media/cdrom   udf,iso9660 user,noauto     0       0
+.fi
+.PP
+.PP
+would have a key name that is an array (so the value is the number of children, in this case 1):
+.PP
+.PP
+.nf
+system/filesystems/\/media\/cdrom
+.fi
+.PP
+.PP
+with the array entry:
+.PP
+.PP
+.nf
+system/filesystems/\/media\/cdrom0/#0/
+.fi
+.PP
+.PP
+So when following line is added
+.PP
+.PP
+.nf
+/dev/sr0        /media/cdrom   ramfs user,noauto     0       0
+.fi
+.PP
+.PP
+Implementation hint: use \fC\fBkeyAddBaseName()\fP\fP to get escaping of \fC/\fP, then add array items below it
+.PP
+If a mount point exists more than once (that could be proc, swap or overlay mount points) the array below gets incremented (otherwise #0 is used for every unique entry)\&.
+.PP
+The order of the array must, of course, be preserved\&. Other lines may be reordered for now, a proper 'order' could be done later\&.
+.PP
+Spaces in the names are replaced by \\040 in the fstab\&.
+.PP
+Mount the plugin:
+.PP
+.PP
+.nf
+kdb mount /etc/fstab system/filesystems fstab struct type path
+.fi
+.PP
+ 

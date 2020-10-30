@@ -1,0 +1,146 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the spec plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}, Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\tt k.\+boeswirth+git@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = check apply
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = recommended productive nodep configurable global unfinished
+\item infos/description = allows to give specifications for keys
+\end{DoxyItemize}
+
+The spec plugin is a global plugin that copies metadata from the {\ttfamily spec}-\/namespace to other namespaces using their key names as globbing expressions. Globbing resembles regular expressions. They do not have the same expressive power, but are easier to use. The semantics are more suitable to match path names\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily $\ast$} matches any key name of just one hierarchy. This means it complies with any character except slash or null.
+\item {\ttfamily ?} satisfies single characters with the same exclusion.
+\item {\ttfamily \#} matches Elektra array elements. (e.\+g. {\ttfamily \#0}, {\ttfamily \#\+\_\+10}, {\ttfamily \#\+\_\+\+\_\+987})
+\item {\ttfamily \+\_\+} matches anything that {\ttfamily $\ast$} matches, except array elements.
+\item Additionally, there are ranges and character classes. They can also be inverted. For more infos take a look at the code documentation of {\ttfamily \hyperlink{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}{elektra\+Key\+Glob()}}.
+\end{DoxyItemize}
+
+The plugin copies the metadata of the corresponding {\ttfamily spec} key to every matching (see below) key in the other namespaces. The copied metadata is removed again during {\ttfamily kdb\+Set} (if remained unchanged).
+
+The spec plugin also provides basic validation and structural checking. Specifically it supports\+:
+
+
+\begin{DoxyItemize}
+\item detection of invalid array key names
+\item detection of missing keys
+\item validation of array ranges (min/max array size)
+\item validating the number of subkeys of {\ttfamily \+\_\+}
+\end{DoxyItemize}
+
+The matching of the spec (globbing) keys to the keys in the other namespaces is based on {\ttfamily \hyperlink{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}{elektra\+Key\+Glob()}}, which in turn is based on the well known {\ttfamily fnmatch(3)}. However, there is special handling for array specifications ({\ttfamily \#}) and wildcard specifications ({\ttfamily \+\_\+}).
+
+Keys which contain a part that is exactly {\ttfamily \#} (e.\+g. {\ttfamily my/\#/key} or {\ttfamily my/\#}) are called array specifications. Instead of just matching the spec key to any existing keys in other namespaces, theses keys are \char`\"{}instantiated\char`\"{}. This means we lookup the array size (defined by the {\ttfamily array} metakey) using a cascading {\ttfamily ks\+Lookup}. This only looks at non-\/spec namespaces, if we don\textquotesingle{}t find an array size their, we check the array parent in the spec namespace. If we still have no array size, the array is deemed to be empty. For empty arrays, we will simply validate that they are indeed empty.
+
+For non-\/empty arrays \char`\"{}instantiation\char`\"{} takes place. This means that we replace each {\ttfamily \#} part in the spec key by all the valid array elements for this specification, up to the array size (which was already checked to be less than the allowed maximum). In other words, instead of actually matching the globbing expression, we create a separate but identical specification for all valid array elements.
+
+The purpose of \char`\"{}instantiation\char`\"{} is to allow specifying {\ttfamily default} values for array elements.
+
+Keys which contain a part that is exactly {\ttfamily \+\_\+} (e.\+g. {\ttfamily my/\+\_\+/key} or {\ttfamily my/\+\_\+}) are called wildcard specifications. It would be nice to have an \char`\"{}instantiation\char`\"{} procedure for {\ttfamily \+\_\+} similar to the one for arrays. However, this is not possible with the current implementation, since there is no way of knowing in advance, which keys matching the globbing expression may be requested via {\ttfamily ks\+Lookup}.
+
+Instead {\ttfamily \+\_\+} is simply treated like {\ttfamily $\ast$} during matching. Afterwards we check that no array elements were matched.
+
+The basic functionality of the plugin is to just copy (using {\ttfamily \hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{key\+Copy\+Meta()}} so we don\textquotesingle{}t waste memory) the metadata of spec keys to all matching (as described above) keys in other namespaces. This ensures that other plugins can do their work as expected, without manually setting metadata on every key. If any metakey we want to copy already exists on the target key (with a different value), this causes a {\ttfamily collision} conflict.
+
+In addition to the basic functionality, the plugin does some validation itself.
+
+If a spec key has the metakey {\ttfamily default} set and the key does not exist in other namespaces, we create a special (cascading) key that will be found by {\ttfamily ks\+Lookup}. This key has the {\ttfamily default} value as its value. We also copy over metadata as always.
+
+A similar procedure takes place for {\ttfamily assign/condition}, but in this case, we don\textquotesingle{}t set the value of the key. We only create it and copy metadata.
+
+If a spec key has the metakey {\ttfamily require} (the value of this metakey is irrelevant and ignored), we ensure that this key exists in at least one other namespace, i.\+e. it can be found using a cascading {\ttfamily ks\+Lookup}. If the key cannot be found, this causes a {\ttfamily missing} conflict.
+
+As hinted to above, we validate array sizes. If a spec key {\ttfamily x/\#} is given, and the spec key {\ttfamily x} has the metakey {\ttfamily array/min} or {\ttfamily array/max} set, we validate the array size (given as metakey {\ttfamily array} on {\ttfamily x}) is within the limits of {\ttfamily array/min} and {\ttfamily array/max}. Both {\ttfamily array/min} and {\ttfamily array/max} have to be valid array-\/elements similar to {\ttfamily array}. If the array size is out of bounds, this causes a {\ttfamily range} conflict.
+
+We also check that the array only contains actual array elements. If this not the case, this causes a {\ttfamily member} conflict.
+
+Note\+: We don\textquotesingle{}t actually validate that the array doesn\textquotesingle{}t contain elements above the given array size. This is because it doesn\textquotesingle{}t have anything to do with the specification, whether the array contains additional elements. Note also that we only copy metadata onto elements within the bounds of the array size.
+
+There are various ways in which a conflict can occur during the validation process. To handle these conflicts, we provide various configuration options.
+
+The possible conflicts are\+:
+
+
+\begin{DoxyItemize}
+\item Invalid array {\ttfamily member}\+: an invalid array key has been detected. e.\+g. {\ttfamily /\#abc}, or {\ttfamily /x} (i.\+e. non-\/array-\/element) if array ({\ttfamily \#}) was specified
+\item Out of {\ttfamily range}\+: the array has more or less elements than specified by the {\ttfamily array/min} and {\ttfamily array/max} metakeys.
+\item Missing keys {\ttfamily missing}\+: the key marked as {\ttfamily require}d wasn\textquotesingle{}t found.
+\item Invalid keys {\ttfamily invalid}\+: the specification or a key was invalid
+\item Conflicting metadata {\ttfamily collision}\+: the metakey that\textquotesingle{}s supposed to be added already exists.
+\end{DoxyItemize}
+
+To define what actions should be taken on on conflicts during {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} respectively use the keys {\ttfamily conflict/set} and {\ttfamily conflict/get} in the plugin configuration.
+
+This base configuration can be overridden on a per-\/conflict basis to provide more granularity. The keys for this are (replace {\ttfamily \+\_\+} with {\ttfamily get} or {\ttfamily set} accordingly)\+:
+
+
+\begin{DoxyCode}
+conflict/\_/member
+conflict/\_/range
+conflict/\_/missing
+conflict/\_/invalid
+conflict/\_/collision
+\end{DoxyCode}
+
+
+For even more granularity, the above per-\/conflict metakeys can also be specified on individual keys.
+
+The allowed values for the conflict keys are always the same\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily E\+R\+R\+OR} yields an error when a conflict occurs
+\item {\ttfamily W\+A\+R\+N\+I\+NG} adds a warning when a conflict occurs
+\item {\ttfamily I\+N\+FO} adds a metakey {\ttfamily logs/spec/info} to the parent-\/key which can be used by logging plugins. {\ttfamily logs/spec/info} is an array, each element is one conflict.
+\item any other value ignores the conflict, this includes if the conflict key is not given (i.\+e. the default)
+\end{DoxyItemize}
+
+There is also the special key {\ttfamily missing/log}. If it is set to {\ttfamily 1}, the plugin will create the meta array {\ttfamily logs/spec/missing/\#}. This array will contain a list of the missing keys. The key {\ttfamily missing/log} can only be part of the main plugin configuration, not individual keys\textquotesingle{} metakeys. It also applies to {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} calls.
+
+Ini files can be found in /examples/spec which should be P\+WD so that the example works\+:
+
+
+\begin{DoxyCode}
+cd ~e/examples/spec
+kdb global-mount        # mounts spec plugin by default
+kdb mount $PWD/spec.ini spec ni
+kdb mount $PWD/spectest.ini /testkey ni
+kdb export /testkey ni     # note: spec can only applied on cascading access
+\end{DoxyCode}
+
+
+With spec mount one can use (in this case battery.\+ini needs to be installed in {\ttfamily kdb file spec} (this should be preferred on non-\/development machines so that everything still works after the source is removed)\+:
+
+
+\begin{DoxyCode}
+cp battery.ini $(dirname $(kdb file spec))
+kdb mount battery.ini spec/example/battery ni
+kdb spec-mount /example/battery
+kdb meta-ls /example/battery/level    # we see it has a check/enum
+kdb meta-get /example/battery/level check/enum    # now we know allowed values
+kdb set /example/battery/level low   # success, low is ok!
+kdb set /example/battery/level x     # fails, not one of the allowed values!
+
+cp openicc.ini $(dirname $(kdb file spec))
+kdb mount openicc.ini spec/freedesktop/openicc ni
+kdb spec-mount /freedesktop/openicc
+
+kdb ls /freedesktop/openicc # lets see the whole configuration
+kdb export spec/freedesktop/openicc ni   # give us details about the specification
+kdb meta-ls /freedesktop/openicc/device/camera/#0/EXIF\_serial   # seems like there is a check/type
+kdb set "/freedesktop/openicc/device/camera/#0/EXIF\_serial" 203     # success, is a long
+kdb set "/freedesktop/openicc/device/camera/#0/EXIF\_serial" x   # fails, not a long
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Added metadata is not correctly removed during {\ttfamily kdb\+Set}, if the corresponding spec key was modified.
+\item Default values do not work if globbing is involved.
+\item By default, keys tagged with {\ttfamily require} do not emit errors even if not present (\href{https://issues.libelektra.org/1024}{\tt https\+://issues.\+libelektra.\+org/1024}) 
+\end{DoxyItemize}

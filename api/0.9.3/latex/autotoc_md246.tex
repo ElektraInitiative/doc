@@ -1,0 +1,73 @@
+
+\begin{DoxyItemize}
+\item infos = Information about gpgme plugin is in keys below
+\item infos/author = Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/provides = crypto
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = unittest configurable memleak experimental unfinished
+\item infos/metadata = crypto/encrypt gpg/binary
+\item infos/description = Cryptographic operations wit Gnu\+PG Made Easy (G\+P\+G\+ME)
+\end{DoxyItemize}
+
+The {\ttfamily gpgme} plugin is a filter plugin that enables users to encrypt values before they are persisted and to decrypt values after they have been read from a backend. The encryption and decryption is designed to work transparently.
+
+The cryptographic operations are performed by Gnu\+PG via the {\ttfamily libgpgme} library.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libgpgme11} version 1.\+10 or later
+\end{DoxyItemize}
+
+The plugin has been tested on Ubuntu 18.\+04 with {\ttfamily libgpgme} version 1.\+10.
+
+You can mount the plugin like this\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ecf /t gpgme "encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D"
+\end{DoxyCode}
+
+
+Now you can specify a key {\ttfamily user/t/a} and protect its content by using\+:
+
+
+\begin{DoxyCode}
+kdb set user/t/a
+kdb meta-set user/t/a crypt/encrypt 1
+kdb set user/t/a "secret"
+\end{DoxyCode}
+
+
+The value of {\ttfamily user/t/a} (for this example\+: \char`\"{}secret\char`\"{}) will be stored encrypted. You can still access the original value by using {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}
+kdb get user/t/a
+\end{DoxyCode}
+
+
+The G\+PG recipient keys can be specified in two ways\+:
+
+
+\begin{DoxyEnumerate}
+\item The G\+PG recipient key can be specified as {\ttfamily encrypt/key} directly.
+\item If you want to specify multiple keys, you can enumerate them under {\ttfamily encrypt/key}.
+\end{DoxyEnumerate}
+
+The following example illustrates how multiple G\+PG recipient keys can be specified\+:
+
+
+\begin{DoxyCode}
+encrypt/key/#0
+encrypt/key/#1
+\end{DoxyCode}
+
+
+{\ttfamily gpgme} operates in textmode per default. In textmode the output of G\+PG is A\+S\+C\+II armored.
+
+Textmode can be disabled by setting {\ttfamily /gpgme/textmode} to {\ttfamily 0} in the plugin configuration.
+
+The encrypted values are valid P\+GP messages, that can be decrypted and read solely by the Gnu\+PG binary without Elektra. 

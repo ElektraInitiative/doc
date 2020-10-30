@@ -1,0 +1,366 @@
+.TH "doc_tutorials_command-line-options_md" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_command-line-options_mdCommand-line Options 
+ \- Many applications use command-line options and environment variables as a way to override configuration values\&. In Elektra this can be automated by providing a specification that maps command-line options and environment variables to keys in the KDB\&.
+.PP
+The function \fCelektraGetOpts\fP uses this specification together with \fCargv\fP and \fCenvp\fP and creates new keys in the \fCproc\fP namespace for any command-line option or environment variable it finds\&. Because the \fCproc\fP namespace is used, these values will be preferred over any stored values in a cascading lookup\&.
+.PP
+There is also the \fCgopts\fP plugin\&. It is a global plugin and should be mounted via \fCkdbEnsure\fP\&. This plugin extracts \fCargv\fP and \fCenvp\fP via OS specific APIs and then calls \fCelektraGetOpts\fP\&. The advantage of using \fCgopts\fP is that it retrieves command-line options before any validation plugins are called\&. This means that values passed on the command-line can be validated\&.
+.PP
+To use \fCelektraGetOpts\fP you need to link against \fCelektra-opts\fP, \fCelektra-meta\fP and \fCelektra-ease\fP\&.
+.PP
+To define a command-line option either set the \fCopt\fP metakey to the short option you want to use, or set \fCopt/long\fP to the long option you want to use\&. For short options, only the first character of the given value will be used ('\\0' is ignored)\&. Short and long options can be used simultaneously\&.
+.PP
+Additionally a key can also be associated with multiple short/long options\&. To achieve this treat \fCopt\fP as an array\&. For example for two options \fC-a\fP and \fC-b\fP you would set \fCopt=#1\fP, \fCopt/#0=a\fP and \fCopt/#1=b\fP\&. If not explicitly stated otherwise, you can replace \fCopt\fP with any \fCopt/#\fP array element in all meta-keys mentioned in this document\&. This of course includes long options (i\&.e\&. \fCopt/#0/long\fP, etc\&.)\&.
+.PP
+While you can specify multiple options (or environment variables, see below) for a single key, only one of them can be used at the same time\&. Using two or more options (or variables) that are all linked to the same key, will result in an error\&.
+.PP
+Per default an option is expected to have an argument\&. Arguments to short and long options are given in the same way as with \fCgetopt_long(3)\fP (i\&.e\&. \fC-oarg\fP, \fC-o arg\fP, \fC--option arg\fP or \fC--option=arg\fP)\&.
+.PP
+To change whether an option expects an argument set \fCopt/arg\fP to either \fC'none'\fP or \fC'optional'\fP (the default is \fC'required'\fP)\&.
+.PP
+.IP "\(bu" 2
+If you choose \fC'none'\fP, the corresponding key will be set to \fC'1'\fP, if the option is used\&. This value can be changed by setting \fCopt/flagvalue\fP\&.
+.IP "\(bu" 2
+An option that is set to \fC'optional'\fP is treated the same as with \fC'none'\fP, except that you can also set the value with the long option form \fC--option=value\fP\&. This also means that \fCopt/flagvalue\fP is used, if no argument is given\&. Contrary to \fCgetopt_long(3)\fP options with optional arguments can still have short forms\&. They just cannot have an argument in this form\&.
+.PP
+.PP
+Elektra also supports parsing environment variables in a similar manner\&. For these there are however, less configuration options\&. You can simply specify one or more environment variables for a key using the \fCenv\fP metakey (or \fCenv/#\fP meta-array for multiple)\&.
+.PP
+Both options and environment variables expose special behavior, if used in combination with arrays\&.
+.PP
+If an option is specified on a key with basename \fC#\fP, the option can be used repeatedly\&. All occurrences will be collected into the array\&.
+.PP
+Environment variables obviously cannot be repeated, instead a behavior similar that used for PATH is adopted\&. On Windows the variable will be split at each ';' character\&. On all other systems ':' is used as a separator\&.
+.PP
+All unused elements of \fCargv\fP are be collected into an array\&. You can access this array by specifying \fCargs=remaining\fP on a key with basename \fC#\fP\&. The array will be copied into this key\&. As is the case with getopt(3) processing of options will stop, if \fC--\fP is encountered in \fCargv\fP\&.
+.PP
+If \fCelektraGetOpts\fP is called with a \fCparentKey\fP that has \fCposixly = 1\fP set, then processing of options will also stop, when a non-option argument is encountered\&. This is similar to the POSIX version of getopt(3)\&. NOTE: \fCposixly = 1\fP must be set on the parent key passed to \fCelektraGetOpts\fP, not in the specification itself\&.
+.PP
+Additionally, there is \fCargs=indexed\fP\&. If it is specified on a key, the key must also have the metakey \fCargs/index=N\fP set to an integer \fCN\fP\&. Such a key will be set to the unused element at index \fCN\fP\&. If a key has \fCargs=indexed\fP and \fCargs/index=N\fP, then there must also be keys for all integers \fC0 <= X < N\fP with \fCargs=indexed\fP and \fCargs/index=N\fP set\&. For example, you cannot use \fCargs/index=0\fP and \fCargs/index=2\fP without \fCargs/index=1\fP\&.
+.PP
+Combining \fCargs=indexed\fP and \fCargs=remaining\fP in the same specification (on different keys) is also possible\&. The key with \fCargs=remaining\fP will only contain those elements not used via \fCargs=indexed\fP\&. E\&.g\&. if there are keys with \fCargs/index=0\fP and \fCargs/index=1\fP then the \fCargs=remaining\fP array will start with the third (index 2) parameter argument\&. Note however, the \fCargs=remaining\fP array \fBalways\fP starts with index \fC#0\fP, even if it doesn't contain the first parameter argument\&.
+.PP
+.PP
+.nf
+[from]
+args = indexed
+args/index = 0
+
+[to]
+args = indexed
+args/index = 1
+
+[more/#]
+args = remaining
+.fi
+.PP
+.PP
+If an application \fCapp\fP with the specification above is called as \fC\&./app apple banana cherry date\fP, then the keys will be assigned as follows:
+.PP
+.IP "\(bu" 2
+\fCfrom = apple\fP
+.IP "\(bu" 2
+\fCto = banana\fP
+.IP "\(bu" 2
+\fCmore/#0 = cherry\fP
+.IP "\(bu" 2
+\fCmore/#1 = date\fP
+.PP
+.PP
+\fCelektraGetOpts\fP also supports sub-commands\&. Explaining sub-commands is easiest through the help of an example: \fCadd\fP and \fCcommit\fP are both sub-commands of \fCgit\fP, since we can call \fCgit add\fP and \fCgit commit\fP and they do entirely different things\&. The most important impact of using sub-commands is their effect on option arguments\&. For example calling \fCgit -p add\fP and \fCgit add -p\fP result in different behavior, since the \fC-p\fP option is interpreted differently\&. The options that \fCgit\fP understands are separate from the options that its sub-command \fCadd\fP knows\&. However, the option \fC-p\fP is understood by both\&. In \fCgit\fP it is short for \fC--paginate\fP and in \fCadd\fP it is short for \fC--patch\fP\&.
+.PP
+An important thing to know about sub-commands in \fCelektraGetOpts\fP is that they turn on \fCposixly = 1\fP mode\&. This means \fBall\fP options for a specific sub-command must be given before any non-option arguments (such as parameters or sub-commands)\&. Otherwise, we couldn't distinguish between \fCgit -p add\fP and \fCgit add -p\fP\&. In other words an option argument is always assigned to the first sub-command to its left\&. Any element of \fCargv\fP that is not the argument for an option argument, either switches to a new sub-command or is the start of the parameter arguments\&.
+.PP
+A sub-command is created by specifying \fCcommand\fP on a key\&. To enable sub-command processing the parent key of the whole specification must have \fCcommand\fP set to an empty string\&. All keys marked with \fCcommand\fP \fBdirectly\fP below another key \fCK\fP marked with \fCcommand\fP (e\&.g\&. the parent key) are sub-commands of \fCK\fP\&. It is an error, if the immediate parent of a key \fCX\fP marked with \fCcommand\fP is not marked with \fCcommand\fP and \fCX\fP is not the parent of the whole specification\&.
+.PP
+To inform the application about the invoked sub-commands, \fCelektraGetOpts\fP sets each \fCcommand\fP key to one of two values:
+.PP
+.IP "\(bu" 2
+The basename of the key, whose command was invoked\&.
+.IP "\(bu" 2
+An empty string otherwise\&.
+.PP
+.PP
+For example consider \fC\&./app add more\fP: The parent key will be set to the basename of whatever key \fCcommand=add\fP was specified on, the key for \fCadd\fP will be set to the basename corresponding to \fCmore\fP and the key for \fCmore\fP is set to an empty string, because none of its sub-commands were invoked\&. A more detailed example is shown below\&.
+.PP
+Every key considered by \fCelektraGetOpts\fP is assigned either to the root command, or a single sub-command\&. Specifically, each key is assigned to the command of its immediate parent\&. If sub-commands are used and the immediate parent of an \fCopt\fP or \fCargs\fP key has no \fCcommand\fP metadata an error occurs\&. The value of a key will \fBonly\fP be set by \fCelektraGetOpts\fP, if the corresponding sub-command was invoked\&.
+.PP
+Lastly, it is allowed to have keys with \fCargs\fP and \fCcommand\fP below the same parent\&. If a matching sub-command is found among the \fCcommand\fP keys, processing will continue there\&. Otherwise, the \fCargs\fP keys will be considered\&. This allows an application to implement dynamic commands (like \fCgit\fP or \fCkdb\fP) by using the \fCargs=remaining\fP array to invoke another application\&.
+.PP
+If an unknown sub-command is encountered without an \fCargs\fP key, an error is returned\&.
+.PP
+All of this is best understood with an example:
+.PP
+.PP
+.nf
+[kdb]
+command = ""
+
+[kdb/printversion]
+description = "print version information and exit (ignoring all other options/commands/parameters)"
+opt = v
+opt/long = version
+opt/arg = none
+
+[kdb/getter]
+description = "get a key's value"
+command = get
+
+[kdb/getter/verbose]
+description = "print additional information about where the value comes from"
+opt = v
+opt/long = verbose
+opt/arg = none
+
+[kdb/getter/keyname]
+description = "name of the key to read"
+args = indexed
+args/index = 0
+
+[kdb/setter]
+description = "print additional information about where the value will be stored"
+command = set
+
+[kdb/setter/verbose]
+description = "name of the key to write"
+opt = v
+opt/long = verbose
+opt/arg = none
+
+[kdb/setter/keyname]
+description = "name of the key to write"
+args = indexed
+args/index = 0
+
+[kdb/setter/value]
+description = "value to be written"
+args = indexed
+args/index = 1
+
+[kdb/dynamic/#]
+description = "dynamically call a user-supplied command"
+args = remaining
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+If we invoke \fCkdb -v\fP, keys below \fCkdb/getter\fP, \fCkdb/setter\fP and \fCkdb/dynamic\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = ''\fP
+.IP "  \(bu" 4
+\fCkdb/printversion = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.PP
+
+.IP "\(bu" 2
+If we invoke \fCkdb get -v name\fP, keys below \fCkdb/setter\fP and \fCkdb/dynamic\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = getter\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/getter/verbose = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter/keyname = name\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.PP
+
+.IP "\(bu" 2
+If we invoke \fCkdb -v set -v\fP, keys below \fCkdb/getter\fP and \fCkdb/dynamic\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = setter\fP
+.IP "  \(bu" 4
+\fCkdb/printversion = 1\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/setter/verbose = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.PP
+
+.IP "\(bu" 2
+If we invoke \fCkdb -v custom -v -x z\fP, keys below \fCkdb/getter\fP and \fCkdb/setter\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = ''\fP
+.IP "  \(bu" 4
+\fCkdb/printversion = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#0 = custom\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#1 = -v\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#2 = -x\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#3 = z\fP
+.PP
+
+.PP
+.PP
+To determine what code to execute, an application would just start with the parent key \fCkdb\fP in the example above\&. It would then repeatedly look at the current key's value, append that to the current key and continue, until the current key's value was the empty string \fC''\fP\&. Each of the examined keys corresponds to one of the sub-commands in the invocation and the keys directly below those, contain the relevant options (and for the last sub-command also parameters)\&.
+.PP
+The C code for this example is located in \fCexamples/optsCommands\&.c\fP\&.
+.PP
+When the help option \fC--help\fP is encountered in \fCargv\fP, \fCelektraGetOpts\fP only reads the specification, but does not create any keys in the \fCproc\fP namespace\&. It will however, generate a help message that can be accessed with \fCelektraGetOptsHelpMessage\fP\&.
+.PP
+The help message consists of a usage line and an options list\&. The program name for the usage line is taken from \fCargv[0]\fP\&. If the value contains a slash (\fC/\fP) it will be considered a path and only the part after the last slash will be used\&.
+.PP
+The options list will contain exactly one entry for each key that has at least one option\&. Each entry has to parts\&. First all the options for the key are listed and then (possibly on the next line, if there are a lot of options), the description for the key is listed\&. The description is taken from the \fCopt/help\fP or alternatively the \fCdescription\fP metakey\&.
+.PP
+\fBNote:\fP \fCopt/help\fP is specified \fIonly once per key\fP\&. That means even if the key uses \fCopt/#0\fP, \fCopt/#1\fP, etc\&. (unlike most other metadata) the description will always be taken from \fCopt/help\fP directly, because there can only be one description\&. In general we recommend using \fCdescription\fP, because it is used by other parts of Elektra as well\&. \fCopt/help\fP is intended to provide a less verbose description more suitable for the command-line\&.
+.PP
+The help message can be modified in a few different ways:
+.PP
+.IP "\(bu" 2
+The \fCusage\fP argument of \fCelektraGetOptsHelpMessage\fP can be used to replace the default usage line\&.
+.IP "\(bu" 2
+The \fCprefix\fP argument of \fCelektraGetOptsHelpMessage\fP can be used to insert text between the usage line and the options list\&.
+.IP "\(bu" 2
+An option can can be hidden from the help message by setting \fCopt/hidden\fP to \fC'1'\fP\&. This hides both the long and short form of the option\&. If you want to hide just one form, use an array of two options an hide just one index\&.
+.IP "\(bu" 2
+If the option has an \fC'optional'\fP or \fC'required'\fP argument, the string \fCARG\fP will be used as a placeholder by default\&. You can change this, by setting \fCopt/arg/help\fP for the corresponding option\&.
+.PP
+.PP
+If sub-commands are in use, the help message returned by \fCelektraGetOptsHelpMessage\fP will apply to the invoked sub-command only\&. For example \fC\&./app --help\fP generates the general help message for \fC\&./app\fP containing only options valid for the root command\&. In contrast, \fC\&./app more --help\fP generates the help message for the sub-command \fCmore\fP\&.
+.PP
+The order of precedence is simple:
+.PP
+.IP "\(bu" 2
+If a short option for a key is found, it will always be used\&.
+.IP "\(bu" 2
+If none of the short options for a key are found, we look for long options\&.
+.IP "\(bu" 2
+Neither short nor long options are found, environment variables are considered\&.
+.PP
+.PP
+.IP "\(bu" 2
+Both options and environment variables can only be specified on a single key\&. If you need to have the value of one option/environment variable in multiple keys, you may use \fCfallback\fPs\&.
+.IP "\(bu" 2
+\fC-\fP cannot be used as short options, because it would collide with, the 'option end marker'\&.
+.IP "\(bu" 2
+\fChelp\fP cannot be used as a long option, because it would collide with the help option\&.
+.PP
+.PP
+The following specification describes the command line interface similar to the one used by \fCrm\fP\&. (It is based of \fCrm (GNU coreutils) 8\&.30\fP)\&.
+.PP
+.PP
+.nf
+[force]
+opt = f
+opt/long = force
+opt/arg = none
+description = ignore nonexistent files and arguments, never prompt
+
+[interactive]
+opt = #1
+opt/#0 = i
+opt/#0/long = interactive
+opt/#0/arg = optional
+opt/#0/flagvalue = always
+opt/#1 = I
+opt/#1/flagvalue = once
+opt/#1/arg = none
+opt/arg/name = WHEN
+description = prompt according to WHEN: never, once (-I), or always (-i); without WHEN, prompt always
+
+[singlefs]
+opt/long = one-file-system
+opt/arg = none
+description = when removing a hierarchy recursively, skip any directory that is on a file system different from that of the corresponding line argument
+
+[nopreserve]
+opt/long = no-preserve-root
+opt/arg = none
+description = do not treat '/' specially
+
+[preserve]
+opt/long = preserve-root
+opt/arg = optional
+opt/arg/name = all
+opt/flagvalue = root
+description = do not remove '/' (default); with 'all', reject any command line argument on a separate device from its parent
+
+[recursive]
+opt = #1
+opt/#0 = r
+opt/#0/long = recursive
+opt/#0/arg = none
+opt/#1 = R
+opt/#1/arg = none
+description = remove directories and their contents recursively
+
+[emptydirs]
+opt = d
+opt/long = dir
+opt/arg = none
+description = remove empty directories
+
+[verbose]
+opt = v
+opt/long = verbose
+opt/arg = none
+env = VERBOSE
+description = explain what is being done
+
+[showversion]
+opt/long = version
+opt/arg = none
+description = output version information and exit
+
+[files/#]
+args = remaining
+env = FILES
+description = the files that shall be deleted
+.fi
+.PP
+.PP
+If this specification is used in a program called \fCerm\fP (for Elektra rm), which is called like this:
+.PP
+.PP
+.nf
+FILES="one\&.txt:other\&.log" VERBOSE=1 erm -fi --recursive
+.fi
+.PP
+.PP
+The following keys will be created by \fCelektraGetOpts\fP (assuming the specification is mounted at \fCspec/sw/org/erm/#0/current\fP):
+.PP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/force = '1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/interactive = 'always'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/recursive = '1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/verbose = '1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files [array] = '#1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#0 = 'one\&.txt'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#1 = 'other\&.log'\fP
+.PP
+.PP
+Calling \fCFILES='abcd\&.txt' erm 123\&.txt 456\&.txt\fP meanwhile will result in:
+.PP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files [array] = '#1'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#0 = '123\&.txt'\fP
+.IP "\(bu" 2
+\fCproc/sw/org/erm/#0/current/files/#1 = '456\&.txt'\fP
+.PP
+.PP
+NOTE: \fCproc/sw/org/erm/#0/current/files [array] = '#1'\fP means the \fCarray\fP metadata of \fCproc/sw/org/erm/#0/current/files\fP is \fC#1\fP\&.
+.PP
+You can find a full working example \fChere\fP\&. However, it uses a hard coded specification which is a bit harder to read\&. 

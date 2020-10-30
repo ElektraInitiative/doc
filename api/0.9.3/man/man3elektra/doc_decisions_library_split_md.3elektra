@@ -1,0 +1,81 @@
+.TH "doc_decisions_library_split_md" 3elektra "Fri Oct 30 2020" "Version 0.9.3" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_library_split_mdLibrary Split 
+ \- libelektra\&.so contains KDB and Key(Set) but plugins only need Key(Set) but not KDB\&.
+.PP
+.IP "\(bu" 2
+full and static libraries remain unchanged
+.PP
+.PP
+.IP "\(bu" 2
+linker overhead of less than a dozen libraries is not measurable
+.PP
+.PP
+.IP "\(bu" 2
+keep current situation
+.PP
+.PP
+.IP "\(bu" 2
+\fBsplit library\fP
+.PP
+.PP
+.IP "\(bu" 2
+allows various users (plugins, applications) to link to exactly what they need
+.IP "\(bu" 2
+allows symbol versioning on different levels (for different evolving libraries)
+.IP "\(bu" 2
+allows alternative implementation of parts of Elektra, e\&.g\&. a new libkdb which still uses libcore
+.IP "\(bu" 2
+easier to navigate in source tree
+.IP "\(bu" 2
+facilitates code reuse between plugins
+.IP "\(bu" 2
+easier entrance to create commonly used libs (less fear of 'changes in the core' for some helper functionality)
+.PP
+.PP
+.IP "\(bu" 2
+bindings need to decide which parts to link against
+.IP "\(bu" 2
+plugins and applications need changes
+.IP "\(bu" 2
+we need to get rid of the legacy library
+.PP
+.PP
+.IP "\(bu" 2
+none
+.PP
+.PP
+.IP "\(bu" 2
+was discussed in a meeting, all were in favor (or did not say anything)
+.PP
+.PP
+Sizes of libelektra\&.so
+.PP
+.IP "\(bu" 2
+0\&.8\&.14 unmodified 128K
+.IP "\(bu" 2
+0\&.8\&.14 w/o \fBmeta\&.c\fP 120K
+.IP "\(bu" 2
+0\&.8\&.14 w/o array 126K
+.PP
+.PP
+So the removal of the non-core functionality is actually relevant\&. And kdb/core is now nearly half-split:
+.PP
+.IP "\(bu" 2
+52K lib/libelektra-core\&.so\&.0\&.8\&.14
+.IP "\(bu" 2
+7,5K lib/libelektra-ease\&.so\&.0\&.8\&.14
+.IP "\(bu" 2
+1,3M lib/libelektra-full\&.so\&.0\&.8\&.14
+.IP "\(bu" 2
+76K lib/libelektra-kdb\&.so\&.0\&.8\&.14
+.IP "\(bu" 2
+9,3K lib/libelektra-meta\&.so\&.0\&.8\&.14
+.IP "\(bu" 2
+5,1K lib/libelektra-plugin\&.so\&.0\&.8\&.14
+.IP "\(bu" 2
+7,6K lib/libelektra-proposal\&.so\&.0\&.8\&.14 
+.PP
+

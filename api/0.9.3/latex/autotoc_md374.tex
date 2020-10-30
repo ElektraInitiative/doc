@@ -1,0 +1,79 @@
+
+\begin{DoxyItemize}
+\item infos = Information about line plugin is in keys below
+\item infos/author = Ian Donnelly \href{mailto:ian.s.donnelly@gmail.com}{\tt ian.\+s.\+donnelly@gmail.\+com}
+\item infos/provides = storage/line
+\item infos/licence = B\+SD
+\item infos/needs = null
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest nodep libc final limited
+\item infos/description = storage plugin which stores each line from a file
+\end{DoxyItemize}
+
+This plugin is useful if you have a file in a format not supported by any other plugin and want to use the Elektra tools to edit individual lines.
+
+This plugin is designed to save each line from a file as a key. The keys form an array. The key names are determined by the line number such as {\ttfamily \#3} or {\ttfamily \#\+\_\+12} for lines 4 and 13. The plugin considers {\ttfamily \#0} to be the first line. The plugin will automatically add {\ttfamily \+\_\+} to the beginning of key names in order to keep them in numerical order (like specified for Elektra arrays).
+
+The value of each key hold the content of the actual file line-\/by-\/line.
+
+For example, consider the following content of the file {\ttfamily $\sim$/.config/line} where the numbers on the left represent the line numbers\+:
+
+
+\begin{DoxyCode}
+1  setting1 true
+2  setting2 false
+3  setting3 1000
+4  #comment
+5
+6
+7  //some other comment
+8
+9  setting4 -1
+\end{DoxyCode}
+
+
+We mount that file by\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount line user/line line
+\end{DoxyCode}
+
+
+This file would result in the following keyset which is being displayed as {\ttfamily key\+: value}, e.\+g. with\+:
+
+
+\begin{DoxyCode}
+kdb export -c "format=%s: %s" user/line simpleini
+#> 0: setting1 true
+#> 1: setting2 false
+#> 2: setting3 1000
+#> 3: #comment
+#> 4:
+#> 5:
+#> 6: //some other comment
+#> 7:
+#> 8: setting4 -l
+\end{DoxyCode}
+
+
+``` \hypertarget{autotoc_md374_autotoc_md377}{}\section{Backup-\/and-\/\+Restore\+:/tests/line}\label{autotoc_md374_autotoc_md377}
+sudo kdb mount line /tests/line line
+
+kdb set /tests/line/add something kdb set /tests/line/ignored huhu kdb set /tests/line ignored \# adding parent key does nothing kdb set /tests/line/add here
+
+cat {\ttfamily kdb file /tests/line} \#$>$ something \#$>$ huhu \#$>$ here
+
+kdb ls /tests/line \hypertarget{autotoc_md374_autotoc_md378}{}\section{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+E\+X\+: line.+line/\#0.+line/\#1.+line/\#2}\label{autotoc_md374_autotoc_md378}
+kdb set /tests/line/\#1 huhu \hypertarget{autotoc_md374_autotoc_md379}{}\section{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+E\+X\+: .+\+Set string to \char`\"{}huhu\char`\"{}}\label{autotoc_md374_autotoc_md379}
+kdb export /tests/line line \#$>$ something \#$>$ huhu \#$>$ here
+
+sudo kdb umount /tests/line 
+\begin{DoxyCode}
+### Other Tests
+\end{DoxyCode}
+ \hypertarget{autotoc_md374_autotoc_md380}{}\section{Backup-\/and-\/\+Restore\+:/tests/line}\label{autotoc_md374_autotoc_md380}
+sudo kdb mount line /tests/line line\hypertarget{autotoc_md374_autotoc_md381}{}\section{create and initialize testfile}\label{autotoc_md374_autotoc_md381}
+echo \textquotesingle{}setting1 true\textquotesingle{} $>$ {\ttfamily kdb file /tests/line} echo \textquotesingle{}setting2 false\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/line} echo \textquotesingle{}setting3 1000\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/line} echo \textquotesingle{}\#comment\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/line} echo $>$$>$ {\ttfamily kdb file /tests/line} echo $>$$>$ {\ttfamily kdb file /tests/line} echo \textquotesingle{}//some other comment\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/line} echo $>$$>$ {\ttfamily kdb file /tests/line} echo \textquotesingle{}setting4 -\/1\textquotesingle{} $>$$>$ {\ttfamily kdb file /tests/line}\hypertarget{autotoc_md374_autotoc_md382}{}\section{output filecontent and display line numbers}\label{autotoc_md374_autotoc_md382}
+awk \textquotesingle{}\{print N\+R-\/1 \char`\"{}-\/\char`\"{} \$0\}\textquotesingle{} $<$ {\ttfamily kdb file /tests/line} \#$>$ 0-\/setting1 true \#$>$ 1-\/setting2 false \#$>$ 2-\/setting3 1000 \#$>$ 3-\/\#comment \#$>$ 4-\/ \#$>$ 5-\/ \#$>$ 6-\///some other comment \#$>$ 7-\/ \#$>$ 8-\/setting4 -\/1\hypertarget{autotoc_md374_autotoc_md383}{}\section{cleanup}\label{autotoc_md374_autotoc_md383}
+kdb rm -\/r /tests/line sudo kdb umount /tests/line ``` 
