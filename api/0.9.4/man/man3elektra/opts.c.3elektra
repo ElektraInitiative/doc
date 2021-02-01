@@ -1,0 +1,174 @@
+.TH "opts.c" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+opts.c
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdbopts\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include <kdbease\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <kdbmeta\&.h>\fP
+.br
+\fC#include <kdbassert\&.h>\fP
+.br
+\fC#include <kdberrors\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "char * \fBgenerateUsageLine\fP (const char *progname, Key *command, const Key *commandArgs)"
+.br
+.RI "Generate usage line for help message from optionsSpec\&. "
+.ti -1c
+.RI "int \fBelektraGetOpts\fP (KeySet *ks, int argc, const char **argv, const char **envp, Key *parentKey)"
+.br
+.RI "This functions parses a specification of program options, together with a list of arguments and environment variables to extract the option values\&. "
+.ti -1c
+.RI "const char * \fBelektraGetOptsHelpCommand\fP (Key *errorKey)"
+.br
+.RI "Extracts the command whose help message was requested from the \fCerrorKey\fP used in \fBelektraGetOpts()\fP\&. "
+.ti -1c
+.RI "char * \fBelektraGetOptsHelpMessage\fP (Key *errorKey, const char *usage, const char *prefix)"
+.br
+.RI "Extracts the help message from the \fCerrorKey\fP used in \fBelektraGetOpts()\fP\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraGetOpts (KeySet * ks, int argc, const char ** argv, const char ** envp, Key * parentKey)"
+
+.PP
+This functions parses a specification of program options, together with a list of arguments and environment variables to extract the option values\&. The options have to be defined in the metadata of keys in the spec namespace\&. If an option value is found for any of the given keys, a new key with the same path but inside the proc namespace will be inserted into \fCks\fP\&. This enables a cascading lookup to find these values\&.
+.PP
+Take look at https://www.libelektra.org/tutorials/command-line-options for information on how exactly the specification works\&.
+.PP
+NOTE: Per default option processing DOES NOT stop, when a non-option string is encountered in \fCargv\fP\&. If you want processing to stop, set the metadata \fCposixly = 1\fP on \fCparentKey\fP\&.
+.PP
+The basic usage of this function is as follows: 
+.PP
+.nf
+   KDB * kdb = kdbOpen (parentKey);
+        KeySet * ks = ksNew (0, KS_END);
+
+        kdbGet (kdb, ks, parentKey);
+
+        int result = elektraGetOpts (ks, argc, argv, (const char **) environ, parentKey);
+        if (result == -1)
+        {
+                fprintf (stderr, "ERROR: %s\n", keyString (keyGetMeta (parentKey, "error/reason")));
+                keyDel (parentKey);
+                ksDel (ks);
+                return EXIT_FAILURE;
+        }
+
+        if (result == 1)
+        {
+                char * help = elektraGetOptsHelpMessage (parentKey, NULL, NULL);
+                fprintf (stderr, "%s\n", help);
+                elektraFree (help);
+                keyDel (parentKey);
+                ksDel (ks);
+                return EXIT_SUCCESS;
+        }
+
+
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP The KeySet containing the specification for the options\&. 
+.br
+\fIargc\fP The number of strings in argv\&. 
+.br
+\fIargv\fP The arguments to be processed\&. 
+.br
+\fIenvp\fP A list of environment variables\&. This needs to be a null-terminated list of strings of the format 'KEY=VALUE'\&. 
+.br
+\fIparentKey\fP The parent key below which the function while search for option specifications\&. Also used for error reporting\&. The key will be translated into the spec namespace automatically, i\&.e\&. 'user:/test/parent' will be translated into 'spec:/test/parent', before checking against spec keys\&.
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success, this is the only case in which \fCks\fP will be modified 
+.br
+\fI-1\fP on error, the error will be set as metadata in \fCerrorKey\fP 
+.br
+\fI1\fP if the help option \fC--help\fP was found, use \fBelektraGetOptsHelpMessage()\fP access the generated help message 
+.RE
+.PP
+
+.SS "const char* elektraGetOptsHelpCommand (Key * errorKey)"
+
+.PP
+Extracts the command whose help message was requested from the \fCerrorKey\fP used in \fBelektraGetOpts()\fP\&. NOTE: this only works, if \fBelektraGetOpts()\fP returned 1\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP The same Key as passed to \fBelektraGetOpts()\fP as errorKey\&. 
+.br
+\fIusage\fP If this is not NULL, it will be used instead of the default usage line\&. 
+.br
+\fIprefix\fP If this is not NULL, it will be inserted between the usage line and the options list\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The command extracted from \fCerrorKey\fP, or NULL if no command was found\&. The returned string MUST NOT be freed with \fBelektraFree()\fP\&. It will be valid as long as \fCerrorKey\fP is not \fBkeyDel()\fP'ed\&. 
+.RE
+.PP
+
+.SS "char* elektraGetOptsHelpMessage (Key * errorKey, const char * usage, const char * prefix)"
+
+.PP
+Extracts the help message from the \fCerrorKey\fP used in \fBelektraGetOpts()\fP\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIerrorKey\fP The same Key as passed to \fBelektraGetOpts()\fP as errorKey\&. 
+.br
+\fIusage\fP If this is not NULL, it will be used instead of the default usage line\&. Use \fBelektraGetOptsHelpCommand()\fP to check which command was invoked to get the right usage line\&. 
+.br
+\fIprefix\fP If this is not NULL, it will be inserted between the usage line and the options list\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+The full help message extracted from \fCerrorKey\fP, or NULL if no help message was found\&. The returned string has to be freed with \fBelektraFree()\fP\&. 
+.RE
+.PP
+
+.SS "char * generateUsageLine (const char * progname, Key * command, const Key * commandArgs)"
+
+.PP
+Generate usage line for help message from optionsSpec\&. 
+.PP
+\fBReturns:\fP
+.RS 4
+a newly allocated string, must be freed with \fBelektraFree()\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

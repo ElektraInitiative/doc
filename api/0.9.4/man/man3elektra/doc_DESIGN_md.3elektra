@@ -1,0 +1,237 @@
+.TH "doc_DESIGN_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_DESIGN_mdDESIGN 
+ \- This document describes the design of Elektra's C-API and provides hints for binding writers\&. It is not aimed at plugin writers, since it does not talk about the implementation details of Elektra\&.
+.PP
+Elektra \fBaims\fP at following design principles:
+.PP
+.IP "1." 4
+To make the API futureproof so that it can remain compatible and stable over a long period of time,
+.IP "2." 4
+to make it hard to use the API the wrong way by making it simple&robust, and
+.IP "3." 4
+to make the API easy to use for programmers reading and writing configuration\&.
+.PP
+.PP
+The C-API is suitable to be reimplemented, also in non-C-languages, like Rust\&. Elektra provides a full blown architecture to support configuring systems, and the C-API is the core of this endeavour\&.
+.PP
+The \fCKey\fP, \fCKeySet\fP and \fCKDB\fP data structures are defined in \fC\fBkdbprivate\&.h\fP\fP to allow ABI compatibility\&. This means, it is not possible to put one of Elektra’s data structures on the stack\&. You must use the memory management facilities mentioned in the next section\&.
+.PP
+Elektra provides functions that create and free data\&. For example after you call:
+.PP
+.PP
+.nf
+KDB * kdbOpen();
+.fi
+.PP
+.PP
+you need to use:
+.PP
+.PP
+.nf
+int kdbClose(KDB *handle);
+.fi
+.PP
+.PP
+to get rid of the resources again\&. The second function may also shut down connections\&. Therefore it must be called before the end of a program\&.
+.PP
+.PP
+.nf
+Key *keyNew(const char *keyName, \&.\&.\&.);
+int keyDel(Key *key);
+
+KeySet *ksNew(int alloc, \&.\&.\&.);
+int ksDel(KeySet *ks);
+.fi
+.PP
+.PP
+In the above pairs, the first function reserves the necessary amount of memory\&. The second function frees the allocated data segment\&. There are more allocations happening but they are invisible to the user of the API and happen implicitly within any of these 3 classes: \fCKDB\fP, \fCKey\fP and \fCKeySet\fP\&.
+.PP
+Key names and values cannot be handled as easy, because Elektra does not provide a string library\&. There are 2 ways to access the mentioned attributes\&. The function
+.PP
+.PP
+.nf
+const char *keyString(const Key *key);
+.fi
+.PP
+.PP
+returns a string\&. You are not allowed to change the returned string\&. The function
+.PP
+.PP
+.nf
+ssize_t keyGetValueSize(const Key *key);
+.fi
+.PP
+.PP
+shows how long the string is for the specified key\&. The returned value also specifies the minimum buffer size that \fCkeyGetString\fP will reserve for the copy of the key\&.
+.PP
+.PP
+.nf
+ssize_t keyGetString(const Key *key, char *returnedValue, size_t maxSize);
+.fi
+.PP
+.PP
+writes the comment in a buffer maintained by you\&.
+.PP
+The constructors for \fCKey\fP and \fCKeySet\fP take a variable sized list of arguments\&. They can be used as an alternatives to the various \fCkeySet*\fP methods and \fCksAppendKey\fP\&. With them you are able to generate any \fCKey\fP or \fCKeySet\fP with a single C-statement\&. This can be done programmatically by the plugin \fCc\fP\&.
+.PP
+To just retrieve a key, use
+.PP
+.PP
+.nf
+Key *k = keyNew("/", KEY_END);
+.fi
+.PP
+.PP
+To obtain a \fCkeyset\fP, use
+.PP
+.PP
+.nf
+KeySet *k = ksNew(0, KS_END);
+.fi
+.PP
+.PP
+Alternatively pass a list as described in the documentation\&. The idea of these variable arguments is, that one function call can create any \fCKeySet\fP\&. For binding writers \fCkeyVNew\fP might be useful\&.
+.PP
+We avoid off-by-one errors by starting all indices with 0, as usual in C\&. The size returned by the \fC*GetSize\fP functions (\fCkeyGetValueSize\fP, \fCkeyGetCommentSize\fP and \fCkeyGetOwnerSize\fP) is exactly the size you need to allocate\&. So if you add 1 to it, too much space is allocated, but no error will occur\&.
+.PP
+The same is true for \fCelektraStrLen\fP which also already has the null byte included\&.
+.PP
+\fCkdb\&.h\fP contains a minimal set of functions to fully work with a key database\&. The functions are implemented in \fCsrc/libs/elektra\fP in ANSI C\&.
+.PP
+Useful extensions are available in \fBfurther libraries\fP\&.
+.PP
+Sometimes people confuse the terms “value”, “string” and “binary”:
+.PP
+.IP "\(bu" 2
+Value is just a name which does not specify if data is stored as string or in binary form\&.
+.IP "\(bu" 2
+A string is a char array, with a terminating `'\\0'`\&.
+.IP "\(bu" 2
+Binary data is stored in an array of type void, and not terminated by `'\\0'`\&.
+.PP
+.PP
+See also \fBthe glossary\fP for further terminology\&.
+.PP
+In Elektra \fCchar*\fP are used as null-terminated strings, while \fCvoid*\fP might contain \fC0\fP-bytes:
+.PP
+.PP
+.nf
+const void *keyValue(const Key *key);
+.fi
+.PP
+.PP
+does not specify whether the returned value is binary or a string\&. The function just returns the pointer to the value\&. When \fCkey\fP is a string (check with \fCkeyIsString\fP) at least \fC''\fP will be returned\&. See section “Return Values” to learn more about common values returned by Elektra’s functions\&. For binary data a \fCNULL\fP pointer is also possible to distinguish between no data and `'\\0'`\&.
+.PP
+.PP
+.nf
+ssize_t keyGetValueSize(const Key *key);
+.fi
+.PP
+.PP
+does not specify whether the key type is binary or string\&. The function just returns the size which can be passed to \fCelektraMalloc\fP to hold the entire value\&.
+.PP
+.PP
+.nf
+ssize_t keyGetString(const Key *key, char *returnedString, size_t maxSize);
+.fi
+.PP
+.PP
+stores the string into a buffer maintained by you\&.
+.PP
+.PP
+.nf
+ssize_t keySetString(Key *key, const char *newString);
+.fi
+.PP
+.PP
+sets the null terminated string value for a certain key\&.
+.PP
+.PP
+.nf
+ssize_t keyGetBinary(const Key *key, void *returnedBinary, size_t maxSize);
+.fi
+.PP
+.PP
+retrieves binary data which might contain `'\\0'`\&.
+.PP
+.PP
+.nf
+ssize_t keySetBinary(Key *key, const void *newBinary, size_t dataSize);
+.fi
+.PP
+.PP
+sets the binary data which might contain `'\\0'\fC\&. The length is given by\fPdataSize`\&.
+.PP
+Elektra’s function share common error codes\&. Every function must return \fC-1\fP on error, if its return type is integer (like \fCint\fP, \fCssize_t\fP)\&. If the function returns a pointer, \fC0\fP (\fCNULL\fP) will indicate an error\&.
+.PP
+Elektra uses integers for the length of C strings, reference counting, \fCKeySet\fP length and internal \fCKeySet\fP allocations\&.
+.PP
+The interface always accepts \fCssize_t\fP and internally uses \fCsize_t\fP, which is able to store larger numbers than \fCssize_t\fP\&.
+.PP
+The real size of C strings and buffers is limited to \fCSSIZE_MAX\fP\&. When a string exceeds that limit \fC-1\fP or a \fCNULL\fP pointer (see above) must be returned\&.
+.PP
+The following functions return an internal string:
+.PP
+.PP
+.nf
+const char *keyName(const Key *key);
+const char *keyBaseName(const Key *key);
+.fi
+.PP
+.PP
+and in the case that \fCkeyIsBinary(key)==0\fP:
+.PP
+.PP
+.nf
+const void *keyValue(const Key *key);
+.fi
+.PP
+.PP
+does so, too\&. If in any of the functions above \fCkey\fP is a \fCNULL\fP pointer, then they also return \fCNULL\fP\&.
+.PP
+If there is no string you will get back \fC''\fP, that is a pointer to the value `'\\0'\fC\&. The function to determine the size will return\fP1` in that case\&. That means that an empty string – nothing except the NULL terminator – has size \fC1\fP\&.
+.PP
+This is not true for \fCkeyValue\fP in the case of binary data, because the value `'\\0'\fCin the first byte is perfectly legal binary data\&. \fPkeyGetValueSize\fCmay also return\fP0` for that reason\&.
+.PP
+For \fCKDB\fP functions the user does not only get the return value but also a more elaborate error information, including an error message, in the metadata of the \fCparentKey\fP or \fCerrorKey\fP\&. Furthermore, it is also possible to get warnings, even if the calls succeeded\&.
+.PP
+Using different error categories, the user of the API can have suitable reactions on specific error situations\&. Additional information about error handling is available \fBhere\fP\&.
+.PP
+Elektra does not set \fCerrno\fP\&. If a function you call sets \fCerrno\fP, make sure to set it back to the old value again\&.
+.PP
+All function names begin with their class name, e\&.g\&. \fCkdb\fP, \fCks\fP or \fCkey\fP\&. We use capital letters to separate single words (CamelCase)\&. This leads to short names, but might be not as readable as separating names by other means\&.
+.PP
+\fIGet\fP and \fISet\fP are used for getters/and setters\&. We use \fIIs\fP to ask about a flag or state and \fINeeds\fP to ask about state related to databases\&. For allocation/deallocation we use C++ styled names (e\&.g \fC*New\fP, \fC*Del\fP)\&.
+.PP
+Macros and Enums are written in capital letters\&. Flags start with \fCKDB_\fP, namespaces with \fCKEY_NS_\fP and macros with \fCELEKTRA_\fP\&.
+.PP
+Data structures start with a capital letter for every part of the word:
+.PP
+.IP "\(bu" 2
+\fCKDB\fP \&.\&.\&. Key Data Base Handle
+.IP "\(bu" 2
+\fCKeySet\fP \&.\&.\&. Key Set
+.IP "\(bu" 2
+\fCKey\fP \&.\&.\&. Key
+.PP
+.PP
+We use singular for all names\&.
+.PP
+Function names not belonging to one of the three classes use the prefix \fCelektra*\fP\&.
+.PP
+Wherever possible functions should use the keyword \fCconst\fP for parameters\&. The API uses this keyword for parameters, to show that a function does not modify a \fCKey\fP or a \fCKeySet\fP, e\&.g\&.:
+.PP
+.PP
+.nf
+const char *keyName(const Key *key);
+const char *keyBaseName(const Key *key);
+const void *keyValue(const Key *key);
+const char *keyString(const Key *key);
+const Key  *keyGetMeta(const Key *key, const char* metaName);
+.fi
+.PP
+.PP
+The reason behind this is, that the above functions – as their name suggest – only retrieve values\&. The returned value must not be modified directly\&. 

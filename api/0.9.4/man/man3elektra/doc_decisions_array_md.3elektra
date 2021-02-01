@@ -1,0 +1,124 @@
+.TH "doc_decisions_array_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_array_mdArrays 
+ \- Currently it is inefficient to detect the length of an array and it is impossible to know if a key (without subkeys) should be an array or not\&.
+.PP
+.IP "\(bu" 2
+None
+.PP
+.PP
+.IP "\(bu" 2
+Meta-data arrays simply work by convention as they are not serialized in special ways nor they get validated\&.
+.IP "\(bu" 2
+\fC###empty_array\fP as in \fCyajl\fP, problem: does not allow efficient access of first element
+.IP "\(bu" 2
+store length (and not last element), problem: needs prepending of \fC#_\&.\&.\&.\fP
+.IP "\(bu" 2
+store element after last element (C++-Style), would not fit nicely with key-value
+.IP "\(bu" 2
+use value and not the metadata \fCarray\fP, problem: is ambiguous
+.IP "\(bu" 2
+use metadata on all children
+.PP
+.PP
+Store length in metadata \fCarray\fP of key, or keep metadata \fCarray\fP empty if empty array\&. Only children that have \fC#\fP syntax are allowed in a valid array\&. The index start with \fC#0\fP\&. Both \fCkeyAddName('#12')\fP or \fCkeyAddBaseName('#_12')\fP is allowed to add the 13th index\&.
+.PP
+For example (\fCni syntax\fP, sections used for metadata):
+.PP
+.PP
+.nf
+myarray/#0 = value0
+myarray/#1 = value1
+myarray/#2 = value2
+myarray/#3 = value3
+myarray/#4 = value4
+myarray/#5 = value5
+[myarray]
+  array = #5
+.fi
+.PP
+.PP
+It is not allowed to have anything else than \fC#5\fP in the metadata \fCarray\fP, e\&.g\&. even \fC#4\fP would be a malformed array\&.
+.PP
+With the metadata \fCarray\fP in \fCspec:/\fP the \fCspec\fP plugin will add the \fCarray\fP marker with the correct length\&. This needs to be happen early, so that plugins can rely on having correct arrays\&.
+.PP
+For example:
+.PP
+.PP
+.nf
+spec:/myarray      # <- has array marker
+
+user:/myarray      # <- either has correct array marker or no array marker
+user:/myarray/#0
+user:/myarray/#1
+.fi
+.PP
+.PP
+Here, the \fCspec\fP plugin would add \fCarray=#1\fP to \fCuser:/myarray\fP if it was not there before\&.
+.PP
+To lookup an array, first do \fCksLookupByName (ks, '/myarray', 0)\fP on the parent\&. With the last index you get from its metadata \fCarray\fP, iterate over the children\&. A cascading lookup on every individual child is also needed to make sure that overrides on individual elements are respected\&.
+.PP
+For example:
+.PP
+.PP
+.nf
+spec:/myarray    # <- contains the specification for the array
+spec:/myarray/#  # <- contains the specification for the array elements
+
+dir:/myarray/#0  # <- not an array, just an override for user:/myarray/#
+
+user:/myarray    # <- with metadata array=#0, this would be the array we get
+user:/myarray/#0
+
+system:/myarray  # <- not found in cascading lookup, as user:/myarray exists
+.fi
+.PP
+.PP
+The \fCspec\fP plugin should check if it is a valid array, i\&.e\&.:
+.PP
+.IP "\(bu" 2
+that the parent key always contains the metadata \fCarray\fP,
+.IP "\(bu" 2
+that the correct length is in \fCarray\fP,
+.IP "\(bu" 2
+that the array only contains \fC#\fP children, and
+.IP "\(bu" 2
+that the children are numbered from \fC#0\fP to \fC#n\fP, without holes\&.
+.PP
+.PP
+.IP "\(bu" 2
+Is very similar to \fCbinary\fP metadata\&.
+.IP "\(bu" 2
+The key alone suffices to know if its an array
+.IP "\(bu" 2
+One can distinguish an array with keys that are called by chance e\&.g\&. \fC#0\fP
+.PP
+.PP
+.IP "\(bu" 2
+yajl needs to be fixed
+.IP "\(bu" 2
+metadata library needs to be adapted
+.IP "\(bu" 2
+spec plugin needs to be fixed, a lot of work needed there\&. Most amount of work is to detect misstructured nested arrays (\fC#\fP intermixed with non \fC#\fP keys) which is a possibility also in all the alternatives of this decision\&.
+.IP "\(bu" 2
+A \fCuser:/\fP or \fCdir:/\fP key can change the semantics of a \fCsystem:/\fP array, if not avoided by \fCspec\fP\&.
+.IP "\(bu" 2
+user-facing documentation should contain a note like: 'Mixing array and non-array keys in arrays is not supported\&.
+  In many cases the trivial solution is to move the array part into a separate child-key\&.'
+.PP
+.PP
+.IP "\(bu" 2
+\fBGlobal Plugins\fP
+.IP "\(bu" 2
+\fBGlobal Validation\fP
+.IP "\(bu" 2
+\fBBase Names\fP
+.IP "\(bu" 2
+\fBMetadata in Spec Namespace\fP
+.IP "\(bu" 2
+\fBSpec Expressiveness\fP
+.PP
+.PP
+https://github.com/ElektraInitiative/libelektra/issues/182 

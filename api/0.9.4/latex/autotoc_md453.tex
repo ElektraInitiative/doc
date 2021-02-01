@@ -1,0 +1,43 @@
+
+\begin{DoxyItemize}
+\item infos = Information about network plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\tt elektra@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/provides = check
+\item infos/needs =
+\item infos/placements = presetstorage
+\item infos/status = maintained unittest nodep libc nodoc
+\item infos/metadata = check/ipaddr check/port check/port/listen
+\item infos/description = Checks keys if they contain a valid ip address
+\end{DoxyItemize}
+
+This plugin is a check plugin that checks if a key contains a valid ip address. It uses the {\ttfamily P\+O\+S\+I\+X.\+1-\/2001} interface {\ttfamily getaddrinfo()} in order to check if an ip address is valid.
+
+Furthermore {\ttfamily getaddrinfo()} is used in {\ttfamily check/port} to resolve a port by its service name which is defined under {\ttfamily /etc/services}. The portname is translated to the respective portnumber. The plugin can be used to check for valid port numbers and if the set port is free to use.
+
+While, in theory, a regular expression can express if a string is a network address, in practice, such an attempt does not work well. The reason is that an unmanageable number of valid shortenings for I\+Pv6 addresses makes the regular expression hard to write and understand.
+
+So the idea of building such a complicated regular expression was discarded, but instead a dedicated checker was introduced. The idea is to use the operating system facilities to resolve the network address. If this succeeds, it is guaranteed that this network address will be valid when it is resolved by the same interface afterwards.
+
+Many network address translators coexist. In {\ttfamily P\+O\+S\+I\+X.\+1-\/2001} a powerful address translator is provided with the interface {\ttfamily getaddrinfo()}. It is a common network address translation for both I\+Pv4 and I\+Pv6. We used it to implement this plugin.
+
+Every key tagged with the metakey {\ttfamily check/ipaddr} will be checked using {\ttfamily getaddrinfo()}. If additionally the values {\ttfamily ipv4} or {\ttfamily ipv6} are supplied, the address family will be specified.
+
+``{\ttfamily  @section autotoc\+\_\+md457 Mount Network plugin to}user\+:/tests/network` sudo kdb mount config.\+file user\+:/tests/network network\hypertarget{autotoc_md453_autotoc_md458}{}\section{Set valid I\+Pv4 address}\label{autotoc_md453_autotoc_md458}
+kdb set user\+:/tests/network/host 127.\+0.\+0.\+1 \hypertarget{autotoc_md453_autotoc_md459}{}\section{Check for valid I\+Pv4 address}\label{autotoc_md453_autotoc_md459}
+kdb meta-\/set user\+:/tests/network/host check/ipaddr ipv4\hypertarget{autotoc_md453_autotoc_md460}{}\section{Try to set invalid I\+Pv4 address}\label{autotoc_md453_autotoc_md460}
+kdb set user\+:/tests/network/host 133.\+133.\+133.\+1337 \hypertarget{autotoc_md453_autotoc_md461}{}\section{R\+E\+T\+: 5}\label{autotoc_md453_autotoc_md461}
+\hypertarget{autotoc_md453_autotoc_md462}{}\section{S\+T\+D\+E\+R\+R\+:.$\ast$\+Validation Semantic\+: name\+:.$\ast$133.\+133.\+133.\+1337.$\ast$}\label{autotoc_md453_autotoc_md462}
+kdb get user\+:/tests/network/host \#$>$ 127.\+0.\+0.\+1\hypertarget{autotoc_md453_autotoc_md463}{}\section{Set valid I\+Pv4 address}\label{autotoc_md453_autotoc_md463}
+kdb set user\+:/tests/network/host 1.\+2.\+3.\+4 \#$>$ Set string to \char`\"{}1.\+2.\+3.\+4\char`\"{} kdb get user\+:/tests/network/host \#$>$ 1.\+2.\+3.\+4\hypertarget{autotoc_md453_autotoc_md464}{}\section{Check for any valid network address}\label{autotoc_md453_autotoc_md464}
+kdb meta-\/set user\+:/tests/network/host check/ipaddr \textquotesingle{}\textquotesingle{} \hypertarget{autotoc_md453_autotoc_md465}{}\section{If identifier `localhost` is not a valid network address it is not part of /etc/hosts}\label{autotoc_md453_autotoc_md465}
+kdb set user\+:/tests/network/host localhost $\vert$$\vert$ ! grep -\/q localhost /etc/hosts
+
+kdb get user\+:/tests/network/host \hypertarget{autotoc_md453_autotoc_md466}{}\section{S\+T\+D\+O\+U\+T-\/\+R\+E\+G\+E\+X\+: localhost$\vert$1.\+2.\+3.\+4}\label{autotoc_md453_autotoc_md466}
+\hypertarget{autotoc_md453_autotoc_md467}{}\section{Undo modifications to the key database}\label{autotoc_md453_autotoc_md467}
+kdb rm -\/r user\+:/tests/network sudo kdb umount user\+:/tests/network ```
+
+If {\ttfamily check/port} is specified on a given key, the plugin will validate if the port is a correct number between 1 and 65535.
+
+If {\ttfamily check/port/listen} is specified, the plugin will check if the application can be started and listen on the given port.\hypertarget{autotoc_md453_autotoc_md468}{}\subsection{Future Work}\label{autotoc_md453_autotoc_md468}
+{\ttfamily check/port/connect} to check if the port can be pinged/reached (usually for clients). If not reachable, users receive a warning. A correct timeout setting will be problematic though. 

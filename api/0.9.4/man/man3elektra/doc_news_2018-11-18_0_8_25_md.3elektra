@@ -1,0 +1,392 @@
+.TH "doc_news_2018-11-18_0_8_25_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2018-11-18_0_8_25_md0\&.8\&.25 Release 
+ \- We are proud to present Elektra 0\&.8\&.25\&.
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+For a small demo see here:
+.PP
+\fC\fP.PP
+You can also read the news \fCon our website\fP
+.PP
+.IP "\(bu" 2
+guid: 472392e0-cc4f-4826-a0a9-2764d90c5f89
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Sun, 18 Nov 2018 21:24:34 +0100
+.IP "\(bu" 2
+shortDesc: faster storage and lookup
+.PP
+.PP
+This release is dedicated to drastically improve the speed of Elektra\&. Two non-trivial features facilitate most of the improvement:
+.PP
+.IP "\(bu" 2
+mmap storage for very fast retrieval of configuration
+.IP "\(bu" 2
+Hybrid Search Algorithm for \fCksLookup (\&.\&.\&.)\fP for very fast access of configuration
+.PP
+.PP
+We added a new, binary and fast storage plugin called \fC\fCmmapstorage\fP\fP\&. It leverages the \fCmmap()\fP syscall and supports full Elektra semantics\&. We provide two compile variants: \fCmmapstorage\fP and \fCmmapstorage_crc\fP\&. The \fCmmapstorage_crc\fP variant enables CRC32 checksums for critical data, while the \fCmmapstorage\fP variant omits the checksum for maximum performance\&.
+.PP
+We ran a synthetic benchmark with 257 iterations using 40k keys in a keyset, and compared the performance to the \fCdump\fP storage plugin\&.
+.PP
+Median write time in microseconds:
+.PP
+Plugin Time  \fCdump\fP 71079 \fCmmapstorage\fP 2964 \fCmmapstorage_crc\fP 7644 Median read time in microseconds:
+.PP
+Plugin Time  \fCdump\fP 82737 \fCmmapstorage\fP 1145 \fCmmapstorage_crc\fP 5744 In our benchmark, the \fCmmapstorage\fP plugin writes more than 23x faster, and reads more than 72x faster than the \fCdump\fP storage plugin\&.
+.PP
+For this release the plugin is marked as experimental, even though it is already used as default storage plugin in a build job on our \fCbuild server\fP\&.
+.PP
+Thanks to Mihael Pranjić for this improvement\&.
+.PP
+The hybrid search algorithm is now implemented, this concludes the extension of the \fCksLookup (\&.\&.\&.)\fP search with the \fCorder preserving minimal perfect hash map (OPMPHM)\fP\&. The hybrid search combines the best properties of the binary search and the \fCOPMPHM\fP\&. The hybrid search decides dynamically which search algorithm to use\&.
+.PP
+Because of the automatic decision, usually nothing needs to be done by API users to take advantage of this improvement\&. Advanced API user, however, can overrule the hybrid search by passing \fCKDB_O_OPMPHM\fP or \fCKDB_O_BINSEARCH\fP to \fCksLookup (\&.\&.\&.)\fP\&. The constants are defined in \fCkdbproposal\&.h\fP\&. For low-memory systems the building of the hash map can be disabled altogether at build-time by disabling the CMake variable \fCENABLE_OPTIMIZATIONS\fP (by default enabled now)\&.
+.PP
+The implemented randomized \fCOPMPHM\fP algorithm is in 99\&.5% of the measured random cases optimal\&. However the randomization property of the algorithm leaves an uncertainty\&.
+.PP
+The results made with random cases had shown that the hybrid search is, except for small keyset sizes, almost always faster compared to the standalone binary search\&. The performance increase strongly depended on the measured hardware\&. In the random cases where the hybrid search is faster, on average ~8\&.53% to ~20\&.92% of time was saved\&. The implemented hybrid search works only above a keyset size of \fC599\fP to exclude the small keyset sizes\&.
+.PP
+Thanks to Kurt Micheli for this improvement\&.
+.PP
+The following section lists news about the \fCplugins\fP we updated in this release\&.
+.PP
+We improved the performance of the \fCdirectoryvalue plugin\fP\&. _(René Schwaiger)_ This plugin is used for configuration file formats that do not support that directories contain values, like it is the case in JSON\&. A program manipulating a 13 MB JSON file which first did not succeed within 10 hours is now finished in 44 seconds\&.
+.PP
+There is a new, experimental plugin called \fCprocess\fP\&. This plugin utilizes the pluginprocess library in order to execute arbitrary other plugins in an own process, acting as a proxy itself\&. Therefore it is not required to explicitly change a plugin's implementation if it shall be executed in an own process\&. This plugin is not completely finished yet, as currently there is no way for it to mimic the proxied plugin's contract in Elektra\&. It can be used with simple plugins like \fCdump\fP however, check the limitations in the readme for more details\&. _(Armin Wurzinger)_
+.PP
+The detection of the \fCmntent\fP functions now also works correctly, if you use the compiler switch \fC-Werror\fP\&. _(René Schwaiger)_
+.PP
+We fixed an issue with the passwd plugin not properly setting compile flags\&. This resolves a problem with undefined functions when building with musl\&. _(Lukas Winkler)_
+.PP
+The experimental \fCgpgme plugin\fP was brought into existence to provide cryptographic functions using GnuGP via the \fClibgpgme\fP library\&. _(Peter Nirschl)_
+.PP
+The \fCnetwork\fP plugin now also allows for non-numerical hosts (i\&.e\&. 'localhost') to be set and tries to resolve it via DNS\&. _(Michael Zronek)_
+.PP
+This new plugin parses a subset of YAML using a parser generated by \fCBison\fP\&. _(René Schwaiger)_
+.PP
+The build system now disables the plugin automatically, if you use a GCC compiler (\fC6\&.x\fP or earlier) and enable the option \fCENABLE_ASAN\fP\&. We updated the behavior, since otherwise the plugin will report memory leaks at runtime\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+The plugin does not modify the (original) parent key\&. As a consequence, setting values at the root of a mountpoint:
+.PP
+.PP
+.PP
+.nf
+sudo kdb mount config\&.yaml user/tests/yambi yambi
+kdb set user/tests/yanlr 'Mount Point Value'
+kdb get user/tests/yanlr
+#> Mount Point Value
+.fi
+.PP
+.PP
+now works correctly\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+We now use C++ code to test the plugin\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The CMake code of the plugin now also recognizes \fCantlr\fP as ANTLR executable, if \fCantlr4\fP is not available\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The build system now disables the unit test for the plugin, if you use GCC (\fC6\&.x\fP or earlier) to translate Elektra\&. We introduced this behavior, since the code generated by ANTLR (\fCYAML\&.h\fP) seems to contain a double free that causes a segmentation fault on systems that use the GNU C library\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The build system now disables the plugin automatically, if you use a GCC compiler (\fC6\&.x\fP or earlier) and enable the option \fCENABLE_ASAN\fP\&. _(René Schwaiger)_
+.PP
+.PP
+This new plugin parses a subset of YAML using the Earley Parser library YAEP\&. _(René Schwaiger)_
+.PP
+This new plugin can be used to validate that the value of a key is a reference to another key\&. _(Klemens Böswirth)_
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.PP
+As always, the ABI and API of kdb\&.h is fully compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API)\&.
+.PP
+This is the last release for which we have built Jessie packages:
+.PP
+.PP
+.nf
+deb     [trusted=yes] https://debian-stable\&.libelektra\&.org/elektra-stable/ jessie main
+deb-src [trusted=yes] https://debian-stable\&.libelektra\&.org/elektra-stable/ jessie main
+.fi
+.PP
+.PP
+Obviously, we will continue to update the stretch package:
+.PP
+.PP
+.nf
+deb     [trusted=yes] https://debian-stretch-repo\&.libelektra\&.org/ stretch main
+deb-src [trusted=yes] https://debian-stretch-repo\&.libelektra\&.org/ stretch main
+.fi
+.PP
+.PP
+Following plugins got added:
+.PP
+.IP "\(bu" 2
+libelektra-gpgme\&.so
+.IP "\(bu" 2
+libelektra-mmapstorage_crc\&.so
+.IP "\(bu" 2
+libelektra-mmapstorage\&.so
+.IP "\(bu" 2
+libelektra-process\&.so
+.IP "\(bu" 2
+libelektra-reference\&.so
+.IP "\(bu" 2
+libelektra-yambi\&.so
+.PP
+.PP
+A new library got added (should be packaged privately for now):
+.PP
+.IP "\(bu" 2
+libelektra-globbing\&.so
+.PP
+.PP
+Optimize elektraKsFilter to not duplicate keys _(Markus Raab)_
+.PP
+A new library which can be used to match keys against globbing patterns was introduced\&. _(Klemens Böswirth)_
+.PP
+The API is still experimental, so it should not be used externally for now\&.
+.PP
+\fClibease\fP provides the function \fCelektraArrayValidateBaseNameString\fP, which can be used to validate that a given string is an Elektra array name\&. _(Klemens Böswirth)_
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up to date with the multi-language support provided by Elektra\&.
+.PP
+Do not use private Elektra headers for Ruby bindings as preparation for a Ruby \fClibelektra\fP gem\&. _(Bernhard Denner)_
+.PP
+.IP "\(bu" 2
+Added benchmarks for storage plugins\&. The currently benchmarked plugins are \fCdump\fP and \fCmmapstorage\fP\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Avoid raw pointers in KDB tools\&. _(Markus Raab)_
+.IP "\(bu" 2
+Improved error text of KDB tool \fCcp\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Document hidden feature of KDB tool \fCmount\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add more tags to the KDB tools to be used with \fCkdb find-tools\fP\&. _(Markus Raab)_
+.PP
+.PP
+.IP "\(bu" 2
+We now require \fC\fCclang-format\fP\fP 6\&.0 for formatting C and C++ code\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The command \fCreformat-source\fP now displays information about the installed version of \fCclang-format\fP, if it is unable to locate a supported version of the tool\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now also check the POSIX compatibility of our scripts with \fC\fCshfmt\fP\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The new command \fCreformat-shfmt\fP reformats Shell scripts using the tool \fC\fCshfmt\fP\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We fixed some minor spelling mistakes in the documentation\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Improved the plugins documentation\&. _(Michael Zronek)_
+.IP "\(bu" 2
+The ReadMe now includes two badges that show the latest released version of Elektra and the status of the Travis build\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Fixed documenation error on Ruby plugin Readme\&. _(Bernhard Denner)_
+.IP "\(bu" 2
+Go into more detail in \fBhttps:\fP//master\&.libelektra\&.org/doc/BUILDSERVER\&.md 'BUILDSERVER\&.md'\&. _(Lukas Winkler)_
+.PP
+.PP
+.IP "\(bu" 2
+Fix potential parallel execution of maven tests, which write to KDB\&. _(Markus Raab)_
+.IP "\(bu" 2
+The unit test for the \fC\fCdbus\fP plugin\fP does not leak memory anymore, if it fails on macOS\&. _(Thomas Wahringer)_
+.IP "\(bu" 2
+The tests \fCtestkdb_allplugins\fP and \fCtestscr_check_kdb_internal_check\fP do not test a plugin on an ASAN enabled build anymore, if you specify the status tag \fCmemleak\fP in the plugin contract\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fBhttps:\fP//master\&.libelektra\&.org/doc/TESTING\&.md 'CFramework' macro \fCcompare_key\fP now also checks if the meta values of keys are equal\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The test \fCtestscr_check_bashisms\fP does not print warnings about skipped files anymore\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a \fCMarkdown Shell Recorder\fP test for the \fC\fCshell\fP plugin\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Added many storage plugin tests\&. Most tests use the keyset, key name and value APIs\&. Currently, the tests are only active for \fCdump\fP and \fCmmapstorage\fP\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+The test \fCtestcpp_contextual_basic\fP now compiles without warnings, if we use Clang 7 as compiler\&. _(René Schwaiger)_
+.IP "\(bu" 2
+crypto, fcrypt and gpgme properly shut down the gpg-agent after the unit test is done\&. See #1973 \&. _(Peter Nirschl)_
+.IP "\(bu" 2
+minor refactoring of the unit tests for crypto, fcrypt, gpgme: moved shared code to separate module in order to avoid code duplication\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+The CMake targets for plugin tests (\fCtestmod_[plugin]\fP) now depend on the respective CMake targets for the plugins themselves (\fCelektra-[plugin]\fP)\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Fixed bug in CMake plugin tests, if only \fCBUILD_FULL\fP but not \fCBUILD_SHARED\fP is used\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The test \fC\fCtestscr_check_formatting\fP\fP now also checks the formatting of Shell code\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We pumped version numbers in XML-test files\&. _(Markus Raab)_
+.IP "\(bu" 2
+We fixed a crash in the unit test of the \fCJNA\fP binding\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The command \fBhttps:\fP//master\&.libelektra\&.org/tests/README\&.md '`kdb run_all`' now only prints the output of tests that failed\&. To print the full output of all test, please use the option \fC-v\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCShell Recorder\fP does not use the non-POSIX grep option \fC--text\fP any more\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The test suite now uses \fCGoogle Test\fP \fC1\&.8\&.1\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We improved the detection of Python 2 and Python 3 in the CMake code of the Python bindings/plugins\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We restructured the code of the CMake module we use to detect Haskell tools \&. _(René Schwaiger)_
+.IP "\(bu" 2
+Building the Haskell binding should now work again\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The CMake configuration step now displays less debug messages about found libraries\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Provide a wrapper around \fCcheck_symbol_exists\fP that handles issues with \fC-Werror -Wpedantic\fP\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The argument \fCINCLUDE_SYSTEM_DIRECTORIES\fP of the function \fCadd_plugin\fP now supports multiple include directories\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We reformatted all CMake source files with cmake-format 0\&.4\&.3\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Generating coverage data (\fCENABLE_COVERAGE=ON\fP) should now also work on macOS\&. _(René Schwaiger)_
+.IP "\(bu" 2
+You can use the new target \fCrun_checkshell\fP to run all shell checks (\fCtestscr_check\&.*\fP)\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The new target \fCrun_nocheckshell\fP runs all tests except for shell checks\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The target \fCrun_all\fP now runs tests that do not modify the key database in parallel\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Fix CMake inclusion logic for GLib/Gi _(Markus Raab)_
+.PP
+.PP
+.IP "\(bu" 2
+The Docker image for Debian stretch now contains all (optional) dependencies for Elektra\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The docker images used by our build system are now available to download from our systems without authentication\&. Try it out and list available images via \fCdocker run --rm anoxis/registry-cli -r https://hub-public.libelektra.org\fP\&. You can search for images using \fC--images-like\fP, for example: \fCdocker run --rm anoxis/registry-cli -r https://hub-public.libelektra.org --images-like alpine\fP\&. Afterwards pull your desired image as you would do from any public registry, for example: \fCdocker pull hub-public\&.libelektra\&.org/build-elektra-alpine:201811-37597a34fed4988639cdaf4d6a2c54754d09918586f53389e4fde5fd3b3a7180\fP\&. _(Lukas Winkler)_
+.PP
+.PP
+.IP "\(bu" 2
+Added Vagrantfile for Ubuntu artful 32-bit\&. _(Mihael Pranjić)_
+.PP
+.PP
+.IP "\(bu" 2
+We enabled tests that write to the hard disk on the build job \fCalpine\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The build jobs now print less non-relevant output\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Enable \fC-Werror\fP in \fCdebian-stable-full\fP\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+We added the compiler switch \fC-Werror\fP to the build jobs:
+.IP "  \(bu" 4
+\fCalpine\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-full-i386\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-full-mmap-asan\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-full-mmap\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-full-optimizations-off\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-full-xdg\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-minimal\fP,
+.IP "  \(bu" 4
+\fCdebian-stable-multiconf\fP,
+.IP "  \(bu" 4
+\fCdebian-unstable-clang-asan\fP,
+.IP "  \(bu" 4
+\fCdebian-unstable-full-clang\fP,
+.IP "  \(bu" 4
+\fCdebian-unstable-full\fP,
+.IP "  \(bu" 4
+\fCubuntu-xenial\fP, and
+.IP "  \(bu" 4
+\fCdebian-stable-asan\fP\&. _(René Schwaiger)_
+.PP
+
+.IP "\(bu" 2
+Build Artifacts for all PR's to detect issues before merging _(Lukas Winkler)_
+.IP "\(bu" 2
+Stricter removal of temporary docker images on docker nodes _(Lukas Winkler)_
+.IP "\(bu" 2
+Added jenkins build jobs \fCdebian-stable-full-mmap\fP and \fCdebian-stable-full-mmap-asan\fP with \fCmmapstorage\fP as the default storage\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+We added basic support for coverage analysis via \fCCoveralls\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+Travis now also checks the code for memory leaks in the build job \fC🍏 Clang ASAN\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The Travis build jobs \fC🍏 Clang ASAN\fP and \fC🐧 GCC ASAN\fP now only translates a minimal set of plugins, since we had various timeout problems with these jobs before\&. We explicitly excluded plugins, to make sure that the build jobs still test newly added plugins\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Added travis build job \fC🍏 mmap\fP on macOS with \fCmmapstorage\fP as the default storage\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Travis now prints the CMake configuration for each build job\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now test Elektra using the latest version of Xcode (\fC10\&.0\fP)\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added the build job \fC🍏 Check Shell\fP, which only runs shell checks such as \fCtestscr_check_oclint\fP\&. This update allows us to remove the shell checks from the jobs \fC🍏 MMap\fP and \fC🍏 Clang\fP, which sometimes hit the \fCtimeout limit for public repositories\fP before\&. _(René Schwaiger)_
+.IP "\(bu" 2
+All Travis build jobs now use the compiler switch \fC-Werror\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The new job \fC🍏 FULL\fP and the build job \fC🐧 FULL\fP build Elektra using the CMake options \fCBUILD_FULL=ON\fP and \fCBUILD_SHARED=OFF\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCscript\fP stage of the build jobs print less non-relevant output\&. Usually the commands in this stage should now only print verbose output if a test fails\&. _(René Schwaiger)_
+.PP
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date\&.
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+Global mmap cache: This feature will enable Elektra to return configuration without parsing configuration files or executing other plugins as long as the configuration files are not changed\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Finish high-level API\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Validation improvements\&. _(Michael Zronek)_
+.IP "\(bu" 2
+Improve YAML plugins\&. _(René Schwaiger)_
+.PP
+.PP
+Following authors made this release possible:
+.PP
+Commits Author  1 Thomas Wahringer thomas.wahringer@libelektra.org 2 Bernhard Denner bernhard.denner@gmail.com 7 Kurt Micheli e1026558@student.tuwien.ac.at 12 Michael Zronek michael.zronek@gmail.com 33 Lukas Winkler derwinlu+git@gmail.com 28 Klemens Böswirth k.boeswirth+git@gmail.com 30 Armin Wurzinger e1528532@student.tuwien.ac.at 38 Peter Nirschl peter.nirschl@gmail.com 100 Markus Raab markus@libelektra.org 180 Mihael Pranjic mpranj@limun.org 418 René Schwaiger sanssecours@me.com 849 commits, 581 files changed, 18503 insertions(+), 3192 deletions(-)
+.PP
+We welcome new contributors!
+.PP
+.IP "\(bu" 2
+\fCDaniel Bugl\fP, see also \fCthe web demo\fP\&.
+.IP "\(bu" 2
+\fCThomas Wahringer\fP\&.
+.IP "\(bu" 2
+\fCKurt Micheli\fP
+.IP "\(bu" 2
+\fCArmin Wurzinger\fP
+.PP
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.25\&.tar\&.gz
+.IP "\(bu" 2
+size: 6233918
+.IP "\(bu" 2
+md5sum: d5614b2049fb8431a80842a4909b140e
+.IP "\(bu" 2
+sha1: c7dfb5fa87284d8f5ba4d4753e0e47a0e362c733
+.IP "\(bu" 2
+sha256: 37829256e102e967fe3d58613a036d9fb9b8f9658e20c23fa787eac0bfbb8a79
+.PP
+.PP
+The release tarball is also available signed by Markus Raab using GnuPG from \fChere\fP or \fCGitHub\fP
+.PP
+Already built API-Docu can be found \fChere\fP or \fCGitHub\fP\&.
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments please contact us via the issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, \fCElektra Initiative\fP 

@@ -1,0 +1,57 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mmapstorage plugin is in keys below
+\item infos/author = Mihael Pranjic \href{mailto:mpranj@limun.org}{\tt mpranj@limun.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides = storage/mmapstorage
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest shelltest specific
+\item infos/metadata =
+\item infos/description = high performance storage using memory mapped files
+\end{DoxyItemize}
+
+This is a high performance storage plugin that supports full Elektra semantics.
+
+The storage format uses Elektra\textquotesingle{}s in-\/memory data layout and employs the {\ttfamily mmap()} system call to read/write data. The format is not portable across different architectures/platforms. The format can be seen as a memory dump of a keyset. Therefore, the files must not be edited by hand. Files written by mmapstorage are not intended to be human-\/readable.
+
+Mount mmapstorage using {\ttfamily kdb mount}\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount config.mmap user:/tests/mmapstorage mmapstorage
+\end{DoxyCode}
+
+
+Unmount mmapstorage using {\ttfamily kdb umount}\+:
+
+
+\begin{DoxyCode}
+sudo kdb umount user:/tests/mmapstorage
+\end{DoxyCode}
+
+
+The mmapstorage has two compilation variants\+:
+
+
+\begin{DoxyEnumerate}
+\item mmapstorage
+\item mmapstorage\+\_\+crc
+\end{DoxyEnumerate}
+
+The {\ttfamily mmapstorage} will always be compiled on a supported system (see \href{#dependencies}{\tt Dependencies}). When zlib is available, we will additionally compile the {\ttfamily mmapstorage\+\_\+crc} variant. The first variant does not do a C\+R\+C32 checksum of the critical data, while the second variant always checks the C\+R\+C32 checksum for additional security.
+
+P\+O\+S\+IX compliant system (including X\+SI extensions).
+
+Additionally, zlib is needed for the {\ttfamily mmapstorage\+\_\+crc} compilation variant\+: {\ttfamily zlib1g-\/dev} or {\ttfamily zlib-\/devel}.
+
+``{\ttfamily  @section autotoc\+\_\+md404 Mount mmapstorage to}user\+:/tests/mmapstorage` sudo kdb mount config.\+mmap user\+:/tests/mmapstorage mmapstorage\hypertarget{autotoc_md398_autotoc_md405}{}\section{Add some values via `kdb set`}\label{autotoc_md398_autotoc_md405}
+kdb set user\+:/tests/mmapstorage \textquotesingle{}Some root key\textquotesingle{} kdb set user\+:/tests/mmapstorage/dir \textquotesingle{}Directory within the hierarchy.\textquotesingle{} kdb set user\+:/tests/mmapstorage/dir/leaf \textquotesingle{}A leaf node holding some valuable data.\textquotesingle{} kdb meta-\/set user\+:/tests/mmapstorage/dir/leaf super\+Meta\+Key \textquotesingle{}Metadata is supported too.\textquotesingle{}\hypertarget{autotoc_md398_autotoc_md406}{}\section{List the configuration tree below `user\+:/tests/mmapstorage`}\label{autotoc_md398_autotoc_md406}
+kdb ls user\+:/tests/mmapstorage \#$>$ user\+:/tests/mmapstorage \#$>$ user\+:/tests/mmapstorage/dir \#$>$ user\+:/tests/mmapstorage/dir/leaf\hypertarget{autotoc_md398_autotoc_md407}{}\section{Retrieve the new values}\label{autotoc_md398_autotoc_md407}
+kdb get user\+:/tests/mmapstorage \#$>$ Some root key kdb get user\+:/tests/mmapstorage/dir \#$>$ Directory within the hierarchy. kdb get user\+:/tests/mmapstorage/dir/leaf \#$>$ A leaf node holding some valuable data. kdb meta-\/get user\+:/tests/mmapstorage/dir/leaf super\+Meta\+Key \#$>$ Metadata is supported too.\hypertarget{autotoc_md398_autotoc_md408}{}\section{Undo modifications to the database}\label{autotoc_md398_autotoc_md408}
+kdb rm -\/r user\+:/tests/mmapstorage\hypertarget{autotoc_md398_autotoc_md409}{}\section{Unmount mmapstorage}\label{autotoc_md398_autotoc_md409}
+sudo kdb umount user\+:/tests/mmapstorage ```\hypertarget{autotoc_md398_autotoc_md410}{}\subsection{Limitations}\label{autotoc_md398_autotoc_md410}
+Mapped files shall not be altered, otherwise the behavior is undefined.
+
+The {\ttfamily mmap()} system call only supports regular files and so does the mmapstorage plugin with one notable exception\+: The plugin detects when it is called with the files {\ttfamily /dev/stdin} and {\ttfamily /dev/stdout} and makes an internal copy. This makes the plugin compatible with {\ttfamily kdb import} and {\ttfamily kdb export}. 

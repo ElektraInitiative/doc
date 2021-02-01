@@ -1,0 +1,44 @@
+The Markdown link Converter, which filters Markdown pages before the processing of doxygen, converts the links in Markdown pages. It is set up as input filter in doxygen, if a Markdown file is desired to be in the A\+PI documentation it only must have the extension {\ttfamily .md} and be in the {\ttfamily I\+N\+P\+UT} path.
+
+The Markdown link Converter gives each Markdown file a header {\ttfamily \{ \#header \}} which is attached to a title and converts the links to refer to this headers. This conversion happens in 2 passes, which is needed because there can be files with no title.
+
+
+\begin{DoxyCode}
+markdownlinkconverter [<cmake-cache-file>] <input-file>
+\end{DoxyCode}
+
+
+{\bfseries The $<$input-\/file$>$ parameter must be an absolute path!}
+
+
+\begin{DoxyItemize}
+\item Links starting with {\ttfamily @ref}, {\ttfamily \#} for anchors and {\ttfamily http}, {\ttfamily https} or {\ttfamily ftp} for extern links wont be touched.
+\item All other links to Markdown or arbitrary source files will be converted.
+\item All links to folders will be altered to the R\+E\+A\+D\+M\+E.\+md in the Folder. This feature was introduced to be compatible with Git\+Hub, where you can show the content of a folder in combination with the R\+E\+A\+D\+M\+E.\+md of the containing folder.
+\item Anchors wont work in imported Markdown pages.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Git\+Hub supports source code fences with syntax highlighting which are not recognized by Doxygen. Thus {\ttfamily sh} after the fence is removed for Doxygen.
+\end{DoxyItemize}
+
+The link validation works with a simple try to {\ttfamily fopen} the file, which the link refers to.
+
+Every link starting with {\ttfamily http}, {\ttfamily https} or {\ttfamily ftp} will be written to a file named {\ttfamily external-\/links.\+txt} located in your build folder. With the following syntax\+:
+
+
+\begin{DoxyCode}
+<file>:<line>:0 <url>
+\end{DoxyCode}
+
+
+Note\+: Due to the nature of the Markdown Link Converter the file can only be opened in append mode. So delete it and rerun the html build process ({\ttfamily make clean} could be needed) to get a list without duplicates.
+
+In the script folder is a script named {\ttfamily link-\/checker}. This script can be used to validate the links. Broken links will be printed. False positive not excluded (very rare).
+
+
+\begin{DoxyItemize}
+\item optimize pdf output (also U\+T\+F-\/8 encoding)
+\item if title contains --, this should be-\/ also remove other fences doxygen does not understand 
+\end{DoxyItemize}

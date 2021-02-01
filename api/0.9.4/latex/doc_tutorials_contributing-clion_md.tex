@@ -1,0 +1,193 @@
+In this tutorial, we will go through the steps necessary to contribute to Elektra to make it easier for you to get started. We will use a Unix based OS like Linux and C\+Lion for development, but depending on where you want to contribute code, other I\+D\+Es will also be sufficient. Before you start, please read this to get familiar with the process of contributing to Elektra.
+
+
+\begin{DoxyItemize}
+\item \href{https://git-scm.com/download}{\tt Git} or similar software
+\item \href{https://www.jetbrains.com/clion/}{\tt C\+Lion} or similar software
+\item \href{https://github.com/}{\tt Git\+Hub account}
+\end{DoxyItemize}
+
+Libelektra is hosted on Git\+Hub. You can find its repository here\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://github.com/ElektraInitiative/libelektra}{\tt https\+://github.\+com/\+Elektra\+Initiative/libelektra}
+\end{DoxyItemize}
+
+To be able to make pull requests, you need a copy of this repository inside your Git\+Hub account. You can find a tutorial about how to do this \href{https://help.github.com/en/articles/fork-a-repo}{\tt here} (remember to sign into your account first). After this, you should see this copy in the list of your own repositories with a hint of it\textquotesingle{}s origin.
+
+To develop for libelektra, we now have to \char`\"{}download\char`\"{} your copy of its original repository. In git this process is called \char`\"{}cloning\char`\"{}. C\+Lion has built-\/in Git support which we will use for this tutorial. Once you have opened C\+Lion click on\+:
+
+{\itshape Check out from Version Control} --$>$ {\itshape Git}
+
+and paste the U\+RL of your forked libelektra-\/repository inside the {\itshape U\+RL} field. Then choose the directory you want to store your project in. To be also able to directly push changes back to your repository, we\textquotesingle{}ll also configure C\+Lion to be able to use your Git\+Hub account. Click on the \char`\"{}\+Log in to Git\+Hub\char`\"{} button and enter your Git\+Hub credentials and confirm. The last step here is to click \char`\"{}\+Clone\char`\"{} to download the project and open it in C\+Lion.
+
+Alternatively you can also clone your repository using the command line. Open a terminal and navigate to the folder you want to save the source code into and type\+:
+
+
+\begin{DoxyCode}
+git clone https://github.com/ElektraInitiative/libelektra.git
+\end{DoxyCode}
+
+
+With the project now locally available we can start developing.
+
+To import all of the project\textquotesingle{}s configuration, open C\+Make\+Lists.\+txt inside the project\textquotesingle{}s root directory and click on \char`\"{}\+Load C\+Make project\char`\"{} which will appear on the top right corner of the source view.
+
+If you\textquotesingle{}ve cloned the project using a terminal. start C\+Lion and once you see the main menu, click \char`\"{}\+Open\char`\"{} and select the C\+Make\+Lists.\+txt file inside the project\textquotesingle{}s root directory. This will import the project accordingly and populate you run configuration with some predefined values. In rare occurrences this won\textquotesingle{}t happen. If that is the case for you, simply restart C\+Lion using\+:
+
+{\itshape File} --$>$ {\itshape Invalidate Caches / Restart...} --$>$ {\itshape Invalidate and Restart}
+
+Now after all processes of C\+Lion have finished, the project should be set up and the run configuration should be populated with entries.
+
+Since some {\itshape kdb}-\/operations require root access and it is not recommended to start programs (like C\+Lion) with root access if they usually don\textquotesingle{}t require it, we have to change our C\+Make configurations to get rid of this requirement. To do that, open\+:
+
+{\itshape File} --$>$ {\itshape Settings} --$>$ {\itshape Build, Execution, Deployment} --$>$ {\itshape C\+Make}
+
+There you can edit your C\+Make profiles. To get rid of the root requirement we\textquotesingle{}ll add the following C\+Make options to our \char`\"{}\+Debug\char`\"{} profile\+:
+
+
+\begin{DoxyCode}
+-DKDB\_DB\_SYSTEM="~/.config/kdb/[xyz]/system"
+-DKDB\_DB\_SPEC="~/.config/kdb/[xyz]/spec"
+-DKDB\_DB\_USER=".config/kdb/[xyz]/user"
+-DCMAKE\_INSTALL\_PREFIX=install
+\end{DoxyCode}
+
+
+where \char`\"{}\mbox{[}xyz\mbox{]}\char`\"{} can be replaced by any unique identifier so that different profiles won\textquotesingle{}t clash with each other. This configuration also isolates your build of Elektra from any existing Elektra installation on your system. For debugging purposes we also recommend to add the following C\+Make options for debug builds to enable further logging and checks\+:
+
+
+\begin{DoxyCode}
+-DENABLE\_DEBUG=ON
+-DENABLE\_LOGGER=ON
+\end{DoxyCode}
+
+
+To increase the build speed you can also change the \char`\"{}\+Build option\char`\"{} to e.\+g.
+
+
+\begin{DoxyCode}
+-j 8
+\end{DoxyCode}
+
+
+which, in this case, starts 8 build jobs in parallel. For optimal performance this value should represent the number of available cores of your C\+PU + few extra jobs.
+
+It remains to be noted that C\+Lion maintains all C\+Make profiles in parallel. If some C\+Make file changes, C\+Lion executes {\ttfamily cmake} for each profile which can put a lot of strain on your system.
+
+Finally check if {\ttfamily Clang\+Format} is enabled for the project to automatically adhere to the formatting guidelines of the project when formatting the code. You can find the settings here\+:
+
+{\itshape File} --$>$ {\itshape Settings...} --$>$ {\itshape Editor} --$>$ {\itshape Code Style}
+
+Make sure the selected \char`\"{}\+Scheme\char`\"{} is \char`\"{}\+Project\char`\"{}.
+
+Usually the folders you have to work in to add functionality or documentation are as follows\+:
+
+
+\begin{DoxyItemize}
+\item doc~\newline
+ This folder contains mainly all documentation of the project, including almost all pages of the \href{https://www.libelektra.org}{\tt homepage} of this project. One important note is, that all Markdown-\/pages can also be used for testing using \href{https://github.com/ElektraInitiative/libelektra/tree/master/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown to Shell Recorder} (you can find an example on how to do this \hyperlink{doc_help_kdb-get_md}{here}).
+\item src~\newline
+ Almost all functionality-\/code resides here.
+\begin{DoxyItemize}
+\item bindings~\newline
+ Here is all the code of available Bindings of libelektra.
+\item plugins~\newline
+ You can find all developed \hyperlink{src_plugins_README_md}{Plugins} here. If you want to fix a bug for an existing plugin or add another one, this is the directory you have to work in. For further information on how to develop your own plugin, please visit \hyperlink{doc_tutorials_plugins_md}{this} tutorial.
+\item tools~\newline
+ In this folder the source of all tools for interacting with Elektra\textquotesingle{}s global key database, e.\+g. {\itshape kdb}, can be found.
+\end{DoxyItemize}
+\item tests~\newline
+ Here you can find all sorts of tests (excluding tests created with the {\itshape Markdown to Shell Recorder}-\/tool).
+\end{DoxyItemize}
+
+The most thorough way to test your changes is to run all tests. Therefore navigate to your run-\/configurations (Run -\/$>$ Edit Configurations...) and look for the entry {\ttfamily run\+\_\+all}. There, {\ttfamily run\+\_\+all} should be selected as {\ttfamily Executable}, {\ttfamily all} as {\ttfamily Target}. Now you can execute this run configuration which will run all enabled tests. Alternatively you can also run all tests using the terminal by executing {\ttfamily make run\+\_\+all} inside your build folder (e.\+g. /cmake-\/build-\/debug).
+
+You can also run other specific tests by setting {\ttfamily Executable} to any of the {\ttfamily testmod\+\_\+$\ast$} or {\ttfamily testkdb\+\_\+$\ast$}targets. Additionally all tests using {\itshape Google Test} (e.\+g. tests/kdb/$\ast$) can be run directly using C\+Lion by opening their source code and clicking on the green icon next to the class name.
+
+If you want to test various {\itshape kdb} methods separately, you can create your own run configurations. Add a new one by clicking on the \char`\"{}+\char`\"{}-\/sign on the top left of the \char`\"{}\+Edit Configurations...\char`\"{} dialog and name it. Here {\itshape Target} should be {\ttfamily all} and {\itshape Executable} should have \char`\"{}kdb\char`\"{} selected. If you for example want to test {\ttfamily kdb plugin-\/info dump}, write \char`\"{}plugin-\/info dump\char`\"{} next to {\itshape Program arguments}. That\textquotesingle{}s it, now you can just test this part of {\itshape kdb}.
+
+For further information please read \hyperlink{doc_TESTING_md}{this}.
+
+Once you are satisfied with your changes, you have to commit them to your forked repository. We\textquotesingle{}ll use the terminal for working with git. By convention, such commits shouldn\textquotesingle{}t be too large, otherwise it will become difficult to revert some small changes if they are not working as intended. If you use the terminal for your Git operations, to be able to commit code to your repository, you have to configure your local Git installation to use your Git\+Hub credentials. You can find information about how to do this \href{https://help.github.com/en/articles/set-up-git}{\tt here}. After you\textquotesingle{}ve set up your Git configuration, you can continue with uploading your changes.
+
+By default, you are in the \char`\"{}master\char`\"{} branch of your repository. First, you should never directly work on the master branch, since only working code is expected to be there. This means, we now create a branch in our repository where our code changes will be published into. On the bottom right of your C\+Lion window you can find the button \char`\"{}\+Git\+: $<$branchname$>$\char`\"{}. Click it and select \char`\"{}+ New Branch\char`\"{}. Type in the name of your new branch (e.\+g. \char`\"{}testbranch\char`\"{}) and keep \char`\"{}\+Checkout branch\char`\"{} checked to automatically switch to it as your working branch.
+
+Alternatively open a terminal, navigate to the root directory of your local code and type\+:
+
+
+\begin{DoxyCode}
+git branch testbranch
+git checkout testbranch
+\end{DoxyCode}
+
+
+After you have changed some files it is time to publish them to your repository. To do that, open\+:
+
+{\itshape V\+CS} --$>$ {\itshape Commit...}
+
+In the dialog you have opened you can now select the files you want to include in your commit. The first line should have the following syntax\+:
+
+
+\begin{DoxyCode}
+module: short statement
+\end{DoxyCode}
+
+
+If you fixed a bug in {\ttfamily kdb cp} the first line of your commit message could be {\ttfamily K\+DB\+: Fixed cp not copying value}. Your commit message should also include a reference to the issue you have fixed so that the issue can be closed automatically once your code change gets included to the official repository (e.\+g. {\ttfamily Closes \#1234}). Before committing your changes please make sure that \char`\"{}\+Reformat code\char`\"{} and \char`\"{}\+Rearrange code\char`\"{} are disabled in the commit dialog. Otherwise Clions formatter might produce files that don\textquotesingle{}t adhere to our formatting guidelines. If you installed the {\ttfamily pre-\/commit-\/check-\/formatting} pre-\/commit-\/hook from the {\ttfamily scripts} directory. Ensure that \char`\"{}\+Run Git hooks\char`\"{} is enabled in the commit dialog. Finally you can commit your changes by clicking the \char`\"{}\+Commit\char`\"{} button and navigate to\+:
+
+{\itshape V\+CS} --$>$ {\itshape Git} --$>$ {\itshape Push}
+
+To do that in one step, you can also click on the arrow next to the \char`\"{}\+Commit\char`\"{} button and directly choose \char`\"{}\+Commit and Push...\char`\"{}.
+
+Using the terminal you first have to add all files you\textquotesingle{}ve changed and also want in your commit to the {\itshape stage}. Suppose we\textquotesingle{}ve changed how {\ttfamily kdb cp} works, we now have to add it to our files we want to commit (you can add several files for a commit too)\+:
+
+
+\begin{DoxyCode}
+git add ./src/tools/kdb/cp.cpp
+\end{DoxyCode}
+
+
+Now we\textquotesingle{}ve staged our modified file for our commit. The final step is to actually commit it to your online repository. Therefore type\+:
+
+
+\begin{DoxyCode}
+git commit -m "<commit message>"
+git push origin testbranch
+\end{DoxyCode}
+
+
+With this, you\textquotesingle{}ve published your changes to your remote branch of your repository. The next step is merging this change into the original repository.
+
+This step is most easily done using a browser. Open the web page of the Git repository of libelektra (\href{https://github.com/ElektraInitiative/libelektra}{\tt https\+://github.\+com/\+Elektra\+Initiative/libelektra}) and log in to your account if have not already done so. Navigate to \char`\"{}\+Pull
+requests\char`\"{}, there you can find a green button called \char`\"{}\+New pull request\char`\"{}. By clicking it (\href{https://github.com/ElektraInitiative/libelektra/compare}{\tt shortcut}), you can now create a pull request referencing your forked repository and the branch,the modified code resides in. Click on \char`\"{}compare across forks\char`\"{} so that you can find and select your branch. Choose \char`\"{}$<$username$>$/libelektra\char`\"{} as the head repository and \char`\"{}testbranch\char`\"{} as the compare-\/branch. Now the green button \char`\"{}\+Create pull requests\char`\"{} should be enabled. By clicking it you can define the title of your pull request and write a description of the work you have done. Please read the template in this form and include the information stated there if possible. Finally by clicking \char`\"{}\+Create pull request\char`\"{} you\textquotesingle{}ve successfully created a pull request to merge your changes into the official repository! Now maintainers of libelektra will review your code and, if everything is fine, merge your changes into the official repository. Otherwise they\textquotesingle{}ll comment on this pull request if further changes are needed. To include additional changes in this pull request, just commit new code changes to the same repository and branch you\textquotesingle{}ve referenced for this pull request, they will be added automatically to it. In any case check the output of the automated tests!
+
+If you want to use C\+Lion for creating Pull Request, please check out \href{https://www.jetbrains.com/help/clion/contribute-to-projects.html#create-pull-request}{\tt this} link for further information.
+
+In case you fail to run Elektra with the message like this one {\ttfamily Reason\+: of module\+: libelektra-\/resolver.\+so, because\+: libelektra-\/resolver.\+so\+: cannot open shared object file\+: No such file or directory} you can solve it by defining the L\+D\+\_\+\+L\+I\+B\+R\+A\+R\+Y\+\_\+\+P\+A\+TH variable directly in C\+Lion. Click on the debug configurations dropdown in the upper right corner and choose \textquotesingle{}Edit Configurations...\textquotesingle{}. Then find \textquotesingle{}Environmental Variables\textquotesingle{} field and add the following\+: L\+D\+\_\+\+L\+I\+B\+R\+A\+R\+Y\+\_\+\+P\+A\+TH=P\+A\+T\+H\+\_\+\+T\+O\+\_\+\+Y\+O\+U\+R\+\_\+\+L\+I\+B\+\_\+\+D\+I\+R\+E\+C\+T\+O\+RY
+
+Example\+:
+
+L\+D\+\_\+\+L\+I\+B\+R\+A\+R\+Y\+\_\+\+P\+A\+TH=/home/username/\+T\+U/libelektra/cmake-\/build-\/debug/lib
+
+If you want to run built {\ttfamily kdb} outside of C\+Lion, the recommended way is to run this script from your build directory. The script resides in you original directory with project sources.
+
+Example\+:
+
+
+\begin{DoxyCode}
+. /PATH/TO/YOUR/PROJECT/scripts/dev/run\_env
+\end{DoxyCode}
+
+
+Please keep in mind it sets the variables only in the currently opened shell window/session.
+
+Please refer to \hyperlink{doc_COMPILE_md}{this} tutorial to fix the problem permanently.
+
+
+\begin{DoxyItemize}
+\item Especially for not that well-\/versed programmers don\textquotesingle{}t forget that when debugging e.\+g. {\ttfamily Key\+Set}, which can contain many {\ttfamily Key} objects, you can only see that there may be more than one key stored in this set by it\textquotesingle{}s {\itshape size} attribute since it\textquotesingle{}s keys are referenced by a pointer. Just the first {\ttfamily Key} (referenced by the pointer) will be visible directly using the debugger. To analyse it\textquotesingle{}s stored {\ttfamily Key} objects you can either add a \href{https://www.jetbrains.com/help/clion/debug-tool-window-watches.html}{\tt watch} or use the G\+DB debug console (next to the \char`\"{}variables\char`\"{} tab inside the debugger view).
+\item Sometimes C\+Lion does not rebuild changed modules accordingly by just running the test. If you think, that the modules should have been rebuilt (e.\+g. if running {\ttfamily testmod\+\_\+abc} doesn\textquotesingle{}t rebuild abc), please report the issue under \href{https://issues.libelektra.org,}{\tt https\+://issues.\+libelektra.\+org,} so we can fix the C\+Make dependencies. As temporary fix you can try to rebuild the project and restart the test.
+\item Please add a line of changelog to \hyperlink{doc_news__preparation_next_release_md}{this} file and add it to your pull request, otherwise some test will fail in any case. 
+\end{DoxyItemize}

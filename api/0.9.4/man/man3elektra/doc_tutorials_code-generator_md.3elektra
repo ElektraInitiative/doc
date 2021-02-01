@@ -1,0 +1,231 @@
+.TH "doc_tutorials_code-generator_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_code-generator_mdCode-generator 
+ \- This guide focuses on writing new templates for the code-generator\&. For using the code generator take a look at the man-page \fB`kdb-gen(1)`\fP\&. For specifically using the code-generator for the high-level API you may want to follow \fBthis guide\fP\&.
+.PP
+The underlying framework of \fCkdb gen\fP is quite flexible\&. It is based on the \fCmustache templating system\fP\&. Concretely we use \fCthis C++ library\fP as a basis\&.
+.PP
+To distinguish the user facing parts of \fCkdb gen\fP from the internal layer interfacing \fCkdb gen\fP to the mustache library, we will call the internal layer the \fIframework\fP\&.
+.PP
+The file \fC\fCsrc/tools/kdb/gen\&.cpp\fP\fP implements the command-line interface (CLI) and is of little interest to this guide\&. Instead we will focus on the framework that is invoked via the CLI\&. The bulk of the framework is implemented in the classes \fC\fCGenTemplate\fP and \fCGenTemplateList\fP\fP (and of course kainjow's mustache library)\&.
+.PP
+First we need to define a few terms:
+.PP
+.IP "\(bu" 2
+\fItemplate name\fP: This is the main identifier of a template\&. It is used in the command line to choose the template\&.
+.IP "\(bu" 2
+\fItemplate base name\fP: Unlike the template name, this identifier is internal to the framework\&. It will not be seen by users of \fCkdb gen\fP\&. This is the base name of all mustache files belonging to the template\&. In most cases this will be the same as the template name\&.
+.IP "\(bu" 2
+\fIinput keyset\fP: This keyset contains the data with which the template will be instantiated by the code-generator\&.
+.IP "\(bu" 2
+\fIparent key\fP: The parent key is given in the command line and defines the input keyset (the keys below the parent key)\&.
+.IP "\(bu" 2
+\fIoutput name\fP: The base name for the output files as given in the command line\&. Suffixes may be appended, if there are multiple output files\&.
+.IP "\(bu" 2
+\fIparts\fP: Each template may consist of multiple parts\&. Each part corresponds to exactly one mustache file and therefore exactly one output file\&.
+.IP "\(bu" 2
+\fIpart suffix\fP: Parts are identified by there part suffix\&. This suffix is appended to the template base name to obtain the name of the mustache file corresponding to the part\&. Similarly it is appended to the output name to obtain the output file for this part\&. The empty string \fC''\fP is a valid part suffix, although it is only recommend for templates with a single output file\&.
+.PP
+.PP
+All templates consist of two pieces\&. The set of mustache files (on for each part) and an accompanying C++ class to supply the mustache rendering engine with data from the input keyset\&.
+.PP
+In this guide we will create a basic template, that generates a single file containing a simple list of all keys in our input keyset\&. An example output from running \fCkdb gen\fP with our to-be-developed template would be:
+.PP
+.PP
+.nf
+user:/sw/myapp/#0/current
+user:/sw/myapp/#0/current/dir0
+user:/sw/myapp/#0/current/dir0/subdir0/key0
+user:/sw/myapp/#0/current/dir0/subdir0/key1
+user:/sw/myapp/#0/current/dir1
+.fi
+.PP
+.PP
+As you can see, the result matches that of redirecting the stdout of \fCkdb ls\fP into a file\&.
+.PP
+The first thing we need to create is a mustache template\&. You will need (at least) one template file for each output file\&. If you make use of partials (see \fCbelow\fP), you of course have to write multiple files\&.
+.PP
+All template files must be located in the \fB`src/tools/kdb/gen/templates`\fP folder and must be named according to the scheme \fC<template base name>\&.<part suffix>\&.mustache\fP\&.
+.PP
+For our simple example we create the file \fCsrc/tools/kdb/gen/templates/example\&.txt\&.mustache\fP with the following content:
+.PP
+.PP
+.nf
+{{# keys }}
+{{{ name }}}
+{{/ keys }}
+.fi
+.PP
+.PP
+Note: we will not go into detail on how mustache templates work, for more information see e\&.g\&. \fChere\fP\&. All of features supported by the kainjow library should be supported by our framework as well\&.
+.PP
+Our CMake script will collect all \fC\&.mustache\fP files in \fCsrc/tools/kdb/gen/templates\fP into a header containing a \fCstatic const char *\fP field for each file and a \fCstd::unordered_map\fP containing references to all the fields\&. The naming scheme is needed so that the other C++ code can access the files contents via the map\&. This approach was chosen to allow executing the code-generator without first running the install script\&.
+.PP
+When you create a new \fC\&.mustache\fP file (either for a new part or a new partial), you need to invoke \fCcmake\fP again, so that all the files are collected\&.
+.PP
+Since we need to some way of supplying data to our template, we have to create a subclass of \fCGenTemplate\fP\&.
+.PP
+First we create a new directory for our template class in \fCsrc/tools/kdb/gen\fP, for our template it should be \fCsrc/tools/kdb/gen/example\fP\&. In this directory we then create \fCexample\&.cpp\fP and \fCexample\&.hpp\fP\&. If your template class becomes sufficiently complex, it may make sense to split the code into multiple classes and into multiple files, for this reason we recommend creating a new directory for each template\&. The CMake script will also automatically recognize your files, if you put them directly into \fCsrc/tools/kdb/gen\fP, but using additional subdirectories (beyond the one matching your template name) like \fCsrc/tools/kdb/gen/example/src\fP would require modifying \fB`src/tools/kdb/CMakeLists\&.txt`\fP\&.
+.PP
+In \fCexample\&.cpp\fP and \fCexample\&.hpp\fP we create our subclass of \fCGenTemplate\fP\&. Therefore \fCexample\&.hpp\fP should look like this:
+.PP
+.PP
+.nf
+#ifndef ELEKTRA_EXAMPLE_HPP
+#define ELEKTRA_EXAMPLE_HPP
+
+#include <gen/template\&.hpp>
+
+class ExampleGenTemplate : public GenTemplate
+{
+public:
+    ExampleGenTemplate () : GenTemplate ("example", { "\&.txt" }, {}, {})
+    {
+    }
+
+protected:
+    kainjow::mustache::data getTemplateData (const std::string & outputName, const std::string & part, const kdb::KeySet & ks,
+                                             const std::string & parentKey) const override;
+};
+
+#endif // ELEKTRA_EXAMPLE_HPP
+.fi
+.PP
+.PP
+Apart from the line \fCExampleGenTemplate () : GenTemplate ('example', { '\&.txt' }, {}, {})\fP everything should be more or less the same for all templates\&. Let's dissect this line:
+.PP
+.IP "\(bu" 2
+\fCExampleGenTemplate ()\fP we declare a zero argument constructor\&. All templates \fImust\fP have only a single zero argument constructor, otherwise the framework cannot instantiate them\&.
+.IP "\(bu" 2
+\fC: GenTemplate (\fP the constructor must invoke the base-class constructor\&.
+.IP "\(bu" 2
+\fC'example',\fP we decided to use \fCexample\fP as the base name for our template files\&. This base name will be replaced by the \fCoutputName\fP chosen by the user, when invoking the code-generator\&.
+.IP "\(bu" 2
+\fC{ '\&.txt' },\fP this is the list of part suffixes for our template\&. We only have a single part (output file) with the suffix \fC\&.txt\fP\&.
+.IP "\(bu" 2
+\fC{},\fP the first empty list would contain all the partials our template uses\&. We don't use any\&.
+.IP "\(bu" 2
+\fC{},\fP the second empty list, is actually a map\&. It would contain all parameters and whether they are required or not\&. We don't have parameters\&.
+.PP
+.PP
+As you can see, the header is quite simple\&. The more important part is actually the source file\&. It contains the implementation of \fCgetTemplateData\fP, the function that delivers all the template data to the framework\&.
+.PP
+For our example we will use this implementation:
+.PP
+.PP
+.nf
+#include "example\&.hpp"
+
+kainjow::mustache::data ExampleGenTemplate::getTemplateData (const std::string & outputName, const std::string & part,
+                                                             const kdb::KeySet & ks, const std::string & parentKey) const
+{
+    using namespace kdb;
+    using namespace kainjow::mustache;
+
+    list keyList;
+
+    for (auto it = ks\&.begin (); it != ks\&.end (); ++it)
+    {
+        Key key = *it;
+
+        auto keyObject = object({ { "name", key\&.getName() } });
+
+        keyList\&.emplace_back(keyObject);
+    }
+
+    auto data = object({ { "keys", keyList } });
+
+    return data;
+}
+.fi
+.PP
+.PP
+The framework will invoke \fCgetTemplateData\fP for each part of our template with the \fCoutputName\fP and \fCparentKey\fP as given on the command line, as well as the current part suffix (\fCpart\fP) and the input keyset \fCks\fP\&. All keys of the input keyset are guaranteed to be below \fCparentKey\fP\&.
+.PP
+The code above simply iterates over the input KeySet and for each key creates an object \fC{ name: $keyName }\fP\&. All those objects are collected into a list, which is then stored under the key \fCkeys\fP in the global object\&.
+.PP
+To make the framework aware of our class (and by extension our template), we have to then add it to \fCGenTemplateList\fP\&. This is simply done by adding a line to the implementation of \fCGenTemplateList::GenTemplateList ()\fP in \fC\fCtemplate\&.cpp\fP\fP\&.
+.PP
+For our example that is:
+.PP
+.PP
+.nf
+addTemplate<ExampleGenTemplate> ("example");
+.fi
+.PP
+.PP
+We need to specify \fC'example'\fP again, because this string defines how our template shall be called, i\&.e\&. what we need to specify in the terminal to invoke it\&.
+.PP
+You also need to add the appropriate \fC#include\fP at the top of the file\&. In our case this is:
+.PP
+.PP
+.nf
+#include "example/example\&.hpp"
+.fi
+.PP
+.PP
+Now you should be able to use the new template by running (after compiling/installing Elektra again):
+.PP
+.PP
+.nf
+kdb gen example user userkeys
+.fi
+.PP
+.PP
+This should produce the file \fCuserkeys\&.txt\fP\&. The file should be the same, as if we had called \fCkdb ls user:/ > userkeys\&.txt\fP\&.
+.PP
+Lastly, we will discuss a few more advanced concepts\&.
+.PP
+Switching the delimiters is fully supported and already in use in the high-level API template to allow for easier formatting\&.
+.PP
+Sometimes you want to incorporate user input beyond the contents of the input keyset into the code-generation\&. For example, if you generate a web page, you may need to now where it is going to be hosted, so that you can generate correct links\&. Another example would be letting the user choose the name of a generated function, when generating C code\&.
+.PP
+The first case would be required parameter\&. Without the domain name, we cannot generate the links\&. The second example meanwhile may be an optional parameter\&. We could just use a sensible default name for the function, since it doesn't matter much which function the user will call in their own code\&.
+.PP
+Our framework supports both required and optional parameters\&. To define the parameters of your template use the \fCparameters\fP argument of the \fCGenTemplate\fP constructor\&. This parameter is a map from strings to bools\&. The keys are the parameter names and the values define, whether the parameter is required (\fCtrue\fP means required)\&.
+.PP
+Our two examples could use \fC{ { 'domain_name', true } }\fP and \fC{ { 'function_name', false } }\fP respectively\&.
+.PP
+To access the parameter value call one of the \fCgetParameter\fP overloads\&. One takes a default value, the other takes a map of values and verifies that one of the given values has been chosen\&. For more information see the relevant code documentation\&. There is also \fCgetBoolParameter\fP which a specialised version for boolean parameters\&. It accepts only \fC0\fP and \fC1\fP as values\&.
+.PP
+Calling \fCkdb gen\fP for the web page example (called \fCwebpage\fP below) would then look like this:
+.PP
+.PP
+.nf
+kdb gen webpage <parentKey> <outputName> domain_name=somedomain\&.xyz
+.fi
+.PP
+.PP
+Since \fCfunction_name\fP is optional in our other example (called \fCccode\fP below), both of the following calls are valid:
+.PP
+.PP
+.nf
+kdb gen ccode <parentKey> <outputName>
+
+kdb gen ccode <parentKey> <outputName> function_name=foo
+.fi
+.PP
+.PP
+The use of partials is bit more involved than in other mustache frameworks\&. All the partial files for template \fCX\fP must be placed in the folder \fCsrc/tools/kdb/gen/templates/X\fP and must use the file extension \fC\&.mustache\fP\&. Apart from the the filename can be chosen arbitrarily\&.
+.PP
+To use the partial named \fCY\fP (i\&.e\&. the file \fCsrc/tools/kdb/gen/templates/X/Y\&.mustache\fP) you must use this mustache command:
+.PP
+.PP
+.nf
+{{> partial\&.enum\&.c }}
+.fi
+.PP
+.PP
+The prefix \fCpartial\&.\fP is required by the framework, if you omit it, there will be an error\&.
+.PP
+By default mustache escapes values for use in HTML (unless \fC{{{ name }}}\fP or \fC{{& name }}\fP is used)\&. Since most of our templates are not HTML, the escape function can be customised\&. You simply have to override \fCGenTemplate::escapeFunction\fP\&. For an example see \fCHighlevelGenTemplate::escapeFunction\fP in \fC\fCsrc/tools/kdb/gen/highlevel/highlevel\&.hpp\fP\fP, it is designed for C code instead of HTML\&.
+.PP
+For some templates it might be necessary to switch which parts are produced based on the given parameters\&. This can be done by overriding \fCgetParts()\fP in your template class\&.
+.PP
+To achieve a dynamic parts list, simply pass \fIall possible\fP parts in the constructor invocation\&. Then in your override of \fCgetParts()\fP you simply inspect the given parameters and remove any parts that should not be generated\&.
+.PP
+It may also be useful to generate some output files without a mustache template\&. You could of course just write a template that renders as its string input data, but that won't work for binary files\&.
+.PP
+The proper way to achieve non-mustache-based parts is to inspect the \fCpart\fP value passed to \fCgetTemplateData()\fP\&. When you detect a non-mustache-based part you write to the file named \fCoutputName + part\fP and once you are done you return \fCkainjow::mustache::data(false)\fP\&. This tells the render function to not invoke mustache for this part and instead continue with the next part\&. 

@@ -1,0 +1,307 @@
+Elektra can protect the following aspects of your configuration\+:
+
+
+\begin{DoxyEnumerate}
+\item confidentiality (i.\+e. protection against unauthorized access), and
+\item integrity (i.\+e. protection against unauthorized modification).
+\end{DoxyEnumerate}
+
+Elektra provides two plugins to achieve this protection\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily crypto}, and
+\item {\ttfamily fcrypt}.
+\end{DoxyEnumerate}
+
+For the rest of this tutorial we assume that you are somewhat familiar with Gnu\+PG (G\+PG). The documentation of Gnu\+PG can be found \href{https://gnupg.org/documentation/index.html}{\tt here}.
+
+In order to find your G\+PG private key(s) you can use\+:
+
+
+\begin{DoxyCode}
+gpg2 --list-secret-keys
+\end{DoxyCode}
+
+
+If G\+PG private keys are available, you see an output, that looks similar to this\+:
+
+
+\begin{DoxyCode}
+sec   rsa1024 2016-08-20 [SC]
+          DDEBEF9EE2DC931701338212DAF635B17F230E8D
+uid           [ultimate] Elektra Unit Tests (DO NOT USE IN PRODUCTION) <unit-tests@libelektra.org>
+ssb   rsa1024 2016-08-20 [E]
+\end{DoxyCode}
+
+
+The G\+PG key we use in this tutorial has the ID {\ttfamily D\+D\+E\+B\+E\+F9\+E\+E2\+D\+C931701338212\+D\+A\+F635\+B17\+F230\+E8D}.
+
+A G\+PG private key is mandatory for the plugins to work. If you have no G\+PG private key available, you can generate one by entering the following command\+:
+
+
+\begin{DoxyCode}
+gpg2 --generate-key
+\end{DoxyCode}
+
+
+The {\ttfamily fcrypt} plugin and the {\ttfamily crypto} plugin support both versions (version 1 and version 2) of G\+PG.
+
+In this tutorial we explain the use of the {\ttfamily crypto} plugin and the {\ttfamily fcrypt} plugin by a simple example\+: We want to protect a password that is contained in an I\+N\+I-\/file.
+
+The following example demonstrates how the I\+N\+I-\/file is mounted without encryption enabled. We create the password at {\ttfamily user\+:/tests/password} and display the contents of {\ttfamily test.\+ini}.
+
+{\itshape Step 1\+:} Mount {\ttfamily test.\+ini}
+
+
+\begin{DoxyCode}
+kdb mount test.ini user:/tests ini
+\end{DoxyCode}
+
+
+{\itshape Step 2\+:} Set the password at {\ttfamily user\+:/tests/password} and display the contents of {\ttfamily test.\+ini}
+
+
+\begin{DoxyCode}
+kdb set user:/tests/password 1234
+kdb file user:/tests/password | xargs cat | tail -n1
+#> password = 1234
+\end{DoxyCode}
+
+
+{\itshape Step 3\+:} (Optional) Cleanup
+
+
+\begin{DoxyCode}
+kdb rm user:/tests/password
+kdb umount user:/tests
+\end{DoxyCode}
+
+
+As you can see the password is stored in plain text. In this tutorial we demonstrate two different approaches towards confidentiality\+:
+
+
+\begin{DoxyEnumerate}
+\item with the {\ttfamily fcrypt} plugin, which encrypts the entire I\+N\+I-\/file, and
+\item with the {\ttfamily crypto} plugin, which allows the encryption of specific key values only.
+\end{DoxyEnumerate}
+
+We also show how to approach integrity with the signature features of the {\ttfamily fcrypt} plugin.
+
+The {\ttfamily fcrypt} plugin enables the encryption and decryption of entire configuration files, thus protecting the confidentiality of the configuration keys and values. {\ttfamily fcrypt} utilizes G\+PG for all cryptographic operations. The G\+PG key, which is used for encryption and decryption, is specified in the backend configuration under {\ttfamily encrypt/key}.
+
+
+\begin{DoxyCode}
+sudo kdb mount test.ini user:/tests fcrypt "encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" ini
+\end{DoxyCode}
+
+
+If the above command fails, please take a look at the \href{https://master.libelektra.org/src/plugins/fcrypt/README.md#known-issues}{\tt Read\+Me of the {\ttfamily fcrypt} plugin}.
+
+As a result the file {\ttfamily test.\+ini} is encrypted using Gnu\+PG. {\ttfamily fcrypt} will call the {\ttfamily gpg2} or {\ttfamily gpg} binary as follows\+:
+
+
+\begin{DoxyCode}
+gpg2 -o test.ini -a -r DDEBEF9EE2DC931701338212DAF635B17F230E8D -e test.ini.tmp
+\end{DoxyCode}
+
+
+Note that {\ttfamily test.\+ini} can not only be decrypted by Elektra, but it is also possible to decrypt it with Gnu\+PG directly. You can try to decrypt {\ttfamily test.\+ini} with G\+PG\+:
+
+
+\begin{DoxyCode}
+gpg2 -d test.ini
+\end{DoxyCode}
+
+
+The complete procedure looks like this\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ini user:/tests fcrypt "encrypt/key=$(kdb gen-gpg-testkey)" ini
+kdb set user:/tests/password 1234
+kdb file user:/tests/password | xargs cat
+\end{DoxyCode}
+
+
+To clean up the environment we run\+:
+
+
+\begin{DoxyCode}
+kdb rm user:/tests/password
+kdb umount user:/tests
+\end{DoxyCode}
+
+
+{\ttfamily fcrypt} also offers the option to sign and verify configuration files, thus protecting the integrity of the configuration values. If {\ttfamily sign/key} is specified in the backend configuration, {\ttfamily fcrypt} will forward the key ID for signing the configuration file.
+
+An example backend configuration is given as follows\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount test.ini user:/tests fcrypt "sign/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" ini
+\end{DoxyCode}
+
+
+As a result the file {\ttfamily test.\+ini} will be signed using G\+PG. {\ttfamily fcrypt} will call the {\ttfamily gpg2} or {\ttfamily gpg} binary as follows\+:
+
+
+\begin{DoxyCode}
+gpg2 -o test.ini -a -u DDEBEF9EE2DC931701338212DAF635B17F230E8D -r DDEBEF9EE2DC931701338212DAF635B17F230E8D
+       -s test.ini.tmp
+\end{DoxyCode}
+
+
+If {\ttfamily test.\+ini} is modified, all following calls of {\ttfamily kdb get} will fail with an error message stating that the signature of the file could not be verified.
+
+The complete example looks like this\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ini user:/tests fcrypt "sign/key=$(kdb gen-gpg-testkey)" ini
+kdb set user:/tests/password 1234
+kdb file user:/tests/password | xargs cat
+\end{DoxyCode}
+
+
+To clean up the environment we run\+:
+
+
+\begin{DoxyCode}
+kdb rm user:/tests/password
+kdb umount user:/tests
+\end{DoxyCode}
+
+
+The options {\ttfamily sign/key} and {\ttfamily encrypt/key} can be combined together, resulting in configuration files, that are signed and encrypted.
+
+Mounting {\ttfamily test.\+ini} with signatures and encryption enabled can be done like this\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount test.ini user:/tests fcrypt
+       "sign/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D,encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" ini
+\end{DoxyCode}
+
+
+The complete example looks like this\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ini user:/tests fcrypt "sign/key=$(kdb gen-gpg-testkey),encrypt/key=$(kdb gen-gpg-testkey)"
+       ini
+kdb set user:/tests/password 1234
+kdb file user:/tests/password | xargs cat
+\end{DoxyCode}
+
+
+To clean up the environment we run\+:
+
+
+\begin{DoxyCode}
+kdb rm user:/tests/password
+kdb umount user:/tests
+\end{DoxyCode}
+
+
+So far we learned how to encrypt and decrypt entry configuration files. Sometimes we only want to protect a smaller subset of configuration values in a bigger configuration setting. For this reason the {\ttfamily crypto} plugin was developed.
+
+The {\ttfamily crypto} plugin uses {\ttfamily libgcrypt} as provider of cryptographic functions.
+
+The {\ttfamily crypto} plugin provides the option to encrypt and decrypt single configuration values (Keys) in a Keyset. G\+PG is required for the key-\/handling.
+
+To follow our example of an encrypted password in {\ttfamily test.\+ini}, we first mount the I\+N\+I-\/file with the {\ttfamily crypto} plugin enabled, like this\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount test.ini user:/tests crypto "crypto/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D" base64 ini
+\end{DoxyCode}
+
+
+We recommend adding the {\ttfamily base64} plugin to the backend, because {\ttfamily crypto} will output binary data. Having binary data in configuration files is hardly ever feasible. {\ttfamily base64} encodes all binary values within a configuration file and transforms them into Base64 strings.
+
+To tell the {\ttfamily crypto} plugin which Keys it should process, the metakey {\ttfamily crypto/encrypt} is used. The {\ttfamily crypto} plugin searches for the metakey {\ttfamily crypto/encrypt}. If the value is equal to {\ttfamily 1}, the value of the Key will be encrypted.
+
+We want to protect the password, that is stored under {\ttfamily user\+:/test/password}. So we set the metakey as follows\+:
+
+
+\begin{DoxyCode}
+kdb meta-set user:/tests/password crypto/encrypt 1
+\end{DoxyCode}
+
+
+Now we are safe to set the actual password\+:
+
+
+\begin{DoxyCode}
+kdb set user:/tests/password "1234"
+\end{DoxyCode}
+
+
+The resulting I\+N\+I-\/file contains the following data\+:
+
+
+\begin{DoxyCode}
+#@META crypto/encrypt = 1
+password=@BASE64IyFjcnlwdG8wMBEAAADwPI+lqp+X2b6BIfLdRYgwxmAhVUPurqkQVAI78Pn4OYONbei4NfykMPvx9C9w91KT
+\end{DoxyCode}
+
+
+You can access the password as usual with {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}
+kdb get user:/tests/password
+\end{DoxyCode}
+
+
+As a result you get \char`\"{}1234\char`\"{}.
+
+You can disable the encryption by setting {\ttfamily crypto/encrypt} to a value other than {\ttfamily 1}, for example\+:
+
+
+\begin{DoxyCode}
+kdb meta-set user:/tests/password crypto/encrypt 0
+\end{DoxyCode}
+
+
+The complete example looks like this\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ini user:/tests crypto "crypto/key=$(kdb gen-gpg-testkey)" base64 ini
+kdb meta-set user:/tests/password crypto/encrypt 1
+kdb set user:/tests/password 1234
+kdb set user:/tests/unencrypted "I am not encrypted"
+kdb file user:/tests/password | xargs cat
+\end{DoxyCode}
+
+
+To disable encryption on {\ttfamily user\+:/tests/password}, we can run\+:
+
+
+\begin{DoxyCode}
+kdb meta-set user:/tests/password crypto/encrypt 0
+kdb file user:/tests/password | xargs cat
+\end{DoxyCode}
+
+
+To clean up the environment we run\+:
+
+
+\begin{DoxyCode}
+kdb rm user:/tests/unencrypted
+kdb rm user:/tests/password
+kdb umount user:/tests
+\end{DoxyCode}
+
+
+To shut down the {\ttfamily gpg-\/agent} we run\+:
+
+
+\begin{DoxyCode}
+gpg-connect-agent --quiet KILLAGENT /bye
+\end{DoxyCode}
+
+
+The shutdown of {\ttfamily gpg-\/agent} is optional. 

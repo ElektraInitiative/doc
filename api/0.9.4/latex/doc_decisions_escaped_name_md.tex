@@ -1,0 +1,45 @@
+Currently we store both the escaped and unescaped name in a Key and in a way that there cannot be an optimization not to store it (there are functions handling out the pointer).
+
+
+\begin{DoxyItemize}
+\item allow implementations of Elektra to not store two names
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item the memory consumption of storing the name twice is considerable
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item store it twice
+\item store it once but in one memory block
+\end{DoxyItemize}
+
+Remove the escaped name from {\ttfamily struct \+\_\+\+Key} and use it only when necessary.
+
+Clarify and reduce \hyperlink{doc_help_elektra-glossary_md}{terminology}.
+
+A\+PI Changes\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily key\+Name} returns the unescaped name (temporary some other name for PR\+: {\ttfamily key\+Unescaped\+Name(\+Size)})
+\item remove {\ttfamily key\+Unescaped\+Name}, {\ttfamily key\+Get\+Unescaped\+Name\+Size}.
+\item reverse terminology\+: with \char`\"{}key name\char`\"{} we will refer to the unescaped (base) name, the escaped name will be explicitly called \char`\"{}escaped key name\char`\"{}.
+\item escaped name will be only present in
+\begin{DoxyItemize}
+\item {\ttfamily key\+New} (+ arguments for adding key names) \mbox{[}unclear\+: maybe not needed\mbox{]}
+\item {\ttfamily elektra\+Escape\+Name} (operating on chars)
+\item rename {\ttfamily key\+Add\+Name}, e.\+g. to {\ttfamily key\+Add\+Escaped\+Name}
+\end{DoxyItemize}
+\item {\ttfamily key\+Dup(.., int)} with options to filter which parts are copied (to allow copy of keys where only the key name is copied)
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item needs fix of O\+P\+M\+P\+HM
+\item Later modifications in key\+New to also accept key base names might be useful\+:
+\item key\+New(K\+E\+Y\+\_\+\+V\+A\+L\+UE, \char`\"{}...\char`\"{}, K\+E\+Y\+\_\+\+N\+A\+ME, \char`\"{}\char`\"{}, \char`\"{}...\char`\"{}, K\+E\+Y\+\_\+\+E\+ND)
+\item key\+New (K\+E\+Y\+\_\+\+N\+A\+ME, K\+E\+Y\+\_\+\+N\+S\+\_\+\+U\+S\+ER, \char`\"{}abc\char`\"{}, \char`\"{}def\char`\"{}, K\+E\+Y\+\_\+\+N\+A\+M\+E\+\_\+\+E\+ND, K\+E\+Y\+\_\+\+E\+ND);
+\end{DoxyItemize}

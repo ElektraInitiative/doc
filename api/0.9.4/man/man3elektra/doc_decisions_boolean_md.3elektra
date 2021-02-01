@@ -1,0 +1,57 @@
+.TH "doc_decisions_boolean_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_boolean_mdDefinition of Bool 
+ \- Inconsistent use of booleans in various parts of Elektra\&.
+.PP
+.IP "\(bu" 2
+needs to be string
+.PP
+.PP
+.IP "\(bu" 2
+only check presence or absence (no cascading override of already present key possible)
+.IP "\(bu" 2
+use booleans as in CMake, which allows on/off, true/false, \&.\&.\&. (would need convenience across the code)
+.IP "\(bu" 2
+do not accept a specification with \fCtype = boolean\fP without a default
+.PP
+.PP
+Only the strings \fC0\fP and \fC1\fP are allowed in the \fCKeySet\fP for \fCtype = boolean\fP, for both values and defaults\&. Everything else should lead to errors in checkers (in \fCkdbSet\fP)\&.
+.PP
+A spec with \fCtype = boolean\fP without a specified default should be interpreted as \fCdefault = 0\fP\&.
+.PP
+Example for an implementation in C in an application:
+.PP
+.PP
+.nf
+if (k != NULL && strcmp(keyString(k), "1") == 0) {/*true*/} else {/*false*/}
+.fi
+.PP
+.PP
+Storage plugins are allowed any representation as suitable, e\&.g\&., a JSON plugin might render \fC1\fP as \fCtrue\fP\&.
+.PP
+The type checker plugin should allow
+.PP
+.IP "\(bu" 2
+non-presence
+.IP "\(bu" 2
+the string '0'
+.IP "\(bu" 2
+the string '1'
+.PP
+.PP
+.IP "\(bu" 2
+most easy to implement
+.IP "\(bu" 2
+allows non-presence to be false
+.IP "\(bu" 2
+plugins allow us to convert to any other behavior
+.PP
+.PP
+.IP "\(bu" 2
+Storage plugins are only allowed to emit \fC0\fP or \fC1\fP as key values
+.IP "\(bu" 2
+Applications either get \fC0\fP or \fC1\fP, or (without a key) can safely assume that false is meant
+.PP
+

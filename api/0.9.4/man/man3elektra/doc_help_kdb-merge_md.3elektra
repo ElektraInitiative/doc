@@ -1,0 +1,106 @@
+.TH "doc_help_kdb-merge_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-merge_mdkdb-merge(1) -- Three-way merge of KeySets 
+ \- \fCkdb merge [options] ourpath theirpath basepath resultpath\fP
+.br
+.PP
+.IP "\(bu" 2
+ourpath: Path to the keyset to serve as \fCours\fP
+.br
+
+.IP "\(bu" 2
+theirpath: path to the keyset to serve as \fCtheirs\fP
+.br
+
+.IP "\(bu" 2
+basepath: path to the \fCbase\fP keyset
+.br
+
+.IP "\(bu" 2
+resultpath: path without keys where the merged keyset will be saved
+.br
+
+.PP
+.PP
+Does a three-way merge between keysets\&.
+.br
+ On success the resulting keyset will be saved to mergepath\&.
+.br
+ On unresolved conflicts nothing will be changed\&.
+.br
+.PP
+The \fCkdb merge\fP command uses a three-way merge by default\&.
+.br
+ A three-way merge is when three versions of a file (or in this case, KeySet) are compared in order to automatically merge the changes made to the KeySet over time\&.
+.br
+ These three versions of the KeySet are:
+.br
+.PP
+.IP "\(bu" 2
+\fCbase\fP: The \fCbase\fP KeySet is the original version of the KeySet\&.
+.br
+
+.IP "\(bu" 2
+\fCours\fP: The \fCours\fP KeySet represents the user's current version of the KeySet\&.
+.br
+ This KeySet differs from \fCbase\fP for every key you changed\&.
+.br
+
+.IP "\(bu" 2
+\fCtheirs\fP: The \fCtheirs\fP KeySet usually represents the default version of a KeySet (usually the package maintainer's version)\&.
+.br
+ This KeySet differs from \fCbase\fP for every key someone has changed\&.
+.br
+
+.PP
+.PP
+The three-way merge works by comparing the \fCours\fP KeySet and the \fCtheirs\fP KeySet to the \fCbase\fP KeySet\&. By looking for differences in these KeySets, a new KeySet called \fCresult\fP is created that represents a merge of these KeySets\&.
+.br
+.PP
+Conflicts occur when a Key has a different value in all three KeySets\&.
+.br
+ Conflicts in a merge can be resolved using a \fCstrategy\fP with the \fC-s\fP option\&. To interactively resolve conflicts, use the \fC-i\fP option\&.
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-f\fP, \fC--force\fP: Will remove existing keys from \fCresultpath\fP instead of failing\&.
+.IP "\(bu" 2
+\fC-s\fP, \fC--strategy <name>\fP: Specify which strategy should be used to resolve conflicts\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&. Prints additional information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information\&. Prints additional debug information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-i\fP, \fC--interactive\fP Interactively resolve the conflicts\&.
+.PP
+.PP
+To complete a simple merge of three KeySets:
+.br
+ \fCkdb merge user:/ours user:/theirs user:/base user:/result\fP
+.br
+.PP
+To complete a merge whilst using the \fCours\fP version of the KeySet to resolve conflicts:
+.br
+ \fCkdb merge -s ours user:/ours user:/theirs user:/base user:/result\fP
+.br
+.PP
+To complete a three-way merge and overwrite all current keys in the \fCresultpath\fP:
+.br
+ \fCkdb merge -s cut user:/ours user:/theirs user:/base user:/result\fP
+.br
+.PP
+.IP "\(bu" 2
+\fBelektra-merge-strategy(7)\fP
+.IP "\(bu" 2
+\fBelektra-key-names(7)\fP for an explanation of key names\&. 
+.PP
+

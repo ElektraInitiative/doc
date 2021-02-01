@@ -1,0 +1,102 @@
+.TH "doc_help_kdb-cmerge_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-cmerge_mdkdb-cmerge(1) -- Three-way merge of KeySets 
+ \- kdb-cmerge - Join three key sets together
+.PP
+\fCkdb cmerge [OPTIONS] our their base result\fP
+.PP
+.IP "\(bu" 2
+ourpath: Path to the keyset to serve as \fCour\fP
+.br
+
+.IP "\(bu" 2
+theirpath: path to the keyset to serve as \fCtheir\fP
+.br
+
+.IP "\(bu" 2
+basepath: path to the \fCbase\fP keyset
+.br
+
+.IP "\(bu" 2
+resultpath: path without keys where the merged keyset will be saved
+.br
+
+.PP
+.PP
+\fCkdb cmerge\fP can incorporate changes from two modified versions (our and their) into a common preceding version (base) of a key set\&. This lets you merge the sets of changes represented by the two newer key sets\&. This is called a three-way merge between key sets\&.
+.br
+ On success the resulting keyset will be saved to mergepath\&.
+.br
+ On unresolved conflicts nothing will be changed\&.
+.br
+ This tool currently exists alongside \fCkdb merge\fP until it is completely ready to supersede it\&. At this moment, cmerge will be renamed to merge\&.
+.PP
+The options of \fCkdb cmerge\fP are:
+.PP
+.IP "\(bu" 2
+\fC-f\fP, \fC--force\fP: overwrite existing keys in \fCresult\fP
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: give additional information
+.PP
+.PP
+Strategies offer fine grained control over conflict handling\&. The option is:
+.PP
+.IP "\(bu" 2
+\fC-s <name>\fP, \fC--strategy <name>\fP: which is used to specify a strategy to use in case of a conflict
+.PP
+.PP
+Strategies have their own \fBman page\fP which can be accessed with \fCman elektra-cmerge-strategies\fP\&.
+.PP
+.IP "\(bu" 2
+0: Successful\&.
+.IP "\(bu" 2
+1: An error happened\&.
+.IP "\(bu" 2
+2: A merge conflict occurred and merge strategy abort was set\&.
+.PP
+.PP
+The result of the merge is stored in \fCresult\fP\&.
+.PP
+You can think of the three-way merge as subtracting base from their and adding the result to our, or as merging into our the changes that would turn base into their\&. Thus, it behaves exactly as the GNU diff3 tool\&. These three versions of the KeySet are:
+.br
+.PP
+.IP "\(bu" 2
+\fCbase\fP: The \fCbase\fP KeySet is the original version of the key set\&.
+.br
+
+.IP "\(bu" 2
+\fCour\fP: The \fCour\fP KeySet represents the user's current version of the KeySet\&.
+.br
+ This KeySet differs from \fCbase\fP for every key you changed\&.
+.br
+
+.IP "\(bu" 2
+\fCtheir\fP: The \fCtheir\fP KeySet usually represents the default version of a KeySet (usually the package maintainer's version)\&.
+.br
+ This KeySet differs from \fCbase\fP for every key someone has changed\&.
+.br
+
+.PP
+.PP
+The three-way merge works by comparing the \fCour\fP KeySet and the \fCtheir\fP KeySet to the \fCbase\fP KeySet\&. By looking for differences in these KeySets, a new KeySet called \fCresult\fP is created that represents a merge of these KeySets\&.
+.br
+.PP
+Conflicts occur when a key has a different value in all three key sets or when only base differs\&. When all three values for a key differ, we call this an overlap\&. Different \fBmerge strategies\fP exist to resolve those conflicts\&.
+.br
+.PP
+To complete a simple merge of three KeySets:
+.br
+.PP
+````ssh kdb set user:/base 'A' #> Create a new key user:/base with string 'A' kdb set user:/their 'A' #> Create a new key user:/their with string 'A' kdb set user:/our 'B' #> Create a new key user:/our with string 'B' kdb cmerge user:/our user:/their user:/base user:/result kdb get user:/result #>B
+.PP
+```
+.br
+.PP
+.IP "\(bu" 2
+\fBelektra-cmerge-strategy(7)\fP
+.IP "\(bu" 2
+\fBelektra-key-names(7)\fP for an explanation of key names\&. ````s 
+.PP
+

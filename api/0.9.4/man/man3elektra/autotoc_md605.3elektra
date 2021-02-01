@@ -1,0 +1,170 @@
+.TH "autotoc_md605" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md605Plugin: spec 
+ \- 
+.IP "\(bu" 2
+infos = Information about the spec plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org, Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check apply
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = recommended productive nodep configurable global unfinished
+.IP "\(bu" 2
+infos/description = allows to give specifications for keys
+.PP
+.PP
+The spec plugin is a global plugin that copies metadata from the \fCspec\fP-namespace to other namespaces using their key names as globbing expressions\&. Globbing resembles regular expressions\&. They do not have the same expressive power, but are easier to use\&. The semantics are more suitable to match path names:
+.PP
+.IP "\(bu" 2
+\fC*\fP matches any key name of just one hierarchy\&. This means it complies with any character except slash or null\&.
+.IP "\(bu" 2
+\fC?\fP satisfies single characters with the same exclusion\&.
+.IP "\(bu" 2
+\fC#\fP matches Elektra array elements\&. (e\&.g\&. \fC#0\fP, \fC#_10\fP, \fC#__987\fP)
+.IP "\(bu" 2
+\fC_\fP matches anything that \fC*\fP matches, except array elements\&.
+.IP "\(bu" 2
+Additionally, there are ranges and character classes\&. They can also be inverted\&. For more infos take a look at the code documentation of \fC\fBelektraKeyGlob()\fP\fP\&.
+.PP
+.PP
+The plugin copies the metadata of the corresponding \fCspec\fP key to every matching (see below) key in the other namespaces\&. The copied metadata is removed again during \fCkdbSet\fP (if remained unchanged)\&.
+.PP
+The spec plugin also provides basic validation and structural checking\&. Specifically it supports:
+.PP
+.IP "\(bu" 2
+detection of invalid array key names
+.IP "\(bu" 2
+detection of missing keys
+.IP "\(bu" 2
+validation of array ranges (min/max array size)
+.IP "\(bu" 2
+validating the number of subkeys of \fC_\fP
+.PP
+.PP
+The matching of the spec (globbing) keys to the keys in the other namespaces is based on \fC\fBelektraKeyGlob()\fP\fP, which in turn is based on the well known \fCfnmatch(3)\fP\&. However, there is special handling for array specifications (\fC#\fP) and wildcard specifications (\fC_\fP)\&.
+.PP
+Keys which contain a part that is exactly \fC#\fP (e\&.g\&. \fCmy/#/key\fP or \fCmy/#\fP) are called array specifications\&. Instead of just matching the spec key to any existing keys in other namespaces, theses keys are 'instantiated'\&. This means we lookup the array size (defined by the \fCarray\fP metakey) using a cascading \fCksLookup\fP\&. This only looks at non-spec namespaces, if we don't find an array size their, we check the array parent in the spec namespace\&. If we still have no array size, the array is deemed to be empty\&. For empty arrays, we will simply validate that they are indeed empty\&.
+.PP
+For non-empty arrays 'instantiation' takes place\&. This means that we replace each \fC#\fP part in the spec key by all the valid array elements for this specification, up to the array size (which was already checked to be less than the allowed maximum)\&. In other words, instead of actually matching the globbing expression, we create a separate but identical specification for all valid array elements\&.
+.PP
+The purpose of 'instantiation' is to allow specifying \fCdefault\fP values for array elements\&.
+.PP
+Keys which contain a part that is exactly \fC_\fP (e\&.g\&. \fCmy/_/key\fP or \fCmy/_\fP) are called wildcard specifications\&. It would be nice to have an 'instantiation' procedure for \fC_\fP similar to the one for arrays\&. However, this is not possible with the current implementation, since there is no way of knowing in advance, which keys matching the globbing expression may be requested via \fCksLookup\fP\&.
+.PP
+Instead \fC_\fP is simply treated like \fC*\fP during matching\&. Afterwards we check that no array elements were matched\&.
+.PP
+The basic functionality of the plugin is to just copy (using \fC\fBkeyCopyMeta()\fP\fP so we don't waste memory) the metadata of spec keys to all matching (as described above) keys in other namespaces\&. This ensures that other plugins can do their work as expected, without manually setting metadata on every key\&. If any metakey we want to copy already exists on the target key (with a different value), this causes a \fCcollision\fP conflict\&.
+.PP
+In addition to the basic functionality, the plugin does some validation itself\&.
+.PP
+If a spec key has the metakey \fCdefault\fP set and the key does not exist in other namespaces, we create a special (cascading) key that will be found by \fCksLookup\fP\&. This key has the \fCdefault\fP value as its value\&. We also copy over metadata as always\&.
+.PP
+A similar procedure takes place for \fCassign/condition\fP, but in this case, we don't set the value of the key\&. We only create it and copy metadata\&.
+.PP
+If a spec key has the metakey \fCrequire\fP (the value of this metakey is irrelevant and ignored), we ensure that this key exists in at least one other namespace, i\&.e\&. it can be found using a cascading \fCksLookup\fP\&. If the key cannot be found, this causes a \fCmissing\fP conflict\&.
+.PP
+As hinted to above, we validate array sizes\&. If a spec key \fCx/#\fP is given, and the spec key \fCx\fP has the metakey \fCarray/min\fP or \fCarray/max\fP set, we validate the array size (given as metakey \fCarray\fP on \fCx\fP) is within the limits of \fCarray/min\fP and \fCarray/max\fP\&. Both \fCarray/min\fP and \fCarray/max\fP have to be valid array-elements similar to \fCarray\fP\&. If the array size is out of bounds, this causes a \fCrange\fP conflict\&.
+.PP
+We also check that the array only contains actual array elements\&. If this not the case, this causes a \fCmember\fP conflict\&.
+.PP
+Note: We don't actually validate that the array doesn't contain elements above the given array size\&. This is because it doesn't have anything to do with the specification, whether the array contains additional elements\&. Note also that we only copy metadata onto elements within the bounds of the array size\&.
+.PP
+There are various ways in which a conflict can occur during the validation process\&. To handle these conflicts, we provide various configuration options\&.
+.PP
+The possible conflicts are:
+.PP
+.IP "\(bu" 2
+Invalid array \fCmember\fP: an invalid array key has been detected\&. e\&.g\&. \fC/#abc\fP, or \fC/x\fP (i\&.e\&. non-array-element) if array (\fC#\fP) was specified
+.IP "\(bu" 2
+Out of \fCrange\fP: the array has more or less elements than specified by the \fCarray/min\fP and \fCarray/max\fP metakeys\&.
+.IP "\(bu" 2
+Missing keys \fCmissing\fP: the key marked as \fCrequire\fPd wasn't found\&.
+.IP "\(bu" 2
+Invalid keys \fCinvalid\fP: the specification or a key was invalid
+.IP "\(bu" 2
+Conflicting metadata \fCcollision\fP: the metakey that's supposed to be added already exists\&.
+.PP
+.PP
+To define what actions should be taken on on conflicts during \fCkdbGet\fP and \fCkdbSet\fP respectively use the keys \fCconflict/set\fP and \fCconflict/get\fP in the plugin configuration\&.
+.PP
+This base configuration can be overridden on a per-conflict basis to provide more granularity\&. The keys for this are (replace \fC_\fP with \fCget\fP or \fCset\fP accordingly):
+.PP
+.PP
+.nf
+conflict/_/member
+conflict/_/range
+conflict/_/missing
+conflict/_/invalid
+conflict/_/collision
+.fi
+.PP
+.PP
+For even more granularity, the above per-conflict metakeys can also be specified on individual keys\&.
+.PP
+The allowed values for the conflict keys are always the same:
+.PP
+.IP "\(bu" 2
+\fCERROR\fP yields an error when a conflict occurs
+.IP "\(bu" 2
+\fCWARNING\fP adds a warning when a conflict occurs
+.IP "\(bu" 2
+\fCINFO\fP adds a metakey \fClogs/spec/info\fP to the parent-key which can be used by logging plugins\&. \fClogs/spec/info\fP is an array, each element is one conflict\&.
+.IP "\(bu" 2
+any other value ignores the conflict, this includes if the conflict key is not given (i\&.e\&. the default)
+.PP
+.PP
+There is also the special key \fCmissing/log\fP\&. If it is set to \fC1\fP, the plugin will create the meta array \fClogs/spec/missing/#\fP\&. This array will contain a list of the missing keys\&. The key \fCmissing/log\fP can only be part of the main plugin configuration, not individual keys' metakeys\&. It also applies to \fCkdbGet\fP and \fCkdbSet\fP calls\&.
+.PP
+Ini files can be found in \fB/examples/spec\fP which should be PWD so that the example works:
+.PP
+.PP
+.nf
+cd ~e/examples/spec
+kdb global-mount        # mounts spec plugin by default
+kdb mount $PWD/spec\&.ini spec ni
+kdb mount $PWD/spectest\&.ini /testkey ni
+kdb export /testkey ni     # note: spec can only applied on cascading access
+.fi
+.PP
+.PP
+With spec mount one can use (in this case battery\&.ini needs to be installed in \fCkdb file spec:/\fP (this should be preferred on non-development machines so that everything still works after the source is removed):
+.PP
+.PP
+.nf
+cp battery\&.ini $(dirname $(kdb file spec:/))
+kdb mount battery\&.ini spec:/example/battery ni
+kdb spec-mount /example/battery
+kdb meta-ls /example/battery/level    # we see it has a check/enum
+kdb meta-get /example/battery/level check/enum    # now we know allowed values
+kdb set /example/battery/level low   # success, low is ok!
+kdb set /example/battery/level x     # fails, not one of the allowed values!
+
+cp openicc\&.ini $(dirname $(kdb file spec:/))
+kdb mount openicc\&.ini spec:/freedesktop/openicc ni
+kdb spec-mount /freedesktop/openicc
+
+kdb ls /freedesktop/openicc # lets see the whole configuration
+kdb export spec:/freedesktop/openicc ni   # give us details about the specification
+kdb meta-ls /freedesktop/openicc/device/camera/#0/EXIF_serial   # seems like there is a check/type
+kdb set "/freedesktop/openicc/device/camera/#0/EXIF_serial" 203     # success, is a long
+kdb set "/freedesktop/openicc/device/camera/#0/EXIF_serial" x   # fails, not a long
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+Added metadata is not correctly removed during \fCkdbSet\fP, if the corresponding spec key was modified\&.
+.IP "\(bu" 2
+Default values do not work if globbing is involved\&.
+.IP "\(bu" 2
+By default, keys tagged with \fCrequire\fP do not emit errors even if not present (https://issues.libelektra.org/1024) 
+.PP
+

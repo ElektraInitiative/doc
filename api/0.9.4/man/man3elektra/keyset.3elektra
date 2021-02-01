@@ -1,0 +1,1398 @@
+.TH "keyset" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keyset \- Methods to manipulate KeySets\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBKS_END\fP   ((Key*)0)"
+.br
+.RI "End of a list of keys\&. "
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBelektraLookupFlags\fP { \fBKDB_O_NONE\fP =0, \fBKDB_O_DEL\fP =1, \fBKDB_O_POP\fP =1<<1 }
+.RI "Options to change the default behavior of \fBksLookup()\fP functions\&. ""
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "KeySet * \fBksNew\fP (size_t alloc,\&.\&.\&.)"
+.br
+.RI "Allocate, initialize and return a new KeySet object\&. "
+.ti -1c
+.RI "KeySet * \fBksVNew\fP (size_t alloc, va_list va)"
+.br
+.RI "Allocate, initialize and return a new KeySet object\&. "
+.ti -1c
+.RI "KeySet * \fBksDup\fP (const KeySet *source)"
+.br
+.RI "Return a duplicate of a keyset\&. "
+.ti -1c
+.RI "int \fBksCopy\fP (KeySet *dest, const KeySet *source)"
+.br
+.RI "Replace the content of a keyset with another one\&. "
+.ti -1c
+.RI "int \fBksDel\fP (KeySet *ks)"
+.br
+.RI "A destructor for KeySet objects\&. "
+.ti -1c
+.RI "int \fBksNeedSync\fP (const KeySet *ks)"
+.br
+.RI "Checks if KeySet needs sync\&. "
+.ti -1c
+.RI "ssize_t \fBksGetSize\fP (const KeySet *ks)"
+.br
+.RI "Return the number of keys that \fCks\fP contains\&. "
+.ti -1c
+.RI "ssize_t \fBksAppendKey\fP (KeySet *ks, Key *toAppend)"
+.br
+.RI "Appends a Key to the end of \fCks\fP\&. "
+.ti -1c
+.RI "ssize_t \fBksAppend\fP (KeySet *ks, const KeySet *toAppend)"
+.br
+.RI "Append all \fCtoAppend\fP contained keys to the end of the \fCks\fP\&. "
+.ti -1c
+.RI "KeySet * \fBksCut\fP (KeySet *ks, const Key *cutpoint)"
+.br
+.RI "Cuts out a keyset at the cutpoint\&. "
+.ti -1c
+.RI "Key * \fBksPop\fP (KeySet *ks)"
+.br
+.RI "Remove and return the last key of \fCks\fP\&. "
+.ti -1c
+.RI "int \fBksRewind\fP (KeySet *ks)"
+.br
+.RI "Rewinds the KeySet internal cursor\&. "
+.ti -1c
+.RI "Key * \fBksNext\fP (KeySet *ks)"
+.br
+.RI "Returns the next Key in a KeySet\&. "
+.ti -1c
+.RI "Key * \fBksCurrent\fP (const KeySet *ks)"
+.br
+.RI "Return the current Key\&. "
+.ti -1c
+.RI "Key * \fBksHead\fP (const KeySet *ks)"
+.br
+.RI "Return the first key in the KeySet\&. "
+.ti -1c
+.RI "Key * \fBksTail\fP (const KeySet *ks)"
+.br
+.RI "Return the last key in the KeySet\&. "
+.ti -1c
+.RI "elektraCursor \fBksGetCursor\fP (const KeySet *ks)"
+.br
+.RI "Get the KeySet internal cursor\&. "
+.ti -1c
+.RI "Key * \fBksAtCursor\fP (KeySet *ks, elektraCursor pos)"
+.br
+.RI "return key at given position "
+.ti -1c
+.RI "int \fBksSetCursor\fP (KeySet *ks, elektraCursor cursor)"
+.br
+.RI "Set the KeySet internal cursor\&. "
+.ti -1c
+.RI "Key * \fBksLookup\fP (KeySet *ks, Key *key, \fBelektraLookupFlags\fP options)"
+.br
+.RI "Look for a Key contained in \fCks\fP that matches the name of the \fCkey\fP\&. "
+.ti -1c
+.RI "Key * \fBksLookupByName\fP (KeySet *ks, const char *name, \fBelektraLookupFlags\fP options)"
+.br
+.RI "Convenience method to look for a Key contained in \fCks\fP that matches \fCname\fP\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to manipulate KeySets\&. 
+
+A KeySet is a set of keys\&.
+.PP
+Most important properties of a KeySet:
+.PP
+.IP "\(bu" 2
+Allows us to iterate over all keys (in any depth)
+.IP "\(bu" 2
+Iteration is always sorted
+.IP "\(bu" 2
+Fast key lookup
+.IP "\(bu" 2
+A Key may be shared among many KeySets\&.
+.PP
+.PP
+The most important methods of KeySet:
+.PP
+.IP "\(bu" 2
+With \fBksNew()\fP you can create a new KeySet\&.
+.IP "\(bu" 2
+You can append keys with \fBksAppendKey()\fP or with \fBksAppend()\fP you can append a whole keyset\&.
+.IP "\(bu" 2
+Using \fBksLookup()\fP you can lookup (or pop with \fBKDB_O_POP\fP) a key\&.
+.IP "\(bu" 2
+With \fBksRewind()\fP and \fBksNext()\fP you can iterate through the keyset\&. Be assured that you will get every key of the set in a stable order (parents before children)\&.
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+Because the key is not copied, also the pointer to the current metadata \fBkeyNextMeta()\fP will be shared\&.
+.RE
+.PP
+KeySets have an \fBinternal cursor \fP\&. Methods should avoid to change this cursor, unless they want to communicate something with it\&. The internal cursor is used:
+.PP
+.IP "\(bu" 2
+in \fBksLookup()\fP: points to the found key
+.IP "\(bu" 2
+in \fBkdbSet()\fP: points to the key which caused an error
+.PP
+.PP
+KeySet is the most important data structure in Elektra\&. It makes it possible to get and store many keys at once inside the database\&. In addition to that, the class can be used as high level datastructure in applications and it can be used in plugins to manipulate or check configuration\&.
+.PP
+With \fBksLookupByName()\fP it is possible to fetch easily specific keys out of the list of keys\&.
+.PP
+You can easily create and iterate keys:
+.PP
+.PP
+.nf
+// create a new keyset with 3 keys
+// with a hint that about 20 keys will be inside
+KeySet * myConfig = ksNew (20, keyNew ("user:/name1", 0), keyNew ("user:/name2", 0), keyNew ("user:/name3", 0), KS_END);
+// append a key in the keyset
+ksAppendKey (myConfig, keyNew ("user:/name4", 0));
+
+Key * current;
+ksRewind (myConfig);
+while ((current = ksNext (myConfig)) != 0)
+{
+        printf ("Key name is %s\&.\n", keyName (current));
+}
+ksDel (myConfig); // delete keyset and all keys appended
+.fi
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define KS_END   ((Key*)0)"
+
+.PP
+End of a list of keys\&. Use this macro to define the end of a variable-length list of keys\&.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNew()\fP and \fBksVNew()\fP 
+.RE
+.PP
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBelektraLookupFlags\fP"
+
+.PP
+Options to change the default behavior of \fBksLookup()\fP functions\&. These options can be ORed\&. That is the |-Operator in C\&.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP, \fBkdbSet()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKDB_O_NONE \fP\fP
+No Option set\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP 
+.RE
+.PP
+
+.TP
+\fB\fIKDB_O_DEL \fP\fP
+Delete parentKey key in \fBksLookup()\fP\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP 
+.RE
+.PP
+
+.TP
+\fB\fIKDB_O_POP \fP\fP
+Pop Parent out of keyset key in \fBksLookup()\fP\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksPop()\fP\&. 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "ssize_t ksAppend (KeySet * ks, const KeySet * toAppend)"
+
+.PP
+Append all \fCtoAppend\fP contained keys to the end of the \fCks\fP\&. \fCtoAppend\fP KeySet will be left unchanged\&.
+.PP
+If a key is both in toAppend and ks, the Key in ks will be overridden\&.
+.PP
+\fBNote:\fP
+.RS 4
+Because the key is not copied, also the pointer to the current metadata \fBkeyNextMeta()\fP will be shared\&.
+.RE
+.PP
+\fBPostcondition:\fP
+.RS 4
+Sorted KeySet ks with all keys it had before and additionally the keys from toAppend 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the size of the KeySet after transfer 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on NULL pointers 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the KeySet that will receive the keys 
+.br
+\fItoAppend\fP the KeySet that provides the keys that will be transferred 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksAppendKey()\fP 
+.RE
+.PP
+
+.SS "ssize_t ksAppendKey (KeySet * ks, Key * toAppend)"
+
+.PP
+Appends a Key to the end of \fCks\fP\&. Hands the ownership of the key \fCtoAppend\fP to the KeySet \fCks\fP\&. ksDel(ks) uses keyDel(k) to delete every key unless it got its refcount incremented by \fBkeyIncRef()\fP, e\&.g\&. by another keyset that contains this key\&.
+.PP
+The reference counter of the key will be incremented to show this ownership, and thus \fCtoAppend\fP is not const\&.
+.PP
+\fBNote:\fP
+.RS 4
+Because the key is not copied, also the pointer to the current metadata \fBkeyNextMeta()\fP will be shared\&.
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkeyGetRef()\fP\&.
+.RE
+.PP
+If the keyname already existed in the keyset, it will be replaced with the new key\&.
+.PP
+\fBksAppendKey()\fP will also lock the key's name from \fCtoAppend\fP\&. This is necessary so that the order of the KeySet cannot be destroyed via calls to \fBkeySetName()\fP\&.
+.PP
+The KeySet internal cursor will be set to the new key\&.
+.PP
+It is safe to directly append newly created keys: 
+.PP
+.nf
+KeySet * ks = ksNew (1, KS_END);
+ksAppendKey (ks, keyNew ("user:/my/new/key", KEY_END));
+ksDel (ks);
+// key deleted, too!
+
+.fi
+.PP
+ If you want the key to outlive the keyset, make sure to do proper ref counting: 
+.PP
+.nf
+KeySet * ks = ksNew (1, KS_END);
+Key * k = keyNew ("user:/ref/key", KEY_END);
+keyIncRef (k);
+ksAppendKey (ks, k);
+ksDel (ks);
+// now we still can work with the key k!
+keyDecRef (k);
+keyDel (k);
+
+.fi
+.PP
+ Or if you want to avoid aliasing at all, you can duplicate the key\&. But then key in the keyset has another identity: 
+.PP
+.nf
+KeySet * ks = ksNew (1, KS_END);
+Key * k = keyNew ("user:/ref/key", KEY_END);
+ksAppendKey (ks, keyDup (k));
+ksDel (ks);
+// now we still can work with the key k!
+keyDel (k);
+
+.fi
+.PP
+.PP
+\fBReturns:\fP
+.RS 4
+the size of the KeySet after appending 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on NULL pointers 
+.br
+\fI-1\fP if appending failed (only on memory problems), the key will be deleted then\&. 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP KeySet that will receive the key 
+.br
+\fItoAppend\fP Key that will be appended to ks or deleted 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksAppend()\fP, \fBkeyNew()\fP, \fBksDel()\fP 
+.PP
+\fBkeyIncRef()\fP 
+.RE
+.PP
+
+.SS "Key* ksAtCursor (KeySet * ks, elektraCursor pos)"
+
+.PP
+return key at given position The position is a number starting from 0\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset to access 
+.br
+\fIpos\fP where to get the key 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the key at the cursor position on success 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP on NULL pointer, negative cursor position or a position that does not lie within the keyset 
+.RE
+.PP
+
+.SS "int ksCopy (KeySet * dest, const KeySet * source)"
+
+.PP
+Replace the content of a keyset with another one\&. Most often you may want a duplicate of a keyset, see \fBksDup()\fP or append keys, see \fBksAppend()\fP\&. But in some situations you need to copy a keyset to an existing keyset, for which this function exists\&.
+.PP
+\fBNote:\fP
+.RS 4
+You can also use it to clear a keyset when you pass a NULL pointer as \fCsource\fP\&.
+.RE
+.PP
+\fBImplementation:\fP
+.RS 4
+First all keys in \fCdest\fP will be deleted\&. Afterwards the content of the source will be added to the destination and the \fBksCurrent()\fP is set properly in \fCdest\fP\&.
+.RE
+.PP
+A flat copy is made, so the keys will not be duplicated, but there reference counter is updated, so both keysets need to be \fBksDel()\fP\&.
+.PP
+\fBNote:\fP
+.RS 4
+Because the key is not copied, also the pointer to the current metadata \fBkeyNextMeta()\fP will be shared\&.
+.RE
+.PP
+.PP
+.nf
+int f (KeySet *ks)
+{
+        KeySet *c = ksNew (20, \&.\&.\&., KS_END);
+        // c receives keys
+        ksCopy (ks, c); // pass the keyset to the caller
+
+        ksDel (c);
+}       // caller needs to ksDel (ks)
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsource\fP has to be an initialized source KeySet or NULL 
+.br
+\fIdest\fP has to be an initialized KeySet where to write the keys 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP if dest was cleared successfully (source is NULL) 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNew()\fP, \fBksDel()\fP, \fBksDup()\fP 
+.PP
+\fBkeyCopy()\fP for copying keys 
+.RE
+.PP
+
+.SS "Key* ksCurrent (const KeySet * ks)"
+
+.PP
+Return the current Key\&. The pointer is NULL if you reached the end or after \fBksRewind()\fP\&.
+.PP
+\fBNote:\fP
+.RS 4
+You must not delete the key or change the key, use \fBksPop()\fP if you want to delete it\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+pointer to the Key pointed by \fCks's\fP cursor 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNext()\fP, \fBksRewind()\fP 
+.RE
+.PP
+
+.SS "KeySet* ksCut (KeySet * ks, const Key * cutpoint)"
+
+.PP
+Cuts out a keyset at the cutpoint\&. Searches for the cutpoint inside the KeySet ks\&. If found it cuts out everything which is below (see \fBkeyIsBelow()\fP) this key\&. These keys will be missing in the keyset \fCks\fP\&. Instead, they will be moved to the returned keyset\&. If \fCcutpoint\fP is not found an empty keyset is returned and \fCks\fP is not changed\&.
+.PP
+The cursor will stay at the same key as it was before\&. If the cursor was inside the region of cut (moved) keys, the cursor will be set to the key before the cutpoint\&.
+.PP
+If you use \fBksCut()\fP on a keyset you got from \fBkdbGet()\fP and plan to make a \fBkdbSet()\fP later, make sure that you keep all keys that should not be removed permanently\&. You have to keep the KeySet that was returned and the KeySet \fCks\fP\&.
+.PP
+\fBExample:\fP
+.RS 4
+
+.RE
+.PP
+You have the keyset \fCks:\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest/folder\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest/folder/key1\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest/folder/key2\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/other/key1\fP 
+.PP
+.PP
+When you use 
+.PP
+.nf
+     Key * parentKey = keyNew ("system:/mountpoint/interest", KEY_END);
+        KDB * kdb = kdbOpen (parentKey);
+        KeySet * ks = ksNew (0, KS_END);
+        kdbGet (kdb, ks, parentKey);
+        KeySet * returned = ksCut (ks, parentKey);
+        kdbSet (kdb, ks, parentKey); // all keys below cutpoint are now removed
+        kdbClose (kdb, parentKey);
+
+.fi
+.PP
+ Then in \fCreturned\fP are:
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest/folder\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest/folder/key1\fP 
+.IP "\(bu" 2
+\fCsystem:/mountpoint/interest/folder/key2\fP 
+.PP
+.PP
+And in \fCks\fP are:
+.IP "\(bu" 2
+\fCsystem:/mountpoint/other/key1\fP 
+.PP
+.PP
+So \fBkdbSet()\fP permanently removes all keys below \fCsystem:/mountpoint/interest\fP\&.
+.PP
+\fBSee also:\fP
+.RS 4
+\fBkdbGet()\fP for explanation why you might get more keys than you requested\&.
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a new allocated KeySet which needs to deleted with \fBksDel()\fP\&. The keyset consists of all keys (of the original keyset ks) below the cutpoint\&. If the key cutpoint exists, it will also be appended\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on null pointers, no key name or allocation problems 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset to cut\&. It will be modified by removing all keys below the cutpoint\&. The cutpoint itself will also be removed\&. 
+.br
+\fIcutpoint\fP the point where to cut out the keyset 
+.RE
+.PP
+
+.SS "int ksDel (KeySet * ks)"
+
+.PP
+A destructor for KeySet objects\&. Cleans all internal dynamic attributes, decrement all reference pointers to all keys and then \fBkeyDel()\fP all contained Keys, and elektraFree ()s the release the KeySet object memory (that was previously allocated by \fBksNew()\fP)\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP when the keyset was freed 
+.br
+\fI-1\fP on null pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNew()\fP 
+.RE
+.PP
+
+.SS "KeySet* ksDup (const KeySet * source)"
+
+.PP
+Return a duplicate of a keyset\&. Objects created with \fBksDup()\fP must be destroyed with \fBksDel()\fP\&.
+.PP
+Memory will be allocated as needed for dynamic properties, so you need to \fBksDel()\fP the returned pointer\&.
+.PP
+A flat copy is made, so the keys will not be duplicated, but their reference counter is updated, so both keysets need \fBksDel()\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsource\fP has to be an initialized source KeySet 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a flat copy of source on success 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNew()\fP, \fBksDel()\fP 
+.PP
+\fBkeyDup()\fP for \fBKey\fP duplication 
+.RE
+.PP
+
+.SS "elektraCursor ksGetCursor (const KeySet * ks)"
+
+.PP
+Get the KeySet internal cursor\&. Use it to get the cursor of the actual position\&.
+.PP
+\fBWarning:\fP
+.RS 4
+Cursors are getting invalid when the key was \fBksPop()\fPed or \fBksLookup()\fP with KDB_O_POP was used\&.
+.RE
+.PP
+.SH "Read ahead"
+.PP
+With the cursors it is possible to read ahead in a keyset:
+.PP
+.PP
+.nf
+elektraCursor jump;
+ksRewind (ks);
+while ((key = keyNextMeta (ks))!=0)
+{
+        // now mark this key
+        jump = ksGetCursor(ks);
+
+        //code\&.\&.
+        keyNextMeta (ks); // now browse on
+        // use ksCurrent(ks) to check the keys
+        //code\&.\&.
+
+        // jump back to the position marked before
+        ksSetCursor(ks, jump);
+}
+.fi
+.PP
+.SH "Restoring state"
+.PP
+It can also be used to restore the state of a keyset in a function
+.PP
+.PP
+.nf
+int f (KeySet *ks)
+{
+        elektraCursor state = ksGetCursor(ks);
+
+        // work with keyset
+
+        // now bring the keyset to the state before
+        ksSetCursor (ks, state);
+}
+.fi
+.PP
+.PP
+It is of course possible to make the KeySet const and cast its const away to set the cursor\&. Another way to achieve the same is to \fBksDup()\fP the keyset, but it is not as efficient\&.
+.PP
+An invalid cursor will be returned directly after \fBksRewind()\fP\&. When you set an invalid cursor \fBksCurrent()\fP is 0 and \fBksNext()\fP == \fBksHead()\fP\&.
+.SH "Using Cursor directly"
+.PP
+You can also use the cursor directly by initializing it to some index in the Keyset and then incrementing or decrementing it, to iterate over the keyset\&.
+.PP
+.PP
+.nf
+        Key * cur;
+        for (elektraCursor cursor = 0; (cur = ksAtCursor (ks, cursor)) != NULL; ++cursor)
+        {
+                printf ("%s\n", keyName (cur));
+        }
+.fi
+.PP
+ You can also use a while loop if you need access to the last cursor position\&.
+.PP
+.PP
+.nf
+        elektraCursor cursor = 0;
+        Key * cur;
+
+        while ((cur = ksAtCursor (ks, cursor)) != 0)
+        {
+                printf ("%s\n", keyName (cur));
+                ++cursor;
+        }
+.fi
+.PP
+ 
+.PP
+\fBNote:\fP
+.RS 4
+Only use a cursor for the same keyset which it was made for\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a valid cursor on success 
+.PP
+an invalid cursor on NULL pointer or after \fBksRewind()\fP 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNext()\fP, \fBksSetCursor()\fP 
+.RE
+.PP
+
+.SS "ssize_t ksGetSize (const KeySet * ks)"
+
+.PP
+Return the number of keys that \fCks\fP contains\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the number of keys that \fCks\fP contains\&. 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+ksNew(0, KS_END), \fBksDel()\fP 
+.RE
+.PP
+
+.SS "Key* ksHead (const KeySet * ks)"
+
+.PP
+Return the first key in the KeySet\&. The KeySets cursor will not be affected\&.
+.PP
+If \fBksCurrent()\fP==\fBksHead()\fP you know you are on the first key\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the first Key of a keyset 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on NULL pointer or empty keyset 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksTail()\fP for the last \fBKey\fP 
+.PP
+\fBksRewind()\fP, \fBksCurrent()\fP and \fBksNext()\fP for iterating over the \fBKeySet\fP 
+.RE
+.PP
+
+.SS "Key* ksLookup (KeySet * ks, Key * key, \fBelektraLookupFlags\fP options)"
+
+.PP
+Look for a Key contained in \fCks\fP that matches the name of the \fCkey\fP\&. 
+.PP
+\fBNote:\fP
+.RS 4
+Applications should only use \fBksLookup()\fP with cascading keys (key name starting with \fC/\fP)\&. Furthermore, a lookup should be done for every key (also when iterating over keys) so that the specifications are honored correctly\&. Keys of all namespaces need to be present so that \fBksLookup()\fP can work correctly, so make sure to also use \fBkdbGet()\fP with a cascading key\&.
+.RE
+.PP
+\fC\fBksLookup()\fP\fP is designed to let you work with a KeySet containing all keys of the application\&. The idea is to fully \fBkdbGet()\fP the whole configuration of your application and process it all at once with many \fC\fBksLookup()\fP\fP\&.
+.PP
+This function is efficient (at least using binary search)\&. Together with \fBkdbGet()\fP which can you load the whole configuration you can write very effective but short code for configuration:
+.PP
+.PP
+.nf
+Key * key = keyNew ("/sw/tests/myapp/#0/current/",  KEY_END);
+KDB * handle = kdbOpen (key);
+kdbGet (handle, myConfig, key);
+Key * result = ksLookupByName (myConfig, "/sw/tests/myapp/#0/current/testkey1", 0);
+.fi
+.PP
+ This is the way programs should get their configuration and search after the values\&. It is guaranteed that more namespaces can be added easily and that all values can be set by admin and user\&. Furthermore, using the kdb-tool, it is possible to introspect which values an application will get (by doing the same cascading lookup)\&.
+.PP
+If found, \fCks\fP internal cursor will be positioned in the matched key (also accessible by \fBksCurrent()\fP), and a pointer to the Key is returned\&. If not found, \fCks\fP internal cursor will not move, and a NULL pointer is returned\&.
+.PP
+Cascading lookups will by default search in all namespaces (proc:/, dir:/, user:/ and system:/), but will also correctly consider the specification (=metadata) in spec:/:
+.PP
+.IP "\(bu" 2
+\fCoverride/#\fP will make sure that another key is considered before
+.IP "\(bu" 2
+\fCnamespace/#\fP will change the number and/or order in which the namespaces are searched
+.IP "\(bu" 2
+\fCfallback/#\fP will search for other keys when the other possibilities up to now were not successful
+.IP "\(bu" 2
+\fCdefault\fP to return the given value when not even \fCfallback\fP keys were found\&.
+.PP
+.PP
+\fBNote:\fP
+.RS 4
+override and fallback work recursively, while default does not\&.
+.RE
+.PP
+This process is very flexible, but it would be boring to manually follow all this links to find out which key will be taken in the end\&. Use \fCkdb get -v\fP to trace the keys\&.
+.PP
+\fBKDB_O_POP\fP
+.RS 4
+When \fBKDB_O_POP\fP is set the key which was found will be \fBksPop()\fPed\&. \fBksCurrent()\fP will not be changed, only iff \fBksCurrent()\fP is the searched key, then the keyset will be \fBksRewind()\fPed\&.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+Like in \fBksPop()\fP the popped key always needs to be \fBkeyDel()\fP afterwards, even if it is appended to another keyset\&.
+.RE
+.PP
+\fBWarning:\fP
+.RS 4
+All cursors on the keyset will be invalid iff you use \fBKDB_O_POP\fP, so don't use this if you rely on a cursor, see \fBksGetCursor()\fP\&.
+.RE
+.PP
+The invalidation of cursors does not matter if you use multiple keysets, e\&.g\&. by using \fBksDup()\fP\&. E\&.g\&., to separate \fBksLookup()\fP with \fBKDB_O_POP\fP and \fBksAppendKey()\fP:
+.PP
+.PP
+.nf
+void f (KeySet * iterator, KeySet * lookup)
+{
+        KeySet * append = ksNew (ksGetSize (lookup), KS_END);
+        Key * current;
+
+        ksRewind (iterator);
+        while ((current = ksNext (iterator)))
+        {
+                Key * key = ksLookup (lookup, current, KDB_O_POP);
+                // do something\&.\&.\&.
+                ksAppendKey (append, key); // now append it to append, not lookup!
+                keyDel (key);              // make sure to ALWAYS delete poped keys\&.
+        }
+        ksAppend (lookup, append);
+        // now lookup needs to be sorted only once, append never
+        ksDel (append);
+}
+.fi
+.PP
+ This is also a nice example how a complete application with \fBksLookup()\fP can look like\&.
+.PP
+\fBKDB_O_DEL\fP
+.RS 4
+Passing \fBKDB_O_DEL\fP will cause the deletion of the parameter \fCkey\fP using \fBkeyDel()\fP\&.
+.RE
+.PP
+\fBHybrid search\fP
+.RS 4
+When Elektra is compiled with \fCENABLE_OPTIMIZATIONS=ON\fP a hybrid search decides dynamically between the binary search and the \fCOPMPHM\fP\&. The hybrid search can be overruled by passing \fBKDB_O_OPMPHM\fP or \fBKDB_O_BINSEARCH\fP in the options to \fBksLookup()\fP\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP where to look for 
+.br
+\fIkey\fP the key object you are looking for 
+.br
+\fIoptions\fP of type \fBelektraLookupFlags\fP with some \fCKDB_O_*\fP option bits as explained above 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+pointer to the Key found, 0 otherwise 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on NULL pointers 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookupByName()\fP to search by a name given by a string 
+.PP
+\fBksCurrent()\fP, \fBksRewind()\fP, \fBksNext()\fP for iterating over a \fBKeySet\fP 
+.RE
+.PP
+
+.SS "Key* ksLookupByName (KeySet * ks, const char * name, \fBelektraLookupFlags\fP options)"
+
+.PP
+Convenience method to look for a Key contained in \fCks\fP that matches \fCname\fP\&. 
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP for explanation of the functionality and example\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP where to look for 
+.br
+\fIname\fP key name you are looking for 
+.br
+\fIoptions\fP some \fCKDB_O_*\fP option bits:
+.IP "\(bu" 2
+\fCKDB_O_POP\fP 
+.br
+ Pop the key which was found\&.
+.IP "\(bu" 2
+See \fBksLookup()\fP for others
+.PP
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+pointer to the Key found, 0 otherwise 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on NULL pointers 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP to search with a given \fBKey\fP 
+.PP
+\fBksCurrent()\fP, \fBksRewind()\fP, \fBksNext()\fP 
+.RE
+.PP
+
+.SS "int ksNeedSync (const KeySet * ks)"
+
+.PP
+Checks if KeySet needs sync\&. When keys are changed this is reflected into \fBkeyNeedSync()\fP\&.
+.PP
+But when keys are popped from a keyset this can't be seen by looking at the individual keys\&.
+.PP
+\fBksNeedSync()\fP allows the backends to know if a key was popped from the keyset to know that this keyset needs to be written out\&.
+.PP
+\fBDeprecated\fP
+.RS 4
+Backends now work differently and do not rely on this information\&.
+.RE
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset to work with 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI-1\fP on null keyset 
+.br
+\fI0\fP if it does not need sync 
+.br
+\fI1\fP if it needs sync 
+.RE
+.PP
+
+.SS "KeySet* ksNew (size_t alloc,  \&.\&.\&.)"
+
+.PP
+Allocate, initialize and return a new KeySet object\&. Objects created with \fBksNew()\fP must be destroyed with \fBksDel()\fP\&.
+.PP
+You can use an arbitrary long list of parameters to preload the keyset with a list of keys\&. Either your first and only parameter is 0 or your last parameter must be KS_END\&.
+.PP
+So, terminate with ksNew(0, KS_END) or ksNew(20, \&.\&.\&., KS_END)
+.PP
+\fBWarning:\fP
+.RS 4
+Never use ksNew(0, keyNew(\&.\&.\&.), KS_END)\&. If the first parameter is 0, other arguments are ignored\&.
+.RE
+.PP
+The first parameter \fCalloc\fP defines how many keys can be added without reallocation\&. If you pass any alloc size greater than 0, but less than 16, it will default to 16\&.
+.PP
+For most uses
+.PP
+.PP
+.nf
+KeySet * keys = ksNew (1, KS_END);
+// enough memory for up to 16 keys, without needing reallocation
+ksDel (keys);
+.fi
+.PP
+ will be fine\&. The alloc size will be 16 and will double whenever size reaches alloc size, so it also performs well with large keysets\&.
+.PP
+You can defer the allocation of the internal array that holds the keys, by passing 0 as the alloc size\&. This is useful if it is unclear whether your keyset will actually hold any keys and you want to avoid a malloc call\&.
+.PP
+.PP
+.nf
+// Create KeySet without allocating memory for keys
+KeySet * keys = ksNew (0, KS_END);
+// The first allocation will happen in ksAppendKey
+ksAppendKey(keys, keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key02", KEY_VALUE, "value02", 0));
+// work with the KeySet
+ksDel (keys);
+.fi
+.PP
+ But if you have any clue how large your keyset may be, you should read the next statements\&.
+.PP
+If you want a keyset with length 15 (because you know of your application that you only need up to 15 keys), use:
+.PP
+.PP
+.nf
+KeySet * keys = ksNew (15, keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key01", KEY_VALUE, "value01", 0),
+                       keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key02", KEY_VALUE, "value02", 0),
+                       keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key03", KEY_VALUE, "value03", 0),
+                       // \&.\&.\&.
+                       keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key15", KEY_VALUE, "value15", 0), KS_END);
+// work with it
+ksDel (keys);
+.fi
+.PP
+ If you start having 3 keys, and your application needs approximately 200 up to 500 keys, you can use:
+.PP
+.PP
+.nf
+KeySet * config = ksNew (500, keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key1", KEY_VALUE, "value1", 0),
+                         keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key2", KEY_VALUE, "value2", 0),
+                         keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key3", KEY_VALUE, "value3", 0),
+                         KS_END); // don't forget the KS_END at the end!
+// work with it
+ksDel (config);
+.fi
+.PP
+ Alloc size is 500, the size of the keyset will be 3 after ksNew\&. This means the keyset will reallocate when appending more than 497 keys\&.
+.PP
+The main benefit of taking a list of variant length parameters is to be able to have one C-Statement for any possible KeySet\&. If you prefer, you can always create an empty KeySet and use \fBksAppendKey()\fP\&.
+.PP
+\fBPostcondition:\fP
+.RS 4
+the keyset is rewinded properly
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksDel()\fP to free the \fBKeySet\fP afterwards 
+.PP
+\fBksDup()\fP to duplicate an existing \fBKeySet\fP 
+.PP
+\fBksAppendKey()\fP to append individual keys 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIalloc\fP gives a hint for the size how many Keys may be stored initially 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a ready to use KeySet object 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on memory error 
+.RE
+.PP
+
+.SS "Key* ksNext (KeySet * ks)"
+
+.PP
+Returns the next Key in a KeySet\&. KeySets have an internal cursor that can be reset with \fBksRewind()\fP\&. Every time \fBksNext()\fP is called the cursor is incremented and the new current Key is returned\&.
+.PP
+You'll get a NULL pointer if the key after the end of the KeySet was reached\&. On subsequent calls of \fBksNext()\fP it will still return the NULL pointer\&.
+.PP
+The \fCks\fP internal cursor will be changed, so it is not const\&.
+.PP
+\fBNote:\fP
+.RS 4
+You must not delete or change the key, use \fBksPop()\fP if you want to delete it\&.
+.PP
+That applications must do \fBksLookup()\fP with an cascading key for every single key before using it, because specifications allow to hide or override keys\&.
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the new current Key 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP when the end is reached 
+.br
+\fI0\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksRewind()\fP, \fBksCurrent()\fP 
+.PP
+\fBksLookup()\fP to honor specifications 
+.RE
+.PP
+
+.SS "Key* ksPop (KeySet * ks)"
+
+.PP
+Remove and return the last key of \fCks\fP\&. The reference counter will be decremented by one\&.
+.PP
+The KeySets cursor will not be affected if it did not point to the popped key\&.
+.PP
+\fBNote:\fP
+.RS 4
+You need to \fBkeyDel()\fP the key afterwards, if you don't append it to another keyset\&. It has the same semantics like a key allocated with \fBkeyNew()\fP or \fBkeyDup()\fP\&.
+.RE
+.PP
+.PP
+.nf
+ks1=ksNew(0, KS_END);
+ks2=ksNew(0, KS_END);
+
+k1=keyNew("user:/name", KEY_END); // ref counter 0
+ksAppendKey(ks1, k1); // ref counter 1
+ksAppendKey(ks2, k1); // ref counter 2
+
+k1=ksPop (ks1); // ref counter 1
+k1=ksPop (ks2); // ref counter 0, like after keyNew()
+
+ksAppendKey(ks1, k1); // ref counter 1
+
+ksDel (ks1); // key is deleted too
+ksDel (ks2);
+.fi
+.PP
+.PP
+\fBReturns:\fP
+.RS 4
+the last key of \fCks\fP 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fINULL\fP if \fCks\fP is empty or on NULL pointer 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP KeySet to work with 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksLookup()\fP to pop keys by name 
+.PP
+\fBksCopy()\fP to pop all keys 
+.PP
+commandList() for an example 
+.RE
+.PP
+
+.SS "int ksRewind (KeySet * ks)"
+
+.PP
+Rewinds the KeySet internal cursor\&. Use it to set the cursor to the beginning of the KeySet\&. \fBksCurrent()\fP will then always return NULL afterwards\&. So you want to \fBksNext()\fP first\&.
+.PP
+.PP
+.nf
+ksRewind (ks);
+while ((key = ksNext (ks))!=0) {}
+.fi
+.PP
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNext()\fP, \fBksCurrent()\fP 
+.RE
+.PP
+
+.SS "int ksSetCursor (KeySet * ks, elektraCursor cursor)"
+
+.PP
+Set the KeySet internal cursor\&. Use it to set the cursor to a stored position\&. \fBksCurrent()\fP will then return the key at the position of the supplied cursor\&.
+.PP
+\fBWarning:\fP
+.RS 4
+Cursors may get invalid when the key was \fBksPop()\fPed or \fBksLookup()\fP was used together with KDB_O_POP\&.
+.RE
+.PP
+.PP
+.nf
+elektraCursor cursor;
+\&.\&.
+// key now in any position here
+cursor = ksGetCursor (ks);
+while ((key = keyNextMeta (ks))!=0) {}
+ksSetCursor (ks, cursor); // reset state
+ksCurrent(ks); // in same position as before
+.fi
+.PP
+.PP
+An invalid cursor will set the keyset to its beginning like \fBksRewind()\fP\&. When you set an invalid cursor \fBksCurrent()\fP is 0 and \fBksNext()\fP == \fBksHead()\fP\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcursor\fP the cursor to use 
+.br
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP when the keyset is \fBksRewind()\fPed 
+.br
+\fI1\fP otherwise 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksNext()\fP, \fBksGetCursor()\fP 
+.RE
+.PP
+
+.SS "Key* ksTail (const KeySet * ks)"
+
+.PP
+Return the last key in the KeySet\&. The KeySets cursor will not be affected\&.
+.PP
+If \fBksCurrent()\fP==\fBksTail()\fP you know you are on the last key\&. \fBksNext()\fP will return a NULL pointer afterwards\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIks\fP the keyset object to work with 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+the last Key of a keyset 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on NULL pointer or empty keyset 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksHead()\fP for the first \fBKey\fP 
+.PP
+\fBksRewind()\fP, \fBksCurrent()\fP and \fBksNext()\fP for iterating over the \fBKeySet\fP 
+.RE
+.PP
+
+.SS "KeySet* ksVNew (size_t alloc, va_list va)"
+
+.PP
+Allocate, initialize and return a new KeySet object\&. Objects created with \fBksNew()\fP must be destroyed with \fBksDel()\fP\&.
+.PP
+You can use an arbitrary long list of parameters to preload the keyset with a list of keys\&. Either your first and only parameter is 0 or your last parameter must be KS_END\&.
+.PP
+So, terminate with ksNew(0, KS_END) or ksNew(20, \&.\&.\&., KS_END)
+.PP
+\fBWarning:\fP
+.RS 4
+Never use ksNew(0, keyNew(\&.\&.\&.), KS_END)\&. If the first parameter is 0, other arguments are ignored\&.
+.RE
+.PP
+The first parameter \fCalloc\fP defines how many keys can be added without reallocation\&. If you pass any alloc size greater than 0, but less than 16, it will default to 16\&.
+.PP
+For most uses
+.PP
+.PP
+.nf
+KeySet * keys = ksNew (1, KS_END);
+// enough memory for up to 16 keys, without needing reallocation
+ksDel (keys);
+.fi
+.PP
+ will be fine\&. The alloc size will be 16 and will double whenever size reaches alloc size, so it also performs well with large keysets\&.
+.PP
+You can defer the allocation of the internal array that holds the keys, by passing 0 as the alloc size\&. This is useful if it is unclear whether your keyset will actually hold any keys and you want to avoid a malloc call\&.
+.PP
+.PP
+.nf
+// Create KeySet without allocating memory for keys
+KeySet * keys = ksNew (0, KS_END);
+// The first allocation will happen in ksAppendKey
+ksAppendKey(keys, keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key02", KEY_VALUE, "value02", 0));
+// work with the KeySet
+ksDel (keys);
+.fi
+.PP
+ But if you have any clue how large your keyset may be, you should read the next statements\&.
+.PP
+If you want a keyset with length 15 (because you know of your application that you only need up to 15 keys), use:
+.PP
+.PP
+.nf
+KeySet * keys = ksNew (15, keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key01", KEY_VALUE, "value01", 0),
+                       keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key02", KEY_VALUE, "value02", 0),
+                       keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key03", KEY_VALUE, "value03", 0),
+                       // \&.\&.\&.
+                       keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key15", KEY_VALUE, "value15", 0), KS_END);
+// work with it
+ksDel (keys);
+.fi
+.PP
+ If you start having 3 keys, and your application needs approximately 200 up to 500 keys, you can use:
+.PP
+.PP
+.nf
+KeySet * config = ksNew (500, keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key1", KEY_VALUE, "value1", 0),
+                         keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key2", KEY_VALUE, "value2", 0),
+                         keyNew ("user:/sw/org/app/#0/current/fixedConfiguration/key3", KEY_VALUE, "value3", 0),
+                         KS_END); // don't forget the KS_END at the end!
+// work with it
+ksDel (config);
+.fi
+.PP
+ Alloc size is 500, the size of the keyset will be 3 after ksNew\&. This means the keyset will reallocate when appending more than 497 keys\&.
+.PP
+The main benefit of taking a list of variant length parameters is to be able to have one C-Statement for any possible KeySet\&. If you prefer, you can always create an empty KeySet and use \fBksAppendKey()\fP\&.
+.PP
+\fBPostcondition:\fP
+.RS 4
+the keyset is rewinded properly
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBksDel()\fP to free the \fBKeySet\fP afterwards 
+.PP
+\fBksDup()\fP to duplicate an existing \fBKeySet\fP 
+.PP
+\fBksAppendKey()\fP to append individual keys 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIalloc\fP gives a hint for the size how many Keys may be stored initially 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+a ready to use KeySet object 
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI0\fP on memory error
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+caller must call va_start and va_end 
+.RE
+.PP
+\fBva the list of arguments\fP
+.RS 4
+
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIalloc\fP the allocation size 
+.br
+\fIva\fP the list of variable arguments 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

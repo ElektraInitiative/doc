@@ -1,0 +1,111 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the yamlsmith plugin is in keys below
+\item infos/author = René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com}
+\item infos/licence = B\+SD
+\item infos/needs = directoryvalue
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = setstorage
+\item infos/status = maintained specific unittest nodep preview experimental unfinished nodoc concept discouraged
+\item infos/metadata =
+\item infos/description = This plugin exports key sets in the Y\+A\+ML format
+\end{DoxyItemize}\hypertarget{autotoc_md889_src_plugins_yamlsmith_README_md}{}\section{Y\+A\+M\+L Smith}\label{autotoc_md889_src_plugins_yamlsmith_README_md}
+\hypertarget{autotoc_md889_autotoc_md890}{}\subsection{Examples}\label{autotoc_md889_autotoc_md890}
+\hypertarget{autotoc_md889_autotoc_md891}{}\subsubsection{Scalar}\label{autotoc_md889_autotoc_md891}
+
+\begin{DoxyCode}
+# Save a single key-value pair
+kdb set user:/tests/yamlsmith/text 'Pattern Against User'
+
+# Only export the value
+kdb export user:/tests/yamlsmith/text yamlsmith
+#> "Pattern Against User"
+
+# Check that the plugin supports boolean values correctly
+kdb set user:/tests/yamlsmith/boolean 0
+kdb export user:/tests/yamlsmith/boolean yamlsmith
+#> false
+
+# Undo modifications
+kdb rm -r user:/tests/yamlsmith
+\end{DoxyCode}
+\hypertarget{autotoc_md889_autotoc_md892}{}\subsubsection{Mappings}\label{autotoc_md889_autotoc_md892}
+
+\begin{DoxyCode}
+# Add some key-value pairs to the database
+kdb set user:/tests/yamlsmith/key value
+kdb set user:/tests/yamlsmith/time 'will die and love will burrow it'
+kdb set user:/tests/yamlsmith/level1/one 'I'
+kdb set user:/tests/yamlsmith/level1/two 'II'
+
+# Export data using YAML Smith
+kdb export user:/tests/yamlsmith yamlsmith
+#> key:
+#>   "value"
+#> level1:
+#>   one:
+#>     "I"
+#>   two:
+#>     "II"
+#> time:
+#>   "will die and love will burrow it"
+
+# Undo modifications
+kdb rm -r user:/tests/yamlsmith
+\end{DoxyCode}
+\hypertarget{autotoc_md889_autotoc_md893}{}\subsection{Arrays}\label{autotoc_md889_autotoc_md893}
+\hypertarget{autotoc_md889_autotoc_md894}{}\subsubsection{Simple Array}\label{autotoc_md889_autotoc_md894}
+
+\begin{DoxyCode}
+kdb set user:/tests/yamlsmith/low
+kdb set user:/tests/yamlsmith/low/#0 'You bought some sweet, sweet, sweet, sweet sunflowers'
+kdb set user:/tests/yamlsmith/low/#1 'And gave them'
+kdb set user:/tests/yamlsmith/low/#2 'To the night'
+
+kdb export user:/tests/yamlsmith yamlsmith
+#> low:
+#>   -
+#>     "You bought some sweet, sweet, sweet, sweet sunflowers"
+#>   -
+#>     "And gave them"
+#>   -
+#>     "To the night"
+
+# Undo modifications
+kdb rm -r user:/tests/yamlsmith
+\end{DoxyCode}
+\hypertarget{autotoc_md889_autotoc_md895}{}\subsubsection{Multiple Arrays}\label{autotoc_md889_autotoc_md895}
+
+\begin{DoxyCode}
+kdb set user:/tests/yamlsmith/arrays/Elliott/Smith/#0 XO
+kdb set user:/tests/yamlsmith/arrays/Elliott/Smith/#1 'Figure 8'
+kdb set user:/tests/yamlsmith/arrays/The/Smiths/#0 'The Queen Is Dead'
+
+kdb export user:/tests/yamlsmith yamlsmith
+#> arrays:
+#>   Elliott:
+#>     Smith:
+#>       -
+#>         "XO"
+#>       -
+#>         "Figure 8"
+#>   The:
+#>     Smiths:
+#>       -
+#>         "The Queen Is Dead"
+
+# Undo modifications
+kdb rm -r user:/tests/yamlsmith
+\end{DoxyCode}
+\hypertarget{autotoc_md889_autotoc_md896}{}\subsection{Limitations}\label{autotoc_md889_autotoc_md896}
+
+\begin{DoxyItemize}
+\item This plugin supports only {\bfseries a very limited} subset of Y\+A\+ML.
+\item Y\+A\+ML Smith {\bfseries does not support}
+\begin{DoxyItemize}
+\item {\bfseries binary values},
+\item {\bfseries non-\/contiguous arrays} and
+\item {\bfseries special characters}
+\end{DoxyItemize}
+\end{DoxyItemize}

@@ -1,0 +1,73 @@
+.TH "autotoc_md441" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md441Plugin: mozprefs 
+ \- 
+.IP "\(bu" 2
+infos = Information about the mozprefs plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained reviewed conformant compatible coverage specific unittest tested nodep libc preview experimental difficult limited unfinished concept
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = storage plugin for mozilla preferences
+.PP
+.PP
+This plugin works on \fCMozilla preference files\fP and is used in Elektra’s \fBFirefox autoconfig script\fP\&.
+.PP
+.IP "\(bu" 2
+Default preferences: \fCpref(\&.\&.\&.\&.\fP, keys below \fCmountpoint/pref/\fP\&.
+.IP "\(bu" 2
+User preferences: \fCuser_pref(\&.\&.\&.\&.\fP, keys below \fCmountpoint/user/\fP\&.
+.IP "\(bu" 2
+Lock preferences: \fClockPref(\&.\&.\&.\&.\fP, keys below \fCmountpoint/lock/\fP\&.
+.IP "\(bu" 2
+Sticky preferences: \fCsticky_pref(\&.\&.\&.\&.\fP, keys below \fCmountpoint/sticky/\fP\&.
+.PP
+.PP
+Only Keys below one of these points are valid, everything else will be dropped
+.PP
+.IP "\(bu" 2
+\fCinteger\fP
+.IP "\(bu" 2
+\fCstring\fP
+.IP "\(bu" 2
+\fCboolean\fP
+.PP
+.PP
+In Mozilla preference files \fC\&.\fP is used to separate sections, while elektra uses \fC/\fP\&. For simplification, and because \fC/\fP isn't allowed in preference keys, the plugin treats \fC\&.\fP and \fC/\fP equally\&.
+.PP
+.PP
+.nf
+kdb set system:/prefs/lock/a/lock/key lock
+kdb set system:/prefs/lock/a/lock\&.key lock
+kdb set system:/prefs/lock/a\&.lock\&.key lock
+.fi
+.PP
+.PP
+will all result in \fClockPref('a\&.lock\&.key', 'lock');\fP
+.PP
+``` 
+.SH "Backup-and-Restore:user:/tests/mozprefs"
+.PP
+sudo kdb mount prefs\&.js user:/tests/mozprefs mozprefs
+.PP
+kdb meta-set user:/tests/mozprefs/lock/a/lock/key type boolean kdb set user:/tests/mozprefs/lock/a/lock/key true kdb meta-set user:/tests/mozprefs/pref/a/default/key type string kdb set user:/tests/mozprefs/pref/a/default/key 'i'm a default key' kdb meta-set user:/tests/mozprefs/user/a/user/key type integer kdb set user:/tests/mozprefs/user/a/user/key 123
+.PP
+cat \fCkdb file user:/tests/mozprefs\fP #> lockPref('a\&.lock\&.key', true); #> pref('a\&.default\&.key', 'i'm a default key'); #> user_pref('a\&.user\&.key', 123);
+.SH "cleanup"
+.PP
+kdb rm -r user:/tests/mozprefs sudo kdb umount user:/tests/mozprefs ``` 

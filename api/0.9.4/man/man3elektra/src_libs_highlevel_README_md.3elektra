@@ -1,0 +1,322 @@
+.TH "src_libs_highlevel_README_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src_libs_highlevel_README_mdHigh-Level API 
+ \- The goal of the high-level API is to increase the usability of libelektra for developers who want to integrate Elektra into their applications\&. Applications usually do not want to use low-level APIs\&. \fCKDB\fP and \fCKeySet\fP are useful for plugins and to implement APIs, but not to be directly used in applications\&. The high-level API should be extremely easy to get started with and at the same time it should be hard to use it in a wrong way\&. This tutorial gives an introduction for developers who want to elektrify their application using the high-level API\&.
+.PP
+The API supports all CORBA Basic Data Types, except for \fCwchar\fP, as well as the \fCstring\fP type (see also \fCData Types\fP below)\&.
+.PP
+First you have to add \fCelektra-highlevel\fP, \fCelektra-kdb\fP and \fCelektra-ease\fP to the linked libraries of your application\&. To be able to use it in your source file, just include the main header with \fC#include <\fBelektra\&.h\fP>\fP at the top of your file\&.
+.PP
+The quickest way to get started is to adapt the following piece of code to your needs:
+.PP
+.PP
+.nf
+ElektraError * error = NULL;
+Elektra * elektra = elektraOpen ("/sw/org/myapp/#0/current", NULL, NULL, &error);
+if (elektra == NULL)
+{
+        printf ("An error occurred: %s", elektraErrorDescription (error));
+        elektraErrorReset (&error);
+        return -1;
+}
+
+kdb_long_t mylong = elektraGetLong (elektra, "mylong");
+printf ("got long " ELEKTRA_LONG_F "\n", mylong);
+
+elektraSetBoolean (elektra, "mybool", true, &error);
+if (error != NULL)
+{
+        printf ("An error occurred: %s", elektraErrorDescription (error));
+        elektraErrorReset (&error);
+}
+
+elektraClose (elektra);
+.fi
+.PP
+.PP
+To run the application, the configuration should be specified:
+.PP
+.PP
+.nf
+sudo kdb meta-set /sw/org/myapp/#0/current/mylong type long
+sudo kdb meta-set /sw/org/myapp/#0/current/mylong default 5
+.fi
+.PP
+.PP
+The getter and setter functions follow the simple naming scheme \fCelektra\fP(\fCGet\fP/\fCSet\fP)[Type]\&. Additionally for each one there is a variant to access array elements with the suffix \fCArrayElement\fP\&. For more information see \fCbelow\fP\&.
+.PP
+You can find a complete example at the end of this document and \fBhere\fP\&.
+.PP
+In Elektra keys may have \fBattached metadata\fP describing additional properties of the key\&. By using \fBElektra's\fPnamespaces' and @ref doc_tutorials_cascading_md 'cascading keys" it is also possible to have a full specification of your applications configuration\&.
+.PP
+This specification should be placed into the \fCspec\fP namespace\&. From there the high-level API and Elektra's plugins will access it\&. A specification for use with the high-level API has to define at least the \fCdefault\fP and the \fCtype\fP metadata for each key the application is going to use\&. The \fCdefault\fP metakey simple defines which value will be returned, if the user didn't set a value\&. \fCtype\fP defines the data type of key\&. For more information on data types \fCsee below\fP\&.
+.PP
+The API also supports passing a \fCKeySet\fP to \fCelektraOpen\fP that contains the specification\&. This is, however, not recommended for general use and is mainly useful for debugging and testing purposes\&.
+.PP
+\fCElektra\fP is the handle you use to access the underlying KDB (hierarchical key database) that stores the configuration key-value pairs\&. All key-value read and write operations expect this handle to be passed as in as a parameter\&. To create the handle, you simply write:
+.PP
+.PP
+.nf
+ElektraError * error = NULL;
+Elektra * elektra = elektraOpen ("/sw/org/myapp/#0/current", NULL, NULL, &error);
+.fi
+.PP
+.PP
+Please replace \fC'/sw/org/myapp/#0/current'\fP with an appropriate value for your application (see \fBhere\fP for more information)\&. You can use the parameter \fCdefaults\fP to pass a \fCKeySet\fP containing \fCKey\fPs with default values to the \fCElektra\fP instance\&.
+.PP
+The \fCElektraError\fP can be used to check for initialization errors\&. You can detect initialization errors by comparing the result of \fCelektraOpen\fP to NULL:
+.PP
+.PP
+.nf
+if (elektra == NULL)
+{
+  // handle the error, e\&.g\&. print description
+  elektraErrorReset(&error);
+}
+.fi
+.PP
+.PP
+If an error occurred, you must call \fCelektraErrorReset\fP before using the same error pointer in any other function calls (e\&.g\&. \fCelektraSet*\fP calls)\&. It is also safe to call \fCelektraErrorReset\fP, if no error occurred\&.
+.PP
+In order to give Elektra the chance to clean up all its allocated resources, you have to close your instance, when you are done using it, by calling:
+.PP
+.PP
+.nf
+elektraClose (elektra);
+.fi
+.PP
+.PP
+\fINOTE:\fP Elektra is only thread-safe when you use one handle per thread or protect your handle\&. If you have multiple threads accessing key-values, create a separate handle for each thread to avoid concurrency issues\&.
+.PP
+The library is designed to shield developers from the many errors one can encounter when using KDB directly\&. However it is not possible to hide all those issues\&. As with every library, things can go wrong and there needs to be a way to react to errors once they have occurred at runtime\&. Therefore the high-level API introduces a struct called \fCElektraError\fP, which encapsulates all information necessary for the developer to handle runtime-errors appropriately in the application\&.
+.PP
+Functions that can produce errors, despite correct use of the API, accept an \fCElektraError\fP pointer as parameter, for example:
+.PP
+.PP
+.nf
+Elektra * elektraOpen (const char * application, KeySet * defaults, KeySet * contract, ElektraError ** error);
+.fi
+.PP
+.PP
+In most cases you'll want to set the error variable to \fCNULL\fP before passing it to the function\&. You can do this either by declaring and initializing a new variable with \fCElektraError * error = NULL\fP or by reusing an already existing error variable by resetting it with \fCelektraErrorReset (&error)\fP\&.
+.PP
+Notice, that you should always check if an error occurred by comparing it to \fCNULL\fP after the function call\&.
+.PP
+If an error happened, it is often useful to show an error message to the user\&. A description of what went wrong is provided in the \fCElektraError\fP struct and can be accessed using \fCelektraErrorDescription (error)\fP\&. Additionally the error code can be accessed through \fCelektraErrorCode (error)\fP\&. NOTE: The error API is still a work in progress, so more functions will likely be added in the future\&.
+.PP
+To avoid leakage of memory, you have to call \fCelektraErrorReset (&error)\fP (ideally as soon as you are finished resolving the error):
+.PP
+.PP
+.nf
+ElektraError * error = NULL;
+
+// Call a function and pass the error variable as an argument\&.
+// \&.\&.\&.
+
+if (error != NULL)
+{
+
+  // An error occurred, do something about it\&.
+  // \&.\&.\&.
+
+  elektraErrorReset (&error);
+}
+.fi
+.PP
+.PP
+Currently there is only one way to configure an \fCElektra\fP instance:
+.PP
+.PP
+.nf
+void elektraFatalErrorHandler (Elektra * elektra, ElektraErrorHandler fatalErrorHandler);
+.fi
+.PP
+.PP
+This allows you to set the callback called by Elektra, when a fatal error occurs\&. Technically a fatal error could occur at any time, but the most common use case for this callback is inside of functions that do not take a separate \fCElektraError\fP argument\&. For example, this function will be called, when any of the getter-functions is called on a non-existent key which is not part of any specification, and therefore has no specified default value\&.
+.PP
+If you provide your own callback, it must interrupt the thread of execution in some way (e\&.g\&. by calling \fCexit()\fP or throwing an exception in C++)\&. It \fImust not\fP return to the calling function\&.
+.PP
+The handler will also be called whenever you pass \fCNULL\fP where a function expects an \fCElektraError **\fP\&. In this case the error code will be \fCELEKTRA_ERROR_CODE_NULL_ERROR\fP\&.
+.PP
+The default callback simply logs the error with \fCELEKTRA_LOG_DEBUG\fP and then calls \fCexit()\fP with exit code \fCEXIT_FAILURE\fP It is expected that you implement your own callback, so that you get proper error message logged in your applications preferred format\&. Using the default callback is only viable for very simple applications, because you won't get any indication as to which key caused the error (unless you compiled Elektra with debug logging enabled)\&.
+.PP
+The API determines the data type of a given key, by reading its \fCtype\fP metadata\&. The API supports the following types, which are taken from the CORBA specification:
+.PP
+.IP "\(bu" 2
+\fBString\fP: a string of characters, represented by \fCstring\fP in metadata
+.IP "\(bu" 2
+\fBBoolean\fP: a boolean value \fCtrue\fP or \fCfalse\fP, represented by \fCboolean\fP in metadata, in the KDB the raw value \fC'1'\fP is regarded as true, \fC'0'\fP regarded as false and any other value is an error
+.IP "\(bu" 2
+\fBChar\fP: a single character, represented by \fCchar\fP in metadata
+.IP "\(bu" 2
+\fBOctet\fP: a single byte, represented by \fCoctet\fP in metadata
+.IP "\(bu" 2
+**(Unsigned) Short**: a 16-bit (unsigned) integer, represented by \fCshort\fP (\fCunsigned_short\fP) in metadata
+.IP "\(bu" 2
+**(Unsigned) Long**: a 32-bit (unsigned) integer, represented by \fClong\fP (\fCunsigned_long\fP) in metadata
+.IP "\(bu" 2
+**(Unsigned) Long Long**: a 64-bit (unsigned) integer, represented by \fClong_long\fP (\fCunsigned_long_long\fP) in metadata
+.IP "\(bu" 2
+\fBFloat\fP: whatever your compiler treats as \fCfloat\fP, probably IEEE-754 single-precision, represented by \fCfloat\fP in metadata
+.IP "\(bu" 2
+\fBDouble\fP: whatever your compiler treats as \fCdouble\fP, probably IEEE-754 double-precision, represented by \fCdouble\fP in metadata
+.IP "\(bu" 2
+\fBLong Double\fP: whatever your compiler treats as \fClong double\fP, not always available, represented by \fClong_double\fP in metadata
+.PP
+.PP
+The API contains one header that is not automatically included from \fC\fBelektra\&.h\fP\fP\&. You can use it with \fC#include <\fBelektra/conversion\&.h\fP>\fP\&. The header provides the functions Elektra uses to convert your configuration values to and from strings\&. In most cases, you won't need to use these functions directly, but they might still be useful sometimes (e\&.g\&. in combination with \fCelektraGetType\fP and \fCelektraGetRawString\fP)\&. We also provide a \fCKDB_TPYE_*\fP constant for each of the types listed above\&. Again, most users won't use these but, if you ever do need to use the raw type metadata using constants enables code completion and protects against typos\&.
+.PP
+There is also the type \fCenum\fP with constant \fCKDB_TYPE_ENUM\fP\&. It is only supported via the \fBcode-generation API\fP\&.
+.PP
+.SS "Note about Floating Point Types"
+.PP
+We enforce a few minimum properties for floating point types\&. They are taken from the IEE-754 specification and are:
+.PP
+.IP "\(bu" 2
+For \fCfloat\fP: 32 bits, binary, 24 mantissa digits and exponent range of at least -125 to 128
+.IP "\(bu" 2
+For \fCdouble\fP: 64 bits, binary, 53 mantissa digits and exponent range of at least -1021 to 1024
+.IP "\(bu" 2
+For \fClong double\fP: at least 80 bits, binary, at least 64 mantissa digits and exponent range of at least -2^14 + 3 to 2^14
+.PP
+.PP
+Additionally for C++ compilers we use a \fCstatic_assert\fP that will fail if \fCstd::numeric_limits<T>::is_iec559\fP is \fCfalse\fP when \fCT\fP is any of \fCfloat\fP, \fCdouble\fP or \fClong double\fP\&.
+.PP
+While these checks won't ensure actual IEEE-754 arithmetic, they will at least ensure all values can be represented correctly\&.
+.PP
+.PP
+When calling \fCelektraOpen\fP you pass the parent key for your application\&. Afterwards getters and setters get passed in only the part below that key in the KDB\&. For example, if you call \fCelektraOpen\fP with \fC'/sw/org/myapp/#0/current'\fP, you can access your applications configuration value for the key \fC'/sw/org/myapp/#0/current/message'\fP with the provided getters and setters by passing them only \fC'message'\fP as the name for the configuration value\&.
+.PP
+.PP
+A typical application wants to read some configuration values at start\&. This should be made as easy as possible for the developer\&. Reading configuration data in most cases is not part of the business logic of the application and therefore should not 'pollute' the applications source code with cumbersome setup and file-parsing code\&. This is exactly where Elektra comes in handy, because you can leave all the configuration file handling and parsing to the underlying layers of Elektra and just use the high-level API to access the desired data\&. Reading values from KDB can be done with elektra-getter functions that follow a simple naming scheme:
+.PP
+\fCelektraGet\fP + the type of the value you want to read\&.
+.PP
+For example, you can get the value for the key named 'message' like this:
+.PP
+.PP
+.nf
+const char * message = elektraGetString (elektra, "message");
+.fi
+.PP
+.PP
+Sometimes you'll want to access arrays as well\&. You can access single elements of an array using the provided array-getters following again a simple naming scheme:
+.PP
+\fCelektraGet\fP + the type of the value you want to read + \fCArrayElement\fP\&.
+.PP
+For example, you can get the value at index 3 for the array 'message' like this:
+.PP
+.PP
+.nf
+const char * message = elektraGetStringArrayElement (elektra, "message", 3);
+.fi
+.PP
+.PP
+To get the size of the array you would like to access you can use the function \fCelektraArraySize\fP:
+.PP
+.PP
+.nf
+kdb_long_long_t arraySize = elektraArraySize (elektra, "message");
+.fi
+.PP
+.PP
+For some background information on arrays in Elektra see the \fBArray\fP tutorial, as well as our \fBdecision document\fP on this topic\&. Please note that the high level API does not support arrays with missing elements\&. If an element is missing (and the specification provides no default value), getters will fail\&.
+.PP
+Notice that both the getters for primitive types and the getters for array types do not accept error parameters\&. The library expects you to run a correct Elektra setup\&. If the configuration is well specified, no runtime errors can occur when reading a value\&. Therefore the getters do not accept an error variable as argument\&. If there is however a severe internal error, or you try to access a key which you have not specified correctly, then the library will call the error callback set with \fCelektraFatalErrorHandler\fP to prevent data inconsistencies or exceptions further down in your application\&.
+.PP
+You can find the complete list of the available functions for all supported value types in \fCelektra\&.h\fP
+.PP
+Sometimes, after having read a value from the KDB, you will want to write back a modified value\&. As described in \fCRead values from the KDB\fP we follow a naming scheme for getters\&. The high-level API provides setters follow an analogous naming scheme as well\&. For example, to write back a modified 'message', you can call \fCelektraSetString\fP:
+.PP
+.PP
+.nf
+elektraSetString (elektra, "message", "This is the new message", NULL);
+.fi
+.PP
+.PP
+The counterpart for array-getters again follows the same naming scheme:
+.PP
+.PP
+.nf
+elektraSetStringArrayElement (elektra, "message", "This is the third new message", NULL);
+.fi
+.PP
+.PP
+Because even the best specification and perfect usage as intended can not prevent any error from occurring, when saving the configuration, all setter-functions take an additional \fCElektraError\fP argument, which will be set if an error occurs\&.
+.PP
+You can use \fCconst char * elektraGetRawString (Elektra * elektra, const char * name)\fP to read the raw (string) value of a key\&. No type checking or type conversion will be attempted\&. Additionally this function does not call the fatal error handler\&. It will simply return \fCNULL\fP, if the key was not found\&.
+.PP
+If you want to set a raw value, use \fCvoid elektraSetRawString (Elektra * elektra, const char * name, const char * value, KDBType type, ElektraError ** error)\fP\&. Obviously you have to provide a type for the value you set, so that the API can perform type checking, when reading the value next time\&.
+.PP
+Similar functions are provided for array elements:
+.PP
+.PP
+.nf
+const char * elektraGetRawStringArrayElement (Elektra * elektra, const char * name, kdb_long_long_t index);
+
+void elektraSetRawStringArrayElement (Elektra * elektra, const char * name, kdb_long_long_t index, const char * value, KDBType type, ElektraError ** error);
+.fi
+.PP
+.PP
+The type information is stored in the \fC'type'\fP metakey\&. \fCKDBType elektraGetType (Elektra * elektra, const char * keyname)\fP (or \fCKDBType elektraGetArrayElementType (Elektra * elektra, const char * name, kdb_long_long_t index)\fP for array elements) lets you access this information\&. A setter is not provided, because Elektra assumes keys to always have the same type (as specified)\&.
+.PP
+\fCelektraGetType\fP, \fCelektraGetRawString\fP and \fCelektraSetRawString\fP can be used together to create custom data types\&. If your application for example uses arbitrary-precision integers, you could something similar to these functions:
+.PP
+.PP
+.nf
+bignum * elektraGetBigNum (Elektra * elektra, const char * keyname)
+{
+  KDBType type = elektraGetType (elektra, keyname);
+  if (strcmp (type, "bignum") != 0)
+  {
+    return NULL;
+  }
+
+  const char * rawValue = elektraGetRawString (elektra, keyname);
+  return rawValue == NULL ? NULL : stringToBigNum (rawValue);
+}
+
+void elektraSetBigNum (Elektra * elektra, const char * keyname, bignum * value, ElektraError ** error)
+{
+  const char * rawValue = bigNumToString (value);
+  elektraSetRawString (elektra, keyname, rawValue, "bignum", error);
+}
+.fi
+.PP
+.PP
+To get the \fCtype\fP plugin to validate your custom types you should make sure the \fCcheck/type\fP metadata is set to \fCstring\fP (or \fCany\fP) on all keys that use custom types\&. This works, because the \fCtype\fP plugin prefers the value of \fCcheck/type\fP over that of \fCtype\fP\&.
+.PP
+The high-level API does not support binary key values at this time\&.
+.PP
+.PP
+.nf
+#include <stdio\&.h>
+#include <elektra\&.h>
+
+int main ()
+{
+  ElektraError * error = NULL;
+  Elektra * elektra = elektraOpen ("/sw/org/myapp/#0/current", NULL, NULL, &error);
+
+  if (elektra == NULL)
+  {
+    printf ("Sorry, there seems to be an error with your Elektra setup: %s\n", elektraErrorDescription (error));
+    elektraErrorReset (&error);
+
+    printf ("Will exit now\&.\&.\&.\n");
+    exit (EXIT_FAILURE);
+  }
+
+  const char * message = elektraGetString (elektra, "message");
+
+  printf ("%s", message);
+
+  elektraClose (elektra);
+
+  return 0;
+}
+.fi
+.PP
+ 

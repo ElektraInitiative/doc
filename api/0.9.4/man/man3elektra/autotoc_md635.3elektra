@@ -1,0 +1,515 @@
+.TH "autotoc_md635" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md635Plugin: toml 
+ \- 
+.IP "\(bu" 2
+infos = Information about the toml plugin is in keys below
+.IP "\(bu" 2
+infos/author = Jakob Fischer jakobfischer93@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/toml
+.IP "\(bu" 2
+infos/needs = base64
+.IP "\(bu" 2
+infos/recommends = type
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = experimental unfinished
+.IP "\(bu" 2
+infos/metadata = order comment/# comment/#/start comment/#/space type tomltype origvalue
+.IP "\(bu" 2
+infos/description = This storage plugin reads and writes TOML files using Flex and Bison\&.
+.PP
+.SH "Introduction"
+.PP
+This plugin is a storage plugin for reading and writing TOML files\&. The plugin retains most of the file structure of a read TOML file such as comments, empty lines and TOML tables\&. It supports all kinds of TOML specific types and tables, including nested inline tables and multiline strings\&.
+.SH "Requirements"
+.PP
+The plugin needs Flex (>=2\&.6\&.2) and Bison (>=3) for parsing TOML files\&.
+.SH "Types"
+.PP
+.SS "Reading"
+On reading, the plugin will set the \fCtype\fP metakey for strings, integers, floats and boolean values, if applicable\&. For decimal integers, the metakey is set to \fClong_long\fP\&. For binary/octal/hexadecimal integers, the metakey is set to \fCunsigned_long_long\fP\&. For floats, the metakey will be set to \fCdouble\fP\&. These types are chosen to conform with the TOML format as stated on the offical \fCTOML\fP page\&.
+.PP
+On reading, non-decimal integers will get converted to decimal\&. The non-decimal representation will be stored in the \fCorigvalue\fP metakey of the key\&. When writing a key, the value of that metakey will be written instead, in order to retain the original format\&. Note that the \fCorigvalue\fP metakey gets removed if the value of the key changes\&.
+.PP
+``` sudo kdb mount test\&.toml user:/tests/storage/types toml type
+.SH "Create a TOML file with 4 keys"
+.PP
+echo 'plain_decimal = 1000' >> \fCkdb file user:/tests/storage/types\fP echo 'file_permissions = 0o777' >> \fCkdb file user:/tests/storage/types\fP echo 'pi = 3\&.1415' >> \fCkdb file user:/tests/storage/types\fP echo 'division_gone_wrong = -inf' >> \fCkdb file user:/tests/storage/types\fP
+.SH "Print the content of the toml file"
+.PP
+cat \fCkdb file user:/tests/storage/types\fP 
+.SH "> plain_decimal = 1000"
+.PP
+.SH "> file_permissions = 0o777"
+.PP
+.SH "> pi = 3\&.1415"
+.PP
+.SH "> division_gone_wrong = -inf"
+.PP
+.SH "Print types and values of the keys with `kdb`"
+.PP
+kdb meta-get 'user:/tests/storage/types/plain_decimal' 'type' 
+.SH "> long_long"
+.PP
+kdb get 'user:/tests/storage/types/plain_decimal' 
+.SH "> 1000"
+.PP
+kdb meta-get 'user:/tests/storage/types/file_permissions' 'type' 
+.SH "> unsigned_long_long"
+.PP
+.SH "The octal value will be converted to decimal"
+.PP
+kdb get 'user:/tests/storage/types/file_permissions' 
+.SH "> 511"
+.PP
+kdb meta-get 'user:/tests/storage/types/pi' 'type' 
+.SH "> double"
+.PP
+kdb get 'user:/tests/storage/types/pi' 
+.SH "> 3\&.1415"
+.PP
+kdb meta-get 'user:/tests/storage/types/division_gone_wrong' 'type' 
+.SH "> double"
+.PP
+kdb get 'user:/tests/storage/types/division_gone_wrong' 
+.SH "> -inf"
+.PP
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage/types sudo kdb umount user:/tests/storage/types 
+.PP
+.nf
+## Writing
+
+On writing, for most values, the plugin will infer the appropriate type and will write them accordingly\&.
+This means, values, that match a TOML float, integer or date will be written without any quotes around them\&.
+If a value does not match any of these types, it will be written as a string\&.
+
+The plugin uses an existing `type` metakey only to check if it should write a value as a `string` or a `boolean`\&.
+
+With this functionality, numbers can be written as a string to the file, if wanted\&.
+
+To write a boolean value, the `type` metakey must be set to `boolean` for the key\&.
+Otherwise, no conversion to the TOML boolean values will take place\&.
+Per default, Elektra uses 0/1 to represent boolean values\&.
+
+.fi
+.PP
+ sudo kdb mount test\&.toml user:/tests/storage/types toml type
+.SH "Create a key, which may be a integer, boolean or string"
+.PP
+kdb set 'user:/tests/storage/types/value' '1'
+.SH "The plugin infers `long_long` for this value"
+.PP
+kdb meta-get 'user:/tests/storage/types/value' 'type' 
+.SH "> long_long"
+.PP
+.SH "The value is written as an integer"
+.PP
+cat \fCkdb file user:/tests/storage/types\fP 
+.SH "> value = 1"
+.PP
+.SH "Manually set the `type` metakey to boolean"
+.PP
+kdb meta-set 'user:/tests/storage/types/value' 'type' 'boolean'
+.SH "The value is written as a boolean"
+.PP
+cat \fCkdb file user:/tests/storage/types\fP 
+.SH "> value = true"
+.PP
+.SH "Manually set the `type` metakey to string"
+.PP
+kdb meta-set 'user:/tests/storage/types/value' 'type' 'string'
+.SH "The value is written as a string"
+.PP
+cat \fCkdb file user:/tests/storage/types\fP 
+.SH "> value = '1'"
+.PP
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage/types sudo kdb umount user:/tests/storage/types 
+.PP
+.nf
+# Numbers
+
+The plugin supports reading and writing of any kind of number supported by the TOML format, such as floating point numbers and binary/octal/decimal/hexadecimal integers\&.
+To write a non-decimal integer, add the corresponding prefix to the number (`0b` for binary, `0o` for octal, `0x` for hexadecimal)\&.
+The value will be written in the given base to the file, but converted to decimal within Elektra (see [Reading](##reading))\&.
+Note that the plugin doesn't warn about invalid prefix/digit combinations\&. If the combination is not valid, it will be written as a string instead\&.
+
+If the `type` plugin is enabled and you want to change the value of an existing number key which needs conversion (all keys which have a `origvalue`),
+you have to change the value of `origvalue` instead of the key value\&. Otherwise the `type` plugin will give an error\&.
+
+.fi
+.PP
+ 
+.SH "Mount a new TOML file"
+.PP
+sudo kdb mount test\&.toml user:/tests/storage/numbers toml type
+.SH "Write an octal value"
+.PP
+kdb set 'user:/tests/storage/numbers/a' '0o777'
+.SH "Get the converted decimal value"
+.PP
+kdb get 'user:/tests/storage/numbers/a' 
+.SH "> 511"
+.PP
+.SH "Get the original octal value"
+.PP
+kdb meta-get 'user:/tests/storage/numbers/a' 'origvalue' 
+.SH "> 0o777"
+.PP
+.SH "Get the type of the number; since it's originally octal, we get `unsigned_long_long`"
+.PP
+kdb meta-get 'user:/tests/storage/numbers/a' 'type' 
+.SH "> unsigned_long_long"
+.PP
+.SH "Change the value by changing the `origvalue` metakey"
+.PP
+kdb meta-set 'user:/tests/storage/numbers/a' 'origvalue' '0o666'
+.SH "Get the new value as decimal"
+.PP
+kdb get 'user:/tests/storage/numbers/a' 
+.SH "> 438"
+.PP
+.SH "Change the value to an invalid octal value\&."
+.PP
+kdb meta-set 'user:/tests/storage/numbers/a' 'origvalue' '0o888'
+.SH "The key value is no longer considered a number"
+.PP
+kdb meta-get 'user:/tests/storage/numbers/a' 'type' 
+.SH "> string"
+.PP
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage/numbers sudo kdb umount user:/tests/storage/numbers 
+.PP
+.nf
+# Strings
+
+The plugin can read any kind of TOML string: bare, basic, literal, basic multiline and literal multiline\&.
+However, it will write back all non-bare strings as basic strings or it's multiline version\&.
+Therefore, any string set with `kdb set` must be treated as a basic string and possible escape sequences and special meanings of quotation characters must be taken care of\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_strings\&.toml user:/tests/storage toml type
+.SH "setting a string containing a newline escape sequence"
+.PP
+kdb set 'user:/tests/storage/string' 'I am a basic string a literal one\&.'
+.PP
+kdb get 'user:/tests/storage/string' 
+.SH "> I am a basic string"
+.PP
+.SH "> ot a literal one"
+.PP
+.SH "setting the string again, but escape the backslash with another backslash"
+.PP
+kdb set 'user:/tests/storage/string' 'I am a basic string\\not a literal one\&.'
+.PP
+kdb get 'user:/tests/storage/string' 
+.SH "> I am a basic string\\not a literal one"
+.PP
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+The plugin supports all kinds of escape sequences used by TOML in basic and basic multiline strings, like `\n`, `\r`, `\t` and
+even `\u`/`\U` for Unicode escape sequences\&. `\t` is interpreted to be 4 spaces\&.
+
+# Binary/NULL values
+
+The plugin handles binary values by using the [base64](@ref src_plugins_base64_README_md) plugin\&.
+As a result, binary values get written as base64 encoded strings, which start with the special prefix `@BASE64`\&.
+`NULL` key values are written as special strings of value `@NULL`\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_binary\&.toml user:/tests/storage toml type
+.SH "Creating a key with a NULL value"
+.PP
+kdb set 'user:/tests/storage/nullkey' 
+.SH "> Create a new key user:/test/nullkey with null value"
+.PP
+.SH "Print file content"
+.PP
+cat \fCkdb file user:/tests/storage\fP 
+.SH "> nullkey = '@NULL'"
+.PP
+.SH "Write base64 encoded data to the file"
+.PP
+echo 'base64 = '@BASE64SSBhbSBiYXNlIDY0IGVuY29kZWQgZm9yIG5vIHJlYXNvbi4='' > \fCkdb file user:/test\fP
+.SH "Print the value of the key, which is a binary value"
+.PP
+kdb get 'user:/test/base64' #> 
+.SH "Print the value again, but apply the escape codes"
+.PP
+echo -e \fCkdb get 'user:/test/base64'\fP #> I am base 64 encoded for no reason\&.
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+# TOML specific structures
+
+TOML specific structures are represented by the metakey `tomltype` on a certain key\&.
+It will be set when the TOML plugin reads a TOML structure from a file\&. Additionally, this metakey can be set by the user, if they want a certain TOML structure to be written\&.
+No automatic inference of this metakey is done on writing\&.
+
+## Simple Tables
+
+TOML's simple tables are represented by setting the `tomltype` metakey to `simpletable`\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_table\&.toml user:/tests/storage toml type
+.SH "Create three keys, which are all a subkey of 'common',"
+.PP
+.SH "but we have no 'common' simple table key yet"
+.PP
+kdb set 'user:/tests/storage/common/a' '0' kdb set 'user:/tests/storage/common/b' '1' kdb set 'user:/tests/storage/common/c' '2'
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> common\&.a = 0 #> common\&.b = 1 #> common\&.c = 2
+.SH "Create a simple table key"
+.PP
+kdb meta-set 'user:/tests/storage/common' 'tomltype' 'simpletable'
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> [common] #> a = 0 #> b = 1 #> c = 2
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+## Table Arrays
+
+Table arrays are represented by setting the `tomltype` metakey to `tablearray`\&. It is not required to also set the array metakey, since the plugin will set the metakey, if it is missing\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_table_array\&.toml user:/tests/storage toml type
+.SH "Create a table array containing two entries, each with a key 'a' and 'b'"
+.PP
+kdb meta-set 'user:/tests/storage/tablearray' 'tomltype' 'tablearray' kdb set 'user:/tests/storage/tablearray/#0/a' '1' kdb set 'user:/tests/storage/tablearray/#0/b' '2'
+.PP
+kdb set 'user:/tests/storage/tablearray/#1/a' '3' kdb set 'user:/tests/storage/tablearray/#1/b' '4'
+.SH "Print the highest index of the table array"
+.PP
+kdb meta-get 'user:/tests/storage/tablearray' 'array' #> #1
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> [[tablearray]] #> a = 1 #> b = 2 #> [[tablearray]] #> a = 3 #> b = 4
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+## Inline Tables
+
+Inline tables are represented by setting the `tomltype` metakey to `inlinetable`\&. The plugin also supports reading/writing nested inline tables\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_inline_table\&.toml user:/tests/storage toml type
+.SH "Create a table array containing two entries, each with a key 'a' and 'b'"
+.PP
+kdb meta-set 'user:/tests/storage/inlinetable' 'tomltype' 'inlinetable' kdb set 'user:/tests/storage/inlinetable/a' '1' kdb set 'user:/tests/storage/inlinetable/b' '2' kdb meta-set 'user:/tests/storage/inlinetable/nested' 'tomltype' 'inlinetable' kdb set 'user:/tests/storage/inlinetable/nested/x' '3' kdb set 'user:/tests/storage/inlinetable/nested/y' '4'
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> inlinetable = { a = 1, b = 2, nested = { x = 3, y = 4 } }
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+## Arrays
+
+Arrays are recognized by the `array` metakey\&. On writing, the plugin will detect arrays automatically and set the appropriate metakey if it is missing\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_array\&.toml user:/tests/storage toml type
+.SH "Create array elements"
+.PP
+kdb set 'user:/tests/storage/array/#0' '1' kdb set 'user:/tests/storage/array/#1' '2' kdb set 'user:/tests/storage/array/#2' '3'
+.SH "Print the highest index of the array"
+.PP
+kdb meta-get 'user:/tests/storage/array' 'array' #> #2
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> array = [1, 2, 3]
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+# Comments and Empty Lines
+
+The plugin preserves all comments with only one limitation for arrays\&. The amount of whitespace in front of a comment is also saved\&.
+For this purpose, each tab will get translated to 4 spaces\&.
+
+Comments can also be created by assigning meta keys to a key\&.
+The meta keys must be of the form `comment/#n`, where `n` is a positive number, indicating the position of the comment relative to the key\&.
+An index of 0 is always the inline comment of the key\&.
+Indices greater than zero are for comments preceding the given key, where 1 is the top-most comment and the highest index comment is right above the key\&.
+
+Spaces can be added to a comment by creating a `comment/#n/space` metakey with the amount of spaces to the key\&.
+
+File ending comments must be assigned to the file root key\&.
+
+Empty lines in front of a key can be created by adding an empty `comment/#n/start` entry to it\&. In this case, no `comment/#n` key is needed\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_comments\&.toml user:/tests/storage toml type
+.SH "create a key-value pair, ready for comment decoration"
+.PP
+kdb set 'user:/tests/storage/key' '1'
+.SH "add an inline comment with 4 leading spaces"
+.PP
+kdb meta-set 'user:/tests/storage/key' 'comment/#0' ' This value is very interesting' kdb meta-set 'user:/tests/storage/key' 'comment/#0/space' '4'
+.SH "add some comments preceding the key"
+.PP
+kdb meta-set 'user:/tests/storage/key' 'comment/#1' ' I am the top-most comment relative to my key\&.' kdb meta-set 'user:/tests/storage/key' 'comment/#2' ' I am in the middle\&. Just boring\&.' kdb meta-set 'user:/tests/storage/key' 'comment/#3' ' I am in the line right above my key\&.'
+.SH "add file ending comments and empty lines"
+.PP
+kdb meta-set 'user:/tests/storage' 'comment/#1' ' First file-ending comment' kdb meta-set 'user:/tests/storage' 'comment/#2/start' '' kdb meta-set 'user:/tests/storage' 'comment/#3' ' Second file-ending comment\&. I am the last line of the file\&.'
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> # I am the top-most comment relative to my key\&. #> # I am in the middle\&. Just boring\&. #> # I am in the line right above my key\&. #> key = 1 # This value is very interesting #> # First file-ending comment #> #> # Second file-ending comment\&. I am the last line of the file\&.
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+## Comments in Arrays
+
+Any amount of comments can be placed between array elements or between the first element and the opening brackets\&.
+
+However, only one comment - an inline comment - can be placed after the last element and the closing brackets\&.
+On reading, the plugin discards any non-inline comments between the last element and the closing brackets\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_array_comments\&.toml user:/tests/storage toml type
+.SH "Create array elements"
+.PP
+kdb set 'user:/tests/storage/array/#0' '1' kdb set 'user:/tests/storage/array/#1' '2' kdb set 'user:/tests/storage/array/#2' '3'
+.SH "Add inline comment after the array"
+.PP
+kdb meta-set 'user:/tests/storage/array' 'comment/#0' ' Inline comment after the array' kdb meta-set 'user:/tests/storage/array' 'comment/#0/start' '#' kdb meta-set 'user:/tests/storage/array' 'comment/#0/space' '5'
+.SH "Add comments for array elements"
+.PP
+kdb meta-set 'user:/tests/storage/array/#0' 'comment/#0' ' Inline comment of first element' kdb meta-set 'user:/tests/storage/array/#0' 'comment/#0/start' '#' kdb meta-set 'user:/tests/storage/array/#0' 'comment/#0/space' '4'
+.PP
+kdb meta-set 'user:/tests/storage/array/#0' 'comment/#1' ' Comment preceding the first element' kdb meta-set 'user:/tests/storage/array/#0' 'comment/#1/start' '#' kdb meta-set 'user:/tests/storage/array/#0' 'comment/#1/space' '4'
+.PP
+kdb meta-set 'user:/tests/storage/array/#0' 'comment/#2' ' Another comment preceding the first element' kdb meta-set 'user:/tests/storage/array/#0' 'comment/#2/start' '#' kdb meta-set 'user:/tests/storage/array/#0' 'comment/#2/space' '6'
+.PP
+kdb meta-set 'user:/tests/storage/array/#1' 'comment/#0' ' Inline comment of second element' kdb meta-set 'user:/tests/storage/array/#1' 'comment/#0/start' '#' kdb meta-set 'user:/tests/storage/array/#1' 'comment/#0/space' '4'
+.PP
+kdb meta-set 'user:/tests/storage/array/#1' 'comment/#1' ' Comment preceding the second element' kdb meta-set 'user:/tests/storage/array/#1' 'comment/#1/start' '#' kdb meta-set 'user:/tests/storage/array/#1' 'comment/#1/space' '6'
+.PP
+kdb meta-set 'user:/tests/storage/array/#2' 'comment/#0' ' Inline comment of the last element' kdb meta-set 'user:/tests/storage/array/#2' 'comment/#0/start' '#' kdb meta-set 'user:/tests/storage/array/#2' 'comment/#0/space' '5'
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> array = [ # Comment preceding the first element #> # Another comment preceding the first element #> 1, # Inline comment of first element #> # Comment preceding the second element #> 2, # Inline comment of second element #> 3 # Inline comment of the last element #> ] # Inline comment after the array
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage 
+.PP
+.nf
+# Order
+
+The plugin preserves the file order by the usage of the metakey `order`\&. When reading a file, the order metakey will be set according to the order as read in the file\&.
+If new keys are added, eg\&. via `kdb set`, the order of the set key will be set to the next-to-highest order value present in the existing key set\&.
+
+However, the order is only relevant between elements with the same TOML-parent\&. For example keys of a simple table are only sorted with respect to each other, not with any keys outside that table\&. If that table has it's order changed and moves to another position in the file, so will it's subkeys\&.
+
+When sorting elements under the same TOML-parent, tables (simple and array) will always be sorted after non-table elements, regardless of their order\&.
+With this limitation, we prevent that a newly set key, that is not part of a certain table array/simple table, would be placed after the table declaration, making it a member of that table on a subsequent read\&.
+
+.fi
+.PP
+ 
+.SH "Mount TOML file"
+.PP
+sudo kdb mount test_order\&.toml user:/tests/storage toml type
+.SH "Create three keys in reverse alphabetical order under the subkey common"
+.PP
+.SH "Additionally, create one key not in the common subkey space"
+.PP
+kdb set 'user:/tests/storage/common/c' '0' kdb set 'user:/tests/storage/common/b' '1' kdb set 'user:/tests/storage/common/a' '2' kdb set 'user:/tests/storage/d' '3'
+.SH "Print the content of the resulting TOML file"
+.PP
+.SH "The keys are ordered as they were set"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> common\&.c = 0 #> common\&.b = 1 #> common\&.a = 2 #> d = 3
+.SH "Create a simple table for the three keys under `common`"
+.PP
+kdb meta-set 'user:/tests/storage/common' 'tomltype' 'simpletable'
+.SH "Print the content of the resulting TOML file"
+.PP
+cat \fCkdb file user:/tests/storage\fP #> d = 3 #> [common] #> c = 0 #> b = 1 #> a = 2
+.SH "Cleanup"
+.PP
+kdb rm -r user:/tests/storage sudo kdb umount user:/tests/storage ```
+.PP
+In this example, \fCd\fP and \fCcommon\fP have the same parent, the file root\&. This means, they need to be sorted with each other\&. \fCd\fP would be placed before \fCcommon\fP by it's order, since it was set before, and thus, has lesser order\&. However, their order never gets compared, since \fCcommon\fP is a simple table and \fCd\fP is not, so \fCd\fP will get sorted before the table regardless of order\&.
+.SH "Limitations"
+.PP
+While the plugin has good capabilities in handling the TOML file format, it currently lacks some features possible with Elektra:
+.PP
+.IP "\(bu" 2
+Sparse arrays are not preserved on writing, they get a continuous array without index holes\&.
+.IP "\(bu" 2
+Values on non-leaf keys are currently not supported, they get discarded\&.
+.IP "\(bu" 2
+Custom metakeys cannot be written by the plugin, so they get discarded\&.
+.PP
+.PP
+Additionally, there are some minor limitations related to the TOML file format, mostly related to the preservation of the original file structure:
+.PP
+.IP "\(bu" 2
+On writing, each string is written as a TOML basic string (single or multiline)\&. See \fCStrings\fP
+.IP "\(bu" 2
+Comments and newlines between the last array element and closing brackets are discarded\&.
+.IP "\(bu" 2
+Trailing commas in arrays and inline tables are discarded
+.IP "\(bu" 2
+Only spaces in front of comments are preserved\&. 
+.PP
+

@@ -1,0 +1,88 @@
+.TH "doc_decisions_ensure_md" 3elektra "Mon Feb 1 2021" "Version 0.9.4" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_ensure_mdEnsure 
+ \- Applications want to ensure that some functionality (=global plugin) is present in Elektra\&.
+.PP
+.IP "\(bu" 2
+Keep \fCkdbEnsure\fP (Rejected because it is too flexible and can be called many times\&. Furthermore, \fCkdbOpen\fP would build up configurations that get removed afterwards\&.)
+.IP "  \(bu" 4
+reduce for only global plugins, as the partial other functionality is confusing and not needed
+.IP "  \(bu" 4
+find solution that list plugin is not needed
+.IP "  \(bu" 4
+only as implementation detail below libraries (e\&.g\&. like done for notification)
+.PP
+
+.IP "\(bu" 2
+Specific APIs per plugin, Rejected because:
+.IP "  \(bu" 4
+difficult for application developers
+.IP "  \(bu" 4
+every plugin would need to design new APIs
+.PP
+
+.IP "\(bu" 2
+Have a new API: \fCKDB * kdbOpen (Key * parent);\fP \fCint kdbConfigure (KDB * handle, KeySet * contract, Key * parentKey);\fP \fCKDB * kdbOpenDefault (Key * parent);\fP The new kdbOpen only does the absolute minimum work, in particular it doesn't set up any global plugins\&. If you use kdbOpen you must call kdbConfigure otherwise kdbGet will fail\&. kdbConfigure configures global plugins (basically just a renamed kdbEnsure)\&. Lastly, kdbOpenDefault does more or less what the old kdbOpen does\&. It sets up the default case and you can call kdbGet immediately\&. But you cannot call kdbConfigure after kdbOpenDefault\&. Rejected because of API bloat and introduction of further state in \fCkdb\fP\&.
+.PP
+.PP
+Integrate \fCkdbEnsure\fP in \fCkdbOpen(Key *errorKey, KeySet *contract)\fP but only allow global plugins\&.
+.PP
+.IP "\(bu" 2
+can immediately build up correct plugin positioning
+.IP "\(bu" 2
+does not allow to start applications if the contract cannot be fulfilled
+.IP "\(bu" 2
+simplest and minimalistic solution
+.PP
+.PP
+\fCelektraNotificationOpen\fP will only return a contract KeySet:
+.PP
+.PP
+.nf
+KeySet * contract = ksNew (0, KS_END);
+elektraNotificationContract (contract, iobinding);
+.fi
+.PP
+.PP
+The same for gopts:
+.PP
+.PP
+.nf
+elektraGOptsContract (contract, argc, argv, environ);
+.fi
+.PP
+.PP
+Finally, we create \fCKDB\fP with the contracts we got before:
+.PP
+.PP
+.nf
+KDB * kdb = kdbOpen (key, contract);
+.fi
+.PP
+.PP
+Opening \fCKDB\fP will fail if any of the contracts cannot be ensured\&.
+.PP
+As the \fCcontract\fP gets copied, at any point after \fCkdbOpen\fP the contract can be safely deleted:
+.PP
+.PP
+.nf
+ksDel (contract);
+.fi
+.PP
+.PP
+The cleanup of the global plugins happens within:
+.PP
+.PP
+.nf
+kdbClose (kdb, errorKey);
+.fi
+.PP
+.PP
+It is safe to use the contract \fCKeySet\fP also for \fCkdbGet\fP and \fCkdbSet\fP invocations\&.
+.PP
+.IP "\(bu" 2
+\fBGlobal Plugins\fP
+.PP
+

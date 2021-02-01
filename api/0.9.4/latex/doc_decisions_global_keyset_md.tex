@@ -1,0 +1,11 @@
+Some plugins need to communicate more data than is possible to do with metadata. This can limit the functionality of plugins, which need to exchange binary or very complex data.
+
+To make the communication between plugins easier, plugins will additionally get a handle to a global keyset via {\ttfamily \hyperlink{group__plugin_ga436cda13ed70c0face08661a90620bf6}{elektra\+Plugin\+Get\+Global\+Key\+Set()}}. The global keyset is tied to a K\+DB handle, initialized on {\ttfamily \hyperlink{group__kdb_ga6808defe5870f328dd17910aacbdc6ca}{kdb\+Open()}} and deleted on {\ttfamily \hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}.
+
+The global keyset handle is initialized and accessible for all plugins except manually created plugins (by calling e.\+g. {\ttfamily \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}}).
+
+This decision removes the need to exchange information between plugins via the parent\+Key.
+
+The need for a global keyset arose when developing a global cache plugin. A global cache plugin needs to store internal and binary information for the K\+DB, which is simply not possible with metadata.
+
+Plugins are responsible for cleaning up their part of the global keyset.

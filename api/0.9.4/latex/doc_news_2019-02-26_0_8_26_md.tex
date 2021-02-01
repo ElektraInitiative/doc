@@ -1,0 +1,409 @@
+
+\begin{DoxyItemize}
+\item guid\+: 55950e64-\/fa4e-\/4eb9-\/9a3a-\/2c73d9cd6478
+\item author\+: Markus Raab
+\item pub\+Date\+: Tue, 26 Feb 2019 15\+:31\+:09 +0100
+\item short\+Desc\+: high-\/level A\+PI
+\end{DoxyItemize}
+
+We are proud to release Elektra 0.\+8.\+26 with the new high-\/level A\+PI.
+
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database. For more information, visit \href{https://libelektra.org}{\tt https\+://libelektra.\+org}.
+
+You can also read the news \href{https://www.libelektra.org/news/0.8.26-release}{\tt on our website}
+
+The new high-\/level A\+PI provides an easier way for applications to get started with Elektra.
+
+To use Elektra in an application (including proper error handling) you now only need a few self-\/explanatory lines of code\+:
+
+
+\begin{DoxyCode}
+ElektraError * error = NULL;
+Elektra * elektra = \hyperlink{group__highlevel_ga45de58b05c7a8ab02f6c54ddd31a56e1}{elektraOpen} (\textcolor{stringliteral}{"/sw/org/myapp/#0/current"}, NULL, &error);
+\textcolor{keywordflow}{if} (elektra == NULL)
+\{
+        printf (\textcolor{stringliteral}{"An error occurred: %s"}, \hyperlink{group__highlevel_ga781cda83af3981a55321e7c613afbef0}{elektraErrorDescription} (error));
+        \hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset} (&error);
+        \textcolor{keywordflow}{return} -1;
+\}
+
+\textcolor{comment}{// Once you have an instance of `Elektra` you simply call one of the typed `elektraGet*` functions to read
+       a value:}
+
+kdb\_long\_t mylong = \hyperlink{group__highlevel_gad4198ec223f01c3a6cfb1b78de34bc9e}{elektraGetLong} (elektra, \textcolor{stringliteral}{"mylong"});
+printf (\textcolor{stringliteral}{"got long "} ELEKTRA\_LONG\_F \textcolor{stringliteral}{"\(\backslash\)n"}, mylong);
+\textcolor{keyword}{const} \textcolor{keywordtype}{char} * mystring = \hyperlink{group__highlevel_ga08df058ca39c5ac17c26924d301bb742}{elektraGetString} (elektra, \textcolor{stringliteral}{"mystring"});
+printf (\textcolor{stringliteral}{"got string %s\(\backslash\)n"}, mystring);
+
+\hyperlink{group__highlevel_ga9b688b7250e5f9d8ea6701cc2cc269af}{elektraClose} (elektra);
+\end{DoxyCode}
+
+
+To run the application, the configuration should be specified, e.\+g., for mylong\+:
+
+
+\begin{DoxyCode}
+sudo kdb setmeta /sw/org/myapp/#0/current/mylong type long
+sudo kdb setmeta /sw/org/myapp/#0/current/mylong default 5
+\end{DoxyCode}
+
+
+In the getters/setters there is no need to convert types or to specify the base path {\ttfamily /sw/org/myapp/\#0/current}, as the high-\/level A\+PI does that for you. The A\+PI supports the C\+O\+R\+BA types already used by the \href{https://www.libelektra.org/plugins/type}{\tt plugins}. The high-\/level A\+PI should also be used in combination with a specification ({\ttfamily spec-\/mount}). When used this way, the A\+PI is designed to be error and crash free while reading values. Writing values, can of course still produce errors.
+
+Another advantage of the new A\+PI is, that it will be much easier to write bindings for other languages now, because only a few simple types and functions have to be mapped to provide the full functionality.
+
+Take a look at the \hyperlink{src_libs_highlevel_README_md}{R\+E\+A\+D\+ME} for more information.
+
+Because of the high-\/level A\+PI, we now have the new header files {\ttfamily \hyperlink{elektra_8h}{elektra.\+h}} and a folder {\ttfamily elektra} in Elektra\textquotesingle{}s include directory. Furthermore, we install the library {\ttfamily libelektra-\/highlevel.\+so} and the pkgconfig file {\ttfamily elektra-\/highlevel.\+pc} for easier detection.
+
+For an example on how to build an application using this A\+PI take a look at this.
+
+A big thanks to {\itshape Klemens Böswirth} for making this possible. Also big thanks to {\itshape Dominik Hofer}, who did all the foundation work for this A\+PI.
+
+The following section lists news about the \href{https://www.libelektra.org/plugins/readme}{\tt plugins} we updated in this release.
+
+
+\begin{DoxyItemize}
+\item We changed the default \href{http://augeas.net}{\tt Augeas} directory prefix for the lenses directory on mac\+OS to the one used by \href{https://brew.sh}{\tt Homebrew}\+: {\ttfamily /usr/local}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily network} plugin also supports port declarations to check if a port number is valid or if the port is available to use. \+\_\+(\+Michael Zronek)\+\_\+
+\item We added a \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} test to the \href{https://www.libelektra.org/plugins/network}{\tt Read\+Me of the plugin}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The build system does not print a warning about a deprecated directive any more, if you build the plugin with Bison {\ttfamily 3.\+3} or later. \+\_\+(René Schwaiger)\+\_\+
+\item Y\+A\+M\+Bi now handles comments at the end of input properly. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We improved the error reporting capabilities of the plugin. It now stores all of the error message reported by A\+N\+T\+LR and also specifies the line and column number of syntax errors. We also visualize these error messages in a similar way as modern compilers like Clang or G\+CC. For example, for the following erroneous input\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+key: - element 1
+- element 2 # Incorrect Indentation!
+\end{DoxyCode}
+
+
+the plugin currently prints an error message that looks like this\+:
+
+
+\begin{DoxyCode}
+config.yaml:2:1: mismatched input '- ' expecting end of map
+                 - element 2 # Incorrect Indentation!
+                 ^^
+config.yaml:2:37: extraneous input 'end of map' expecting end of document
+                  - element 2 # Incorrect Indentation!
+                                                      ^
+\end{DoxyCode}
+
+
+. The inspiration for this feature was taken from the book “\+The Definitive A\+N\+T\+LR 4 Reference” by Terence Parr. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item Yan L\+R’s lexer now
+\begin{DoxyItemize}
+\item handles comment at the end of a Y\+A\+ML document correctly,
+\item stores a more human readable description in tokens (e.\+g. {\ttfamily end of map} instead of {\ttfamily M\+AP E\+ND})
+\end{DoxyItemize}
+
+. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+Enhanced the plugin to also check for concrete file or directory permissions such as {\ttfamily rwx}. For example, you can specify that a user can write to a certain directory or file which prevents applications of runtime failures once they try to access the given path (such as a log directory or file). Simply add {\ttfamily check/path/user $<$user$>$} and {\ttfamily check/path/mode $<$modes$>$} as specification (metadata) and be assured that you can safely set a path value to the key. A more detailed explanation can be found \hyperlink{autotoc_md486_src_plugins_path_README_md}{here} \+\_\+(\+Michael Zronek)\+\_\+
+
+
+\begin{DoxyItemize}
+\item The plugin now handles comments at the end of a file properly. \+\_\+(René Schwaiger)\+\_\+
+\item We improved the syntax error messages of the plugin. \+\_\+(René Schwaiger)\+\_\+
+\item We fixed a memory leak that occurred, if a Y\+A\+ML file contained syntax errors. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The new plugin Y\+Ay P\+EG parses a subset of Y\+A\+ML using a parser based on P\+E\+G\+TL. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added some basic unit tests \+\_\+(\+Bernhard Denner)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We fixed some compiler warnings for the plugins
+\begin{DoxyItemize}
+\item {\ttfamily camel},
+\item \href{https://www.libelektra.org/plugins/line}{\tt {\ttfamily line}},
+\item \href{https://www.libelektra.org/plugins/mini}{\tt {\ttfamily mini}} and
+\item \href{https://www.libelektra.org/plugins/resolver}{\tt {\ttfamily resolver}}
+\end{DoxyItemize}
+
+reported on Free\+B\+SD. \+\_\+(René Schwaiger)\+\_\+
+\item The \hyperlink{autotoc_md579_src_plugins_resolver_README_md}{`resolver` plugin} and its tests now better support {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM} and {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC} paths using {\ttfamily $\sim$} to refer to a home directory. \+\_\+(Klemens Böswirth)\+\_\+
+\item If {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM} is set to a relative path, it is now treated as relative to {\ttfamily C\+M\+A\+K\+E\+\_\+\+I\+N\+S\+T\+A\+L\+L\+\_\+\+P\+R\+E\+F\+IX}. This ensures that {\ttfamily K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+Y\+S\+T\+EM} actually points to the same location no matter the current working directory. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}
+
+The text below summarizes updates to the \href{https://www.libelektra.org/libraries/readme}{\tt C (and C++)-\/based libraries} of Elektra.
+
+As always, the A\+BI and A\+PI of kdb.\+h is fully compatible, i.\+e. programs compiled against an older 0.\+8 version of Elektra will continue to work (A\+BI) and you will be able to recompile programs without errors (A\+PI).
+
+We have two minor incompatible changes\+:
+
+
+\begin{DoxyItemize}
+\item we now support larger array numbers (i.\+e. the larger numbers are not an error anymore)
+\item {\ttfamily elektra\+Array\+Validate\+Base\+Name\+String} returns the offset to the first digit of the array index instead of {\ttfamily 1}
+\end{DoxyItemize}
+
+For details of the changes see below {\ttfamily Core} and {\ttfamily Libease}.
+
+
+\begin{DoxyItemize}
+\item All plugins in the K\+DB now get a handle to a global keyset via {\ttfamily \hyperlink{group__plugin_ga436cda13ed70c0face08661a90620bf6}{elektra\+Plugin\+Get\+Global\+Key\+Set()}}, for communication between plugins. See \hyperlink{doc_decisions_global_keyset_md}{Global Key\+Set Handle} for details. \+\_\+(Mihael Pranjić)\+\_\+
+\item {\ttfamily elektra\+Write\+Array\+Number} now uses {\ttfamily kdb\+\_\+long\+\_\+long\+\_\+t} for array indices to be compatible with the high level A\+PI. Similarly the value of {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+M\+A\+X\+\_\+\+A\+R\+R\+A\+Y\+\_\+\+S\+I\+ZE} was changed to match this. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The function {\ttfamily elektra\+Array\+Validate\+Base\+Name\+String} now returns the offset to the first digit of the array index, if the given string represents an array element containing an index. This update enhances the behavior of the function. Now it not only tells you if a name represents a valid array element, but also the start position of the array index.
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+\hyperlink{array_8c_ab2eb25a64ded91feb47e58af8e62314a}{elektraArrayValidateBaseNameString} (\textcolor{stringliteral}{"#\_10"});
+\textcolor{comment}{//                                     ~~^ Returns `2` (instead of `1`)}
+
+\hyperlink{array_8c_ab2eb25a64ded91feb47e58af8e62314a}{elektraArrayValidateBaseNameString} (\textcolor{stringliteral}{"#\_\_\_1337"});
+\textcolor{comment}{//                                   ~~~~^ Returns `4` (instead of `1`)}
+\end{DoxyCode}
+
+
+If your program already used {\ttfamily elektra\+Array\+Validate\+Base\+Name\+String} and you check for a valid array element using the equality operator ({\ttfamily == 1}), then please use ({\ttfamily $>$= 1}) instead. For example, if you code that looks like this\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordflow}{if} (\hyperlink{array_8c_ab2eb25a64ded91feb47e58af8e62314a}{elektraArrayValidateBaseNameString}(baseName) == 1) …;
+\end{DoxyCode}
+
+
+, please update your code to check for a valid array element name like this\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordflow}{if} (\hyperlink{array_8c_ab2eb25a64ded91feb47e58af8e62314a}{elektraArrayValidateBaseNameString}(baseName) >= 1) …;
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item This is a new library containing only the function {\ttfamily elektra\+Get\+Opts}. This function can be used to parse command line arguments and environment variables and add their values to keys in the proc namespace.
+
+You can use {\ttfamily opt}, {\ttfamily opt/long} and {\ttfamily env} to specify a short, a long option and an environment variable. For more information take a look at \hyperlink{doc_tutorials_command-line-options_md}{the tutorial} and the code documentation of {\ttfamily elektra\+Get\+Opts}. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb spec-\/mount} correctly includes type plugin to validate {\ttfamily type}. \+\_\+(\+Markus Raab)\+\_\+
+\item {\ttfamily kdb setmeta} reports if it removed a metakey. \+\_\+(\+Markus Raab)\+\_\+
+\item {\ttfamily system/elektra/version} now has metadata to indicate that it cannot be edited or removed. \+\_\+(Dominic Jäger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The script {\ttfamily reformat-\/source} now also handles filenames containing spaces correctly. \+\_\+(René Schwaiger)\+\_\+
+\item The script \href{https://master.libelektra.org/scripts/dev/reformat-markdown}{\tt {\ttfamily reformat-\/markdown}} formats \href{https://daringfireball.net/projects/markdown}{\tt Markdown} files in the repository with \href{https://prettier.io}{\tt {\ttfamily prettier}}. \+\_\+(René Schwaiger)\+\_\+
+\item The scripts {\ttfamily reformat-\/source}, \href{https://master.libelektra.org/scripts/dev/reformat-cmake}{\tt {\ttfamily reformat-\/cmake}}, {\ttfamily reformat-\/shfmt} and \href{https://master.libelektra.org/scripts/dev/reformat-markdown}{\tt {\ttfamily reformat-\/markdown}} don\textquotesingle{}t format files that are ignored by git anymore. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We fixed various spelling mistakes. \+\_\+(René Schwaiger)\+\_\+
+\item The documentation for {\ttfamily elektra\+Meta\+Array\+To\+KS} was fixed. It now reflects the fact that the parent key is returned as well. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The tests for the IO bindings and notification plugins now use increased timeout values so that the test suite fails less often on machines with high load. \+\_\+(René Schwaiger)\+\_\+
+\item We update most of the \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} tests so they use an explicit namespace (like {\ttfamily system} or {\ttfamily user}). This has the advantage that the output of these tests \href{https://issues.libelektra.org/1773}{\tt does not change depending on the user that executes them}. Before the update these tests used \href{https://www.libelektra.org/tutorials/namespaces}{\tt cascading keys}. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{https://master.libelektra.org/tests/shell/shell_recorder}{\tt Shell Recorder} now also works correctly on Free\+B\+SD. \+\_\+(René Schwaiger)\+\_\+
+\item Fix memcheck target to detect memory problems again and enabled parallel testing to speed it up. \+\_\+(Mihael Pranjić)\+\_\+
+\item Fix memleak in pluginprocess tests. \+\_\+(Mihael Pranjić)\+\_\+
+\item The test \href{https://master.libelektra.org/scripts/check-env-dep}{\tt {\ttfamily check-\/env-\/dep}} does not require Bash anymore. \+\_\+(René Schwaiger)\+\_\+
+\item We fixed an incorrect directive in the \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\tt Markdown Shell Recorder} test of the \href{https://www.libelektra.org/plugins/typechecker}{\tt Type Checker} plugin. \+\_\+(René Schwaiger)\+\_\+
+\item We added a test that invokes the script \href{http://master.libelektra.org/scripts/dev/fix-spelling}{\tt {\ttfamily fix-\/spelling}} to check the documentation for common spelling mistakes. \+\_\+(René Schwaiger)\+\_\+
+\item We added a test that checks the formatting of Markdown files with \href{https://prettier.io}{\tt {\ttfamily prettier}}. \+\_\+(René Schwaiger)\+\_\+
+\item The test \href{https://master.libelektra.org/tests/shell/check_formatting.sh}{\tt {\ttfamily testscr\+\_\+check\+\_\+formatting}} now prints instructions that show you how to fix formatting problems. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The plugin name is now provided as compiler definition {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+N\+A\+ME} via C\+Make. See \href{https://issues.libelektra.org/1042}{\tt \#1042}. \+\_\+(\+Peter Nirschl)\+\_\+
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+F\+U\+N\+C\+T\+I\+ON} does not require the module name as parameter any more, instead the {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+N\+A\+ME} compiler definition is being used. See \href{https://issues.libelektra.org/1042}{\tt \#1042}. \+\_\+(\+Peter Nirschl)\+\_\+
+\item {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+R\+E\+A\+D\+ME}, and {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+E\+X\+P\+O\+RT} do not require the module name as parameter any more, instead the {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+P\+L\+U\+G\+I\+N\+\_\+\+N\+A\+ME} compiler definition is being used. See \href{https://issues.libelektra.org/1042}{\tt \#1042}. \+\_\+(\+Peter Nirschl)\+\_\+
+\item We now specify
+\begin{DoxyItemize}
+\item version number,
+\item project description, and
+\item homepage U\+RL in the C\+Make \href{https://cmake.org/cmake/help/latest/command/project.html}{\tt {\ttfamily project}} command. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+\item We fixed the detection of Python for the \href{https://www.libelektra.org/bindings/swig_python2}{\tt Python 2 binding} on mac\+OS. \+\_\+(René Schwaiger)\+\_\+
+\item You can now use the Ruby binding and plugin without any manual configuration, if you installed Ruby (version {\ttfamily 2.\+5} or later) via \href{http://brew.sh}{\tt Homebrew}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item The C\+Make find module \href{https://master.libelektra.org/scripts/cmake/Modules/FindAugeas.cmake}{\tt {\ttfamily Find\+Augeas.\+cmake}} does not print an error message anymore, if it is unable to locate Augeas in the {\ttfamily pkg-\/config} search path. \+\_\+(René Schwaiger)\+\_\+
+\item The C\+Make find module \href{https://master.libelektra.org/scripts/cmake/Modules/FindLua.cmake}{\tt {\ttfamily Find\+Lua.\+cmake}} does not print an error message anymore, if it is unable to locate a Lua executable. \+\_\+(René Schwaiger)\+\_\+
+\item We added code that makes sure you can compile \href{https://www.libelektra.org/bindings/io_glib}{\tt IO G\+L\+IB} on mac\+OS, even if {\ttfamily pkg-\/config} erroneously reports that G\+L\+IB requires linking to the library {\ttfamily intl} (part of \href{https://www.gnu.org/software/gettext}{\tt G\+NU gettext}). \+\_\+(René Schwaiger)\+\_\+
+\item We added a \href{https://master.libelektra.org/scripts/cmake/Modules/FindGLib.cmake}{\tt C\+Make find module for G\+Lib}. The module makes sure you can compile and link \href{https://www.libelektra.org/bindings/io_glib}{\tt IO G\+Lib} on mac\+OS. \+\_\+(René Schwaiger)\+\_\+
+\item The C\+Make find module \href{https://master.libelektra.org/scripts/cmake/Modules/FindLibOpenSSL.cmake}{\tt {\ttfamily Find\+Lib\+Open\+S\+S\+L.\+cmake}} does not require {\ttfamily pkg-\/config} anymore. The updated code also fixes some linker problems on mac\+OS (and probably other operating systems too), where the build system is not able to link to Open\+S\+SL using only the name of the Open\+S\+SL libraries. \+\_\+(René Schwaiger)\+\_\+
+\item We simplified the C\+Make find module \href{https://master.libelektra.org/scripts/cmake/Modules/FindLibgcrypt.cmake}{\tt {\ttfamily Find\+Libgcrypt.\+cmake}}.The update fixes problems on mac\+OS, where the build system excluded the plugin {\ttfamily crypto\+\_\+gcrypt}, although \href{https://gnupg.org/software/libgcrypt}{\tt Libgcrypt} was installed on the system. \+\_\+(René Schwaiger)\+\_\+
+\item We now use the \href{https://github.com/Kitware/CMake/blob/master/Modules/FindIconv.cmake}{\tt official C\+Make find module for {\ttfamily iconv}}. This update fixes linker problems with the \href{http://libelektra.org/plugins/iconv}{\tt {\ttfamily iconv}} and \href{http://libelektra.org/plugins/filecheck}{\tt {\ttfamily filecheck}} plugin on Free\+B\+SD 12. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{https://master.libelektra.org/scripts/cmake/Modules/FindLibgcrypt.cmake}{\tt C\+Make find module for Botan} does not require {\ttfamily pkg-\/config} anymore. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{https://master.libelektra.org/scripts/cmake/Modules/FindLibGit2.cmake}{\tt C\+Make find module for libgit2} now also exports the version number of libgit2. \+\_\+(René Schwaiger)\+\_\+
+\item We added a C\+Make find module for \href{https://libuv.org}{\tt libuv} and fixed a problem on mac\+OS, where the build system was \href{https://cirrus-ci.com/task/4852008365326336}{\tt unable to locate the header file of libuv}. \+\_\+(René Schwaiger)\+\_\+
+\item We added a C\+Make find module for \href{http://zeromq.org}{\tt Zero\+MQ} to fix build problems on mac\+OS. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We added
+\begin{DoxyItemize}
+\item \href{https://packages.debian.org/sid/antlr4}{\tt A\+N\+T\+LR},
+\item \href{https://packages.debian.org/sid/libantlr4-runtime-dev}{\tt A\+N\+T\+L\+R’s C++ runtime},
+\item \href{https://packages.debian.org/sid/ninja-build}{\tt Ninja}, and
+\item \href{https://github.com/mvdan/sh}{\tt {\ttfamily shfmt}}, to the \href{https://master.libelektra.org/scripts/docker/debian/sid/Dockerfile}{\tt Dockerfile for Debian sid}
+\end{DoxyItemize}
+
+. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We removed the {\ttfamily configure} script from the top-\/level directory. C\+Make is now popular enough so that this helper-\/script is not needed. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We now use \href{https://cirrus-ci.com}{\tt Cirrus CI} to \href{http://cirrus-ci.com/github/ElektraInitiative/libelektra}{\tt build and test Elektra} on
+\begin{DoxyItemize}
+\item \href{https://www.freebsd.org/releases/11.2R/announce.html}{\tt Free\+B\+SD 11.\+2} and
+\item \href{https://www.freebsd.org/releases/12.0R/announce.html}{\tt Free\+B\+SD 12.\+0}
+\end{DoxyItemize}
+
+. Both of these build jobs use {\ttfamily -\/\+Werror} to make sure we do not introduce any code that produces compiler warnings. \+\_\+(René Schwaiger)\+\_\+
+\item The new build job {\ttfamily 🍎 Clang} tests Elektra on mac\+OS. \+\_\+(René Schwaiger)\+\_\+
+\item We added the build job {\ttfamily 🍎 Clang A\+S\+AN}, which uses Clang with enabled \href{https://en.wikipedia.org/wiki/AddressSanitizer}{\tt Address\+Sanitizer} to test Elektra on mac\+OS. \+\_\+(René Schwaiger)\+\_\+
+\item The new build job {\ttfamily 🍎 F\+U\+LL} compiles and test Elektra using the C\+Make options {\ttfamily B\+U\+I\+L\+D\+\_\+\+S\+H\+A\+R\+ED=O\+FF} an {\ttfamily B\+U\+I\+L\+D\+\_\+\+F\+U\+LL=ON}. \+\_\+(René Schwaiger)\+\_\+
+\item We added {\ttfamily 🍎 M\+Map}, which tests Elektra using \href{https://www.libelektra.org/plugins/mmapstorage}{\tt {\ttfamily mmapstorage}} as default storage module. \+\_\+(René Schwaiger)\+\_\+
+\item We install and uninstall Elektra in all of the mac\+OS build jobs to make sure that \href{https://master.libelektra.org/scripts/cmake/ElektraUninstall.cmake}{\tt {\ttfamily Elektra\+Uninstall.\+cmake}} removes all of the installed files. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We added a badge displaying the current build status to the main https\+://master.libelektra.\+org/\+R\+E\+A\+D\+ME.md \char`\"{}\+Read\+Me\char`\"{}. \+\_\+(René Schwaiger)\+\_\+
+\item The build job {\ttfamily formatting-\/check} now also checks the formatting of Shell scripts. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item We now test Elektra on \href{https://docs.travis-ci.com/user/reference/xenial}{\tt Ubuntu Xenial Xerus}. \+\_\+(René Schwaiger)\+\_\+
+\item We removed the build jobs {\ttfamily 🍏 Clang} and {\ttfamily 🍏 Check Shell} in favor of the Cirrus build job {\ttfamily 🍎 Clang}. \+\_\+(René Schwaiger)\+\_\+
+\item We removed the build jobs {\ttfamily 🍏 Clang A\+S\+AN} in favor of the Cirrus build job {\ttfamily 🍎 Clang A\+S\+AN}. \+\_\+(René Schwaiger)\+\_\+
+\item We removed the build jobs {\ttfamily 🍏 F\+U\+LL} in favor of the Cirrus build job {\ttfamily 🍎 F\+U\+LL}. \+\_\+(René Schwaiger)\+\_\+
+\item We removed the build jobs {\ttfamily 🍏 M\+Map} in favor of the Cirrus build job {\ttfamily 🍎 M\+Map}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}
+
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date.
+
+We are currently working on following topics\+:
+
+
+\begin{DoxyItemize}
+\item infallible high-\/level A\+PI\+: creating an A\+PI that guarantees you to return configuration values \+\_\+(Klemens Böswirth)\+\_\+
+\item error handling \+\_\+(\+Michael Zronek)\+\_\+
+\item elektrify L\+C\+Dproc \+\_\+(Klemens Böswirth)\+\_\+ and \+\_\+(\+Michael Zronek)\+\_\+
+\item Y\+A\+ML as default storage \+\_\+(René Schwaiger)\+\_\+
+\item misconfiguration tracker \+\_\+(\+Vanessa Kos)\+\_\+
+\item global mmap cache\+: This feature will enable Elektra to return configuration without parsing configuration files or executing other plugins as long as the configuration files are not changed. \+\_\+(Mihael Pranjić)\+\_\+
+\end{DoxyItemize}
+
+and since recently\+:
+
+
+\begin{DoxyItemize}
+\item automatic shell completion \+\_\+(\+Ulrike Schaefer)\+\_\+
+\item plugin framework improvements \+\_\+(\+Vid Leskovar)\+\_\+
+\item 3-\/way merge \+\_\+(Dominic Jäger)\+\_\+
+\item reducing entry barriers for newcomers \+\_\+(\+Hani Torabi Makhsos)\+\_\+
+\item bug fixing \+\_\+(\+Usama Morad)\+\_\+ and \+\_\+(\+Kurt Micheli)\+\_\+
+\end{DoxyItemize}
+
+In this release we created 986 commits in which 802 files were changed, with 21687 insertions(+) and 6912 deletions(-\/).
+
+Following authors made this release possible\+:
+
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Commits }&\textbf{ Author  }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Commits }&\textbf{ Author  }\\\cline{1-2}
+\endhead
+1 &Aybuke Ozdemir \href{mailto:aybuke.147@gmail.com}{\tt aybuke.\+147@gmail.\+com} \\\cline{1-2}
+2 &Gabriel Rauter \href{mailto:rauter.gabriel@gmail.com}{\tt rauter.\+gabriel@gmail.\+com} \\\cline{1-2}
+6 &Bernhard Denner \href{mailto:bernhard.denner@gmail.com}{\tt bernhard.\+denner@gmail.\+com} \\\cline{1-2}
+6 &Dominic Jäger \href{mailto:dominic.jaeger@gmail.com}{\tt dominic.\+jaeger@gmail.\+com} \\\cline{1-2}
+25 &Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com} \\\cline{1-2}
+32 &Mihael Pranjic \href{mailto:mpranj@limun.org}{\tt mpranj@limun.\+org} \\\cline{1-2}
+66 &Michael Zronek \href{mailto:michael.zronek@gmail.com}{\tt michael.\+zronek@gmail.\+com} \\\cline{1-2}
+112 &Markus Raab \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org} \\\cline{1-2}
+131 &Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\tt k.\+boeswirth+git@gmail.\+com} \\\cline{1-2}
+141 &Dominik Hofer \href{mailto:me@dominikhofer.com}{\tt me@dominikhofer.\+com} \\\cline{1-2}
+464 &René Schwaiger \href{mailto:sanssecours@me.com}{\tt sanssecours@me.\+com} \\\cline{1-2}
+\end{longtabu}
+
+
+We welcome new contributors! Read \href{https://www.libelektra.org/devgettingstarted/ideas}{\tt here} about how to get started.
+
+As first step, you could give us feedback about these release notes. Contact us via our \href{https://issues.libelektra.org}{\tt issue tracker}.
+
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.26.tar.gz}{\tt here} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.26.tar.gz?raw=true}{\tt Git\+Hub}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.26.tar.gz.hashsum?raw=true}{\tt hashsums are\+:}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+26.\+tar.\+gz
+\item size\+: 6395865
+\item md5sum\+: 4ef202b5d421cc497ef05221e5309ebc
+\item sha1\+: 94f654764bcf49d0ebc7e636f444e24ca6cfeb19
+\item sha256\+: 5806cd0b2b1075fe0d5a303649d0bd9365752053e86c684ab7c06e7f369155d3
+\end{DoxyItemize}
+
+The release tarball is also available signed by Markus Raab using Gnu\+PG from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.26.tar.gz.gpg}{\tt here} or on \href{https://github.com/ElektraInitiative/ftp/blob/master/releases//elektra-0.8.26.tar.gz.gpg?raw=true}{\tt Git\+Hub}
+
+Already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.26/html/}{\tt here} or on \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.8.26}{\tt Git\+Hub}.
+
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\tt R\+SS feed} to always get the release notifications.
+
+If you also want to participate, or for any questions and comments please contact us via our issue tracker \href{http://issues.libelektra.org}{\tt on Git\+Hub}.
+
+\href{https://www.libelektra.org/news/0.8.26-release}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://libelektra.org}{\tt https\+://libelektra.\+org}
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\tt Elektra Initiative} 
