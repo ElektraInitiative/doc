@@ -1,0 +1,289 @@
+{\itshape an A\+PI and web user interface to remotely manage Elektra instances}
+
+The configuration view of elektra-\/web is similar to the tree view of the \href{https://master.libelektra.org/src/tools/qt-gui}{\tt qt-\/gui}, but with dynamic fields rendered via key metadata.
+
+Elektra-\/web requires\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://libelektra.org/}{\tt Elektra} with the \href{https://master.libelektra.org/src/plugins/yajl/}{\tt {\ttfamily yajl} plugin} installed
+\item A recent \href{https://nodejs.org/en/}{\tt node.\+js} installation (at least 6.\+x)
+\item \href{https://golang.org/}{\tt Go} with version $>$ 1.\+13
+\end{DoxyItemize}
+
+To build Elektra with the elektra-\/web tool\+:
+
+
+\begin{DoxyItemize}
+\item Install Node.\+js, Go and dependencies for {\ttfamily yajl} plugin (see links above)
+\item Configure libelektra build with the elektra-\/web tool, e.\+g. {\ttfamily cmake .. -\/\+D\+T\+O\+O\+LS=\char`\"{}kdb;web\char`\"{}}
+\item Build libelektra\+: {\ttfamily make}
+\item Install libelektra\+: {\ttfamily sudo make install}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Start an elektrad instance\+: {\ttfamily kdb run-\/elektrad}
+\item Start the client\+: {\ttfamily kdb run-\/web}
+\item You can now access the client on\+: \href{http://localhost:33334}{\tt http\+://localhost\+:33334}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Create and run a new docker container\+: {\ttfamily docker run -\/d -\/it -\/p 33333\+:33333 -\/p 33334\+:33334 elektra/web}
+\item You can now access the client on\+: \href{http://localhost:33334}{\tt http\+://localhost\+:33334}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Install dependencies (see above)
+\item Clone libelektra repo and {\ttfamily cd libelektra/src/tools/web}
+\item Install and start an elektrad instance\+:
+\begin{DoxyItemize}
+\item {\ttfamily cd elektrad}
+\item {\ttfamily go build}
+\item {\ttfamily ./elektrad} (replaces {\ttfamily kdb run-\/elektrad})
+\end{DoxyItemize}
+\item Install and start the client (connects to the elektrad instance)\+:
+\begin{DoxyItemize}
+\item {\ttfamily cd client}
+\item {\ttfamily npm install}
+\item {\ttfamily npm start} (replaces {\ttfamily kdb run-\/web})
+\end{DoxyItemize}
+\item You can now access the client on\+: \href{http://localhost:33334}{\tt http\+://localhost\+:33334}
+\end{DoxyItemize}
+
+If you do not want to configure multiple instances, you can set the {\ttfamily I\+N\+S\+T\+A\+N\+CE} environment variable to the server you want to configure. You can also set {\ttfamily user\+:/sw/elektra/web/\#0/current/instance} to the host. Make sure to enter a full H\+T\+TP U\+RL, e.\+g. {\ttfamily \href{http://localhost:33333}{\tt http\+://localhost\+:33333}}.
+
+If this configuration option is set, elektra-\/web will load the configuration page for that instance instead of the main overview page.
+
+If you want to host elektra-\/web with the client and elektrad on the same instance, after starting elektrad via {\ttfamily kdb run-\/elektrad}, you can run start the client as follows\+:
+
+
+\begin{DoxyCode}
+INSTANCE="http://localhost:33333" kdb run-web
+\end{DoxyCode}
+
+
+It is also possible to set visibility by prefixing the host with {\ttfamily V\+I\+S\+I\+B\+I\+L\+I\+TY@}.
+
+For example ({\ttfamily advanced} visibility, {\ttfamily user} is default)\+:
+
+
+\begin{DoxyCode}
+INSTANCE="advanced@http://localhost:33333" kdb run-web
+\end{DoxyCode}
+
+
+Now, when you open \href{http://localhost:33334}{\tt http\+://localhost\+:33334} in your browser, the configuration page for the instance will be opened immediately.
+
+It is possible to change the {\ttfamily kdb} executable that elektra-\/web uses by setting the {\ttfamily K\+DB} environment variable, this is not needed for {\ttfamily elektrad}.
+
+For example\+:
+
+
+\begin{DoxyCode}
+kdb run-elektrad
+KDB="/usr/local/custom/bin/kdb" kdb run-web
+\end{DoxyCode}
+
+
+Elektra web consists of multiple components\+:
+
+
+\begin{DoxyItemize}
+\item (multiple) servers running an elektra daemon (`elektrad`)
+\item a single server to communicate with the elektra daemons and serve the client (`webd`)
+\item a web browser that accesses the client (Web UI) on the `webd` server (`client`)
+\end{DoxyItemize}
+
+
+
+
+
+\href{https://apiblueprint.org/}{\tt A\+PI blueprints} are available for both A\+P\+Is\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://master.libelektra.org/doc/api_blueprints/elektrad.apib}{\tt elektrad}, documentation\+: \href{https://elektrad.docs.apiary.io/}{\tt https\+://elektrad.\+docs.\+apiary.\+io/}
+\item \href{https://master.libelektra.org/doc/api_blueprints/webd.apib}{\tt webd}, documentation\+: \href{https://elektrawebd.docs.apiary.io/}{\tt https\+://elektrawebd.\+docs.\+apiary.\+io/}
+\end{DoxyItemize}
+
+In order to test A\+PI on localhost, you have to start elektrad instance. You can do it in two ways\+:
+
+
+\begin{DoxyItemize}
+\item run manually (if you would like to start it manually or you don\textquotesingle{}t have eletrad-\/web tool installed)
+\begin{DoxyItemize}
+\item {\ttfamily cd libelektra/src/tools/web}
+\item {\ttfamily cd elektrad}
+\item {\ttfamily go build}
+\item {\ttfamily ./elektrad}
+\end{DoxyItemize}
+\item by installing elektrad tool together with Elektra and run it
+\begin{DoxyItemize}
+\item please see the section {\ttfamily Building with elektra-\/web Tool}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+Now the server is runing on \href{http://localhost:33333}{\tt http\+://localhost\+:33333}. After that you can test A\+PI with help of Postman or other tool, which allows to send R\+E\+ST A\+PI requests.
+
+Additional note. It is recommended to install the elektrad tool than starting the server manually. When Elektra is installed, the {\ttfamily kdb} command together with its tools is installed globally. For instance, whenever you would like to write any shell script, which has to start a R\+E\+ST A\+PI server, you can just add the following line {\ttfamily kdb run-\/elektrad} inside your file and save it. After that, the created shell script can be executed from any directory.
+
+Examples\+:
+
+let\textquotesingle{}s create the new key-\/value pair {\ttfamily user\+:/test} and set its value to 5. You can do it next way\+:
+
+
+\begin{DoxyItemize}
+\item through the command terminal 
+\begin{DoxyCode}
+kdb set user:/test 5
+\end{DoxyCode}
+
+\item through the rest api using curl 
+\begin{DoxyCode}
+curl -X PUT -H "Content-Type: text/plain" --data "5" http://localhost:33333/kdb/user/test
+\end{DoxyCode}
+
+\end{DoxyItemize}
+
+The output of the commandline tool will be\+: {\ttfamily Set string to \char`\"{}5\char`\"{}}. If the specified key didn\textquotesingle{}t exist before, then the output will be {\ttfamily Create a new key user\+:/test with string \char`\"{}5\char`\"{}}. Elektrad will respond with code {\ttfamily 200}.
+
+Now, the command
+
+
+\begin{DoxyCode}
+curl http://localhost:33333/kdb/user/test
+\end{DoxyCode}
+
+
+will return us the value of the specified key {\ttfamily user\+:/test}, which is stored in the database right now
+
+
+\begin{DoxyCode}
+\{
+    "exists": true,
+    "name": "test",
+    "path": "user:/test",
+    "ls": [
+        "user:/test"
+    ],
+    "value": "5",
+    "meta": ""
+\}
+\end{DoxyCode}
+
+
+Currently, webd does not support authentication. The best way to work around this is to use a reverse proxy (e.\+g. \href{https://www.nginx.com/resources/admin-guide/reverse-proxy/}{\tt nginx reverse proxy}).
+
+Once you set up a reverse proxy on your web server, you can use it to authenticate users, e.\+g. by \href{https://www.digitalocean.com/community/tutorials/how-to-set-up-password-authentication-with-nginx-on-ubuntu-14-04}{\tt username/password auth}
+
+{\ttfamily elektrad/} -\/ contains the daemon to interact with a single elektra instance {\ttfamily webd/} -\/ contains a daemon to serve the client and interact with multiple elektra instances
+
+{\ttfamily client/} -\/ contains the elektra-\/web client (Web UI)
+
+
+\begin{DoxyItemize}
+\item {\ttfamily src/actions/} -\/ Redux actions to access the K\+DB or display notifications in the UI
+\item {\ttfamily src/components/} -\/ React components
+\begin{DoxyItemize}
+\item {\ttfamily pages/} -\/ pages in the app
+\begin{DoxyItemize}
+\item {\ttfamily Home.\+jsx} -\/ the main page (overview of all instances)
+\item {\ttfamily Configuration.\+jsx} -\/ configuration page (single instance)
+\end{DoxyItemize}
+\item {\ttfamily Tree\+Item/} -\/ contains all UI components related to a single item in the tree view
+\begin{DoxyItemize}
+\item {\ttfamily dialogs/} -\/ these dialogs are opened when certain actions are pressed (icons next to the tree items)
+\begin{DoxyItemize}
+\item {\ttfamily Add\+Dialog.\+jsx} -\/ dialog to create a new (sub-\/)key
+\item {\ttfamily Duplicate\+Dialog.\+jsx} -\/ dialog to duplicate a key
+\item {\ttfamily Edit\+Dialog.\+jsx} -\/ dialog to edit a key value
+\item {\ttfamily Remove\+Dialog.\+jsx} -\/ dialog to confirm the removal of a key
+\item {\ttfamily Settings\+Dialog.\+jsx} -\/ dialog to edit metadata (new metadata can be implemented here)
+\item {\ttfamily $\ast$\+Sub\+Dialog.jsx} -\/ sub-\/dialogs of the Settings\+Dialog
+\end{DoxyItemize}
+\item {\ttfamily fields/} -\/ special input fields to display various values
+\end{DoxyItemize}
+\item {\ttfamily App.\+jsx} -\/ defines app structure and routes
+\end{DoxyItemize}
+\item {\ttfamily src/index.\+js} -\/ main entry point of the app (fetches instances and renders UI)
+\item {\ttfamily src/containers/} -\/ contains components that are connected to Redux
+\item {\ttfamily src/css/} -\/ contains C\+SS styles
+\item {\ttfamily src/reducers/} -\/ contains Redux reducers (used to process actions)
+\end{DoxyItemize}
+
+Lockfiles ({\ttfamily package-\/lock.\+json}) can be updated by simply deleting the current lock file and running {\ttfamily npm install}, which creates a new lock file.
+
+Check for outdated dependencies via {\ttfamily npm outdated}. Dependencies can then be updated by running {\ttfamily npm update}.
+
+Run the following command in the {\ttfamily scripts/docker/web/} directory, replacing {\ttfamily 1.\+5.\+0} with the latest version\+:
+
+
+\begin{DoxyCode}
+docker build -t elektra/web:1.5.0 -t elektra/web:latest .
+\end{DoxyCode}
+
+
+Test the image\+:
+
+
+\begin{DoxyCode}
+docker run -d -it -p 33333:33333 -p 33334:33334 elektra/web:1.5.0
+\end{DoxyCode}
+
+
+Publish it to the docker registry\+:
+
+
+\begin{DoxyCode}
+docker push elektra/web:1.5.0
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Create a new sub dialog by, for example, copying the {\ttfamily Number\+Sub\+Dialog.\+jsx} file (or similar) to a new file in the {\ttfamily client/src/components/\+Tree\+Item/dialogs} folder.
+\item Include the sub dialog by adding it to the {\ttfamily Settings\+Dialog.\+jsx} file in the same folder. For example, it could be added before the Additional\+Metakeys\+Sub\+Dialog at the end of the file\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
++     <NewSubDialog
++       onChange=\{this.handleEdit('check/something')\}
++       value=\{this.getMeta('check/something', '')\}
++       saved=\{this.getSaved('check/something')\}
++     />
+      <AdditionalMetakeysSubDialog
+        handleEdit=\{this.handleEdit.bind(this)\}
+        getMeta=\{this.getMeta.bind(this)\}
+        getSaved=\{this.getSaved.bind(this)\}
+        meta=\{this.props.meta\}
+        deleteMeta=\{this.props.deleteMeta\}
+      />
+    </FocusTrapDialog>
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Mark the meta keys as handled by adding them to the {\ttfamily H\+A\+N\+D\+L\+E\+D\+\_\+\+M\+E\+T\+A\+D\+A\+TA} array in {\ttfamily client/src/components/\+Tree\+Item/dialogs/utils.\+js}\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+export const HANDLED\_METADATA = [
+  ...,
+  'visibility',
+  'binary',
++ 'check/something',
+]
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Validation can then be added by handling metadata in the {\ttfamily client/src/components/\+Tree\+Item/fields/validate\+Type.\+js} file to the {\ttfamily validate\+Type} function.
+\item Rendering fields in a special way when certain metakeys are present can be done by adjusting the {\ttfamily render\+Special\+Value} function in the {\ttfamily client/src/components/\+Tree\+Item/index.\+js} file. 
+\end{DoxyItemize}

@@ -1,0 +1,22 @@
+Usually, a backend refers to exactly one file per namespace. This file can be returned using {\ttfamily kdb file}.
+
+In some situations a single mountpoint refers to more than one file per namespace\+:
+
+
+\begin{DoxyItemize}
+\item For X\+DG in the {\ttfamily system} namespace may contain several files (X\+D\+G\+\_\+\+C\+O\+N\+F\+I\+G\+\_\+\+D\+I\+RS).
+\item A fallback file if some data cannot be stored in some format (Idea from \+: writing the same content to several files, merging when reading)
+\end{DoxyItemize}
+
+Multiple File Backends are not supported for now in the case of writing files.
+
+Multiple sources in one namespace only work, if the fallback Key\+Set is part of the mountpoint config. That way any change to the fallback Key\+Set would essentially make the whole thing a different mountpoint and thereby invalidate all guarantees.
+
+Writeable multiple file backends would\+:
+
+
+\begin{DoxyItemize}
+\item make it impossible for admins to modify content of all files using Elektra
+\item do not work atomically (a journal would be needed)
+\item do not work together with mmap (as it only checks one file for cache misses)
+\end{DoxyItemize}

@@ -1,0 +1,74 @@
+In this tutorial, you will learn how to set up a development environment for Elektra using Windows Subsystem for Linux (W\+SL) and Visual Studio 2019.
+
+Visual Studio 2019 (V\+S2019) Community is free but requires a registration after a couple of days. \href{https://visualstudio.microsoft.com/downloads/}{\tt Download it} and install the Linux development with C++ workload.
+
+Elektra development mainly happens on G\+N\+U/\+Linux distributions. Therefore, it makes sense to use W\+SL if you have Windows 10 installed on your PC. For the beginning, it does not matter if you choose W\+SL 1 or W\+SL 2. It is possible to convert them later.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md3795}{}\section{Download and Installation}\label{doc_tutorials_contributing-windows_md_autotoc_md3795}
+We assume you use Ubuntu as W\+SL distribution. Install the packages required for building from V\+S2019\+:
+
+
+\begin{DoxyCode}
+apt install g++ gdb make ninja-build rsync zip
+\end{DoxyCode}
+
+
+Then clone the libelektra git repository\+:
+
+
+\begin{DoxyCode}
+git clone git@github.com:ElektraInitiative/libelektra.git
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries Do not use V\+S2019 to clone the repository}\+: You will not be able to compile because of invalid line endings. \end{quote}
+
+
+and open it in V\+S2019. It will complain that Intelli\+Sense is out of date. In addition, the {\ttfamily Error List} at the bottom will show C\+Make errors about missing compilers. To solve this, you have to configure a Linux C\+Make project.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md3796}{}\section{Configure a Linux C\+Make project}\label{doc_tutorials_contributing-windows_md_autotoc_md3796}
+Microsoft has \href{https://docs.microsoft.com/en-us/cpp/linux/cmake-linux-configure?view=msvc-160}{\tt even more information} about this task.
+
+In the drop-\/down menu that says {\ttfamily x64-\/\+Debug (Default)} click {\ttfamily Manage Configurations...}. Add {\ttfamily W\+S\+L-\/\+G\+C\+C-\/\+Debug} and save the configuration.
+
+\begin{quote}
+You can remove {\ttfamily x64-\/\+Debug (Default)}. \end{quote}
+
+
+C\+Make generation will automatically restart. When it has completed, you can click the drop-\/down {\ttfamily Select Startup Item...} (by the green {\itshape Play} button).
+
+A long list of targets should appear. Choose {\ttfamily hello (bin\textbackslash{}hello)} and click the green {\itshape Play} button. You should now see the output {\ttfamily Hello world} in the Linux Console Window at the bottom.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md3797}{}\section{Why choose V\+S2019}\label{doc_tutorials_contributing-windows_md_autotoc_md3797}
+One advantage of using V\+S2019 is the graphical debugger. Search for {\ttfamily hello.\+c} in the Solution Explorer to the right. Create a breakpoint in the main function and run the program again using the green {\itshape Play} button.
+
+On the bottom-\/left you will see the windows {\ttfamily Autos}, {\ttfamily Locals} and {\ttfamily Watch 1}. Click on {\ttfamily Locals} to inspect the {\ttfamily Key $\ast$ k}. Right-\/click {\ttfamily key\+New} to access functions like {\ttfamily Peek Definition}.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md3798}{}\section{Choosing your W\+S\+L version}\label{doc_tutorials_contributing-windows_md_autotoc_md3798}
+It makes sense to compare W\+SL 1 and W\+SL 2 and make an informed decision for one of them. Your setup may require adaptions, such as installing an S\+SH server in your Linux distribution.
+
+Good sources of information are\+:
+
+
+\begin{DoxyItemize}
+\item the article \href{https://docs.microsoft.com/en-us/windows/wsl/compare-versions}{\tt Comparing W\+SL 1 and W\+SL 2} from the official W\+SL documentation
+\item the blog post \href{https://devblogs.microsoft.com/cppblog/c-with-visual-studio-and-wsl2/}{\tt C++ with Visual Studio and W\+S\+L2}
+\item the official \href{https://docs.microsoft.com/en-us/cpp/linux/?view=msvc-160}{\tt Linux with Visual Studio C++ documentation}
+\end{DoxyItemize}
+
+Commands to change your W\+SL version can be found, for example, in the blog post \href{https://devblogs.microsoft.com/commandline/wsl-2-is-now-available-in-windows-insiders/}{\tt W\+SL 2 is now available in Windows Insiders}\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md3799}{}\section{Troubleshooting}\label{doc_tutorials_contributing-windows_md_autotoc_md3799}
+For further information, consider the official \href{https://docs.microsoft.com/en-us/cpp/linux/?view=msvc-160}{\tt Linux with Visual Studio C++ documentation}.
+
+If you choose to work with source code residing on a Windows filesystem mounted in W\+SL (e.\+g.{\ttfamily /mnt/c/...}), please enable the {\ttfamily metadata} option to prevent problems due to permissions not being persisted\+:
+
+
+\begin{DoxyItemize}
+\item Create or modify {\ttfamily /etc/wsl.conf} to contain the following section and setting\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+[automount]
+options = "metadata"
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Restart the W\+SL VM by issuing {\ttfamily wsl -\/-\/shutdown} in your window console.
+\end{DoxyItemize}
+
+Building from sources residing on a mounted windows file system may incur a signifcant performance penalty. Consider using your W\+SL home directory (e.\+g. {\ttfamily $\sim$/}) as your location for the Elektra sources. 

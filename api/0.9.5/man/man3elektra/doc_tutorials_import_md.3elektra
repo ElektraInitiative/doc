@@ -1,0 +1,75 @@
+.TH "doc_tutorials_import_md" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_import_mdHow-To: kdb import 
+ \- The kdb tool allows users to interact with Elektra’s Key Database via the command line\&. This tutorial explains the import function of kdb\&. This command lets you import Keys from the Elektra Key Database\&.
+.PP
+The command to use kdb import is:
+.PP
+.PP
+.nf
+kdb import [options] destination [format]
+.fi
+.PP
+.PP
+In this command, \fCdestination\fP is where the imported Keys should be stored below\&. For instance, \fCkdb import system:/imported\fP would store all the keys below \fCsystem:/imported\fP\&. This command takes Keys from \fCstdin\fP to store them into the Elektra Key Database\&. Typically, it is used with a pipe to read in the Keys from a file\&.
+.PP
+The format argument can be a very powerful option to use with kdb import\&. The format argument allows a user to specify which plugin is used to import the Keys into the Key Database\&. The user can specify any storage plugin to serve as the format for the Keys to be imported\&. For instance, if a user wanted to import a \fC/etc/hosts\fP file into KDB without mounting it, they could use the command \fCcat /etc/hosts | kdb import system:/hosts hosts\fP\&. This command would essentially copy the current hosts file into KDB, like mounting it\&. Unlike mounting it, changes to the Keys would not be reflected in the hosts file and vise versa\&.
+.PP
+The dump does not rename keys by design\&. If a user exports a KeySet using dump using a command such as \fCkdb export system:/backup > backup\&.ecf\fP, they can only import that keyset back into \fCsystem:/backup\fP using a command like \fCcat backup\&.ecf | kdb import system:/backup\fP\&.
+.PP
+The kdb import command only takes one special option \fC-s <name>\fP or alternatively \fC--strategy <name>\fP, which is used to specify a strategy\&.
+.PP
+.PP
+.nf
+cat backup\&.ecf | kdb import system:/backup
+.fi
+.PP
+.PP
+This command would import all keys stored in the file \fCbackup\&.ecf\fP into the Key Database under \fCsystem:/backup\fP\&.
+.PP
+In this example, \fCbackup\&.ecf\fP was exported from the KeySet using the dump format by using the command:
+.PP
+.PP
+.nf
+kdb export system:/backup > backup\&.ecf
+.fi
+.PP
+.PP
+\fCbackup\&.ecf\fP contains all the information about the keys below \fCsystem:/backup\fP:
+.PP
+.PP
+.nf
+cat backup\&.ecf
+#> kdbOpen 1
+#> ksNew 3
+#> keyNew 19 0
+#> system:/backup/key1
+#> keyMeta 7 1
+#> binary
+#> keyEnd
+#> keyNew 19 0
+#> system:/backup/key2
+#> keyMeta 7 1
+#> binary
+#> keyEnd
+#> keyNew 19 0
+#> system:/backup/key3
+#> keyMeta 7 1
+#> binary
+#> keyEnd
+#> ksEnd
+.fi
+.PP
+.PP
+Before the import command, \fCsystem:/backup\fP does not exists and no keys are contained there\&. After the import command, running the command \fCkdb ls system:/backup\fP prints:
+.PP
+.PP
+.nf
+system:/backup/key1
+system:/backup/key2
+system:/backup/key3
+.fi
+.PP
+ 

@@ -1,0 +1,438 @@
+.TH "doc_news_2019-02-26_0_8_26_md" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2019-02-26_0_8_26_md0\&.8\&.26 Release 
+ \- 
+.IP "\(bu" 2
+guid: 55950e64-fa4e-4eb9-9a3a-2c73d9cd6478
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Tue, 26 Feb 2019 15:31:09 +0100
+.IP "\(bu" 2
+shortDesc: high-level API
+.PP
+.PP
+We are proud to release Elektra 0\&.8\&.26 with the new high-level API\&.
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP
+.PP
+The new high-level API provides an easier way for applications to get started with Elektra\&.
+.PP
+To use Elektra in an application (including proper error handling) you now only need a few self-explanatory lines of code:
+.PP
+.PP
+.nf
+ElektraError * error = NULL;
+Elektra * elektra = elektraOpen ("/sw/org/myapp/#0/current", NULL, &error);
+if (elektra == NULL)
+{
+        printf ("An error occurred: %s", elektraErrorDescription (error));
+        elektraErrorReset (&error);
+        return -1;
+}
+
+// Once you have an instance of `Elektra` you simply call one of the typed `elektraGet*` functions to read a value:
+
+kdb_long_t mylong = elektraGetLong (elektra, "mylong");
+printf ("got long " ELEKTRA_LONG_F "\n", mylong);
+const char * mystring = elektraGetString (elektra, "mystring");
+printf ("got string %s\n", mystring);
+
+elektraClose (elektra);
+.fi
+.PP
+.PP
+To run the application, the configuration should be specified, e\&.g\&., for mylong:
+.PP
+.PP
+.nf
+sudo kdb setmeta /sw/org/myapp/#0/current/mylong type long
+sudo kdb setmeta /sw/org/myapp/#0/current/mylong default 5
+.fi
+.PP
+.PP
+In the getters/setters there is no need to convert types or to specify the base path \fC/sw/org/myapp/#0/current\fP, as the high-level API does that for you\&. The API supports the CORBA types already used by the \fCplugins\fP\&. The high-level API should also be used in combination with a specification (\fCspec-mount\fP)\&. When used this way, the API is designed to be error and crash free while reading values\&. Writing values, can of course still produce errors\&.
+.PP
+Another advantage of the new API is, that it will be much easier to write bindings for other languages now, because only a few simple types and functions have to be mapped to provide the full functionality\&.
+.PP
+Take a look at the \fBREADME\fP for more information\&.
+.PP
+Because of the high-level API, we now have the new header files \fC\fBelektra\&.h\fP\fP and a folder \fCelektra\fP in Elektra's include directory\&. Furthermore, we install the library \fClibelektra-highlevel\&.so\fP and the pkgconfig file \fCelektra-highlevel\&.pc\fP for easier detection\&.
+.PP
+For an example on how to build an application using this API take a look at \fBthis\fP\&.
+.PP
+A big thanks to \fIKlemens Böswirth\fP for making this possible\&. Also big thanks to \fIDominik Hofer\fP, who did all the foundation work for this API\&.
+.PP
+The following section lists news about the \fCplugins\fP we updated in this release\&.
+.PP
+.IP "\(bu" 2
+We changed the default \fCAugeas\fP directory prefix for the lenses directory on macOS to the one used by \fCHomebrew\fP: \fC/usr/local\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+The \fCnetwork\fP plugin also supports port declarations to check if a port number is valid or if the port is available to use\&. _(Michael Zronek)_
+.IP "\(bu" 2
+We added a \fCMarkdown Shell Recorder\fP test to the \fCReadMe of the plugin\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+The build system does not print a warning about a deprecated directive any more, if you build the plugin with Bison \fC3\&.3\fP or later\&. _(René Schwaiger)_
+.IP "\(bu" 2
+YAMBi now handles comments at the end of input properly\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We improved the error reporting capabilities of the plugin\&. It now stores all of the error message reported by ANTLR and also specifies the line and column number of syntax errors\&. We also visualize these error messages in a similar way as modern compilers like Clang or GCC\&. For example, for the following erroneous input:
+.PP
+.PP
+.PP
+.nf
+key: - element 1
+- element 2 # Incorrect Indentation!
+.fi
+.PP
+.PP
+the plugin currently prints an error message that looks like this:
+.PP
+.PP
+.nf
+config\&.yaml:2:1: mismatched input '- ' expecting end of map
+                 - element 2 # Incorrect Indentation!
+                 ^^
+config\&.yaml:2:37: extraneous input 'end of map' expecting end of document
+                  - element 2 # Incorrect Indentation!
+                                                      ^
+.fi
+.PP
+.PP
+\&. The inspiration for this feature was taken from the book “The Definitive ANTLR 4 Reference” by Terence Parr\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+Yan LR’s lexer now
+.IP "  \(bu" 4
+handles comment at the end of a YAML document correctly,
+.IP "  \(bu" 4
+stores a more human readable description in tokens (e\&.g\&. \fCend of map\fP instead of \fCMAP END\fP)
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.PP
+Enhanced the plugin to also check for concrete file or directory permissions such as \fCrwx\fP\&. For example, you can specify that a user can write to a certain directory or file which prevents applications of runtime failures once they try to access the given path (such as a log directory or file)\&. Simply add \fCcheck/path/user <user>\fP and \fCcheck/path/mode <modes>\fP as specification (metadata) and be assured that you can safely set a path value to the key\&. A more detailed explanation can be found \fBhere\fP _(Michael Zronek)_
+.PP
+.IP "\(bu" 2
+The plugin now handles comments at the end of a file properly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We improved the syntax error messages of the plugin\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed a memory leak that occurred, if a YAML file contained syntax errors\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+The new plugin YAy PEG parses a subset of YAML using a parser based on PEGTL\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+Added some basic unit tests _(Bernhard Denner)_
+.PP
+.PP
+.IP "\(bu" 2
+We fixed some compiler warnings for the plugins
+.IP "  \(bu" 4
+\fCcamel\fP,
+.IP "  \(bu" 4
+\fC\fCline\fP\fP,
+.IP "  \(bu" 4
+\fC\fCmini\fP\fP and
+.IP "  \(bu" 4
+\fC\fCresolver\fP\fP
+.PP
+.PP
+reported on FreeBSD\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fB`resolver` plugin\fP and its tests now better support \fCKDB_DB_SYSTEM\fP and \fCKDB_DB_SPEC\fP paths using \fC~\fP to refer to a home directory\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+If \fCKDB_DB_SYSTEM\fP is set to a relative path, it is now treated as relative to \fCCMAKE_INSTALL_PREFIX\fP\&. This ensures that \fCKDB_DB_SYSTEM\fP actually points to the same location no matter the current working directory\&. _(Klemens Böswirth)_
+.PP
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.PP
+As always, the ABI and API of kdb\&.h is fully compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API)\&.
+.PP
+We have two minor incompatible changes:
+.PP
+.IP "\(bu" 2
+we now support larger array numbers (i\&.e\&. the larger numbers are not an error anymore)
+.IP "\(bu" 2
+\fCelektraArrayValidateBaseNameString\fP returns the offset to the first digit of the array index instead of \fC1\fP
+.PP
+.PP
+For details of the changes see below \fCCore\fP and \fCLibease\fP\&.
+.PP
+.IP "\(bu" 2
+All plugins in the KDB now get a handle to a global keyset via \fC\fBelektraPluginGetGlobalKeySet()\fP\fP, for communication between plugins\&. See \fBGlobal KeySet Handle\fP for details\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+\fCelektraWriteArrayNumber\fP now uses \fCkdb_long_long_t\fP for array indices to be compatible with the high level API\&. Similarly the value of \fCELEKTRA_MAX_ARRAY_SIZE\fP was changed to match this\&. _(Klemens Böswirth)_
+.PP
+.PP
+.IP "\(bu" 2
+The function \fCelektraArrayValidateBaseNameString\fP now returns the offset to the first digit of the array index, if the given string represents an array element containing an index\&. This update enhances the behavior of the function\&. Now it not only tells you if a name represents a valid array element, but also the start position of the array index\&.
+.PP
+.PP
+.PP
+.nf
+elektraArrayValidateBaseNameString ("#_10");
+//                                     ~~^ Returns `2` (instead of `1`)
+
+elektraArrayValidateBaseNameString ("#___1337");
+//                                   ~~~~^ Returns `4` (instead of `1`)
+.fi
+.PP
+.PP
+If your program already used \fCelektraArrayValidateBaseNameString\fP and you check for a valid array element using the equality operator (\fC== 1\fP), then please use (\fC>= 1\fP) instead\&. For example, if you code that looks like this:
+.PP
+.PP
+.nf
+if (elektraArrayValidateBaseNameString(baseName) == 1) …;
+.fi
+.PP
+.PP
+, please update your code to check for a valid array element name like this:
+.PP
+.PP
+.nf
+if (elektraArrayValidateBaseNameString(baseName) >= 1) …;
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+This is a new library containing only the function \fCelektraGetOpts\fP\&. This function can be used to parse command line arguments and environment variables and add their values to keys in the proc namespace\&.
+.PP
+You can use \fCopt\fP, \fCopt/long\fP and \fCenv\fP to specify a short, a long option and an environment variable\&. For more information take a look at \fBthe tutorial\fP and the code documentation of \fCelektraGetOpts\fP\&. _(Klemens Böswirth)_
+.PP
+.PP
+.IP "\(bu" 2
+\fCkdb spec-mount\fP correctly includes type plugin to validate \fCtype\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+\fCkdb setmeta\fP reports if it removed a metakey\&. _(Markus Raab)_
+.IP "\(bu" 2
+\fCsystem/elektra/version\fP now has metadata to indicate that it cannot be edited or removed\&. _(Dominic Jäger)_
+.PP
+.PP
+.IP "\(bu" 2
+The script \fCreformat-source\fP now also handles filenames containing spaces correctly\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The script \fC\fCreformat-markdown\fP\fP formats \fCMarkdown\fP files in the repository with \fC\fCprettier\fP\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The scripts \fCreformat-source\fP, \fC\fCreformat-cmake\fP\fP, \fCreformat-shfmt\fP and \fC\fCreformat-markdown\fP\fP don't format files that are ignored by git anymore\&. _(Klemens Böswirth)_
+.PP
+.PP
+.IP "\(bu" 2
+We fixed various spelling mistakes\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The documentation for \fCelektraMetaArrayToKS\fP was fixed\&. It now reflects the fact that the parent key is returned as well\&. _(Klemens Böswirth)_
+.PP
+.PP
+.IP "\(bu" 2
+The tests for the IO bindings and notification plugins now use increased timeout values so that the test suite fails less often on machines with high load\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We update most of the \fCMarkdown Shell Recorder\fP tests so they use an explicit namespace (like \fCsystem\fP or \fCuser\fP)\&. This has the advantage that the output of these tests \fCdoes not change depending on the user that executes them\fP\&. Before the update these tests used \fCcascading keys\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCShell Recorder\fP now also works correctly on FreeBSD\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Fix memcheck target to detect memory problems again and enabled parallel testing to speed it up\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Fix memleak in pluginprocess tests\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+The test \fC\fCcheck-env-dep\fP\fP does not require Bash anymore\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed an incorrect directive in the \fCMarkdown Shell Recorder\fP test of the \fCType Checker\fP plugin\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a test that invokes the script \fC\fCfix-spelling\fP\fP to check the documentation for common spelling mistakes\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a test that checks the formatting of Markdown files with \fC\fCprettier\fP\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The test \fC\fCtestscr_check_formatting\fP\fP now prints instructions that show you how to fix formatting problems\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+The plugin name is now provided as compiler definition \fCELEKTRA_PLUGIN_NAME\fP via CMake\&. See \fC#1042\fP\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+\fCELEKTRA_PLUGIN_FUNCTION\fP does not require the module name as parameter any more, instead the \fCELEKTRA_PLUGIN_NAME\fP compiler definition is being used\&. See \fC#1042\fP\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+\fCELEKTRA_README\fP, and \fCELEKTRA_PLUGIN_EXPORT\fP do not require the module name as parameter any more, instead the \fCELEKTRA_PLUGIN_NAME\fP compiler definition is being used\&. See \fC#1042\fP\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+We now specify
+.IP "  \(bu" 4
+version number,
+.IP "  \(bu" 4
+project description, and
+.IP "  \(bu" 4
+homepage URL in the CMake \fC\fCproject\fP\fP command\&. _(René Schwaiger)_
+.PP
+
+.IP "\(bu" 2
+We fixed the detection of Python for the \fCPython 2 binding\fP on macOS\&. _(René Schwaiger)_
+.IP "\(bu" 2
+You can now use the Ruby binding and plugin without any manual configuration, if you installed Ruby (version \fC2\&.5\fP or later) via \fCHomebrew\fP\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+The CMake find module \fC\fCFindAugeas\&.cmake\fP\fP does not print an error message anymore, if it is unable to locate Augeas in the \fCpkg-config\fP search path\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The CMake find module \fC\fCFindLua\&.cmake\fP\fP does not print an error message anymore, if it is unable to locate a Lua executable\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added code that makes sure you can compile \fCIO GLIB\fP on macOS, even if \fCpkg-config\fP erroneously reports that GLIB requires linking to the library \fCintl\fP (part of \fCGNU gettext\fP)\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a \fCCMake find module for GLib\fP\&. The module makes sure you can compile and link \fCIO GLib\fP on macOS\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The CMake find module \fC\fCFindLibOpenSSL\&.cmake\fP\fP does not require \fCpkg-config\fP anymore\&. The updated code also fixes some linker problems on macOS (and probably other operating systems too), where the build system is not able to link to OpenSSL using only the name of the OpenSSL libraries\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We simplified the CMake find module \fC\fCFindLibgcrypt\&.cmake\fP\fP\&.The update fixes problems on macOS, where the build system excluded the plugin \fCcrypto_gcrypt\fP, although \fCLibgcrypt\fP was installed on the system\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now use the \fCofficial CMake find module for \fCiconv\fP\fP\&. This update fixes linker problems with the \fC\fCiconv\fP\fP and \fC\fCfilecheck\fP\fP plugin on FreeBSD 12\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCCMake find module for Botan\fP does not require \fCpkg-config\fP anymore\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCCMake find module for libgit2\fP now also exports the version number of libgit2\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a CMake find module for \fClibuv\fP and fixed a problem on macOS, where the build system was \fCunable to locate the header file of libuv\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a CMake find module for \fCZeroMQ\fP to fix build problems on macOS\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We added
+.IP "  \(bu" 4
+\fCANTLR\fP,
+.IP "  \(bu" 4
+\fCANTLR’s C++ runtime\fP,
+.IP "  \(bu" 4
+\fCNinja\fP, and
+.IP "  \(bu" 4
+\fC\fCshfmt\fP\fP, to the \fCDockerfile for Debian sid\fP
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We removed the \fCconfigure\fP script from the top-level directory\&. CMake is now popular enough so that this helper-script is not needed\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We now use \fCCirrus CI\fP to \fCbuild and test Elektra\fP on
+.IP "  \(bu" 4
+\fCFreeBSD 11\&.2\fP and
+.IP "  \(bu" 4
+\fCFreeBSD 12\&.0\fP
+.PP
+.PP
+\&. Both of these build jobs use \fC-Werror\fP to make sure we do not introduce any code that produces compiler warnings\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The new build job \fC🍎 Clang\fP tests Elektra on macOS\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added the build job \fC🍎 Clang ASAN\fP, which uses Clang with enabled \fCAddressSanitizer\fP to test Elektra on macOS\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The new build job \fC🍎 FULL\fP compiles and test Elektra using the CMake options \fCBUILD_SHARED=OFF\fP an \fCBUILD_FULL=ON\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added \fC🍎 MMap\fP, which tests Elektra using \fC\fCmmapstorage\fP\fP as default storage module\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We install and uninstall Elektra in all of the macOS build jobs to make sure that \fC\fCElektraUninstall\&.cmake\fP\fP removes all of the installed files\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We added a badge displaying the current build status to the main \fBhttps:\fP//master\&.libelektra\&.org/README\&.md 'ReadMe'\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The build job \fCformatting-check\fP now also checks the formatting of Shell scripts\&. _(René Schwaiger)_
+.PP
+.PP
+.IP "\(bu" 2
+We now test Elektra on \fCUbuntu Xenial Xerus\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We removed the build jobs \fC🍏 Clang\fP and \fC🍏 Check Shell\fP in favor of the Cirrus build job \fC🍎 Clang\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We removed the build jobs \fC🍏 Clang ASAN\fP in favor of the Cirrus build job \fC🍎 Clang ASAN\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We removed the build jobs \fC🍏 FULL\fP in favor of the Cirrus build job \fC🍎 FULL\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We removed the build jobs \fC🍏 MMap\fP in favor of the Cirrus build job \fC🍎 MMap\fP\&. _(René Schwaiger)_
+.PP
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date\&.
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+infallible high-level API: creating an API that guarantees you to return configuration values _(Klemens Böswirth)_
+.IP "\(bu" 2
+error handling _(Michael Zronek)_
+.IP "\(bu" 2
+elektrify LCDproc _(Klemens Böswirth)_ and _(Michael Zronek)_
+.IP "\(bu" 2
+YAML as default storage _(René Schwaiger)_
+.IP "\(bu" 2
+misconfiguration tracker _(Vanessa Kos)_
+.IP "\(bu" 2
+global mmap cache: This feature will enable Elektra to return configuration without parsing configuration files or executing other plugins as long as the configuration files are not changed\&. _(Mihael Pranjić)_
+.PP
+.PP
+and since recently:
+.PP
+.IP "\(bu" 2
+automatic shell completion _(Ulrike Schaefer)_
+.IP "\(bu" 2
+plugin framework improvements _(Vid Leskovar)_
+.IP "\(bu" 2
+3-way merge _(Dominic Jäger)_
+.IP "\(bu" 2
+reducing entry barriers for newcomers _(Hani Torabi Makhsos)_
+.IP "\(bu" 2
+bug fixing _(Usama Morad)_ and _(Kurt Micheli)_
+.PP
+.PP
+In this release we created 986 commits in which 802 files were changed, with 21687 insertions(+) and 6912 deletions(-)\&.
+.PP
+Following authors made this release possible:
+.PP
+Commits Author  1 Aybuke Ozdemir aybuke.147@gmail.com 2 Gabriel Rauter rauter.gabriel@gmail.com 6 Bernhard Denner bernhard.denner@gmail.com 6 Dominic Jäger dominic.jaeger@gmail.com 25 Peter Nirschl peter.nirschl@gmail.com 32 Mihael Pranjic mpranj@limun.org 66 Michael Zronek michael.zronek@gmail.com 112 Markus Raab elektra@markus-raab.org 131 Klemens Böswirth k.boeswirth+git@gmail.com 141 Dominik Hofer me@dominikhofer.com 464 René Schwaiger sanssecours@me.com 
+.PP
+We welcome new contributors! Read \fChere\fP about how to get started\&.
+.PP
+As first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.26\&.tar\&.gz
+.IP "\(bu" 2
+size: 6395865
+.IP "\(bu" 2
+md5sum: 4ef202b5d421cc497ef05221e5309ebc
+.IP "\(bu" 2
+sha1: 94f654764bcf49d0ebc7e636f444e24ca6cfeb19
+.IP "\(bu" 2
+sha256: 5806cd0b2b1075fe0d5a303649d0bd9365752053e86c684ab7c06e7f369155d3
+.PP
+.PP
+The release tarball is also available signed by Markus Raab using GnuPG from \fChere\fP or on \fCGitHub\fP
+.PP
+Already built API-Docu can be found \fChere\fP or on \fCGitHub\fP\&.
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments please contact us via our issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, \fCElektra Initiative\fP 

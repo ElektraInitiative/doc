@@ -1,0 +1,92 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the list plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\tt thomas.\+waser@libelektra.\+org}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/placements = pregetstorage procgetstorage postgetstorage postgetcleanup presetstorage presetcleanup precommit postcommit prerollback postrollback
+\item infos/status = unittest nodep libc configurable global
+\item infos/description = delegates work to a list of plugins
+\end{DoxyItemize}
+
+The List plugin can be used everywhere a list of plugins is required. It takes a list of plugins + configurations for every placement it\textquotesingle{}s placed in and loads them.
+
+{\ttfamily placements/set}
+
+Specifies the set-\/placements for the list plugin, e.\+g. \char`\"{}presetstorage precommit\char`\"{}
+
+{\ttfamily placements/get}
+
+Specifies the get-\/placements for the list plugin.
+
+{\ttfamily placements/error}
+
+Specifies the error-\/placements for the list plugin.
+
+{\ttfamily config/}
+
+Common config for all plugins.
+
+{\ttfamily plugins/\#}
+
+The name of the plugin to load.
+
+{\ttfamily plugins/\#/handle}
+
+Internal handle of already loaded plugin. Useful when loading plugins at run-\/time with {\ttfamily \hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}}. Do not set permanently (e.\+g. with {\ttfamily kdb set}).
+
+{\ttfamily plugins/\#/placements/set}
+
+A list of set-\/placements for the plugin. Same for \char`\"{}get\char`\"{} and \char`\"{}error\char`\"{}
+
+{\ttfamily plugins/\#/config/}
+
+Plugin specific config.
+
+The plugin exports a few useful functions\+:
+
+
+\begin{DoxyCode}
+\textcolor{keywordtype}{int} elektraListMountPlugin (Plugin * handle, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * pluginName, KeySet * pluginConfig, Key * errorKey
+      )
+\textcolor{keywordtype}{int} elektraListUnmountPlugin (Plugin * handle, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * pluginName, Key * errorKey)
+Plugin * elektraListFindPlugin (Plugin * handle, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * pluginName)
+\end{DoxyCode}
+
+
+{\ttfamily elektra\+List\+Mount\+Plugin} can be used to add a new plugin to the config. The placement will be queried from the plugin itself (from its {\ttfamily infos/placements} metadata). If the plugin is added already nothing happens, otherwise {\ttfamily plugin\+Config} is used to open the plugin.
+
+{\ttfamily elektra\+List\+Unmount\+Plugin} is the opposite, it is used to remove a plugin from the config.
+
+Finally, {\ttfamily elektra\+List\+Find\+Plugin} looks for a plugin in the config, and if found returns its handle.
+
+
+\begin{DoxyCode}
+placements/get = "postgetstorage"
+config/cut = "will/be/overridden/for/plugin/#0"
+plugins/#0 = "rename"
+plugins/#0/placements   plugin placements
+plugins/#0/placements/get = "postgetstorage"
+plugins/#0/config   pluginconfig goes here
+plugins/#0/config/cut = "will/be/stripped"
+plugins/#1 = "keytometa"
+plugins/#1/placements
+plugins/#1/placements/get = "postgetstorage"
+plugins/#2 = "enum"
+plugins/#2/placements
+plugins/#2/placements/get = "postgetstorage"
+\end{DoxyCode}
+
+
+would have the callstack\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily list-\/$>$kdb\+Get}
+\begin{DoxyEnumerate}
+\item {\ttfamily rename-\/$>$kdb\+Get}
+\item {\ttfamily keytometa-\/$>$kdb\+Get}
+\item {\ttfamily enum-\/$>$kdb\+Get} 
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}

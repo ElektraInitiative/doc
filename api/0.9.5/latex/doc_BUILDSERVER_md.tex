@@ -1,0 +1,334 @@
+The \href{https://build.libelektra.org/}{\tt Elektra buildserver} handles a variety of tasks that reaches from testing Pull Requests (P\+Rs) to deploying new versions of the \href{https://www.libelektra.org}{\tt Elektra website}.
+
+We reworked our build system to use a more modern Jenkinsfile approach with benefits such as
+
+
+\begin{DoxyItemize}
+\item tracking modifications to our build process in S\+CM
+\item tracking changes to the build environment
+\item speeding up builds
+\end{DoxyItemize}
+
+This section aims to give an introduction into this setup.
+
+We use the Jenkins Job type called \href{https://jenkins.io/doc/book/pipeline/multibranch/#creating-a-multibranch-pipeline}{\tt Multibranch Pipeline} provided by the \href{https://wiki.jenkins.io/display/JENKINS/Pipeline+Multibranch+Plugin}{\tt Pipeline Multibranch Plugin} for our CI tests called {\ttfamily libelektra}.
+
+Simplified a multibranch pipeline job acts as an umbrella job that spawns child jobs for different branches (hence multibranch). The main purpose of the libelektra job is to scan the repository for changes to existing branches or to find new ones (for example branches that are used in PR\textquotesingle{}s). It also contains the information on how to build the jobs in the form of a path that points to a Jenkinsfile containing more detailed instructions. The job also takes care of handling build artifacts that are archived and cleaning them out once the PR\textquotesingle{}s are closed and a grace period has expired.
+
+Summarized libelektra\textquotesingle{}s job purpose is to combine the where (our G\+IT repository), with a when (tracking changes via polling or webhooks) with a how (pointing to the Jenkinsfile + configuration).
+
+We use a \href{https://www.jenkins.io/doc/book/pipeline/shared-libraries/}{\tt shared library} to share common functionalities across multiple pipelines. This shared library contains all docker related functionalities, code to publish artifacts and various other directives and helper functions. After integrating this shared library with\+:
+
+
+\begin{DoxyCode}
+@Library('libelektra-shared') \_
+
+pipelineConfig \{
+  now = new Date()
+\}
+\end{DoxyCode}
+
+
+we can use any function that is declared in the shared library.
+
+It is available in the \href{https://github.com/ElektraInitiative/jenkins-library}{\tt following repository}. For more detailed usage instruction or instructions on how to integrate this shared library into Jenkins, see its https\+://github.com/\+Elektra\+Initiative/jenkins-\/library/blob/master/\+R\+E\+A\+D\+M\+E.\+md \char`\"{}\+R\+E\+A\+D\+M\+E.\+md\char`\"{}.
+
+Jenkinsfiles describe what actions the build system should execute on which build slave. Currently Elektra uses four different files.
+
+
+\begin{DoxyItemize}
+\item Jenkinsfile.daily contains daily maintenance tasks, like cleaning up build servers.
+\item \href{https://build.libelektra.org/job/libelektra-daily/}{\tt Buildjob\+: libelektra-\/daily}
+\item \href{https://master.libelektra.org/scripts/jenkins/Jenkinsfile.daily}{\tt Jenkinsfile.\+daily}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Jenkinsfile.monthly contains monthly triggering of libelektra job on master.
+\item \href{https://build.libelektra.org/job/libelektra-monthly/}{\tt Buildjob\+: libelektra-\/monthly}
+\item \href{https://master.libelektra.org/scripts/jenkins/Jenkinsfile.monthly}{\tt Jenkinsfile.\+monthly}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Triggered manually with optional arguments. It is used for automated releasing a new version of Elektra.
+\item Jenkinsfile.release contains description how to release a new version of Elektra.
+\item \href{https://build.libelektra.org/job/libelektra-release/}{\tt Buildjob\+: libelektra-\/release}
+\item \href{https://master.libelektra.org/scripts/jenkins/Jenkinsfile.release}{\tt Jenkinsfile.\+release}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Triggered on code changes and is for testing changes to the codebase.
+\item Jenkinsfile contains descriptions how to build, test and deploy Elektra.
+\item \href{https://build.libelektra.org/job/libelektra/}{\tt Buildjob\+: libelektra}
+\item \href{https://master.libelektra.org/scripts/jenkins/Jenkinsfile}{\tt Jenkinsfile}
+\end{DoxyItemize}
+
+The language used is a groovy based D\+SL described in the \href{https://jenkins.io/doc/book/pipeline/jenkinsfile/}{\tt Jenkinsfile book}. Most groovy syntax is allowed to describe pipelines in a Jenkinsfile, but it is executed in a sandbox which might block certain calls.
+
+Since plugins might extend the pool of available commands or variables a full list of currently available syntax can be seen in \href{https://build.libelektra.org/job/libelektra/pipeline-syntax/}{\tt pipeline syntax} after a login to the build server. Some functionality is not covered by this page when the responsible plugin is not implementing it. Usually an approach similar to what is described on \href{https://stackoverflow.com/questions/51103359/jenkins-pipeline-return-value-of-build-step}{\tt stackoverflow} can be used to track down the responsible code inside the providing plugins source code.
+
+We also provide a number of helper functions in our Jenkinsfiles that are documented at the function head. Most common use cases, for example adding a new build with certain cmake flags, are easy to add because of them. For example, the configuration that is responsible for the {\ttfamily debian-\/stable-\/full} stage is generated completely by a single helper function called {\ttfamily build\+And\+Test}\+:
+
+
+\begin{DoxyCode}
+tasks << buildAndTest(
+  "debian-stable-full",
+  DOCKER\_IMAGES.stretch,
+  CMAKE\_FLAGS\_BUILD\_ALL +
+    CMAKE\_FLAGS\_BUILD\_FULL +
+    CMAKE\_FLAGS\_BUILD\_STATIC +
+    CMAKE\_FLAGS\_COVERAGE
+  ,
+  [TEST.ALL, TEST.MEM, TEST.NOKDB, TEST.INSTALL]
+)
+\end{DoxyCode}
+
+
+When adding new stages to the build chain it is generally a good idea to look up an existing stage which does something similar and adapt it to the new use case.
+
+Since a malicious PR could easily destroy the build server and slaves or expose credentials some restrictions are introduced. Only PR authors that have the right to push to libelektra can modify the Jenkinsfile and have those changes be respected for the respective branch.
+
+We use Docker containers to provide the various test environments.
+
+They are described \href{https://master.libelektra.org/scripts/docker}{\tt in the repository} and the Jenkinsfile describes how to build them. If a rebuild of the images is needed is determined by the hash of the Dockerfile used to describe it. If it has not changed the build step will be skipped. In the case that an image needed a build it will afterwards be uploaded into a private Docker image registry (on a7) and thus is shared between all Docker capable build slaves.
+
+We will use the Docker images build as described earlier to run compilations and tests for Elektra. This allows us to run tests independent of which nodes are available (as the environment is portable).
+
+The Jenkinsfile describes the steps used to run tests. Helper functions for easily adding new tests are available ({\ttfamily build\+And\+Test}, {\ttfamily Build\+And\+Test\+Asan}, ...).
+
+The {\ttfamily with\+Docker\+Env} helper, that is available in the shared library, makes sure to print the following information at the start of a test branch\+:
+
+
+\begin{DoxyItemize}
+\item branch name
+\item build machine
+\item docker image id
+\end{DoxyItemize}
+
+Coverage reports are generated automatically when using the {\ttfamily build\+And\+Test} helper and the appropriate C\+Make flags for coverage generation have been set. They are uploaded to \href{https://doc.libelektra.org/coverage/}{\tt https\+://doc.\+libelektra.\+org/coverage/}.
+
+Artifacts from {\ttfamily ctest} are also preserved automatically when using {\ttfamily build\+And\+Test}. The function also takes care of providing a stage name based path so multiple tests can not overwrite files that share the same name.
+
+Tests are executed in order dictated by the Jenkinsfile. In general new tests should be added to the \textquotesingle{}full build stage\textquotesingle{} that will only run after a standard full test run succeeded. This saves execution time on the build server for the most common errors.
+
+Since there is no strict way to enforce the way tests are added we encourage you to read the existing configuration and modify existing tests so they suite your needs.
+
+For runs of the build job that are run in the master branch we also execute deployment steps after all tests pass. We use these steps to build Debian and Fedora packages and move them into the repositories hosted on the community node.
+
+Additionally we recompile the homepage and deploy it on the community node.
+
+The {\ttfamily build\+Release} function runs various test suites and collects and archives debug information. It also generates source-\/packages and packages for Debian based distributions and Fedora.
+
+The generated packages are additionally installed and tested on a clean Docker image.
+
+In order to verify the correct behavior and results of the previous steps and their generated artifacts, we use the \href{https://www.jenkins.io/doc/pipeline/steps/pipeline-input-step/}{\tt Input Step} to pause the pipeline. After manually verifying the correctness, the pipeline run can be resumed.
+
+The previously generated packages are published to the repositories, as described above in {\itshape Jenkinsfile (Main CI Pipeline)}. The A\+PI documentation and source packages get published to the relevant git repositories. Finally the Alpine release image is published to Docker Hub.
+
+This section describes how to replicate the current Jenkins configuration.
+
+The {\ttfamily libelektra} build job is a multibranch pipeline job. It is easiest to add via the Blue\+Ocean interface.
+
+Most of the default settings should be ok, however some settings need to be verified or added to build Elektra correctly\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily Advanced clone behaviors} should be added and the path to the git mirror needs to be specified\+: {\ttfamily /home/jenkins/git\+\_\+mirrors/libelektra}. This reference repository is created and maintained by our \href{https://build.libelektra.org/job/libelektra-daily/}{\tt daily buildjob}.
+\item Under Property strategy you can add {\ttfamily Trigger build on pull request comment}. {\ttfamily jenkins build (libelektra$\vert$all) please} is a good starting point. This functionality is provided by the \href{https://wiki.jenkins-ci.org/display/JENKINS/GitHub+PR+Comment+Build+Plugin}{\tt Git\+Hub PR Comment Build Plugin}.
+\item For Build Configuration you want to specify {\ttfamily by Jenkinsfile} and add the script path\+: {\ttfamily scripts/jenkins/\+Jenkinsfile}.
+\end{DoxyItemize}
+
+The {\ttfamily libelektra-\/release} job is a normal pipeline job.
+
+Most of the default settings can be used.
+
+
+\begin{DoxyItemize}
+\item Under General you need to enable {\ttfamily Permission to Copy Artifact} and set the field to {\ttfamily $\ast$}.
+\item For Build Configuration you want to specify {\ttfamily by Jenkinsfile} and add the script path\+: {\ttfamily scripts/jenkins/\+Jenkinsfile.\+release}.
+\end{DoxyItemize}
+
+We will cover how to set-\/up a pipeline that uses a different git repository than this {\ttfamily libelektra} repository.
+
+Most of the default settings can be used.
+
+
+\begin{DoxyItemize}
+\item If a private repository were to be used with a Git\+Hub type job, a credentials pair of {\ttfamily elektrabot} must be selected to access this repository.
+\item For Build Configuration you want to specify {\ttfamily by Jenkinsfile} and add the script path to the Jenkinsfile.
+\end{DoxyItemize}
+
+We first start by including the shared library as described above in {\itshape Jenkins Shared Library}. Then we declare in a Jenkinsfile an empty map that will contain all Docker images we will use in this pipeline\+:
+
+
+\begin{DoxyCode}
+DOCKER\_IMAGES = [:]
+\end{DoxyCode}
+
+
+This map will later be populated in a function. For a Docker image with Ubuntu Focal and the Dockerfile located at {\ttfamily ./ci/\+Dockerfile} this function would need to look as follows\+:
+
+
+\begin{DoxyCode}
+def dockerInit() \{
+  node('master') \{
+    checkout scm
+
+    DOCKER\_IMAGES.focal = dockerUtils.createDockerImageDesc(
+      'ubuntu-focal', dockerUtils.&idTesting,
+      './ci/',
+      './ci/Dockerfile'
+    )
+    // more docker images ...
+  \}
+\}
+\end{DoxyCode}
+
+
+We can now begin to create the stages that initialize, pull and if necessary also build these Docker images\+:
+
+
+\begin{DoxyCode}
+stage('Init docker images') \{
+  dockerInit()
+\}
+
+stage('Pull docker images') \{
+  parallel dockerUtils.generateDockerPullStages(DOCKER\_IMAGES)
+\}
+
+maybeStage('Build docker images', DOCKER\_IMAGES.any \{ img -> !img.value.exists \}) \{
+  lock('docker-images') \{
+        parallel dockerUtils.generateDockerBuildStages(DOCKER\_IMAGES)
+  \}
+\}
+\end{DoxyCode}
+
+
+Now the actual stages that contain our C\+I/\+CD code can be created.
+
+To allow parallel execution of stages we create generator functions that return a map of stages that can be executed in parallel. For example the following generator function would create a map of two tasks that could be run in parallel.
+
+
+\begin{DoxyCode}
+def generateTestStages() \{
+  def tasks = [:]
+
+  tasks << test(
+    'ubuntu-focal-test',
+    DOCKER\_IMAGES.focal
+  )
+
+  tasks << test(
+    'ubuntu-bionic-test',
+    DOCKER\_IMAGES.bionic
+  )
+
+  return tasks
+\}
+\end{DoxyCode}
+
+
+Suppose we have a bash script {\ttfamily test.\+sh} in the root of our git repository. This script can be executed inside one of our Docker images by using the {\ttfamily with\+Docker\+Env} function\+:
+
+
+\begin{DoxyCode}
+def test(stageName, image) \{
+  return [(stageName): \{
+    stage(stageName) \{
+      withDockerEnv(image) \{
+        sh "./test.sh"
+      \}
+    \}
+  \}]
+\}
+\end{DoxyCode}
+
+
+We can now call the generator function {\ttfamily generate\+Test\+Stages} in a new stage\+:
+
+
+\begin{DoxyCode}
+stage('Testing') \{
+  parallel generateTestStages()
+\}
+\end{DoxyCode}
+
+
+A node needs to have a J\+RE (Java Runtime Environment) installed. Further it should run an S\+SH (Secure S\+Hell) server. Docker need to be installed as well.
+
+A {\ttfamily jenkins} user with 47110\+:47110 ids should be created as this is what is expected in Docker images. {\ttfamily useradd -\/u 47110 jenkins} Additionally a public key authentication should be set up so the jenkins master can establish an ssh connection with the node. If the node should be able to interact with Docker the jenkins user should be added to the {\ttfamily docker} group.
+
+Nodes should be set to only build jobs matching their labels and to be online as much as possible. As for labels {\ttfamily gitmirror} should be if you want to cache repositories on this node. If Docker is available the {\ttfamily docker} label should be set.
+
+All files and folders in the Node under {\ttfamily /home/jenkins} should be owned by user {\ttfamily jenkins}.
+
+Our Jenkins build uses parallel steps inside a single build job to do most of the work. To reliable determine which stages failed it is best to look over the build results in the Jenkins Blue Ocean view. It is the default View opened when accessing the build results from Git\+Hub. For libelektra the U\+R\+Ls are \href{https://build.libelektra.org/job/libelektra/}{\tt https\+://build.\+libelektra.\+org/job/libelektra/} and \href{https://build.libelektra.org/blue/organizations/jenkins/libelektra/branches/}{\tt https\+://build.\+libelektra.\+org/blue/organizations/jenkins/libelektra/branches/} Failed stages are marked in red. On selecting a stage you can further expand all steps in the stage. Of interest should be one of the first steps which echos out the Docker image used to run the stage. You also want to look for whatever failed (which should be in a step also marked red to indicate failure).
+
+First you have to determine which image is used. This is described above in {\itshape Understanding Jenkins output}.
+
+Afterwards you can download it from our registry via {\ttfamily docker pull}. Pay attention that you have to use {\bfseries hub-\/public.\+libelektra.\+org} as this subdomain does not require authentication for G\+ET operations used by the Docker client. As an example\+:
+
+
+\begin{DoxyCode}
+docker pull
+       hub-public.libelektra.org/build-elektra-alpine:201809-791f9f388cbdff0db544e02277c882ad6e8220fe280cda67e6ea6358767a065e
+\end{DoxyCode}
+
+
+You can also rebuild the images locally, which is useful if you want to test changes you made to the Dockerfiles themselves. Locate which Dockerfile you need by looking up the reference the stage that used it in the Jenkinsfile. For {\itshape alpine} this would be {\ttfamily D\+O\+C\+K\+E\+R\+\_\+\+I\+M\+A\+G\+E\+S.\+alpine}. You can search for this entry in the Jenkinsfile to find that this image is build from the context {\ttfamily ./scripts/docker/alpine/$\ast$} and uses {\ttfamily ./scripts/docker/alpine/$\ast$/\+Dockerfile} as a Dockerfile. Now you can build the image as described in \href{https://master.libelektra.org/scripts/docker/README.md#building-images-locally}{\tt scripts/docker/\+R\+E\+A\+D\+M\+E.\+md}.
+
+You can find more information on how to use our images in \href{https://master.libelektra.org/scripts/docker/README.md#testing-elektra-via-docker-images}{\tt scripts/docker/\+R\+E\+A\+D\+M\+E.\+md}.
+
+Alternatively, you can follow the \hyperlink{doc_tutorials_run_all_tests_with_docker_md}{tutorial}.
+
+You can also modify the test environments (update a dependency, install a new dependency, ...) by editing the Dockerfiles checked into S\+CM. Determine which ones you need to modify by tracing which images are used for what stages via the {\ttfamily D\+O\+C\+K\+E\+R\+\_\+\+I\+M\+A\+G\+ES} map used in our Jenkinsfile. The {\ttfamily docker\+Init} function should be a good start point.
+
+Following docker best practises you should try to minimize layer count when possible. Our docker images are quite large and hence take a long time to build so make sure to test any modifications locally first.
+
+All Triggers are described in the configuration of the respective build jobs.
+
+The \href{https://build.libelektra.org/job/libelektra/}{\tt libelektra} build is triggered for all branches of the libelektra repository except for {\ttfamily debian}. Additionally all open branches in forks targeting libelektra\textquotesingle{}s repository via P\+Rs are going to be build. Pushes to any of those branches will trigger a new build automatically.
+
+The \href{https://build.libelektra.org/job/libelektra-daily/}{\tt daily build} and \href{https://build.libelektra.org/job/libelektra-monthly/}{\tt monthly build} are executed according to a cron schedule.
+
+The \href{https://build.libelektra.org/job/libelektra-release/}{\tt release pipeline} is triggered manually with optional arguments.
+
+The following phrases can be used as comments to manually trigger a specific build\+:
+
+
+\begin{DoxyItemize}
+\item jenkins build \href{https://build.libelektra.org/job/libelektra/}{\tt libelektra} please
+\item jenkins build \href{https://build.libelektra.org/job/libelektra-daily/}{\tt daily} please
+\item jenkins build \href{https://build.libelektra.org/job/libelektra-monthly/}{\tt monthly} please
+\end{DoxyItemize}
+
+Additionally {\ttfamily jenkins build all please} can be used to trigger all build jobs relevant for PR\textquotesingle{}s. This is not necessary anymore as all relevant tests have been moved into the libelektra job.
+
+If you are not yet authorized, the following question will be asked (by user )\+: \begin{DoxyVerb}Can one of the admins verify if this patch should be build?
+\end{DoxyVerb}
+
+
+Then one of the admins (sorted by activity)\+:
+
+
+\begin{DoxyItemize}
+\item 
+\item 
+\item 
+\item 
+\item 
+\item 
+\end{DoxyItemize}
+
+need to confirm by saying\+: \begin{DoxyVerb}.*add\W+to\W+whitelist.*
+\end{DoxyVerb}
+
+
+or if just the pull request should be checked\+: \begin{DoxyVerb}.*build\W+allow.*
+\end{DoxyVerb}
+
+
+If you have issues that are related to the build system you can open a normal issue and tag it with {\ttfamily build} and {\ttfamily question}. If you feel like your inquiry does not warrant an issue on its own, please use \href{https://issues.libelektra.org/160}{\tt our buildserver issue}. 

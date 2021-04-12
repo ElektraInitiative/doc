@@ -1,0 +1,221 @@
+
+\begin{DoxyItemize}
+\item guid\+: 98770541-\/32a1-\/486a-\/98a1-\/d02f26afc81a
+\item author\+: Markus Raab
+\item pub\+Date\+: Sun, 12 Jul 2015 20\+:14\+:09 +0200
+\item short\+Desc\+: adds directory namespace \& other improvements and fixes
+\end{DoxyItemize}
+
+Again we managed to release with new features, many build system fixes and also other improvements.
+
+This namespace adds per-\/project or per-\/directory (hence the name) configurations. E.\+g. think how git works\+: not only /etc and $\sim$ are relevant sources for configuration but also the nearest .git directory.
+
+This technique is, however, much more widely useful than just for git repositories! Nearly every application can benefit from such a per-\/dir configuration. Its almost certain that you have already run into the problem that different projects have different guidelines (e.\+g. coding conventions, languages, whitespace requirements, line breaks, ..). Obviously, thats not a per-\/user configuration and its also not a per-\/file issue (thats how its usually solved today). So in fact you want, e.\+g., your editor to have an additional per-\/project layer to choose between such settings.
+
+The technique is useful for nearly every other tool\+:
+
+
+\begin{DoxyItemize}
+\item different color palettes in gimp, inkscape,..
+\item different languages for Libre\+Office
+\item different security settings for media players, interpreters (e.\+g. when in Download folder)
+\item per-\/folder .htaccess in apache or other web servers
+\item any other per-\/dir configuration you can imagine..
+\end{DoxyItemize}
+
+It is simple to use, also for the administrative side. First, change to the folder to your folder (e.\+g. where a project is)\+:
+
+
+\begin{DoxyCode}
+cd ~/projects/abc
+\end{DoxyCode}
+
+
+Then add some user (or system or spec) configuration to have some default.
+
+
+\begin{DoxyCode}
+kdb set user/sw/editor/textwidth 72
+\end{DoxyCode}
+
+
+Then verify that we get this value back when we do a cascading lookup\+:
+
+
+\begin{DoxyCode}
+kdb get /sw/editor/textwidth
+\end{DoxyCode}
+
+
+The default configuration file for the dir-\/namespace is {\ttfamily pwd}/\+K\+D\+B\+\_\+\+D\+B\+\_\+\+D\+I\+R/filename\+:
+
+
+\begin{DoxyCode}
+kdb file dir/sw/editor/textwidth
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item K\+D\+B\+\_\+\+D\+B\+\_\+\+D\+IR can be modified at compile-\/time and is {\ttfamily .dir} per default
+\item filename can be modified by mounting, see below, and is {\ttfamily default.\+ecf} by default
+\end{DoxyItemize}
+
+We assume, that the project abc has the policy to use textwidth 120, so we change the dir-\/configuration\+:
+
+
+\begin{DoxyCode}
+kdb set dir/sw/editor/textwidth 120
+\end{DoxyCode}
+
+
+Now we will get the value 120 in the folder $\sim$/projects/abc and its subdirectories (!), but everywhere else we still get 72\+:
+
+
+\begin{DoxyCode}
+kdb get /sw/editor/textwidth
+\end{DoxyCode}
+
+
+Obviously, that does not only work with kdb, but with every elektrified tool.
+
+For cascading mountpoints, the dir name is also automatically mounted, e.\+g.\+:
+
+
+\begin{DoxyCode}
+kdb mount editor.ini /sw/editor ini
+\end{DoxyCode}
+
+
+But its also possible to only mount for the namespace dir if no cascading mountpoint is present already\+:
+
+
+\begin{DoxyCode}
+kdb mount app.ini dir/sw/app tcl
+\end{DoxyCode}
+
+
+In both cases keys below dir/sw/editor would be in the I\+NI file {\ttfamily .dir/editor.\+ini} and not in the file {\ttfamily .dir/default.\+ecf}.
+
+In the project P we had the following issue\+: We needed on a specific computer the configuration in /etc to be used in favour of the dir config.
+
+We could easily solve the problem using the specification\+:
+
+
+\begin{DoxyCode}
+kdb setmeta spec/sw/P/current/org/base override/#0 /sw/P/override/org/base
+\end{DoxyCode}
+
+
+Hence, we could create system/sw/\+P/override/org/base which would be in favour of dir/sw/\+P/current/org/base. So we get system/sw/\+P/override/org/base when we do\+:
+
+
+\begin{DoxyCode}
+kdb get /sw/P/current/org/base
+\end{DoxyCode}
+
+
+Alternatively, one could also use the specification\+:
+
+
+\begin{DoxyCode}
+kdb setmeta spec/sw/P/current/org/base namespace/#0 user
+kdb setmeta spec/sw/P/current/org/base namespace/#1 system
+kdb setmeta spec/sw/P/current/org/base namespace/#2 dir
+\end{DoxyCode}
+
+
+Which makes dir the namespace with the least priority and system would be preferred. This was less suitable for our purpose, because we needed the override only on one computer. For all other computers we wanted dir to be preferred with only one specification.
+
+The great thing is, that every elektrified application, automatically gets all the mentioned features. Not even a recompilation of the application is necessary.
+
+Especially the specification provides flexibility not present in other configuration systems.
+
+Raffael Pancheri again did a lot of stabilizing work\+:
+
+
+\begin{DoxyItemize}
+\item show errormessage on exception when starting gui
+\item Correctly update key\+Area\+View property when selecting item in Tree\+View
+\item Fix crash when creating key in Mounting\+Wizard
+\item Remove information on successful export
+\item Show error dialog on failed import
+\item Remove namefilters (every syntax can have any file extension)
+\item other namespaces (including dir) are included
+\end{DoxyItemize}
+
+The G\+UI can be handy for many purposes, e.\+g. we use it already as xml and json editor. Note that there are still \href{https://git.libelektra.org/issues}{\tt some bugs}.
+
+
+\begin{DoxyItemize}
+\item constants now additionally gives information about S\+P\+EC and D\+IR.
+\item Doku about C\+Make variables {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+D\+E\+B\+U\+G\+\_\+\+B\+U\+I\+LD} and {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+V\+E\+R\+B\+O\+S\+E\+\_\+\+B\+U\+I\+LD} fixed, thanks to Kurt Micheli
+\item Fixed compilation of {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+D\+E\+B\+U\+G\+\_\+\+B\+U\+I\+LD} and {\ttfamily E\+L\+E\+K\+T\+R\+A\+\_\+\+V\+E\+R\+B\+O\+S\+E\+\_\+\+B\+U\+I\+LD}, thanks to Manuel Mausz
+\item Example with error handling added, thanks to Kurt Micheli
+\item Add design decision about global plugins
+\item Split dependencies document to individual R\+E\+A\+D\+M\+E.\+md, thanks to Ian Donnelly
+\item Fix nearly all compilation warnings of S\+W\+IG, thanks to Manuel Mausz
+\item C\+Make\+: Fix gtest to be build if {\ttfamily B\+U\+I\+L\+D\+\_\+\+T\+E\+S\+T\+I\+NG} activated, but not {\ttfamily E\+N\+A\+B\+L\+E\+\_\+\+T\+E\+S\+T\+I\+NG}
+\item C\+Make\+: Allow compilation without B\+U\+I\+L\+D\+\_\+\+S\+T\+A\+T\+IC
+\item Explain compilation options more, thanks to Kai-\/\+Uwe Behrmann for asking the question
+\item C\+Make\+: always build examples, allow one to only build documentation
+\item add common header file for C++ plugins (used by plugins struct and type)
+\item fix compilation of race tool under o\+S-\/11.\+4 thanks to Kai-\/\+Uwe Behrmann
+\item C\+Make\+: find python3 correctly
+\item C\+Make\+: fix B\+U\+I\+L\+D\+\_\+\+S\+H\+A\+R\+E\+D\+\_\+\+L\+I\+BS
+\item Doxygen\+: remove {\ttfamily H\+T\+M\+L\+\_\+\+T\+I\+M\+E\+S\+T\+A\+MP} to make build reproduceable
+\item Doxygen\+: rewrite of main page+add info about all five namespaces
+\item C\+Make\+: allow one to use qt-\/gui with qt built with -\/reduce-\/relocations
+\item fix kdb ls, get to list warnings during open
+\item during \hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()} use Configfile\+: to state phase
+\item add -\/f option to kdb check+improve docu
+\item improve readability of warning output
+\item run\+\_\+all always uses dump for backups
+\item line plugin round-\/trips correctly
+\item untypical resolvers have their non-\/existant filename handled correctly + sync ignored them correctly
+\item cmake-\/3.\+0 fixes
+\item cascading merging, a big thanks to Felix Berlakovich for the last minute fix
+\end{DoxyItemize}
+
+As always, the A\+PI and A\+PI is fully compatible. Because nothing was added, its even possible to link against an older version of Elektra (if compiled against 0.\+8.\+12).
+
+In plugins some small changes may effect compatibility\+:
+
+
+\begin{DoxyItemize}
+\item in rename the handling of parent key is different (see \#206)
+\item resolving of spec absolute and relative paths are no more handled identical. Instead absolute paths will be searched absolutely, while relatives are below K\+D\+B\+\_\+\+D\+B\+\_\+\+S\+P\+EC (as before). This behaviour is consistent to the behaviour of the other namespaces.
+\end{DoxyItemize}
+
+These two points are also the only unit tests that fail when Elektra 0.\+8.\+12 is used with 0.\+8.\+11 unit tests.
+
+
+\begin{DoxyItemize}
+\item special github command to build bindings \char`\"{}jenkins build bindings please\char`\"{}, thanks to Manuel Mausz
+\item open build service update For \href{https://build.opensuse.org/package/show/home:bekun:devel/elektra}{\tt Open\+S\+U\+SE, Cent\+OS, Fedora, R\+H\+EL and S\+LE} Kai-\/\+Uwe Behrmann kindly provides packages \href{http://software.opensuse.org/download.html?project=home%3Abekun%3Adevel&package=libelektra4}{\tt for download}.
+\end{DoxyItemize}
+
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.12.tar.gz}{\tt here} and now also \href{https://github.com/ElektraInitiative/ftp/tree/master/releases/elektra-0.8.12.tar.gz}{\tt here on github}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+12.\+tar.\+gz
+\item size\+: 2102450
+\item md5sum\+: a40a33ae6661ebfa096378f0986ede6c
+\item sha1\+: 3594ef58b6e3b0ffa9589d787679b6e739fbb0dd
+\item sha256\+: 562432bea9455a61ff6e6b3263078ea9b26bef2ed177a04b5f9b181d605bc021
+\end{DoxyItemize}
+
+This release tarball now is also available \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.12.tar.gz.gpg}{\tt signed by me using gpg}
+
+already built A\+P\+I-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.12/html/}{\tt here}
+
+Subscribe to the \href{https://doc.libelektra.org/news/feed.rss}{\tt R\+SS feed} to always get the release notifications.
+
+For any questions and comments, please contact the \href{https://lists.sourceforge.net/lists/listinfo/registry-list}{\tt Mailing List} the issue tracker \href{https://git.libelektra.org/issues}{\tt on github} or by mail \href{mailto:elektra@markus-raab.org}{\tt elektra@markus-\/raab.\+org}.
+
+\href{https://doc.libelektra.org/news/98770541-32a1-486a-98a1-d02f26afc81a.html}{\tt Permalink to this N\+E\+WS entry}
+
+For more information, see \href{https://libelektra.org}{\tt https\+://libelektra.\+org}
+
+Best regards, Markus 

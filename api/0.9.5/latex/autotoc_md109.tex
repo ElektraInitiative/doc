@@ -1,0 +1,167 @@
+
+\begin{DoxyItemize}
+\item infos = Information about crypto plugin is in keys below
+\item infos/author = Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/provides = crypto
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = unittest configurable memleak unfinished discouraged
+\item infos/metadata = crypto/encrypt
+\item infos/description = Cryptographic operations
+\end{DoxyItemize}
+
+This plugin is a filter plugin allowing Elektra to encrypt values before they are persisted and to decrypt values after they have been read from a backend.
+
+The idea is to provide protection of sensible values before they are persisted. This means the value of a key needs to be encrypted before it is written to a file or a database. It also needs to be decrypted whenever an admissible access (read) is being performed.
+
+The users of Elektra should not be bothered too much with the internals of the cryptographic operations. Also the cryptographic keys must never be exposed to the outside of the crypto module.
+
+The crypto plugin uses libgcrypt as provider of cryptographic operations.
+
+See \hyperlink{doc_INSTALL_md}{installation}. The package is called {\ttfamily libelektra5-\/crypto}.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libgcrypt20-\/dev} or {\ttfamily libgcrypt-\/devel}
+\end{DoxyItemize}
+
+G\+PG is a run-\/time dependency of the crypto plugin. Either the {\ttfamily gpg} or the {\ttfamily gpg2} binary must be installed when using the plugin. Note that {\ttfamily gpg2} will be preferred if both versions are available. The G\+PG binary can be configured in the plugin configuration as {\ttfamily /gpg/bin} (see {\itshape G\+PG Configuration} below). If no such configuration is provided, the plugin will look at the P\+A\+TH environment variable to find the G\+PG binaries.
+
+Add \char`\"{}crypto\char`\"{} to the {\ttfamily P\+L\+U\+G\+I\+NS} variable in {\ttfamily C\+Make\+Cache.\+txt} and re-\/run {\ttfamily cmake}.
+
+An example {\ttfamily C\+Make\+Cache.\+txt} may contain the following variable\+:
+
+
+\begin{DoxyCode}
+PLUGINS=crypto
+\end{DoxyCode}
+
+
+The crypto plugin works under mac\+OS Sierra (Version 10.\+12.\+3 (16\+D32)).
+
+To set up the build environment on mac\+OS Sierra we recommend using \href{http://brew.sh/}{\tt Homebrew}. Follow these steps to get everything up and running\+:
+
+
+\begin{DoxyCode}
+brew install libgcrypt pkg-config cmake
+\end{DoxyCode}
+
+
+Also a G\+PG installation is required. The \href{https://gpgtools.org}{\tt G\+PG Tools} work fine for us.
+
+At the moment the plugin will only run on Unix/\+Linux-\/like systems, that provide implementations for {\ttfamily fork ()} and {\ttfamily execv ()}.
+
+To mount a backend with the crypto plugin that uses the G\+PG key 9\+C\+C\+C3\+B514\+E196\+C6308\+C\+C\+D230666260\+C14\+A525406, use\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ecf user:/t crypto "crypto/key=9CCC3B514E196C6308CCD230666260C14A525406"
+\end{DoxyCode}
+
+
+Now you can specify a key {\ttfamily user\+:/t/a} and protect its content by using\+:
+
+
+\begin{DoxyCode}
+kdb set user:/t/a
+kdb meta-set user:/t/a crypto/encrypt 1
+kdb set user:/t/a "secret"
+\end{DoxyCode}
+
+
+The value of {\ttfamily user\+:/t/a} will be stored encrypted. But you can still access the original value using {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}
+kdb get user:/t/a
+\end{DoxyCode}
+
+
+The path to the gpg binary can be specified in
+
+
+\begin{DoxyCode}
+/gpg/bin
+\end{DoxyCode}
+
+
+The G\+PG recipient keys can be specified as {\ttfamily encrypt/key} directly. If you want to use more than one key, just enumerate like\+:
+
+
+\begin{DoxyCode}
+encrypt/key/#0
+encrypt/key/#1
+\end{DoxyCode}
+
+
+If more than one key is defined, every owner of the corresponding private key can decrypt the values of the backend. This might be useful if applications run with their own user but the administrator has to update the configuration. The administrator then only needs the public key of the application user in her keyring, set the values and the application will be able to decrypt the values.
+
+If you are not sure which keys are available to you, the {\ttfamily kdb} program will give you suggestions in the error description. For example you can type\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ecf user:/t crypto
+\end{DoxyCode}
+
+
+In the error description you should see something like\+:
+
+
+\begin{DoxyCode}
+The command ./bin/kdb mount terminated unsuccessfully with the info:
+The provided plugin configuration is not valid!
+Errors/Warnings during the check were:
+Sorry, module crypto issued the error C01310:
+Failed to create handle. Reason: Missing GPG key (specified as encrypt/key) in plugin configuration.
+       Available key IDs are: B815F1334CF4F830187A784256CFA3A5C54DF8E4,847378ABCF0A552B48082A80C52E8E92F785163F
+Please report the issue at https://issues.libelektra.org/
+\end{DoxyCode}
+
+
+This means that the following keys are available\+:
+
+
+\begin{DoxyItemize}
+\item B815\+F1334\+C\+F4\+F830187\+A784256\+C\+F\+A3\+A5\+C54\+D\+F8\+E4
+\item 847378\+A\+B\+C\+F0\+A552\+B48082\+A80\+C52\+E8\+E92\+F785163F
+\end{DoxyItemize}
+
+So the full mount command could look like this\+:
+
+
+\begin{DoxyCode}
+kdb mount test.ecf user:/t crypto "crypto/key=847378ABCF0A552B48082A80C52E8E92F785163F"
+\end{DoxyCode}
+
+
+Please note that these options are meant for experts only. If you do not provide these configuration options, secure defaults are being used.
+
+The length of the master password that protects all the other keys can be set in\+:
+
+
+\begin{DoxyCode}
+/crypto/masterpasswordlength
+\end{DoxyCode}
+
+
+The number of iterations that are to be performed in the P\+B\+K\+D\+F2 call can be set in\+:
+
+
+\begin{DoxyCode}
+/crypto/iterations
+\end{DoxyCode}
+
+
+The following key must be set to {\ttfamily \char`\"{}1\char`\"{}} within the plugin configuration, if the plugin should shut down the crypto library\+:
+
+
+\begin{DoxyCode}
+/shutdown
+\end{DoxyCode}
+
+
+Per default shutdown is disabled to prevent applications like the qt-\/gui from crashing. Shutdown is enabled in the unit tests to prevent memory leaks.
+
+The crypto plugin uses the Advanced Encryption Standard (A\+ES) in Cipher Block Chaining Mode (C\+BC) with a key size of 256 bit. 

@@ -1,0 +1,206 @@
+.TH "doc_tutorials_namespaces_md" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_namespaces_mdUnderstanding Namespaces 
+ \- The \fIkey database\fP of Elektra is \fIhierarchically structured\fP\&. This means that keys are organized similar to directories in a file system\&.
+.PP
+Let us add some keys to the database\&. To add a key we can use \fCkdb\fP, the \fIkey database access tool\fP:
+.PP
+.PP
+.nf
+kdb set <key> <value>
+.fi
+.PP
+.PP
+Now add the the key **/a** with the Value \fBValue 1\fP and the key **/b/c** with the Value \fBValue 2\fP:
+.PP
+.PP
+.nf
+kdb set /a 'Value 1'
+#> Using name user:/a
+#> Create a new key user:/a with string "Value 1"
+kdb set /b/c 'Value 2'
+#> Using name user:/b/c
+#> Create a new key user:/b/c with string "Value 2"
+.fi
+.PP
+.PP
+.PP
+Here you see the internal structure of the database after adding the keys **/a** and **/b/c**\&. For instance the key **/b/c** has the path **/** -> \fBb\fP -> \fBc\fP\&.
+.PP
+Note how the name of the key determines the path to its value\&.
+.PP
+You can use the file system analogy as a mnemonic to remember these commands (like the file system commands in your favorite operating system):
+.PP
+.IP "\(bu" 2
+\fCkdb ls <path>\fP lists keys below \fIpath\fP
+.IP "\(bu" 2
+\fCkdb rm <key>\fP removes a \fIkey\fP
+.IP "\(bu" 2
+\fCkdb cp <source> <dest>\fP copies a key to another path
+.IP "\(bu" 2
+\fCkdb get <key>\fP gets the value of \fIkey\fP
+.PP
+.PP
+For example \fCkdb get /b/c\fP should return \fCValue 2\fP now, if you set the values before\&.
+.PP
+Now we abandon the file system analogy and introduce the concept of \fInamespaces\fP\&.
+.PP
+Every key in Elektra belongs to one of these namespaces:
+.PP
+.IP "\(bu" 2
+\fBspec\fP for specification of other keys
+.IP "\(bu" 2
+\fBproc\fP for in-memory keys (e\&.g\&. command-line)
+.IP "\(bu" 2
+\fBdir\fP for dir keys in current working directory
+.IP "\(bu" 2
+\fBuser\fP for user keys in home directory
+.IP "\(bu" 2
+\fBsystem\fP for system keys in \fC/etc\fP or \fC/\fP
+.PP
+.PP
+All namespaces save their keys in a \fIseparate hierarchical structure\fP from the other namespaces\&.
+.PP
+But when we set the keys **/a** and **/b/c** before we didn't provide a namespace\&. So I hear you asking, if every key has to belong to a namespace, where are the keys? They are in the \fIuser\fP namespace, as you can verify with:
+.PP
+.PP
+.nf
+kdb ls user:/ | grep -E '(/a|/b/c)'
+#> user:/a
+#> user:/b/c
+.fi
+.PP
+.PP
+When we don't provide a namespace Elektra assumes a default namespace, which should be \fBuser\fP for non-root users\&. So if you are a normal user the command \fCkdb set /b/c 'Value 2'\fP was synonymous to \fCkdb set user:/b/c 'Value 2'\fP\&.
+.PP
+At this point the key database should have this structure: 
+.PP
+Another question you may ask yourself now is, what happens if we lookup a key without providing a namespace\&. So let us retrieve the key **/b/c** with the -v flag in order to make \fIkdb\fP more talkative\&.
+.PP
+.PP
+.nf
+kdb get -v /b/c
+# STDOUT-REGEX: got \d+ keys
+#>  searching spec:/b/c, found: <nothing>, options: KDB_O_CALLBACK
+#>  searching proc:/b/c, found: <nothing>, options:
+#>  searching dir:/b/c, found: <nothing>, options:
+#>  searching user:/b/c, found: user:/b/c, options:
+#> The resulting key name is user:/b/c
+#> Value 2
+.fi
+.PP
+.PP
+Here you see how Elektra searches all namespaces for matching keys in this order: \fBspec\fP, \fBproc\fP, \fBdir\fP, \fBuser\fP and finally \fBsystem\fP
+.PP
+If a key is found in a namespace, it masks the key in all subsequent namespaces, which is the reason why the system namespace isn't searched\&. Finally the virtual key **/b/c** gets resolved to the real key \fBuser:/b/c\fP\&. Because of the way a key without a namespace is retrieved, we call keys, that start with '**/**' \fBcascading keys\fP\&. You can find out more about cascading lookups in the \fBcascading tutorial\fP\&.
+.PP
+Having namespaces enables both admins and users to set specific parts of the application's configuration, as you will see in the following example\&.
+.PP
+We will provide an example of how you can configure \fBelektrified\fP applications\&.
+.PP
+Our exemplary application will be the key database access tool \fCkdb\fP as this should already be installed on your system\&.
+.PP
+\fCkdb\fP can be configured by the following configuration data:
+.PP
+.IP "\(bu" 2
+_/sw/elektra/kdb/#**X**/**PROFILE**/verbose_ - sets the verbosity of kdb
+.IP "\(bu" 2
+_/sw/elektra/kdb/#**X**/**PROFILE**/quiet_ - if kdb should suppress non-error messages
+.IP "\(bu" 2
+_/sw/elektra/kdb/#**X**/**PROFILE**/namespace_ - specifies the default namespace used, when setting a cascading name
+.PP
+.PP
+\fBX\fP is a placeholder for the \fImajor version number\fP and \fBPROFILE\fP stands for the name of a \fIprofile\fP to which this configuration applies\&. If we want to set configuration for the default profile we can set \fBPROFILE\fP to %\&. The name of the key follows the convention described \fBhere\fP\&.
+.PP
+Say we want to set \fCkdb\fP to be more verbose when it is used in the current directory\&. In this case we have to set \fIverbose\fP to 1 in the \fIdir\fP namespace of the current directory\&.
+.PP
+.PP
+.nf
+kdb set "dir:/sw/elektra/kdb/#0/%/verbose" 1
+#> Create a new key dir:/sw/elektra/kdb/#0/%/verbose with string "1"
+.fi
+.PP
+.PP
+.RS 4
+The configuration for a directory is actually stored in this directory\&. By default the configuration is contained in a folder named \fC\&.dir\fP, as you can verify with \fCkdb file dir:/\fP (\fIkdb file\fP tells you the file where a key is stored in)\&.
+.PP
+For the purpose of demonstration we chose to only manipulate the verbosity of kdb\&. Note that setting \fCdir:/sw/elektra/kdb/#0/%/namespace\fP to \fCdir\fP can be handy if you want to work with configuration of an application in a certain directory\&. 
+.RE
+.PP
+.PP
+If we now search for some key, \fCkdb\fP will behave just as if we have called it with the \fC-v\fP option\&.
+.PP
+.PP
+.nf
+kdb get /some/key
+# STDOUT-REGEX: got \d+ keys
+#> searching spec:/some/key, found: <nothing>, options: KDB_O_CALLBACK
+#>     searching proc:/some/key, found: <nothing>, options:
+#>     searching dir:/some/key, found: <nothing>, options:
+#>     searching user:/some/key, found: <nothing>, options:
+#>     searching system:/some/key, found: <nothing>, options:
+#>     searching default of spec:/some/key, found: <nothing>, options: KDB_O_NOCASCADING
+#> Did not find key
+.fi
+.PP
+.PP
+Verbosity is not always useful because it distracts from the essential\&. So we may decide that we want \fCkdb\fP to be only verbose if we are debugging it\&. So let us move the default configuration to another profile:
+.PP
+.PP
+.nf
+kdb mv -r "dir:/sw/elektra/kdb/#0/%" "dir:/sw/elektra/kdb/#0/debug"
+#> using common basename: dir:/sw/elektra/kdb/#0
+#> key: dir:/sw/elektra/kdb/#0/%/verbose will be renamed to: dir:/sw/elektra/kdb/#0/debug/verbose
+#> Will write out:
+#> dir:/sw/elektra/kdb/#0/debug/verbose
+.fi
+.PP
+.PP
+If we now call \fCkdb get /some/key\fP it will behave non-verbose, but if we call it with the \fIdebug\fP profile \fCkdb get -p debug /some/key\fP the configuration under **/sw/elektra/kdb/#0/debug** applies\&.
+.PP
+We configured kdb only for the current directory\&. If we like this configuration we could move it to the system namespace, so that every user can enjoy a preconfigured \fIdebug\fP profile\&.
+.PP
+.PP
+.nf
+sudo kdb mv -r "dir:/sw/elektra/kdb" "system:/sw/elektra/kdb"
+#> using common basename: /sw/elektra/kdb
+#> key: dir:/sw/elektra/kdb/#0/%/verbose will be renamed to: system:/sw/elektra/kdb/#0/%/verbose
+#> Will write out:
+#> system:/sw/elektra/kdb/#0/%/verbose
+.fi
+.PP
+.PP
+Now every user can use the \fIdebug\fP profile with kdb\&.
+.PP
+\fICascading keys\fP are keys that start with **/** and are a way of making key lookups much easier\&. Let's say you want to see the configuration from the example above\&. You do not need to search every namespace by yourself\&. Just make a lookup for **/sw/elektra/kdb/#0/debug/verbose**, like this:
+.PP
+.PP
+.nf
+kdb get "/sw/elektra/kdb/#0/debug/verbose"
+#> 1
+.fi
+.PP
+.PP
+When using cascading key the best key will be searched at run-time\&. If you are only interested in the system key, you would use:
+.PP
+.PP
+.nf
+kdb get "system:/sw/elektra/kdb/#0/debug/verbose"
+#> 1
+.fi
+.PP
+.PP
+Because of \fIcascading keys\fP a user can override the behavior of the \fIdebug\fP profile by setting the corresponding keys in his \fIuser\fP namespace (as we discussed \fCbefore\fP)\&. If a user sets \fIverbose\fP in his user namespace to 0 she overrides the default behavior from the \fIsystem\fP namespace\&.
+.PP
+.PP
+.nf
+kdb set "user:/sw/elektra/kdb/#0/debug/verbose" 0
+#> Create a new key user:/sw/elektra/kdb/#0/debug/verbose with string "0"
+kdb get "/sw/elektra/kdb/#0/debug/verbose"
+#> 0
+.fi
+.PP
+.PP
+Now \fCkdb get -p debug /some/key\fP is not verbose anymore for this user\&. 

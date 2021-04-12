@@ -1,0 +1,302 @@
+.TH "kdbio" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbio \- Asynchronous I/O feature\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Files"
+
+.in +1c
+.ti -1c
+.RI "file \fBkdbio\&.h\fP"
+.br
+.RI "Elektra-I/O structures for I/O bindings, plugins and applications\&. "
+.ti -1c
+.RI "file \fBkdbioplugin\&.h\fP"
+.br
+.RI "Elektra-I/O functions and declarations for the I/O binding test suite\&. "
+.ti -1c
+.RI "file \fBkdbiotest\&.h\fP"
+.br
+.RI "Elektra-I/O functions and declarations for the I/O binding test suite\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Asynchronous I/O feature\&. 
+
+
+.SH "Asynchronous I/O with Elektra"
+.PP
+.SS "Overview"
+I/O bindings allow Elektra and its plugins to integrate into different main loop APIs using a thin abstraction layer\&. For example, this is used for notification transport plugins which receive notifications using ZeroMQ, D-Bus, etc\&.
+.PP
+I/O bindings are created using an initialization function for a specific main loop API\&. Please see \fCbindings\fP for available I/O bindings and their according READMEs for more details\&. After creating, an I/O binding is associated to a KDB instance using elektraIoSetBinding()\&. Having different I/O bindings (e\&.g\&. same or different main loop APIs) for different KDB instances is supported\&.
+.PP
+The remainder of this page contains useful details for creating I/O bindings and using the operations provided by these bindings\&. Application developers are normally not required to do those tasks\&. For more information about using I/O bindings from an application developer perspective please read the \fCNotification Tutorial\fP\&.
+.SS "Introduction"
+An I/O binding needs to handle different types of operations\&. These operations are used by plugins that require asynchronous I/O\&. In this document we will call developers of these plugins 'users'\&. The three types of operations are:
+.IP "\(bu" 2
+file descriptor watch operations
+.IP "\(bu" 2
+timer operations
+.IP "\(bu" 2
+idle operations
+.PP
+.PP
+Each operation has a user callback that is called under the following conditions:
+.IP "\(bu" 2
+For file descriptor watch operations a user callback shall be called whenever the descriptor status matches the 'flags' bitmask (readable, writable or both)\&.
+.IP "\(bu" 2
+For timer operations a user callback shall be called whenever a given interval has elapsed\&.
+.IP "\(bu" 2
+Idle operations shall call a user callback whenever possible without interfering other operations\&. These operations are used for bulk data transfers or expensive calculations that would stall other operations when done at once\&.
+.PP
+.PP
+Each operation has different properties\&. The following properties are shared by all operations:
+.IP "\(bu" 2
+callback (\fBelektraIoFdGetCallback()\fP;set by \fBelektraIoNewFdOperation()\fP) user callback
+.IP "\(bu" 2
+enabled (\fBelektraIoFdIsEnabled()\fP;\fBelektraIoFdSetEnabled()\fP) indicates whether the operation is enabled\&. No callback shall be fired when an operation is disabled\&.
+.IP "\(bu" 2
+privateData (\fBelektraIoFdGetData()\fP;set by \fBelektraIoNewFdOperation()\fP) pointer to data owned by user
+.IP "\(bu" 2
+bindingData (\fBelektraIoFdGetBindingData()\fP;\fBelektraIoFdSetBindingData()\fP) pointer to data owned by I/O binding
+.PP
+.PP
+For brevity only file descriptor operation variants are listed here\&. Variants for timer and idle operations are called \fCelektraIoTimer*\fP and \fCelektraIoIdle*\fP\&. All \fCelektraIo*\fP utility functions are provided by the \fCelektra-io\fP library\&.
+.PP
+File descriptor watch operations have the following additional properties:
+.IP "\(bu" 2
+fd (\fBelektraIoFdGetFd()\fP;set by \fBelektraIoNewFdOperation()\fP) file descriptor number to be watched
+.IP "\(bu" 2
+flags (\fBelektraIoFdGetFlags()\fP;\fBelektraIoFdSetFlags()\fP) flags bitmask
+.PP
+.PP
+Timer operations have the following additional properties:
+.IP "\(bu" 2
+interval (\fBelektraIoTimerGetInterval()\fP;\fBelektraIoTimerSetInterval()\fP) minimum interval in milliseconds after the user callback shall be fired
+.PP
+.PP
+Idle operations have no additional properties\&.
+.PP
+\fBCreating a new I/O Binding\fP
+.RS 4
+
+.RE
+.PP
+Every I/O binding needs to provide ten functions:
+.IP "\(bu" 2
+file descriptor watch operations
+.IP "  \(bu" 4
+\fBElektraIoBindingAddFd\fP (e\&.g\&. \fBioDocBindingAddFd()\fP)
+.IP "  \(bu" 4
+\fBElektraIoBindingUpdateFd\fP (e\&.g\&. \fBioDocBindingUpdateFd()\fP)
+.IP "  \(bu" 4
+\fBElektraIoBindingRemoveFd\fP (e\&.g\&. \fBioDocBindingRemoveFd()\fP)
+.PP
+
+.IP "\(bu" 2
+timer operations
+.IP "  \(bu" 4
+\fBElektraIoBindingAddTimer\fP (e\&.g\&. \fBioDocBindingAddTimer()\fP)
+.IP "  \(bu" 4
+\fBElektraIoBindingUpdateTimer\fP (e\&.g\&. \fBioDocBindingUpdateTimer()\fP)
+.IP "  \(bu" 4
+\fBElektraIoBindingRemoveTimer\fP (e\&.g\&. \fBioDocBindingRemoveTimer()\fP)
+.PP
+
+.IP "\(bu" 2
+idle operations
+.IP "  \(bu" 4
+\fBElektraIoBindingAddIdle\fP (e\&.g\&. \fBioDocBindingAddIdle()\fP)
+.IP "  \(bu" 4
+\fBElektraIoBindingUpdateIdle\fP (e\&.g \fBioDocBindingUpdateIdle()\fP)
+.IP "  \(bu" 4
+\fBElektraIoBindingRemoveIdle\fP (e\&.g\&. \fBioDocBindingRemoveIdle()\fP)
+.PP
+
+.IP "\(bu" 2
+\fBElektraIoBindingCleanup\fP (e\&.g\&. \fBioDocBindingCleanup()\fP)
+.PP
+.PP
+In order to create a new I/O binding you have to create an entry point for your binding (e\&.g\&. \fBelektraIoDocNew()\fP)\&. This entry point then calls \fBelektraIoNewBinding()\fP with pointers to the ten required functions\&.
+.PP
+.PP
+.nf
+        // Initialize I/O interface
+        ElektraIoInterface * binding = elektraIoNewBinding (
+                // file descriptors
+                ioDocBindingAddFd, ioDocBindingUpdateFd, ioDocBindingRemoveFd,
+                // timers
+                ioDocBindingAddTimer, ioDocBindingUpdateTimer, ioDocBindingRemoveTimer,
+                // idle
+                ioDocBindingAddIdle, ioDocBindingUpdateIdle, ioDocBindingRemoveIdle,
+                // cleanup
+                ioDocBindingCleanup);
+        if (binding == NULL)
+        {
+                ELEKTRA_LOG_WARNING ("elektraIoNewBinding failed");
+                return NULL;
+        }
+.fi
+.PP
+ If your I/O management library requires you to store additional data you can do so using \fBelektraIoBindingSetData()\fP\&. Let's assume you have the following data structure:
+.PP
+.PP
+.nf
+
+typedef struct DocBindingData
+{
+        char * foo;
+        // Add additional members as required
+} DocBindingData;
+.fi
+.PP
+ Then you can store your data with the I/O binding\&.
+.PP
+.PP
+.nf
+        // Store binding relevant data in the interface
+        DocBindingData * bindingData = elektraMalloc (sizeof (*bindingData));
+        if (bindingData == NULL)
+        {
+                ELEKTRA_LOG_WARNING ("elektraMalloc failed");
+                return NULL;
+        }
+        elektraIoBindingSetData (binding, bindingData);
+        bindingData->foo = foo;
+.fi
+.PP
+ Of course if you need to store only a single pointer (e\&.g\&. a handle) you can omit the struct and directly use \fBelektraIoBindingSetData()\fP with your pointer\&.
+.PP
+\fBImplementing Operations\fP
+.RS 4
+
+.RE
+.PP
+The next step is to implement operation functions\&. We'll walk through the implementation of the functions for managing file descriptor watch operations\&. Timer and idle variants are the same except for the operation properties\&.
+.PP
+For reconstructing the user callback it is advisable to store a context for each operation in your I/O management library\&. Most I/O management libraries let you pass this context when adding an operation to the library\&. This context is then passed by the library back to your callbacks\&. You can use the operation data itself as context and store additional data like handles from your I/O management library by using \fBelektraIoFdSetBindingData()\fP\&.
+.PP
+Let's assume the data structure looks like this:
+.PP
+.PP
+.nf
+
+typedef struct DocOperationData
+{
+        char * bar;
+        // Add additional members as required
+} DocOperationData;
+.fi
+.PP
+ Using this struct's members you can store additional data like handles in operations\&. The member \fCbar\fP is just an example\&.
+.PP
+The following snippet from \fBioDocBindingAddFd()\fP shows example code for \fBElektraIoBindingAddFd\fP\&. Code for \fBElektraIoBindingAddTimer\fP and \fBElektraIoBindingAddIdle\fP is similar\&.
+.PP
+.PP
+.nf
+        DocOperationData * operationData = newOperationData ();
+        if (operationData == NULL)
+        {
+                return 0;
+        }
+        // You can use private data stored in the I/O binding
+        // e\&.g\&. MyData data = (MyData *)elektraIoBindingGetData (binding);
+
+        elektraIoFdSetBindingData (fdOp, operationData);
+        // You can store additional data for each operation in your operationData structure
+        operationData->bar = "foo";
+
+        // Here you need to add the operation to the I/O management library
+        // ioDocBindingFdCallback() holds an example callback to pass to your I/O management library
+
+        // assume SomeIoLibHandle * someIoLibAddFd (int fd, int flags, int enabled, void * privateData, callback)
+        // operationData->handle = someIoLibAddFd (elektraIoFdGetFd (fdOp), elektraIoFdGetFlags (fdOp), elektraIoFdIsEnabled (fdOp), &fdOp,
+        // ioDocBindingFdCallback)
+
+        return 1;
+.fi
+.PP
+ In \fBElektraIoBindingUpdateFd\fP or \fBElektraIoBindingRemoveFd\fP you can access your binding operation data by using \fBelektraIoFdGetBindingData()\fP\&.
+.PP
+.PP
+.nf
+        DocOperationData * operationData = (DocOperationData *) elektraIoFdGetBindingData (fdOp);
+.fi
+.PP
+ When your I/O management library detects a change of the file descriptor status it will call a callback supplied by your I/O binding\&. We will assume for file descriptor watch operations this is \fBioDocBindingFdCallback()\fP\&. Your I/O binding's task is to call the operation callback supplied by the user with the correct arguments\&.
+.PP
+.PP
+.nf
+/*static*/ void ioDocBindingFdCallback (SomeIoLibHandle * handle, int bitmask)
+{
+        // For this example let's assume handle is passed as argument
+        ELEKTRA_NOT_NULL (handle->data);
+        ElektraIoFdOperation * fdOp = (ElektraIoFdOperation *) handle->data;
+
+        // Convert bitmask to Elekta's flags
+        elektraIoFdGetCallback (fdOp) (fdOp, someBitMaskToElektraIoFlags (bitmask));
+}
+.fi
+.PP
+ We assumed \fCSomeIoLibHandle->data\fP let's you access your context\&. Since we have used the original operation data as context we directly obtain the operation data to retrieve the user callback using \fBelektraIoFdGetCallback()\fP\&. Additionally it is necessary to convert the I/O management library's bitmask to Elekta's I/O bitmask (\fBElektraIoFdFlags\fP) and then call the user callback\&.
+.PP
+When implementing \fBElektraIoBindingRemoveFd\fP (or the timer and idle equivalents) make sure to free data allocated in the add functions\&.
+.PP
+\fBCleanup\fP
+.RS 4
+
+.RE
+.PP
+\fBElektraIoBindingCleanup\fP is the place to free data allocated for your I/O binding\&.
+.PP
+At least you need to free the pointer returned from \fBelektraIoNewBinding()\fP in your I/O binding's entry point\&.
+.PP
+\fBLinking\fP
+.RS 4
+
+.RE
+.PP
+Make sure to link against the \fCelektra-io\fP library for the \fCelektraIo*\fP utility functions that create bindings or operations and allow access to their fields\&. This library is available via \fCpkg-config\fP\&.
+.PP
+\fBTesting\fP
+.RS 4
+
+.RE
+.PP
+Elektra provides a test suite for I/O bindings in order to make sure that transport plugins will work with all bindings\&. To run the test suite you need to execute \fBelektraIoTestSuite()\fP and provide the necessary callbacks for creating a new binding, starting and stopping asynchronous processing (\fBElektraIoTestSuiteCreateBinding\fP, \fBElektraIoTestSuiteStart\fP and \fBElektraIoTestSuiteStop\fP)\&.
+.PP
+.PP
+.nf
+int main (int argc, char ** argv)
+{
+        init (argc, argv);
+
+        elektraIoTestSuite (createBinding, startLoop, stopLoop);
+
+        print_result ("iowrapper_doc");
+
+        return nbError;
+}
+.fi
+.PP
+ The functions supplied to \fBelektraIoTestSuite()\fP are called for setup, starting and stopping of the tests\&.
+.PP
+For example \fBElektraIoTestSuiteCreateBinding\fP of the 'doc' binding:
+.PP
+.PP
+.nf
+static ElektraIoInterface * createBinding (void)
+{
+        return elektraIoDocNew ("foo");
+}
+.fi
+.PP
+ Of course starting and stopping is specific to your I/O management library\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

@@ -1,0 +1,303 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the toml plugin is in keys below
+\item infos/author = Jakob Fischer \href{mailto:jakobfischer93@gmail.com}{\tt jakobfischer93@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/provides = storage/toml
+\item infos/needs = base64
+\item infos/recommends = type
+\item infos/placements = getstorage setstorage
+\item infos/status = experimental unfinished
+\item infos/metadata = order comment/\# comment/\#/start comment/\#/space type tomltype origvalue
+\item infos/description = This storage plugin reads and writes T\+O\+ML files using Flex and Bison.
+\end{DoxyItemize}\hypertarget{autotoc_md642_src_plugins_toml_README_md}{}\section{Introduction}\label{autotoc_md642_src_plugins_toml_README_md}
+This plugin is a storage plugin for reading and writing T\+O\+ML files. The plugin retains most of the file structure of a read T\+O\+ML file such as comments, empty lines and T\+O\+ML tables. It supports all kinds of T\+O\+ML specific types and tables, including nested inline tables and multiline strings.\hypertarget{autotoc_md642_autotoc_md643}{}\section{Requirements}\label{autotoc_md642_autotoc_md643}
+The plugin needs Flex ($>$=2.\+6.\+2) and Bison ($>$=3) for parsing T\+O\+ML files.\hypertarget{autotoc_md642_autotoc_md644}{}\section{Types}\label{autotoc_md642_autotoc_md644}
+\hypertarget{autotoc_md642_autotoc_md645}{}\subsection{Reading}\label{autotoc_md642_autotoc_md645}
+On reading, the plugin will set the {\ttfamily type} metakey for strings, integers, floats and boolean values, if applicable. For decimal integers, the metakey is set to {\ttfamily long\+\_\+long}. For binary/octal/hexadecimal integers, the metakey is set to {\ttfamily unsigned\+\_\+long\+\_\+long}. For floats, the metakey will be set to {\ttfamily double}. These types are chosen to conform with the T\+O\+ML format as stated on the offical \href{https://toml.io/en/v1.0.0-rc.1}{\tt T\+O\+ML} page.
+
+On reading, non-\/decimal integers will get converted to decimal. The non-\/decimal representation will be stored in the {\ttfamily origvalue} metakey of the key. When writing a key, the value of that metakey will be written instead, in order to retain the original format. Note that the {\ttfamily origvalue} metakey gets removed if the value of the key changes.
+
+``` sudo kdb mount test.\+toml user\+:/tests/storage/types toml type\hypertarget{autotoc_md642_autotoc_md646}{}\section{Create a T\+O\+M\+L file with 4 keys}\label{autotoc_md642_autotoc_md646}
+echo \textquotesingle{}plain\+\_\+decimal = 1000\textquotesingle{} $>$$>$ {\ttfamily kdb file user\+:/tests/storage/types} echo \textquotesingle{}file\+\_\+permissions = 0o777\textquotesingle{} $>$$>$ {\ttfamily kdb file user\+:/tests/storage/types} echo \textquotesingle{}pi = 3.\+1415\textquotesingle{} $>$$>$ {\ttfamily kdb file user\+:/tests/storage/types} echo \textquotesingle{}division\+\_\+gone\+\_\+wrong = -\/inf\textquotesingle{} $>$$>$ {\ttfamily kdb file user\+:/tests/storage/types}\hypertarget{autotoc_md642_autotoc_md647}{}\section{Print the content of the toml file}\label{autotoc_md642_autotoc_md647}
+cat {\ttfamily kdb file user\+:/tests/storage/types} \hypertarget{autotoc_md642_autotoc_md648}{}\section{$>$ plain\+\_\+decimal = 1000}\label{autotoc_md642_autotoc_md648}
+\hypertarget{autotoc_md642_autotoc_md649}{}\section{$>$ file\+\_\+permissions = 0o777}\label{autotoc_md642_autotoc_md649}
+\hypertarget{autotoc_md642_autotoc_md650}{}\section{$>$ pi = 3.\+1415}\label{autotoc_md642_autotoc_md650}
+\hypertarget{autotoc_md642_autotoc_md651}{}\section{$>$ division\+\_\+gone\+\_\+wrong = -\/inf}\label{autotoc_md642_autotoc_md651}
+\hypertarget{autotoc_md642_autotoc_md652}{}\section{Print types and values of the keys with `kdb`}\label{autotoc_md642_autotoc_md652}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/types/plain\+\_\+decimal\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md653}{}\section{$>$ long\+\_\+long}\label{autotoc_md642_autotoc_md653}
+kdb get \textquotesingle{}user\+:/tests/storage/types/plain\+\_\+decimal\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md654}{}\section{$>$ 1000}\label{autotoc_md642_autotoc_md654}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/types/file\+\_\+permissions\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md655}{}\section{$>$ unsigned\+\_\+long\+\_\+long}\label{autotoc_md642_autotoc_md655}
+\hypertarget{autotoc_md642_autotoc_md656}{}\section{The octal value will be converted to decimal}\label{autotoc_md642_autotoc_md656}
+kdb get \textquotesingle{}user\+:/tests/storage/types/file\+\_\+permissions\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md657}{}\section{$>$ 511}\label{autotoc_md642_autotoc_md657}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/types/pi\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md658}{}\section{$>$ double}\label{autotoc_md642_autotoc_md658}
+kdb get \textquotesingle{}user\+:/tests/storage/types/pi\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md659}{}\section{$>$ 3.\+1415}\label{autotoc_md642_autotoc_md659}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/types/division\+\_\+gone\+\_\+wrong\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md660}{}\section{$>$ double}\label{autotoc_md642_autotoc_md660}
+kdb get \textquotesingle{}user\+:/tests/storage/types/division\+\_\+gone\+\_\+wrong\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md661}{}\section{$>$ -\/inf}\label{autotoc_md642_autotoc_md661}
+\hypertarget{autotoc_md642_autotoc_md662}{}\section{Cleanup}\label{autotoc_md642_autotoc_md662}
+kdb rm -\/r user\+:/tests/storage/types sudo kdb umount user\+:/tests/storage/types 
+\begin{DoxyCode}
+## Writing
+
+On writing, for most values, the plugin will infer the appropriate type and will write them accordingly.
+This means, values, that match a TOML float, integer or date will be written without any quotes around
+       them.
+If a value does not match any of these types, it will be written as a string.
+
+The plugin uses an existing `type` metakey only to check if it should write a value as a `string` or a
+       `boolean`.
+
+With this functionality, numbers can be written as a string to the file, if wanted.
+
+To write a boolean value, the `type` metakey must be set to `boolean` for the key.
+Otherwise, no conversion to the TOML boolean values will take place.
+Per default, Elektra uses 0/1 to represent boolean values.
+\end{DoxyCode}
+ sudo kdb mount test.\+toml user\+:/tests/storage/types toml type\hypertarget{autotoc_md642_autotoc_md663}{}\section{Create a key, which may be a integer, boolean or string}\label{autotoc_md642_autotoc_md663}
+kdb set \textquotesingle{}user\+:/tests/storage/types/value\textquotesingle{} \textquotesingle{}1\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md664}{}\section{The plugin infers `long\+\_\+long` for this value}\label{autotoc_md642_autotoc_md664}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/types/value\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md665}{}\section{$>$ long\+\_\+long}\label{autotoc_md642_autotoc_md665}
+\hypertarget{autotoc_md642_autotoc_md666}{}\section{The value is written as an integer}\label{autotoc_md642_autotoc_md666}
+cat {\ttfamily kdb file user\+:/tests/storage/types} \hypertarget{autotoc_md642_autotoc_md667}{}\section{$>$ value = 1}\label{autotoc_md642_autotoc_md667}
+\hypertarget{autotoc_md642_autotoc_md668}{}\section{Manually set the `type` metakey to boolean}\label{autotoc_md642_autotoc_md668}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/types/value\textquotesingle{} \textquotesingle{}type\textquotesingle{} \textquotesingle{}boolean\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md669}{}\section{The value is written as a boolean}\label{autotoc_md642_autotoc_md669}
+cat {\ttfamily kdb file user\+:/tests/storage/types} \hypertarget{autotoc_md642_autotoc_md670}{}\section{$>$ value = true}\label{autotoc_md642_autotoc_md670}
+\hypertarget{autotoc_md642_autotoc_md671}{}\section{Manually set the `type` metakey to string}\label{autotoc_md642_autotoc_md671}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/types/value\textquotesingle{} \textquotesingle{}type\textquotesingle{} \textquotesingle{}string\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md672}{}\section{The value is written as a string}\label{autotoc_md642_autotoc_md672}
+cat {\ttfamily kdb file user\+:/tests/storage/types} \hypertarget{autotoc_md642_autotoc_md673}{}\section{$>$ value = \char`\"{}1\char`\"{}}\label{autotoc_md642_autotoc_md673}
+\hypertarget{autotoc_md642_autotoc_md674}{}\section{Cleanup}\label{autotoc_md642_autotoc_md674}
+kdb rm -\/r user\+:/tests/storage/types sudo kdb umount user\+:/tests/storage/types 
+\begin{DoxyCode}
+# Numbers
+
+The plugin supports reading and writing of any kind of number supported by the TOML format, such as
+       floating point numbers and binary/octal/decimal/hexadecimal integers.
+To write a non-decimal integer, add the corresponding prefix to the number (`0b` for binary, `0o` for
+       octal, `0x` for hexadecimal).
+The value will be written in the given base to the file, but converted to decimal within Elektra (see
+       [Reading](##reading)).
+Note that the plugin doesn't warn about invalid prefix/digit combinations. If the combination is not valid,
+       it will be written as a string instead.
+
+If the `type` plugin is enabled and you want to change the value of an existing number key which needs
+       conversion (all keys which have a `origvalue`),
+you have to change the value of `origvalue` instead of the key value. Otherwise the `type` plugin will give
+       an error.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md675}{}\section{Mount a new T\+O\+M\+L file}\label{autotoc_md642_autotoc_md675}
+sudo kdb mount test.\+toml user\+:/tests/storage/numbers toml type\hypertarget{autotoc_md642_autotoc_md676}{}\section{Write an octal value}\label{autotoc_md642_autotoc_md676}
+kdb set \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \textquotesingle{}0o777\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md677}{}\section{Get the converted decimal value}\label{autotoc_md642_autotoc_md677}
+kdb get \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md678}{}\section{$>$ 511}\label{autotoc_md642_autotoc_md678}
+\hypertarget{autotoc_md642_autotoc_md679}{}\section{Get the original octal value}\label{autotoc_md642_autotoc_md679}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \textquotesingle{}origvalue\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md680}{}\section{$>$ 0o777}\label{autotoc_md642_autotoc_md680}
+\hypertarget{autotoc_md642_autotoc_md681}{}\section{Get the type of the number; since it\textquotesingle{}s originally octal, we get `unsigned\+\_\+long\+\_\+long`}\label{autotoc_md642_autotoc_md681}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md682}{}\section{$>$ unsigned\+\_\+long\+\_\+long}\label{autotoc_md642_autotoc_md682}
+\hypertarget{autotoc_md642_autotoc_md683}{}\section{Change the value by changing the `origvalue` metakey}\label{autotoc_md642_autotoc_md683}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \textquotesingle{}origvalue\textquotesingle{} \textquotesingle{}0o666\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md684}{}\section{Get the new value as decimal}\label{autotoc_md642_autotoc_md684}
+kdb get \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md685}{}\section{$>$ 438}\label{autotoc_md642_autotoc_md685}
+\hypertarget{autotoc_md642_autotoc_md686}{}\section{Change the value to an invalid octal value.}\label{autotoc_md642_autotoc_md686}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \textquotesingle{}origvalue\textquotesingle{} \textquotesingle{}0o888\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md687}{}\section{The key value is no longer considered a number}\label{autotoc_md642_autotoc_md687}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/numbers/a\textquotesingle{} \textquotesingle{}type\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md688}{}\section{$>$ string}\label{autotoc_md642_autotoc_md688}
+\hypertarget{autotoc_md642_autotoc_md689}{}\section{Cleanup}\label{autotoc_md642_autotoc_md689}
+kdb rm -\/r user\+:/tests/storage/numbers sudo kdb umount user\+:/tests/storage/numbers 
+\begin{DoxyCode}
+# Strings
+
+The plugin can read any kind of TOML string: bare, basic, literal, basic multiline and literal multiline.
+However, it will write back all non-bare strings as basic strings or it's multiline version.
+Therefore, any string set with `kdb set` must be treated as a basic string and possible escape sequences
+       and special meanings of quotation characters must be taken care of.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md690}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md690}
+sudo kdb mount test\+\_\+strings.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md691}{}\section{setting a string containing a newline escape sequence}\label{autotoc_md642_autotoc_md691}
+kdb set \textquotesingle{}user\+:/tests/storage/string\textquotesingle{} \textquotesingle{}I am a basic string a literal one.\textquotesingle{}
+
+kdb get \textquotesingle{}user\+:/tests/storage/string\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md692}{}\section{$>$ I am a basic string}\label{autotoc_md642_autotoc_md692}
+\hypertarget{autotoc_md642_autotoc_md693}{}\section{$>$ ot a literal one}\label{autotoc_md642_autotoc_md693}
+\hypertarget{autotoc_md642_autotoc_md694}{}\section{setting the string again, but escape the backslash with another backslash}\label{autotoc_md642_autotoc_md694}
+kdb set \textquotesingle{}user\+:/tests/storage/string\textquotesingle{} \textquotesingle{}I am a basic string\textbackslash{}not a literal one.\textquotesingle{}
+
+kdb get \textquotesingle{}user\+:/tests/storage/string\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md695}{}\section{$>$ I am a basic string\textbackslash{}not a literal one}\label{autotoc_md642_autotoc_md695}
+\hypertarget{autotoc_md642_autotoc_md696}{}\section{Cleanup}\label{autotoc_md642_autotoc_md696}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+The plugin supports all kinds of escape sequences used by TOML in basic and basic multiline strings, like
+       `\(\backslash\)n`, `\(\backslash\)r`, `\(\backslash\)t` and
+even `\(\backslash\)u`/`\(\backslash\)U` for Unicode escape sequences. `\(\backslash\)t` is interpreted to be 4 spaces.
+
+# Binary/NULL values
+
+The plugin handles binary values by using the [base64](@ref src\_plugins\_base64\_README\_md) plugin.
+As a result, binary values get written as base64 encoded strings, which start with the special prefix
+       `@BASE64`.
+`NULL` key values are written as special strings of value `@NULL`.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md697}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md697}
+sudo kdb mount test\+\_\+binary.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md698}{}\section{Creating a key with a N\+U\+L\+L value}\label{autotoc_md642_autotoc_md698}
+kdb set \textquotesingle{}user\+:/tests/storage/nullkey\textquotesingle{} \hypertarget{autotoc_md642_autotoc_md699}{}\section{$>$ Create a new key user\+:/test/nullkey with null value}\label{autotoc_md642_autotoc_md699}
+\hypertarget{autotoc_md642_autotoc_md700}{}\section{Print file content}\label{autotoc_md642_autotoc_md700}
+cat {\ttfamily kdb file user\+:/tests/storage} \hypertarget{autotoc_md642_autotoc_md701}{}\section{$>$ nullkey = \textquotesingle{}@\+N\+U\+L\+L\textquotesingle{}}\label{autotoc_md642_autotoc_md701}
+\hypertarget{autotoc_md642_autotoc_md702}{}\section{Write base64 encoded data to the file}\label{autotoc_md642_autotoc_md702}
+echo \char`\"{}base64 = \textquotesingle{}@\+B\+A\+S\+E64\+S\+S\+Bhb\+S\+Bi\+Y\+X\+Nl\+I\+D\+Y0\+I\+G\+Vu\+Y29k\+Z\+W\+Qg\+Zm9y\+I\+G5v\+I\+H\+Jl\+Y\+X\+Nvbi4=\textquotesingle{}\char`\"{} $>$ {\ttfamily kdb file user\+:/test}\hypertarget{autotoc_md642_autotoc_md703}{}\section{Print the value of the key, which is a binary value}\label{autotoc_md642_autotoc_md703}
+kdb get \textquotesingle{}user\+:/test/base64\textquotesingle{} \#$>$ \hypertarget{autotoc_md642_autotoc_md704}{}\section{Print the value again, but apply the escape codes}\label{autotoc_md642_autotoc_md704}
+echo -\/e {\ttfamily kdb get \textquotesingle{}user\+:/test/base64\textquotesingle{}} \#$>$ I am base 64 encoded for no reason.\hypertarget{autotoc_md642_autotoc_md705}{}\section{Cleanup}\label{autotoc_md642_autotoc_md705}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+# TOML specific structures
+
+TOML specific structures are represented by the metakey `tomltype` on a certain key.
+It will be set when the TOML plugin reads a TOML structure from a file. Additionally, this metakey can be
+       set by the user, if they want a certain TOML structure to be written.
+No automatic inference of this metakey is done on writing.
+
+## Simple Tables
+
+TOML's simple tables are represented by setting the `tomltype` metakey to `simpletable`.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md706}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md706}
+sudo kdb mount test\+\_\+table.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md707}{}\section{Create three keys, which are all a subkey of \textquotesingle{}common\textquotesingle{},}\label{autotoc_md642_autotoc_md707}
+\hypertarget{autotoc_md642_autotoc_md708}{}\section{but we have no \textquotesingle{}common\textquotesingle{} simple table key yet}\label{autotoc_md642_autotoc_md708}
+kdb set \textquotesingle{}user\+:/tests/storage/common/a\textquotesingle{} \textquotesingle{}0\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/common/b\textquotesingle{} \textquotesingle{}1\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/common/c\textquotesingle{} \textquotesingle{}2\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md709}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md709}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ common.\+a = 0 \#$>$ common.\+b = 1 \#$>$ common.\+c = 2\hypertarget{autotoc_md642_autotoc_md710}{}\section{Create a simple table key}\label{autotoc_md642_autotoc_md710}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/common\textquotesingle{} \textquotesingle{}tomltype\textquotesingle{} \textquotesingle{}simpletable\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md711}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md711}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ \mbox{[}common\mbox{]} \#$>$ a = 0 \#$>$ b = 1 \#$>$ c = 2\hypertarget{autotoc_md642_autotoc_md712}{}\section{Cleanup}\label{autotoc_md642_autotoc_md712}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+## Table Arrays
+
+Table arrays are represented by setting the `tomltype` metakey to `tablearray`. It is not required to also
+       set the array metakey, since the plugin will set the metakey, if it is missing.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md713}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md713}
+sudo kdb mount test\+\_\+table\+\_\+array.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md714}{}\section{Create a table array containing two entries, each with a key \textquotesingle{}a\textquotesingle{} and \textquotesingle{}b\textquotesingle{}}\label{autotoc_md642_autotoc_md714}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/tablearray\textquotesingle{} \textquotesingle{}tomltype\textquotesingle{} \textquotesingle{}tablearray\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/tablearray/\#0/a\textquotesingle{} \textquotesingle{}1\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/tablearray/\#0/b\textquotesingle{} \textquotesingle{}2\textquotesingle{}
+
+kdb set \textquotesingle{}user\+:/tests/storage/tablearray/\#1/a\textquotesingle{} \textquotesingle{}3\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/tablearray/\#1/b\textquotesingle{} \textquotesingle{}4\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md715}{}\section{Print the highest index of the table array}\label{autotoc_md642_autotoc_md715}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/tablearray\textquotesingle{} \textquotesingle{}array\textquotesingle{} \#$>$ \#1\hypertarget{autotoc_md642_autotoc_md716}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md716}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ \mbox{[}\mbox{[}tablearray\mbox{]}\mbox{]} \#$>$ a = 1 \#$>$ b = 2 \#$>$ \mbox{[}\mbox{[}tablearray\mbox{]}\mbox{]} \#$>$ a = 3 \#$>$ b = 4\hypertarget{autotoc_md642_autotoc_md717}{}\section{Cleanup}\label{autotoc_md642_autotoc_md717}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+## Inline Tables
+
+Inline tables are represented by setting the `tomltype` metakey to `inlinetable`. The plugin also supports
+       reading/writing nested inline tables.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md718}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md718}
+sudo kdb mount test\+\_\+inline\+\_\+table.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md719}{}\section{Create a table array containing two entries, each with a key \textquotesingle{}a\textquotesingle{} and \textquotesingle{}b\textquotesingle{}}\label{autotoc_md642_autotoc_md719}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/inlinetable\textquotesingle{} \textquotesingle{}tomltype\textquotesingle{} \textquotesingle{}inlinetable\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/inlinetable/a\textquotesingle{} \textquotesingle{}1\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/inlinetable/b\textquotesingle{} \textquotesingle{}2\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/inlinetable/nested\textquotesingle{} \textquotesingle{}tomltype\textquotesingle{} \textquotesingle{}inlinetable\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/inlinetable/nested/x\textquotesingle{} \textquotesingle{}3\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/inlinetable/nested/y\textquotesingle{} \textquotesingle{}4\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md720}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md720}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ inlinetable = \{ a = 1, b = 2, nested = \{ x = 3, y = 4 \} \}\hypertarget{autotoc_md642_autotoc_md721}{}\section{Cleanup}\label{autotoc_md642_autotoc_md721}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+## Arrays
+
+Arrays are recognized by the `array` metakey. On writing, the plugin will detect arrays automatically and
+       set the appropriate metakey if it is missing.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md722}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md722}
+sudo kdb mount test\+\_\+array.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md723}{}\section{Create array elements}\label{autotoc_md642_autotoc_md723}
+kdb set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}1\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}2\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/array/\#2\textquotesingle{} \textquotesingle{}3\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md724}{}\section{Print the highest index of the array}\label{autotoc_md642_autotoc_md724}
+kdb meta-\/get \textquotesingle{}user\+:/tests/storage/array\textquotesingle{} \textquotesingle{}array\textquotesingle{} \#$>$ \#2\hypertarget{autotoc_md642_autotoc_md725}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md725}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ array = \mbox{[}1, 2, 3\mbox{]}\hypertarget{autotoc_md642_autotoc_md726}{}\section{Cleanup}\label{autotoc_md642_autotoc_md726}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+# Comments and Empty Lines
+
+The plugin preserves all comments with only one limitation for arrays. The amount of whitespace in front of
+       a comment is also saved.
+For this purpose, each tab will get translated to 4 spaces.
+
+Comments can also be created by assigning meta keys to a key.
+The meta keys must be of the form `comment/#n`, where `n` is a positive number, indicating the position of
+       the comment relative to the key.
+An index of 0 is always the inline comment of the key.
+Indices greater than zero are for comments preceding the given key, where 1 is the top-most comment and the
+       highest index comment is right above the key.
+
+Spaces can be added to a comment by creating a `comment/#n/space` metakey with the amount of spaces to the
+       key.
+
+File ending comments must be assigned to the file root key.
+
+Empty lines in front of a key can be created by adding an empty `comment/#n/start` entry to it. In this
+       case, no `comment/#n` key is needed.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md727}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md727}
+sudo kdb mount test\+\_\+comments.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md728}{}\section{create a key-\/value pair, ready for comment decoration}\label{autotoc_md642_autotoc_md728}
+kdb set \textquotesingle{}user\+:/tests/storage/key\textquotesingle{} \textquotesingle{}1\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md729}{}\section{add an inline comment with 4 leading spaces}\label{autotoc_md642_autotoc_md729}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/key\textquotesingle{} \textquotesingle{}comment/\#0\textquotesingle{} \textquotesingle{} This value is very interesting\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/key\textquotesingle{} \textquotesingle{}comment/\#0/space\textquotesingle{} \textquotesingle{}4\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md730}{}\section{add some comments preceding the key}\label{autotoc_md642_autotoc_md730}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/key\textquotesingle{} \textquotesingle{}comment/\#1\textquotesingle{} \textquotesingle{} I am the top-\/most comment relative to my key.\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/key\textquotesingle{} \textquotesingle{}comment/\#2\textquotesingle{} \textquotesingle{} I am in the middle. Just boring.\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/key\textquotesingle{} \textquotesingle{}comment/\#3\textquotesingle{} \textquotesingle{} I am in the line right above my key.\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md731}{}\section{add file ending comments and empty lines}\label{autotoc_md642_autotoc_md731}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage\textquotesingle{} \textquotesingle{}comment/\#1\textquotesingle{} \textquotesingle{} First file-\/ending comment\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage\textquotesingle{} \textquotesingle{}comment/\#2/start\textquotesingle{} \textquotesingle{}\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage\textquotesingle{} \textquotesingle{}comment/\#3\textquotesingle{} \textquotesingle{} Second file-\/ending comment. I am the last line of the file.\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md732}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md732}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ \# I am the top-\/most comment relative to my key. \#$>$ \# I am in the middle. Just boring. \#$>$ \# I am in the line right above my key. \#$>$ key = 1 \# This value is very interesting \#$>$ \# First file-\/ending comment \#$>$ \#$>$ \# Second file-\/ending comment. I am the last line of the file.\hypertarget{autotoc_md642_autotoc_md733}{}\section{Cleanup}\label{autotoc_md642_autotoc_md733}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+## Comments in Arrays
+
+Any amount of comments can be placed between array elements or between the first element and the opening
+       brackets.
+
+However, only one comment - an inline comment - can be placed after the last element and the closing
+       brackets.
+On reading, the plugin discards any non-inline comments between the last element and the closing brackets.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md734}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md734}
+sudo kdb mount test\+\_\+array\+\_\+comments.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md735}{}\section{Create array elements}\label{autotoc_md642_autotoc_md735}
+kdb set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}1\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}2\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/array/\#2\textquotesingle{} \textquotesingle{}3\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md736}{}\section{Add inline comment after the array}\label{autotoc_md642_autotoc_md736}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array\textquotesingle{} \textquotesingle{}comment/\#0\textquotesingle{} \textquotesingle{} Inline comment after the array\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array\textquotesingle{} \textquotesingle{}comment/\#0/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array\textquotesingle{} \textquotesingle{}comment/\#0/space\textquotesingle{} \textquotesingle{}5\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md737}{}\section{Add comments for array elements}\label{autotoc_md642_autotoc_md737}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#0\textquotesingle{} \textquotesingle{} Inline comment of first element\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#0/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#0/space\textquotesingle{} \textquotesingle{}4\textquotesingle{}
+
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#1\textquotesingle{} \textquotesingle{} Comment preceding the first element\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#1/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#1/space\textquotesingle{} \textquotesingle{}4\textquotesingle{}
+
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#2\textquotesingle{} \textquotesingle{} Another comment preceding the first element\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#2/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#0\textquotesingle{} \textquotesingle{}comment/\#2/space\textquotesingle{} \textquotesingle{}6\textquotesingle{}
+
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}comment/\#0\textquotesingle{} \textquotesingle{} Inline comment of second element\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}comment/\#0/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}comment/\#0/space\textquotesingle{} \textquotesingle{}4\textquotesingle{}
+
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}comment/\#1\textquotesingle{} \textquotesingle{} Comment preceding the second element\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}comment/\#1/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#1\textquotesingle{} \textquotesingle{}comment/\#1/space\textquotesingle{} \textquotesingle{}6\textquotesingle{}
+
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#2\textquotesingle{} \textquotesingle{}comment/\#0\textquotesingle{} \textquotesingle{} Inline comment of the last element\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#2\textquotesingle{} \textquotesingle{}comment/\#0/start\textquotesingle{} \textquotesingle{}\#\textquotesingle{} kdb meta-\/set \textquotesingle{}user\+:/tests/storage/array/\#2\textquotesingle{} \textquotesingle{}comment/\#0/space\textquotesingle{} \textquotesingle{}5\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md738}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md738}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ array = \mbox{[} \# Comment preceding the first element \#$>$ \# Another comment preceding the first element \#$>$ 1, \# Inline comment of first element \#$>$ \# Comment preceding the second element \#$>$ 2, \# Inline comment of second element \#$>$ 3 \# Inline comment of the last element \#$>$ \mbox{]} \# Inline comment after the array\hypertarget{autotoc_md642_autotoc_md739}{}\section{Cleanup}\label{autotoc_md642_autotoc_md739}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage 
+\begin{DoxyCode}
+# Order
+
+The plugin preserves the file order by the usage of the metakey `order`. When reading a file, the order
+       metakey will be set according to the order as read in the file.
+If new keys are added, eg. via `kdb set`, the order of the set key will be set to the next-to-highest order
+       value present in the existing key set.
+
+However, the order is only relevant between elements with the same TOML-parent. For example keys of a
+       simple table are only sorted with respect to each other, not with any keys outside that table. If that table has
+       it's order changed and moves to another position in the file, so will it's subkeys.
+
+When sorting elements under the same TOML-parent, tables (simple and array) will always be sorted after
+       non-table elements, regardless of their order.
+With this limitation, we prevent that a newly set key, that is not part of a certain table array/simple
+       table, would be placed after the table declaration, making it a member of that table on a subsequent read.
+\end{DoxyCode}
+ \hypertarget{autotoc_md642_autotoc_md740}{}\section{Mount T\+O\+M\+L file}\label{autotoc_md642_autotoc_md740}
+sudo kdb mount test\+\_\+order.\+toml user\+:/tests/storage toml type\hypertarget{autotoc_md642_autotoc_md741}{}\section{Create three keys in reverse alphabetical order under the subkey common}\label{autotoc_md642_autotoc_md741}
+\hypertarget{autotoc_md642_autotoc_md742}{}\section{Additionally, create one key not in the common subkey space}\label{autotoc_md642_autotoc_md742}
+kdb set \textquotesingle{}user\+:/tests/storage/common/c\textquotesingle{} \textquotesingle{}0\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/common/b\textquotesingle{} \textquotesingle{}1\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/common/a\textquotesingle{} \textquotesingle{}2\textquotesingle{} kdb set \textquotesingle{}user\+:/tests/storage/d\textquotesingle{} \textquotesingle{}3\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md743}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md743}
+\hypertarget{autotoc_md642_autotoc_md744}{}\section{The keys are ordered as they were set}\label{autotoc_md642_autotoc_md744}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ common.\+c = 0 \#$>$ common.\+b = 1 \#$>$ common.\+a = 2 \#$>$ d = 3\hypertarget{autotoc_md642_autotoc_md745}{}\section{Create a simple table for the three keys under `common`}\label{autotoc_md642_autotoc_md745}
+kdb meta-\/set \textquotesingle{}user\+:/tests/storage/common\textquotesingle{} \textquotesingle{}tomltype\textquotesingle{} \textquotesingle{}simpletable\textquotesingle{}\hypertarget{autotoc_md642_autotoc_md746}{}\section{Print the content of the resulting T\+O\+M\+L file}\label{autotoc_md642_autotoc_md746}
+cat {\ttfamily kdb file user\+:/tests/storage} \#$>$ d = 3 \#$>$ \mbox{[}common\mbox{]} \#$>$ c = 0 \#$>$ b = 1 \#$>$ a = 2\hypertarget{autotoc_md642_autotoc_md747}{}\section{Cleanup}\label{autotoc_md642_autotoc_md747}
+kdb rm -\/r user\+:/tests/storage sudo kdb umount user\+:/tests/storage ```
+
+In this example, {\ttfamily d} and {\ttfamily common} have the same parent, the file root. This means, they need to be sorted with each other. {\ttfamily d} would be placed before {\ttfamily common} by it\textquotesingle{}s order, since it was set before, and thus, has lesser order. However, their order never gets compared, since {\ttfamily common} is a simple table and {\ttfamily d} is not, so {\ttfamily d} will get sorted before the table regardless of order.\hypertarget{autotoc_md642_autotoc_md748}{}\section{Limitations}\label{autotoc_md642_autotoc_md748}
+While the plugin has good capabilities in handling the T\+O\+ML file format, it currently lacks some features possible with Elektra\+:
+
+
+\begin{DoxyItemize}
+\item Sparse arrays are not preserved on writing, they get a continuous array without index holes.
+\item Values on non-\/leaf keys are currently not supported, they get discarded.
+\item Custom metakeys cannot be written by the plugin, so they get discarded.
+\end{DoxyItemize}
+
+Additionally, there are some minor limitations related to the T\+O\+ML file format, mostly related to the preservation of the original file structure\+:
+
+
+\begin{DoxyItemize}
+\item On writing, each string is written as a T\+O\+ML basic string (single or multiline). See \href{#Strings}{\tt Strings}
+\item Comments and newlines between the last array element and closing brackets are discarded.
+\item Trailing commas in arrays and inline tables are discarded
+\item Only spaces in front of comments are preserved. 
+\end{DoxyItemize}

@@ -1,0 +1,67 @@
+.TH "autotoc_md291" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+autotoc_md291Plugin: ipaddr 
+ \- 
+.IP "\(bu" 2
+infos = Information about the ipaddr plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep
+.IP "\(bu" 2
+infos/metadata = check/ipaddr
+.IP "\(bu" 2
+infos/description = Validation for IP addresses
+.PP
+.SH "IP Address Validation"
+.PP
+.SS "Introduction"
+This plugin validates IP addresses using regular expressions\&.
+.SS "Usage"
+``\fC @section autotoc_md294 Mount\fPipaddr\fCplugin to cascading namespace\fP/tests/ipaddr` kdb mount config\&.dump /tests/ipaddr dump ipaddr
+.SH "Check the validity of the IP stored in `/tests/ipaddr/ipv4`"
+.PP
+kdb meta-set /tests/ipaddr/ipv4 check/ipaddr ipv4
+.SH "Try to set an incorrect IP address"
+.PP
+kdb set /tests/ipaddr/ipv4 127\&.0\&.0\&.1337 
+.SH "STDERR: \&.*Validation Semantic\&.*"
+.PP
+.SH "ERROR:  C03200"
+.PP
+.SH "RET:    5"
+.PP
+.SH "Set a correct IPv4 address"
+.PP
+kdb set /tests/ipaddr/ipv4 127\&.0\&.0\&.1 kdb get /tests/ipaddr/ipv4 #> 127\&.0\&.0\&.1
+.SH "By default the plugin allows both IPv4 and IPv6 addresses"
+.PP
+kdb meta-set /tests/ipaddr/address check/ipaddr ''
+.SH "Set correct IP addresses"
+.PP
+kdb set /tests/ipaddr/address 1\&.2\&.3\&.4 kdb set /tests/ipaddr/address ::1
+.SH "Try to set incorrect addresses"
+.PP
+kdb set /tests/ipaddr/address bad::ip 
+.SH "RET: 5"
+.PP
+kdb set /tests/ipaddr/address 1\&.2\&.-3\&.4 
+.SH "RET: 5"
+.PP
+.SH "Undo modifications to the database"
+.PP
+kdb rm -r /tests/ipaddr kdb umount /tests/ipaddr ```
+.SS "Limitations"
+The plugin only checks IP addresses for validity\&. It is not able to resolve hostnames\&. If you are looking for a plugin that supports hostnames, check out the \fBnetwork plugin\fP\&. 

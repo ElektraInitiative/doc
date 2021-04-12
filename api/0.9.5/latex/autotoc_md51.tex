@@ -1,0 +1,115 @@
+
+\begin{DoxyItemize}
+\item infos = Information about base64 plugin is in keys below
+\item infos/author = Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\tt peter.\+nirschl@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/provides = binary
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep libc final configurable
+\item infos/metadata =
+\item infos/description = Base64 Encoding
+\end{DoxyItemize}\hypertarget{autotoc_md51_src_plugins_base64_README_md}{}\section{Base64}\label{autotoc_md51_src_plugins_base64_README_md}
+\hypertarget{autotoc_md51_autotoc_md52}{}\subsection{Introduction}\label{autotoc_md51_autotoc_md52}
+The Base64 Encoding (specified in \href{https://www.ietf.org/rfc/rfc4648.txt}{\tt R\+F\+C4648}) is used to encode arbitrary binary data to A\+S\+C\+II strings.
+
+This is useful for configuration files that must contain A\+S\+C\+II strings only.
+
+The {\ttfamily base64} plugin encodes binary values before {\ttfamily kdb set} writes the configuration to the file. The values are decoded back to their original value after {\ttfamily kdb get} has read from the configuration file.\hypertarget{autotoc_md51_autotoc_md53}{}\subsection{Usage}\label{autotoc_md51_autotoc_md53}
+To mount a simple backend that uses the Base64 encoding, you can use\+:
+
+
+\begin{DoxyCode}
+sudo kdb mount test.ecf /tests/base64/test base64
+\end{DoxyCode}
+
+
+. To unmount the plugin use the following command\+:
+
+
+\begin{DoxyCode}
+sudo kdb umount /tests/base64/test
+\end{DoxyCode}
+
+
+. All encoded binary values will look something like this\+:
+
+
+\begin{DoxyCode}
+@BASE64SGVsbG8gV29ybGQhCg==
+\end{DoxyCode}
+
+
+. And for a null-\/key it will be\+:
+
+
+\begin{DoxyCode}
+@BASE64
+\end{DoxyCode}
+\hypertarget{autotoc_md51_autotoc_md54}{}\subsection{Modes}\label{autotoc_md51_autotoc_md54}
+The plugin supports two different modes\+:
+
+
+\begin{DoxyEnumerate}
+\item Escaping Mode
+\item Meta Mode
+\end{DoxyEnumerate}
+
+. By default the plugin uses escaping mode which has the advantage that a storage plugin does not have to change its behavior at all to work in conjunction with Base64.\hypertarget{autotoc_md51_autotoc_md55}{}\subsubsection{Escaping Mode}\label{autotoc_md51_autotoc_md55}
+In order to identify the base64 encoded content, the values are marked with the prefix {\ttfamily @B\+A\+S\+E64}. To distinguish between the {\ttfamily @} as character and {\ttfamily @} as Base64 marker, all strings starting with {\ttfamily @} will be modified so that they begin with {\ttfamily @@}.\hypertarget{autotoc_md51_autotoc_md56}{}\paragraph{Example}\label{autotoc_md51_autotoc_md56}
+The following example shows how you can use this plugin together with the T\+O\+ML plugin to store binary data.
+
+
+\begin{DoxyCode}
+# Mount the TOML and Base64 plugin
+kdb mount test\_config.toml user:/tests/base64 toml base64
+
+# Copy binary data
+kdb cp system:/elektra/modules/base64/exports/get user:/tests/base64/binary
+
+# Print binary data
+kdb get user:/tests/base64/binary
+# STDOUT-REGEX: ^(\(\backslash\)\(\backslash\)x[0-9a-f]\{1,2\})+$
+
+# The value inside the configuration file is encoded by the Base64 plugin
+kdb file user:/tests/base64 | xargs cat
+# STDOUT-REGEX: binary.*=.*'@BASE64[a-zA-Z0-9+/]+=\{0,2\}'
+
+# Undo modifications
+kdb rm -r user:/tests/base64
+kdb umount user:/tests/base64
+\end{DoxyCode}
+\hypertarget{autotoc_md51_autotoc_md57}{}\subsubsection{Meta Mode}\label{autotoc_md51_autotoc_md57}
+Some file formats such as \href{http://yaml.org}{\tt Y\+A\+ML} already support Base64 encoded data. In Y\+A\+ML \href{http://yaml.org/type/binary.html}{\tt binary data} starts with the tag {\ttfamily !!binary} followed by a Base64 encoded scalar\+:
+
+
+\begin{DoxyCode}
+!!binary SGVsbG8sIFlBTUwh # “Hello, YAML!”
+\end{DoxyCode}
+
+
+. For Y\+A\+ML it would not make sense to use the format of the escaping mode\+:
+
+
+\begin{DoxyCode}
+# Another YAML implementation will not be able to decode this data
+# because of the prefix `@BASE64`!
+!!binary "@BASE64SGVsbG8sIFlBTUwh"
+\end{DoxyCode}
+
+
+. Base64 supports another mode called “meta mode”. In this mode the Base64 plugin encodes the value, but does not add a prefix. To use the escaping mode a plugin must add the configuration key {\ttfamily /binary/meta}. Afterwards the Base64 plugin encodes and decodes all data that contains the metakey {\ttfamily type} with the value {\ttfamily binary}.
+
+The diagram below shows how the Base64 conversion process works in conjunction with the Y\+A\+ML C\+PP plugin.
+
+\hypertarget{autotoc_md51_autotoc_md58}{}\paragraph{Example}\label{autotoc_md51_autotoc_md58}
+The following example shows you how you can use the T\+O\+ML plugin together with Base64’s meta mode.
+
+``{\ttfamily  @section autotoc\+\_\+md59 Mount T\+O\+ML and Base64 plugin (provides}binary{\ttfamily ) with the configuration key}binary/meta` kdb mount test\+\_\+config.\+toml user\+:/tests/base64 ni base64 binary/meta=\hypertarget{autotoc_md51_autotoc_md60}{}\section{Save base64 encoded data `\char`\"{}value\char`\"{}` (`0x76616c7565`)}\label{autotoc_md51_autotoc_md60}
+kdb set user\+:/tests/base64/encoded dm\+Fsd\+W\+UA kdb file user\+:/tests/base64/encoded $\vert$ xargs cat $\vert$ grep encoded \#$>$ encoded = dm\+Fsd\+W\+UA\hypertarget{autotoc_md51_autotoc_md61}{}\section{Tell Base64 plugin to decode and encode key value}\label{autotoc_md51_autotoc_md61}
+kdb meta-\/set user\+:/tests/base64/encoded type binary\hypertarget{autotoc_md51_autotoc_md62}{}\section{Receive key data (the `\textbackslash{}x0` at the end marks the end of the string)}\label{autotoc_md51_autotoc_md62}
+kdb get user\+:/tests/base64/encoded \#$>$ \hypertarget{autotoc_md51_autotoc_md63}{}\section{Undo modifications}\label{autotoc_md51_autotoc_md63}
+kdb rm -\/r user\+:/tests/base64 kdb umount user\+:/tests/base64 ```
+
+For another usage example, please take a look at the Read\+Me of the \hyperlink{autotoc_md817_src_plugins_yamlcpp_README_md}{Y\+A\+ML C\+PP plugin}. 

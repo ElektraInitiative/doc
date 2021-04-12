@@ -1,0 +1,117 @@
+When programming in Java it is possible to access the key database, changing values of existing keys or adding new ones and a few other things. It is also possible to write plugins for Elektra in Java but we will focus on using the Java binding in this tutorial.
+
+In order to use {\ttfamily kdb} you need to include the dependency in your project. Here you can find a detailed tutorial on how to do that.
+
+After that you can start loading a {\ttfamily K\+DB} object as follows\+:
+
+
+\begin{DoxyCode}
+Key key = Key.create(\textcolor{stringliteral}{"user:/kdbsession/javabinding"});
+\textcolor{keywordflow}{try} (KDB kdb = KDB.open(key)) \{
+    \textcolor{comment}{// Your code to manipulate keys}
+\} \textcolor{keywordflow}{catch} (KDB.KDBException e) \{
+    e.printStackTrace();
+\}
+\end{DoxyCode}
+
+
+Note that {\ttfamily K\+DB} implements {\ttfamily Auto\+Closable} which allows \href{https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html}{\tt try-\/with-\/resouces}.
+
+You can also pass a {\ttfamily Key} object with an empty string on the first line. The passed key ({\ttfamily user\+:/kdbsession/javabinding} in this case) is being used for the session and stores warnings and error information.
+
+First I will show you how you can retrieve a key which is already part of the database. The first thing we need to do is to create a {\ttfamily Key\+Set} in which our keys will be stored.
+
+
+\begin{DoxyCode}
+KeySet \textcolor{keyword}{set} = KeySet.create();
+\end{DoxyCode}
+
+
+Now we load all keys and provide a parent key from which all keys below will be loaded
+
+
+\begin{DoxyCode}
+kdb.get(\textcolor{keyword}{set}, Key.create(\textcolor{stringliteral}{"user:/"}));
+\end{DoxyCode}
+
+
+Now we can simply fetch the desired key\textquotesingle{}s value as follows\+:
+
+
+\begin{DoxyCode}
+String str = \textcolor{keyword}{set}.lookup(\textcolor{stringliteral}{"user:/my/presaved/key"}).getString()
+\end{DoxyCode}
+
+
+So for example if you had executed the command below via shell, before starting the application\+:
+
+
+\begin{DoxyCode}
+kdb set user:/my/test it\_works!
+\end{DoxyCode}
+
+
+The method call would return {\ttfamily it\+\_\+works!}.
+
+
+\begin{DoxyCode}
+String str = \textcolor{keyword}{set}.lookup(\textcolor{stringliteral}{"user:/my/test"}).getString()
+System.out.println(str)    \textcolor{comment}{// prints "it works!"}
+\end{DoxyCode}
+
+
+Next I will show you how to save a new key into the database. First we need need to create an empty {\ttfamily Key\+Set} again. We also {\bfseries need to fetch} all keys for the namespace before we will be able to save a new key.
+
+
+\begin{DoxyCode}
+KeySet \textcolor{keyword}{set} = KeySet.create();
+Key \textcolor{keyword}{namespace }= Key.create("user:/");
+kdb.get(set, namespace);    \textcolor{comment}{// Fetch all keys for the namespace}
+set.append(Key.create("user:/somekey", "myValue"));
+kdb.set(set, key);
+\end{DoxyCode}
+
+
+If you try to save a key without fetching it beforehand, a {\ttfamily K\+D\+B\+Exception} will be thrown, telling you to call get before set.
+
+The {\itshape user} namespace is accessible without special rights, but if you try to write to {\itshape system} you will need to have root privileges. Take a look at \hyperlink{doc_TESTING_md}{T\+E\+S\+T\+I\+NG.md} to see how to access the system namespace as non-\/root user. This should only be done in testing environments though as it is not intended for productive systems.
+
+
+\begin{DoxyCode}
+Key key = Key.create(\textcolor{stringliteral}{"user:/errors"});
+\textcolor{keywordflow}{try} (KDB kdb = KDB.open(key)) \{
+    KeySet \textcolor{keyword}{set} = KeySet.create();
+    Key \textcolor{keyword}{namespace }= Key.create("user:/");     \textcolor{comment}{// Select a namespace from which all keys should be fetched}
+    kdb.get(set, namespace);                  \textcolor{comment}{// Fetch all keys into the set object}
+    for (int i = 0; i < set.length(); i++) \{  \textcolor{comment}{// Traverse the set}
+        String keyAndValue = String.format("%s: %s",
+                set.at(i).getName(),          \textcolor{comment}{// Fetch the key's name}
+                set.at(i).getString());       \textcolor{comment}{// Fetch the key's value}
+        System.out.println(keyAndValue);
+    \}
+\} catch (KDB.KDBException e) \{
+    e.printStackTrace();
+\}
+\end{DoxyCode}
+
+
+First we create a new {\ttfamily K\+DB} object and fetch all keys for the desired namespace, in this example the {\ttfamily user} namespace. Since it saves all keys in our passed {\ttfamily set} variable we can then iterate through it by a simple for loop. The {\ttfamily at(int)} method gives us the key on the corresponding position which we will print out in this example.
+
+This example shows how to read multiple keys. It provides comments for further clarification. Before building and running this example, add first your jar file like described here. Then build the project with this command from the root directory\+:
+
+
+\begin{DoxyCode}
+mvn clean package
+\end{DoxyCode}
+
+
+Afterwards run it with (change V\+E\+R\+S\+I\+ON in the command below!)\+:
+
+
+\begin{DoxyCode}
+java -cp target/read-keys-example-jar-with-dependencies.jar:lib/libelektra-VERSION.jar
+       org.libelektra.app.App
+\end{DoxyCode}
+
+
+For the tutorial on how to write java plugins, please check out \hyperlink{doc_tutorials_java-plugins_md}{this} page. 

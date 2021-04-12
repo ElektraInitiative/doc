@@ -1,0 +1,63 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the gopts plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\tt k.\+boeswirth+git@gmail.\+com}
+\item infos/licence = B\+SD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = procgetstorage
+\item infos/status = recommended productive maintained nodep libc
+\item infos/metadata = args args/index command opt opt/long opt/arg opt/flagvalue opt/help opt/hidden opt/\# opt/\#/long opt/\#/arg opt/\#/flagvalue opt/\#/hidden env env/\#
+\item infos/description = Parses command-\/line options using elektra-\/opts
+\end{DoxyItemize}
+
+This plugin allows applications to access command-\/line options and environment variables via the K\+DB.
+
+It is implemented as a simple frontend for the parser implemented in the internal {\ttfamily elektra\+Get\+Opts}.
+
+For more information on how to write the necessary specification and on using command-\/line options in general, take a look at \hyperlink{doc_tutorials_command-line-options_md}{the dedicated tutorial}
+
+Depending on the calling context and configuration, this plugin might use operating system specific functions to determine command-\/line arguments and environment variables. Which operating system\textquotesingle{}s functions the plugin uses is determined at compile-\/time.
+
+\begin{quote}
+{\bfseries Note\+:} One of the system-\/specific implementations of this plugin relies on procfs. Therefore, if you compile the plugin on a system with procfs, the plugin may not work on other machine with the same OS or even on the same machine, if procfs is not mounted. \end{quote}
+
+
+The preferred way of using this plugin is via a {\ttfamily kdb\+Open} contract\+:
+
+
+\begin{DoxyCode}
+KeySet * contract = \hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew} (0, \hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END});
+\hyperlink{contracts_8c_af4f606fc2179e917a10c77dab576d648}{elektraGOptsContract} (contract, argc, argv, environ, parentKey, NULL);
+
+KDB * kdb = \hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen} (contract, parentKey);
+
+\textcolor{comment}{// gopts automatically mounted}
+KeySet * ks = \hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew} (0, \hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END});
+\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet} (kdb, ks, parentKey);
+\end{DoxyCode}
+
+
+The plugin accepts a number of configuration keys.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily /offset}\+: You can set this key to an integer {\ttfamily n}. The plugin will then ignore the first {\ttfamily n} command-\/line arguments and only pass the rest on to the parser.
+\item {\ttfamily /help/usage}\+: The value of this key is used to replace the standard usage line in the auto-\/generated help message.
+\item {\ttfamily /help/prefix}\+: The value of this key is inserted between the usage line and the options list in the auto-\/generated help message.
+\end{DoxyItemize}
+
+The plugin also takes part of its configuration from the global Key\+Set. All keys the plugin uses are below {\ttfamily system\+:/elektra/gopts}. This prefix is abbreviated to {\ttfamily //} below.
+
+This plugin may use the following keys from the global Key\+Set\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily //parent}\+: If present, the plugin will use this key instead of the one provided by {\ttfamily kdb\+Get} as the parent key pass on to the parser. Specifically, the plugin uses this keys value as the key name for a new key that is passed to the parser.
+\item {\ttfamily //argc}\+: If present and {\ttfamily //parent} is present as well, the plugin expects {\ttfamily //argv} to be present as well. This key must be binary and its value must be an {\ttfamily int}.
+\item {\ttfamily //argv}\+: If present and {\ttfamily //parent} is present as well, the plugin expects {\ttfamily //argc} to be present as well. The values of {\ttfamily //argc} and {\ttfamily //argv} will be used instead of using the OS specific implementation. This key must be binary and its value must be a {\ttfamily const char $\ast$ const $\ast$}.
+\item {\ttfamily //envp}\+: If present and {\ttfamily //parent} is present as well, the value of this key will be used as the list of environment variables. This key must be binary and its value must be a {\ttfamily const char $\ast$ const $\ast$}.
+\item {\ttfamily //args}\+: If present and {\ttfamily //parent} is present as well, but {\ttfamily //argc} and {\ttfamily //argv} are absent, this will be used as the list of command-\/line arguments. This key must be binary and its value must be a zero-\/byte separated (and terminated) list of strings.
+\item {\ttfamily //env}\+: If present and {\ttfamily //parent} is present as well, but {\ttfamily //envp} is absent, this will be used as the list of environment variable. This key must be binary and its value must be a zero-\/byte separated (and terminated) list of strings. 
+\end{DoxyItemize}

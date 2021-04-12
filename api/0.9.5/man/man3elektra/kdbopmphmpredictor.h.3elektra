@@ -1,0 +1,218 @@
+.TH "kdbopmphmpredictor.h" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbopmphmpredictor.h \- Defines for the Order Preserving Minimal Perfect Hash Map Predictor\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdint\&.h>\fP
+.br
+
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBpredictorflag_t\fP { \fBOPMPHM_PREDICTOR_FLAG_MMAP_STRUCT\fP = 1, \fBOPMPHM_PREDICTOR_FLAG_MMAP_PATTERNTABLE\fP = 1 << 2 }
+.RI "OpmphmPredictor Flags\&. ""
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "OpmphmPredictor * \fBopmphmPredictorNew\fP (void)"
+.br
+.RI "Basic functions\&. "
+.ti -1c
+.RI "void \fBopmphmPredictorDel\fP (OpmphmPredictor *op)"
+.br
+.RI "Deletes the OpmphmPredictor\&. "
+.ti -1c
+.RI "void \fBopmphmPredictorCopy\fP (OpmphmPredictor *dest, OpmphmPredictor *source)"
+.br
+.RI "Make a copy of the OpmphmPredictor\&. "
+.ti -1c
+.RI "size_t \fBopmphmPredictorWorthOpmphm\fP (size_t n)"
+.br
+.RI "Heuristic function\&. "
+.ti -1c
+.RI "int \fBopmphmPredictor\fP (OpmphmPredictor *op, size_t n)"
+.br
+.RI "Predictor functions\&. "
+.ti -1c
+.RI "void \fBopmphmPredictorIncCountOpmphm\fP (OpmphmPredictor *op)"
+.br
+.RI "Increases the counter when the OPMPHM was used for the ksLookup (\&.\&.\&.) \&. "
+.ti -1c
+.RI "int \fBopmphmPredictorIncCountBinarySearch\fP (OpmphmPredictor *op, size_t n)"
+.br
+.RI "Increases the counter when the Binary Search was used for the ksLookup (\&.\&.\&.) \&. "
+.in -1c
+.SS "Variables"
+
+.in +1c
+.ti -1c
+.RI "const uint16_t \fBopmphmPredictorHistoryMask\fP"
+.br
+.RI "Order Preserving Minimal Perfect Hash Map Predictor\&. "
+.ti -1c
+.RI "const size_t \fBopmphmPredictorActionLimit\fP"
+.br
+.RI "The opmphmPredictorActionLimit define the minimum KeySet size necessary for predictor actions\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Defines for the Order Preserving Minimal Perfect Hash Map Predictor\&. 
+
+
+.PP
+\fBCopyright:\fP
+.RS 4
+BSD License (see doc/COPYING or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBpredictorflag_t\fP"
+
+.PP
+OpmphmPredictor Flags\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIOPMPHM_PREDICTOR_FLAG_MMAP_STRUCT \fP\fP
+OpmphmPredictor struct lies inside a mmap region\&. This flag is set for OpmphmPredictor structs inside a mapped region\&. It prevents erroneous free() calls on these OpmphmPredictors\&. 
+.TP
+\fB\fIOPMPHM_PREDICTOR_FLAG_MMAP_PATTERNTABLE \fP\fP
+OpmphmPredictor patternTable lies inside a mmap region\&. This flag is set for OpmphmPredictor patternTables inside a mapped region\&. It prevents erroneous free() calls on these patternTables\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int opmphmPredictor (OpmphmPredictor * op, size_t n)"
+
+.PP
+Predictor functions\&. Predictor functions\&.
+.PP
+Uses the opmphmPredictorWorthOpmphm (\&.\&.\&.) to check if the previous sequence of ksLookup (\&.\&.\&.) invocations without alteration was worth using the OPMPHM\&. Updates the state with the predictionAutomata and the worth information of the previous history\&. Alters the history with the worth information and makes the prediction for the next sequence of ksLookup (\&.\&.\&.) invocations\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIop\fP the Predictor 
+.br
+\fIn\fP the number of elements in the KeySet
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP it is worth using the OPMPHM 
+.br
+\fI0\fP it is not worth using the OPMPHM 
+.RE
+.PP
+
+.SS "void opmphmPredictorCopy (OpmphmPredictor * dest, OpmphmPredictor * source)"
+
+.PP
+Make a copy of the OpmphmPredictor\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsource\fP the OpmphmPredictor source 
+.br
+\fIdest\fP the OpmphmPredictor destination 
+.RE
+.PP
+
+.SS "void opmphmPredictorDel (OpmphmPredictor * op)"
+
+.PP
+Deletes the OpmphmPredictor\&. Clears and frees all memory in OpmphmPredictor\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIop\fP the OpmphmPredictor 
+.RE
+.PP
+
+.SS "int opmphmPredictorIncCountBinarySearch (OpmphmPredictor * op, size_t n)\fC [inline]\fP"
+
+.PP
+Increases the counter when the Binary Search was used for the ksLookup (\&.\&.\&.) \&. Prevents also an endless Binary Search usage by a simple heuristic\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIop\fP the Predictor 
+.br
+\fIn\fP the number of elements in the KeySet
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fI1\fP it is worth using the OPMPHM 
+.br
+\fI0\fP it is not worth using the OPMPHM 
+.RE
+.PP
+
+.SS "void opmphmPredictorIncCountOpmphm (OpmphmPredictor * op)\fC [inline]\fP"
+
+.PP
+Increases the counter when the OPMPHM was used for the ksLookup (\&.\&.\&.) \&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIop\fP the Predictor 
+.RE
+.PP
+
+.SS "OpmphmPredictor* opmphmPredictorNew (void)"
+
+.PP
+Basic functions\&. Basic functions\&.
+.PP
+Reserves for all possible values of opmphmPredictorHistoryMask two bits to store all 4 states of the Prediction Automata A2\&. Sets the initial state to 0\&.
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIOpmphmPredictor\fP * success 
+.br
+\fINULL\fP memory error 
+.RE
+.PP
+
+.SS "size_t opmphmPredictorWorthOpmphm (size_t n)\fC [inline]\fP"
+
+.PP
+Heuristic function\&. Heuristic function\&.
+.PP
+This easy and fast computable heuristic function tells how many ksLookup (\&.\&.\&.) invocations without alteration of the KeySet need to be made to justify the OPMPHM usage\&. This heuristic function is developed and measured by benchmarks\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIn\fP the number of elements in the KeySet
+.RE
+.PP
+\fBReturn values:\fP
+.RS 4
+\fIsize_t\fP the heuristic value 
+.RE
+.PP
+
+.SH "Variable Documentation"
+.PP 
+.SS "const uint16_t opmphmPredictorHistoryMask"
+
+.PP
+Order Preserving Minimal Perfect Hash Map Predictor\&. A modified Global History Register and Global Pattern History Table branch prediction algorithm from
+.PP
+Tse-Yu Yeh and Yale N\&. Patt 'Alternative Implementations of Two-Level Adaptive Branch Prediction' In: The 19th Annual International Symposium on Computer Architecture (1992), pp\&. 124-134
+.PP
+Maps the event of branch taken or not to a sequence of ksLookup (\&.\&.\&.) invocations without KeySet alteration that is worth using the OPMPHM or not\&. The predictor looks at past events to predict the future, to keep track of past events the \fClookupCount\fP and the \fCksSize\fP must be stored\&. opmphmPredictorHistoryMask defines the length and extraction mask of the global history register interpreted binary it must be a series of 1, with a minimum value of 0x3 and a maximum value of 0x7FFF\&.
+.PP
+Order Preserving Minimal Perfect Hash Map Predictor\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

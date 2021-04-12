@@ -1,0 +1,258 @@
+\hypertarget{group__kdbio}{}\section{I/O Bindings}
+\label{group__kdbio}\index{I/\+O Bindings@{I/\+O Bindings}}
+
+
+Asynchronous I/O feature.  
+
+
+\subsection*{Files}
+\begin{DoxyCompactItemize}
+\item 
+file \hyperlink{kdbio_8h}{kdbio.\+h}
+\begin{DoxyCompactList}\small\item\em Elektra-\/\+I/O structures for I/O bindings, plugins and applications. \end{DoxyCompactList}\item 
+file \hyperlink{kdbioplugin_8h}{kdbioplugin.\+h}
+\begin{DoxyCompactList}\small\item\em Elektra-\/\+I/O functions and declarations for the I/O binding test suite. \end{DoxyCompactList}\item 
+file \hyperlink{kdbiotest_8h}{kdbiotest.\+h}
+\begin{DoxyCompactList}\small\item\em Elektra-\/\+I/O functions and declarations for the I/O binding test suite. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Asynchronous I/O feature. 
+
+\hypertarget{group__kdbio_async}{}\subsection{Asynchronous I/\+O with Elektra}\label{group__kdbio_async}
+\hypertarget{group__kdbio_Overview}{}\subsubsection{Overview}\label{group__kdbio_Overview}
+I/O bindings allow Elektra and its plugins to integrate into different main loop A\+P\+Is using a thin abstraction layer. For example, this is used for notification transport plugins which receive notifications using Zero\+MQ, D-\/\+Bus, etc.
+
+I/O bindings are created using an initialization function for a specific main loop A\+PI. Please see \href{https://www.libelektra.org/bindings/readme}{\tt bindings} for available I/O bindings and their according R\+E\+A\+D\+M\+Es for more details. After creating, an I/O binding is associated to a K\+DB instance using elektra\+Io\+Set\+Binding(). Having different I/O bindings (e.\+g. same or different main loop A\+P\+Is) for different K\+DB instances is supported.
+
+The remainder of this page contains useful details for creating I/O bindings and using the operations provided by these bindings. Application developers are normally not required to do those tasks. For more information about using I/O bindings from an application developer perspective please read the \href{doc_tutorials_notifications_md.html}{\tt Notification Tutorial}.\hypertarget{group__kdbio_Introduction}{}\subsubsection{Introduction}\label{group__kdbio_Introduction}
+An I/O binding needs to handle different types of operations. These operations are used by plugins that require asynchronous I/O. In this document we will call developers of these plugins \char`\"{}users\char`\"{}. The three types of operations are\+:
+\begin{DoxyItemize}
+\item file descriptor watch operations
+\item timer operations
+\item idle operations
+\end{DoxyItemize}
+
+Each operation has a user callback that is called under the following conditions\+:
+\begin{DoxyItemize}
+\item For file descriptor watch operations a user callback shall be called whenever the descriptor status matches the \char`\"{}flags\char`\"{} bitmask (readable, writable or both).
+\item For timer operations a user callback shall be called whenever a given interval has elapsed.
+\item Idle operations shall call a user callback whenever possible without interfering other operations. These operations are used for bulk data transfers or expensive calculations that would stall other operations when done at once.
+\end{DoxyItemize}
+
+Each operation has different properties. The following properties are shared by all operations\+:
+\begin{DoxyItemize}
+\item callback (\hyperlink{io_8c_a885381fdd55cf957af1d65db7522899a}{elektra\+Io\+Fd\+Get\+Callback()};set by \hyperlink{io_8c_a3804183da1aecdfcf09455d246c3891c}{elektra\+Io\+New\+Fd\+Operation()}) user callback
+\item enabled (\hyperlink{io_8c_af35cfd8a33db0170e06cb8c3cdc08244}{elektra\+Io\+Fd\+Is\+Enabled()};\hyperlink{io_8c_a56f8b0059e6c7708681624d1994e4b44}{elektra\+Io\+Fd\+Set\+Enabled()}) indicates whether the operation is enabled. No callback shall be fired when an operation is disabled.
+\item private\+Data (\hyperlink{io_8c_a6a2a281c9e437dd1d660f1310fa06108}{elektra\+Io\+Fd\+Get\+Data()};set by \hyperlink{io_8c_a3804183da1aecdfcf09455d246c3891c}{elektra\+Io\+New\+Fd\+Operation()}) pointer to data owned by user
+\item binding\+Data (\hyperlink{io_8c_a6103b457ed1440d0490acf0a6ec17386}{elektra\+Io\+Fd\+Get\+Binding\+Data()};\hyperlink{io_8c_ae02ec122aafa67b7dd92d9c3daa6499e}{elektra\+Io\+Fd\+Set\+Binding\+Data()}) pointer to data owned by I/O binding
+\end{DoxyItemize}
+
+For brevity only file descriptor operation variants are listed here. Variants for timer and idle operations are called {\ttfamily elektra\+Io\+Timer$\ast$} and {\ttfamily elektra\+Io\+Idle$\ast$}. All {\ttfamily elektra\+Io$\ast$} utility functions are provided by the {\ttfamily elektra-\/io} library.
+
+File descriptor watch operations have the following additional properties\+:
+\begin{DoxyItemize}
+\item fd (\hyperlink{io_8c_a7dec6afadd09f6350f9ad642906fc88a}{elektra\+Io\+Fd\+Get\+Fd()};set by \hyperlink{io_8c_a3804183da1aecdfcf09455d246c3891c}{elektra\+Io\+New\+Fd\+Operation()}) file descriptor number to be watched
+\item flags (\hyperlink{io_8c_a8e2d356be0d89af3e46ebc8ce675db37}{elektra\+Io\+Fd\+Get\+Flags()};\hyperlink{io_8c_a1fd34686b0b3b1db5f460ea8c40ba5a8}{elektra\+Io\+Fd\+Set\+Flags()}) flags bitmask
+\end{DoxyItemize}
+
+Timer operations have the following additional properties\+:
+\begin{DoxyItemize}
+\item interval (\hyperlink{io_8c_abc383110a8cb712a0a35b958b4e446ea}{elektra\+Io\+Timer\+Get\+Interval()};\hyperlink{io_8c_a3e317e4c6e5869f296261c24312507ed}{elektra\+Io\+Timer\+Set\+Interval()}) minimum interval in milliseconds after the user callback shall be fired
+\end{DoxyItemize}
+
+Idle operations have no additional properties.
+
+\begin{DoxyParagraph}{Creating a new I/O Binding}
+
+\end{DoxyParagraph}
+Every I/O binding needs to provide ten functions\+:
+\begin{DoxyItemize}
+\item file descriptor watch operations
+\begin{DoxyItemize}
+\item \hyperlink{kdbio_8h_addbfc876a15d0b8864196c67ab3e5a26}{Elektra\+Io\+Binding\+Add\+Fd} (e.\+g. \hyperlink{io__doc_8c_ae9b5f4e891829f3af8563e8160e1bd02}{io\+Doc\+Binding\+Add\+Fd()})
+\item \hyperlink{kdbio_8h_acdb75b8df54c2b64980cf541b2704f37}{Elektra\+Io\+Binding\+Update\+Fd} (e.\+g. \hyperlink{io__doc_8c_a172a781f21310745a16cb24c578c4656}{io\+Doc\+Binding\+Update\+Fd()})
+\item \hyperlink{kdbio_8h_af1d03ff367130892ec3d1f4788eb8277}{Elektra\+Io\+Binding\+Remove\+Fd} (e.\+g. \hyperlink{io__doc_8c_ac5a985c3d54b2c06838d8af1719fcf09}{io\+Doc\+Binding\+Remove\+Fd()})
+\end{DoxyItemize}
+\item timer operations
+\begin{DoxyItemize}
+\item \hyperlink{kdbio_8h_a61a8f37e371b8360c92222f58f4691eb}{Elektra\+Io\+Binding\+Add\+Timer} (e.\+g. \hyperlink{io__doc_8c_a4392a7bfa23513cf4cff7bcf4b0c4c68}{io\+Doc\+Binding\+Add\+Timer()})
+\item \hyperlink{kdbio_8h_ab50f6288380aba507d27a0d66e00d8b4}{Elektra\+Io\+Binding\+Update\+Timer} (e.\+g. \hyperlink{io__doc_8c_a1ed16f0e61d2c7c59735b321b7080dec}{io\+Doc\+Binding\+Update\+Timer()})
+\item \hyperlink{kdbio_8h_a00c0ffb60386fd65869367280d1ffe62}{Elektra\+Io\+Binding\+Remove\+Timer} (e.\+g. \hyperlink{io__doc_8c_afc27d1f174e30aab500a9e94a366f8ec}{io\+Doc\+Binding\+Remove\+Timer()})
+\end{DoxyItemize}
+\item idle operations
+\begin{DoxyItemize}
+\item \hyperlink{kdbio_8h_adcfdf9f514441cabfbfd064fe4021522}{Elektra\+Io\+Binding\+Add\+Idle} (e.\+g. \hyperlink{io__doc_8c_ae7db8c833350176d2570cc4a010c2692}{io\+Doc\+Binding\+Add\+Idle()})
+\item \hyperlink{kdbio_8h_af4fa5e05e59022b5d5421932882fc966}{Elektra\+Io\+Binding\+Update\+Idle} (e.\+g \hyperlink{io__doc_8c_a9b8faf0861123676a0a826987962552f}{io\+Doc\+Binding\+Update\+Idle()})
+\item \hyperlink{kdbio_8h_a23b523b54e70df91a85c95583b6c958f}{Elektra\+Io\+Binding\+Remove\+Idle} (e.\+g. \hyperlink{io__doc_8c_ad813afce995620df6542c3cdd32b23e6}{io\+Doc\+Binding\+Remove\+Idle()})
+\end{DoxyItemize}
+\item \hyperlink{kdbio_8h_a08d3ce531bbd1c5acedbdb9822b24d6d}{Elektra\+Io\+Binding\+Cleanup} (e.\+g. \hyperlink{io__doc_8c_a8bfb50f3c81b02ba9f0ad1a2f24afb6d}{io\+Doc\+Binding\+Cleanup()})
+\end{DoxyItemize}
+
+In order to create a new I/O binding you have to create an entry point for your binding (e.\+g. \hyperlink{io__doc_8c_af4bd586146acfbb1c1324483b79f0cc3}{elektra\+Io\+Doc\+New()}). This entry point then calls \hyperlink{io_8c_a8dd14e7bd04afb798ea30ff8feb5f3a6}{elektra\+Io\+New\+Binding()} with pointers to the ten required functions.
+
+
+\begin{DoxyCodeInclude}
+        \textcolor{comment}{// Initialize I/O interface}
+        \hyperlink{kdbio_8h_aabcd87b8c09d4d4c1033fc1baa417391}{ElektraIoInterface} * binding = \hyperlink{io_8c_a8dd14e7bd04afb798ea30ff8feb5f3a6}{elektraIoNewBinding} (
+                \textcolor{comment}{// file descriptors}
+                \hyperlink{io__doc_8c_ae9b5f4e891829f3af8563e8160e1bd02}{ioDocBindingAddFd}, \hyperlink{io__doc_8c_a172a781f21310745a16cb24c578c4656}{ioDocBindingUpdateFd}, 
+      \hyperlink{io__doc_8c_ac5a985c3d54b2c06838d8af1719fcf09}{ioDocBindingRemoveFd},
+                \textcolor{comment}{// timers}
+                \hyperlink{io__doc_8c_a4392a7bfa23513cf4cff7bcf4b0c4c68}{ioDocBindingAddTimer}, 
+      \hyperlink{io__doc_8c_a1ed16f0e61d2c7c59735b321b7080dec}{ioDocBindingUpdateTimer}, \hyperlink{io__doc_8c_afc27d1f174e30aab500a9e94a366f8ec}{ioDocBindingRemoveTimer},
+                \textcolor{comment}{// idle}
+                \hyperlink{io__doc_8c_ae7db8c833350176d2570cc4a010c2692}{ioDocBindingAddIdle}, \hyperlink{io__doc_8c_a9b8faf0861123676a0a826987962552f}{ioDocBindingUpdateIdle}, 
+      \hyperlink{io__doc_8c_ad813afce995620df6542c3cdd32b23e6}{ioDocBindingRemoveIdle},
+                \textcolor{comment}{// cleanup}
+                \hyperlink{io__doc_8c_a8bfb50f3c81b02ba9f0ad1a2f24afb6d}{ioDocBindingCleanup});
+        \textcolor{keywordflow}{if} (binding == NULL)
+        \{
+                ELEKTRA\_LOG\_WARNING (\textcolor{stringliteral}{"elektraIoNewBinding failed"});
+                \textcolor{keywordflow}{return} NULL;
+        \}
+\end{DoxyCodeInclude}
+ If your I/O management library requires you to store additional data you can do so using \hyperlink{io_8c_a6021718783b36ca71bb465bc08a682cc}{elektra\+Io\+Binding\+Set\+Data()}. Let\textquotesingle{}s assume you have the following data structure\+:
+
+
+\begin{DoxyCodeInclude}
+
+\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\hyperlink{structDocBindingData}{DocBindingData}
+\{
+        \textcolor{keywordtype}{char} * \hyperlink{structDocBindingData_ad3a3b6278b9d7287f923de0e6c3fa14d}{foo};
+        \textcolor{comment}{// Add additional members as required}
+\} \hyperlink{io__doc_8c_a00328aad71b73010cecf82f878a09a9a}{DocBindingData};
+\end{DoxyCodeInclude}
+ Then you can store your data with the I/O binding.
+
+
+\begin{DoxyCodeInclude}
+        \textcolor{comment}{// Store binding relevant data in the interface}
+        \hyperlink{structDocBindingData}{DocBindingData} * bindingData = \hyperlink{internal_8c_a35cdc2e5caed3454cb73b4fc7f37858c}{elektraMalloc} (\textcolor{keyword}{sizeof} (*bindingData));
+        \textcolor{keywordflow}{if} (bindingData == NULL)
+        \{
+                ELEKTRA\_LOG\_WARNING (\textcolor{stringliteral}{"elektraMalloc failed"});
+                \textcolor{keywordflow}{return} NULL;
+        \}
+        \hyperlink{io_8c_a6021718783b36ca71bb465bc08a682cc}{elektraIoBindingSetData} (binding, bindingData);
+        bindingData->\hyperlink{structDocBindingData_ad3a3b6278b9d7287f923de0e6c3fa14d}{foo} = foo;
+\end{DoxyCodeInclude}
+ Of course if you need to store only a single pointer (e.\+g. a handle) you can omit the struct and directly use \hyperlink{io_8c_a6021718783b36ca71bb465bc08a682cc}{elektra\+Io\+Binding\+Set\+Data()} with your pointer.
+
+\begin{DoxyParagraph}{Implementing Operations}
+
+\end{DoxyParagraph}
+The next step is to implement operation functions. We\textquotesingle{}ll walk through the implementation of the functions for managing file descriptor watch operations. Timer and idle variants are the same except for the operation properties.
+
+For reconstructing the user callback it is advisable to store a context for each operation in your I/O management library. Most I/O management libraries let you pass this context when adding an operation to the library. This context is then passed by the library back to your callbacks. You can use the operation data itself as context and store additional data like handles from your I/O management library by using \hyperlink{io_8c_ae02ec122aafa67b7dd92d9c3daa6499e}{elektra\+Io\+Fd\+Set\+Binding\+Data()}.
+
+Let\textquotesingle{}s assume the data structure looks like this\+:
+
+
+\begin{DoxyCodeInclude}
+
+\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\hyperlink{structDocOperationData}{DocOperationData}
+\{
+        \textcolor{keywordtype}{char} * \hyperlink{structDocOperationData_aae15fddcc4a8c6e7a9faaebe4f9964ec}{bar};
+        \textcolor{comment}{// Add additional members as required}
+\} \hyperlink{io__doc_8c_a4a590fea95ee3e2ac9ca2623f2cec714}{DocOperationData};
+\end{DoxyCodeInclude}
+ Using this struct\textquotesingle{}s members you can store additional data like handles in operations. The member {\ttfamily bar} is just an example.
+
+The following snippet from \hyperlink{io__doc_8c_ae9b5f4e891829f3af8563e8160e1bd02}{io\+Doc\+Binding\+Add\+Fd()} shows example code for \hyperlink{kdbio_8h_addbfc876a15d0b8864196c67ab3e5a26}{Elektra\+Io\+Binding\+Add\+Fd}. Code for \hyperlink{kdbio_8h_a61a8f37e371b8360c92222f58f4691eb}{Elektra\+Io\+Binding\+Add\+Timer} and \hyperlink{kdbio_8h_adcfdf9f514441cabfbfd064fe4021522}{Elektra\+Io\+Binding\+Add\+Idle} is similar.
+
+
+\begin{DoxyCodeInclude}
+        \hyperlink{structDocOperationData}{DocOperationData} * operationData = \hyperlink{io__doc_8c_a18494b019c975b4212d39c9d83ff1e02}{newOperationData} ();
+        \textcolor{keywordflow}{if} (operationData == NULL)
+        \{
+                \textcolor{keywordflow}{return} 0;
+        \}
+        \textcolor{comment}{// You can use private data stored in the I/O binding}
+        \textcolor{comment}{// e.g. MyData data = (MyData *)elektraIoBindingGetData (binding);}
+
+        \hyperlink{io_8c_ae02ec122aafa67b7dd92d9c3daa6499e}{elektraIoFdSetBindingData} (fdOp, operationData);
+        \textcolor{comment}{// You can store additional data for each operation in your operationData structure}
+        operationData->\hyperlink{structDocOperationData_aae15fddcc4a8c6e7a9faaebe4f9964ec}{bar} = \textcolor{stringliteral}{"foo"};
+
+        \textcolor{comment}{// Here you need to add the operation to the I/O management library}
+        \textcolor{comment}{// ioDocBindingFdCallback() holds an example callback to pass to your I/O management library}
+
+        \textcolor{comment}{// assume SomeIoLibHandle * someIoLibAddFd (int fd, int flags, int enabled, void * privateData,
+       callback)}
+        \textcolor{comment}{// operationData->handle = someIoLibAddFd (elektraIoFdGetFd (fdOp), elektraIoFdGetFlags (fdOp),
+       elektraIoFdIsEnabled (fdOp), &fdOp,}
+        \textcolor{comment}{// ioDocBindingFdCallback)}
+
+        \textcolor{keywordflow}{return} 1;
+\end{DoxyCodeInclude}
+ In \hyperlink{kdbio_8h_acdb75b8df54c2b64980cf541b2704f37}{Elektra\+Io\+Binding\+Update\+Fd} or \hyperlink{kdbio_8h_af1d03ff367130892ec3d1f4788eb8277}{Elektra\+Io\+Binding\+Remove\+Fd} you can access your binding operation data by using \hyperlink{io_8c_a6103b457ed1440d0490acf0a6ec17386}{elektra\+Io\+Fd\+Get\+Binding\+Data()}.
+
+
+\begin{DoxyCodeInclude}
+        \hyperlink{structDocOperationData}{DocOperationData} * operationData = (\hyperlink{structDocOperationData}{DocOperationData} *) 
+      \hyperlink{io_8c_a6103b457ed1440d0490acf0a6ec17386}{elektraIoFdGetBindingData} (fdOp);
+\end{DoxyCodeInclude}
+ When your I/O management library detects a change of the file descriptor status it will call a callback supplied by your I/O binding. We will assume for file descriptor watch operations this is \hyperlink{io__doc_8c_a1fce91400d38bed917cdb6dfc1bc1cf6}{io\+Doc\+Binding\+Fd\+Callback()}. Your I/O binding\textquotesingle{}s task is to call the operation callback supplied by the user with the correct arguments.
+
+
+\begin{DoxyCodeInclude}
+\textcolor{comment}{/*static*/} \textcolor{keywordtype}{void} \hyperlink{io__doc_8c_a1fce91400d38bed917cdb6dfc1bc1cf6}{ioDocBindingFdCallback} (\hyperlink{structSomeIoLibHandle}{SomeIoLibHandle} * handle, \textcolor{keywordtype}{int} 
+      bitmask)
+\{
+        \textcolor{comment}{// For this example let's assume handle is passed as argument}
+        ELEKTRA\_NOT\_NULL (handle->\hyperlink{structSomeIoLibHandle_a3268457567f3ec3094c96c4bdf8424e5}{data});
+        \hyperlink{kdbio_8h_af7fbb1df168155ef4bf0b8cd2dd1b0ff}{ElektraIoFdOperation} * fdOp = (\hyperlink{kdbio_8h_af7fbb1df168155ef4bf0b8cd2dd1b0ff}{ElektraIoFdOperation} *) 
+      handle->\hyperlink{structSomeIoLibHandle_a3268457567f3ec3094c96c4bdf8424e5}{data};
+
+        \textcolor{comment}{// Convert bitmask to Elekta's flags}
+        \hyperlink{io_8c_a885381fdd55cf957af1d65db7522899a}{elektraIoFdGetCallback} (fdOp) (fdOp, 
+      \hyperlink{io__doc_8c_a3765fc3222ed7bd10910575f3fa700be}{someBitMaskToElektraIoFlags} (bitmask));
+\}
+\end{DoxyCodeInclude}
+ We assumed {\ttfamily Some\+Io\+Lib\+Handle-\/$>$data} let\textquotesingle{}s you access your context. Since we have used the original operation data as context we directly obtain the operation data to retrieve the user callback using \hyperlink{io_8c_a885381fdd55cf957af1d65db7522899a}{elektra\+Io\+Fd\+Get\+Callback()}. Additionally it is necessary to convert the I/O management library\textquotesingle{}s bitmask to Elekta\textquotesingle{}s I/O bitmask (\hyperlink{kdbio_8h_ac46f42188abb1fa28c3116b8cb755825}{Elektra\+Io\+Fd\+Flags}) and then call the user callback.
+
+When implementing \hyperlink{kdbio_8h_af1d03ff367130892ec3d1f4788eb8277}{Elektra\+Io\+Binding\+Remove\+Fd} (or the timer and idle equivalents) make sure to free data allocated in the add functions.
+
+\begin{DoxyParagraph}{Cleanup}
+
+\end{DoxyParagraph}
+\hyperlink{kdbio_8h_a08d3ce531bbd1c5acedbdb9822b24d6d}{Elektra\+Io\+Binding\+Cleanup} is the place to free data allocated for your I/O binding.
+
+At least you need to free the pointer returned from \hyperlink{io_8c_a8dd14e7bd04afb798ea30ff8feb5f3a6}{elektra\+Io\+New\+Binding()} in your I/O binding\textquotesingle{}s entry point.
+
+\begin{DoxyParagraph}{Linking}
+
+\end{DoxyParagraph}
+Make sure to link against the {\ttfamily elektra-\/io} library for the {\ttfamily elektra\+Io$\ast$} utility functions that create bindings or operations and allow access to their fields. This library is available via {\ttfamily pkg-\/config}.
+
+\begin{DoxyParagraph}{Testing}
+
+\end{DoxyParagraph}
+Elektra provides a test suite for I/O bindings in order to make sure that transport plugins will work with all bindings. To run the test suite you need to execute \hyperlink{kdbiotest_8h_afe747efa9fd4b15b6c212ae7e1c51eb6}{elektra\+Io\+Test\+Suite()} and provide the necessary callbacks for creating a new binding, starting and stopping asynchronous processing (\hyperlink{kdbiotest_8h_a34b00a39be5b3f0a15959cda384e33dc}{Elektra\+Io\+Test\+Suite\+Create\+Binding}, \hyperlink{kdbiotest_8h_adc6ce3b9abbedf6ce56a5b0167d01286}{Elektra\+Io\+Test\+Suite\+Start} and \hyperlink{kdbiotest_8h_a0f56c00b010605d876c22d0c7a49aa0c}{Elektra\+Io\+Test\+Suite\+Stop}).
+
+
+\begin{DoxyCodeInclude}
+\textcolor{keywordtype}{int} \hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main} (\textcolor{keywordtype}{int} argc, \textcolor{keywordtype}{char} ** argv)
+\{
+        init (argc, argv);
+
+        \hyperlink{kdbiotest_8h_afe747efa9fd4b15b6c212ae7e1c51eb6}{elektraIoTestSuite} (createBinding, startLoop, stopLoop);
+
+        print\_result (\textcolor{stringliteral}{"iowrapper\_doc"});
+
+        \textcolor{keywordflow}{return} nbError;
+\}
+\end{DoxyCodeInclude}
+ The functions supplied to \hyperlink{kdbiotest_8h_afe747efa9fd4b15b6c212ae7e1c51eb6}{elektra\+Io\+Test\+Suite()} are called for setup, starting and stopping of the tests.
+
+For example \hyperlink{kdbiotest_8h_a34b00a39be5b3f0a15959cda384e33dc}{Elektra\+Io\+Test\+Suite\+Create\+Binding} of the \char`\"{}doc\char`\"{} binding\+:
+
+
+\begin{DoxyCodeInclude}
+\textcolor{keyword}{static} \hyperlink{kdbio_8h_aabcd87b8c09d4d4c1033fc1baa417391}{ElektraIoInterface} * createBinding (\textcolor{keywordtype}{void})
+\{
+        \textcolor{keywordflow}{return} \hyperlink{io__doc_8c_af4bd586146acfbb1c1324483b79f0cc3}{elektraIoDocNew} (\textcolor{stringliteral}{"foo"});
+\}
+\end{DoxyCodeInclude}
+ Of course starting and stopping is specific to your I/O management library. 

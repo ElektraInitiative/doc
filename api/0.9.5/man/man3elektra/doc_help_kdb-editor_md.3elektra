@@ -1,0 +1,77 @@
+.TH "doc_help_kdb-editor_md" 3elektra "Mon Apr 12 2021" "Version 0.9.5" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-editor_mdkdb-editor(1) -- Use your editor for editing KDB 
+ \- \fCkdb editor <path> [<format>]\fP
+.PP
+Where \fCpath\fP is the destination where the user wants to edit keys and \fCformat\fP is the format in which the keys should be edited\&. If the \fCformat\fP argument is not passed, then the default format will be used as determined by the value of the \fCsw/kdb/current/format\fP key\&. By default, that key contains \fCstorage\fP\&. The \fCstorage\fP plugin can be configured at compile-time or changed by the link \fClibelektra-storage\&.so\fP\&. The \fCformat\fP attribute relies on Elektra’s plugin system to properly import the configuration\&. The user can view all plugins available for use by running the kdb-plugin-list(1) command\&. To learn about any plugin, the user can simply use the kdb-plugin-info(1) command\&.
+.PP
+This command allows a user to edit configuration of the key database using a text editor\&. The user should specify the format that the current configuration or keys are in, otherwise the default format will be used\&.
+.PP
+.IP "\(bu" 2
+0: successful\&.
+.IP "\(bu" 2
+1-10: standard exit codes, see \fBkdb(1)\fP
+.IP "\(bu" 2
+11: could not export configuration\&.
+.IP "\(bu" 2
+12: could not start editor\&.
+.IP "\(bu" 2
+13: could not import configuration because of conflicts
+.IP "\(bu" 2
+14: could not import configuration because of error during \fBkdbSet()\fP (Most likely a validation error)
+.PP
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-s\fP, \fC--strategy <name>\fP: Specify which strategy should be used to resolve conflicts\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&. Prints additional information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information\&. Prints additional debug information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-e\fP, \fC--editor <editor>\fP: Which editor to use\&.
+.IP "\(bu" 2
+\fC-N\fP, \fC--namespace\fP=<ns>: Specify the namespace to use when writing cascading keys (\fCvalidation\fP strategy only)\&. See \fCbelow in KDB\fP\&.
+.PP
+.PP
+.IP "\(bu" 2
+\fCvalidate\fP: apply metadata as received from base, and then cut+append all keys as imported\&. If the appended keys do not have a namespace, the namespace given by \fC-N\fP is added\&.
+.PP
+.PP
+The other strategies are implemented by the merge framework and are documented in \fBelektra-merge-strategy(7)\fP\&.
+.PP
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/format\fP: The default format if none given\&. Defaults to \fCstorage\fP if the key does not exist\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/editor\fP: The default editor, if no \fC-e\fP option is given\&. Defaults to \fC/usr/bin/sensible-editor\fP, \fC/usr/bin/editor\fP or \fC/usr/bin/vi\fP if the key does not exist\&.
+.IP "\(bu" 2
+\fC/sw/elektra/kdb/#0/current/namespace\fP: Specifies which default namespace should be used when setting a cascading name\&. By default the namespace is user, except \fCkdb\fP is used as root, then \fCsystem\fP is the default (\fCvalidate\fP strategy only)\&.
+.PP
+.PP
+To change the configuration in KDB below \fCuser:/ini\fP with \fC/usr/bin/vim\fP, you would use:
+.br
+ \fCkdb editor -e /usr/bin/vim user:/ini\fP
+.PP
+Or set a new editor as default using:
+.br
+ \fCkdb set /sw/elektra/kdb/#0/current/editor /usr/bin/nano\fP
+.PP
+To change the configuration in KDB below \fCuser\fP in xml format, you would use:
+.br
+ \fCkdb editor user xml\fP
+.PP
+.IP "\(bu" 2
+\fBelektra-merge-strategy(7)\fP
+.IP "\(bu" 2
+\fBelektra-key-names(7)\fP for an explanation of key names\&. 
+.PP
+
