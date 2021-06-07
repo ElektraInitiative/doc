@@ -1,14 +1,14 @@
 \label{doc_tutorials_profiling_md_md_doc_tutorials_profiling}%
 \Hypertarget{doc_tutorials_profiling_md_md_doc_tutorials_profiling}%
- \hypertarget{doc_tutorials_profiling_md_autotoc_md3624}{}\doxysection{Execution Time}\label{doc_tutorials_profiling_md_autotoc_md3624}
+ \hypertarget{doc_tutorials_profiling_md_autotoc_md3659}{}\doxysection{Execution Time}\label{doc_tutorials_profiling_md_autotoc_md3659}
 One of the primary resources in computing is execution time. To keep usage of this resource type low, it makes sense to profile code and check which code paths in a progamm take the longest time to execute. There exist various tools to handle this kind of profiling. For this tutorial we will use
 
 
 \begin{DoxyEnumerate}
 \item \href{http://valgrind.org/docs/manual/cl-manual.html}{\texttt{ Callgrind}} and the graphical frontend \href{https://kcachegrind.github.io/html/Home.html}{\texttt{ KCache\+Grind/\+QCache\+Grind}}, and
 \item \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} and \href{https://github.com/brendangregg/FlameGraph}{\texttt{ Flame\+Graph}} to visualize the data produced by \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}}
-\end{DoxyEnumerate}\hypertarget{doc_tutorials_profiling_md_autotoc_md3625}{}\doxysubsection{Callgrind}\label{doc_tutorials_profiling_md_autotoc_md3625}
-\hypertarget{doc_tutorials_profiling_md_autotoc_md3626}{}\doxysubsubsection{Choosing the Correct Build Type}\label{doc_tutorials_profiling_md_autotoc_md3626}
+\end{DoxyEnumerate}\hypertarget{doc_tutorials_profiling_md_autotoc_md3660}{}\doxysubsection{Callgrind}\label{doc_tutorials_profiling_md_autotoc_md3660}
+\hypertarget{doc_tutorials_profiling_md_autotoc_md3661}{}\doxysubsubsection{Choosing the Correct Build Type}\label{doc_tutorials_profiling_md_autotoc_md3661}
 Since we want to improve the readability of the Callgrind output we choose a build type that includes debug symbols. The two obvious choices for the build type are\+:
 
 
@@ -17,7 +17,7 @@ Since we want to improve the readability of the Callgrind output we choose a bui
 \item {\ttfamily Debug} (non-\/optimized build with debug symbols)
 \end{DoxyItemize}
 
-. We use {\ttfamily Debug} here, which should provide the most detailed profiling information.\hypertarget{doc_tutorials_profiling_md_autotoc_md3627}{}\doxysubsubsection{Disabling $<$tt$>$dlclose$<$/tt$>$ Calls}\label{doc_tutorials_profiling_md_autotoc_md3627}
+. We use {\ttfamily Debug} here, which should provide the most detailed profiling information.\hypertarget{doc_tutorials_profiling_md_autotoc_md3662}{}\doxysubsubsection{Disabling $<$tt$>$dlclose$<$/tt$>$ Calls}\label{doc_tutorials_profiling_md_autotoc_md3662}
 For this tutorial we decided to profile the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin. Since Elektra loads plugin code via {\ttfamily dlopen} and Callgrind \href{https://stackoverflow.com/questions/16719395}{\texttt{ does not support the function {\ttfamily dlclose} properly}} we remove the {\ttfamily dlclose} calls in the file \href{/home/jenkins/workspace/libelektra-release/src/libs/loader/dl.c}{\texttt{ {\ttfamily dl.\+c}}} temporarily. At the time of writing one option to do that is deleting
 
 
@@ -26,7 +26,7 @@ For this tutorial we decided to profile the \mbox{\hyperlink{md_src_plugins_yajl
 \item an {\ttfamily if}-\/statement that checks the return value of a {\ttfamily dlclose} call
 \end{DoxyItemize}
 
-. An unfortunate effect of this code update is that Elektra will now leak memory when it unloads a plugin. On the other hand, Callgrind will be able to add source code information about the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin to the profiling output.\hypertarget{doc_tutorials_profiling_md_autotoc_md3628}{}\doxysubsubsection{Building Elektra}\label{doc_tutorials_profiling_md_autotoc_md3628}
+. An unfortunate effect of this code update is that Elektra will now leak memory when it unloads a plugin. On the other hand, Callgrind will be able to add source code information about the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin to the profiling output.\hypertarget{doc_tutorials_profiling_md_autotoc_md3663}{}\doxysubsubsection{Building Elektra}\label{doc_tutorials_profiling_md_autotoc_md3663}
 As we already described before we use the {\ttfamily Debug} build type for the profiling run. To make sure we test the actual performance of the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin we disable debug code and the logger. The following commands show one option to translate Elektra using this configuration, if we use \href{https://ninja-build.org}{\texttt{ Ninja}} as build tool\+:
 
 
@@ -42,7 +42,7 @@ As we already described before we use the {\ttfamily Debug} build type for the p
 \DoxyCodeLine{cd .. \# Change working directory back to the root of repository}
 
 \end{DoxyCode}
-\hypertarget{doc_tutorials_profiling_md_autotoc_md3629}{}\doxysubsubsection{Profiling the Code}\label{doc_tutorials_profiling_md_autotoc_md3629}
+\hypertarget{doc_tutorials_profiling_md_autotoc_md3664}{}\doxysubsubsection{Profiling the Code}\label{doc_tutorials_profiling_md_autotoc_md3664}
 We use the tool \`{}benchmark\+\_\+plugingetset\`{} to profile the execution time of \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}}. The file \`{}keyframes\+\_\+complex.json\`{} serves as input file for the plugin. Since {\ttfamily benchmark\+\_\+plugingetset} requires a data file called
 
 
@@ -122,8 +122,8 @@ We use the tool \`{}benchmark\+\_\+plugingetset\`{} to profile the execution tim
 
 
 
-. You can now select different parts of the call graph on the left to check which parts of the code take a long time to execute.\hypertarget{doc_tutorials_profiling_md_autotoc_md3630}{}\doxysubsection{XRay}\label{doc_tutorials_profiling_md_autotoc_md3630}
-\href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} is an extension for LLVM that adds profiling code to binaries. Profiling can be dynamically enabled and disabled via the environment variable {\ttfamily XRAY\+\_\+\+OPTIONS}.\hypertarget{doc_tutorials_profiling_md_autotoc_md3631}{}\doxysubsubsection{Choosing the Correct Build Type}\label{doc_tutorials_profiling_md_autotoc_md3631}
+. You can now select different parts of the call graph on the left to check which parts of the code take a long time to execute.\hypertarget{doc_tutorials_profiling_md_autotoc_md3665}{}\doxysubsection{XRay}\label{doc_tutorials_profiling_md_autotoc_md3665}
+\href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} is an extension for LLVM that adds profiling code to binaries. Profiling can be dynamically enabled and disabled via the environment variable {\ttfamily XRAY\+\_\+\+OPTIONS}.\hypertarget{doc_tutorials_profiling_md_autotoc_md3666}{}\doxysubsubsection{Choosing the Correct Build Type}\label{doc_tutorials_profiling_md_autotoc_md3666}
 Since \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} currently requires LLVM we need to set the compiler appropriately. We use Clang 8 in our example.
 
 

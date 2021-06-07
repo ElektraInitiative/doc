@@ -44,7 +44,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_doc_tutorials_code_generator"></a> This guide focuses on writing new templates for the code-generator. For using the code generator take a look at the man-page <a class="el" href="doc_help_kdb-gen_md.html">`kdb-gen(1)`</a>. For specifically using the code-generator for the high-level API you may want to follow <a class="el" href="doc_tutorials_highlevel_md.html">this guide</a>.</p>
-<h1><a class="anchor" id="autotoc_md3439"></a>
+<h1><a class="anchor" id="autotoc_md3474"></a>
 Basics</h1>
 <p>The underlying framework of <code>kdb gen</code> is quite flexible. It is based on the <a href="https://mustache.github.io/">mustache templating system</a>. Concretely we use <a href="https://github.com/kainjow/Mustache">this C++ library</a> as a basis.</p>
 <p>To distinguish the user facing parts of <code>kdb gen</code> from the internal layer interfacing <code>kdb gen</code> to the mustache library, we will call the internal layer the <em>framework</em>.</p>
@@ -60,7 +60,7 @@ Basics</h1>
 <li><em>part suffix</em>: Parts are identified by there part suffix. This suffix is appended to the template base name to obtain the name of the mustache file corresponding to the part. Similarly it is appended to the output name to obtain the output file for this part. The empty string <code>""</code> is a valid part suffix, although it is only recommend for templates with a single output file.</li>
 </ul>
 <p>All templates consist of two pieces. The set of mustache files (on for each part) and an accompanying C++ class to supply the mustache rendering engine with data from the input keyset.</p>
-<h1><a class="anchor" id="autotoc_md3440"></a>
+<h1><a class="anchor" id="autotoc_md3475"></a>
 Creating a new template</h1>
 <p>In this guide we will create a basic template, that generates a single file containing a simple list of all keys in our input keyset. An example output from running <code>kdb gen</code> with our to-be-developed template would be:</p>
 <div class="fragment"><div class="line">user:/sw/myapp/#0/current</div>
@@ -69,7 +69,7 @@ Creating a new template</h1>
 <div class="line">user:/sw/myapp/#0/current/dir0/subdir0/key1</div>
 <div class="line">user:/sw/myapp/#0/current/dir1</div>
 </div><!-- fragment --><p>As you can see, the result matches that of redirecting the stdout of <code>kdb ls</code> into a file.</p>
-<h2><a class="anchor" id="autotoc_md3441"></a>
+<h2><a class="anchor" id="autotoc_md3476"></a>
 Creating the mustache template</h2>
 <p>The first thing we need to create is a mustache template. You will need (at least) one template file for each output file. If you make use of partials (see <a href="#using-partials">below</a>), you of course have to write multiple files.</p>
 <p>All template files must be located in the `src/tools/kdb/gen/templates` folder and must be named according to the scheme <code>&lt;template base name&gt;.&lt;part suffix&gt;.mustache</code>.</p>
@@ -80,7 +80,7 @@ Creating the mustache template</h2>
 </div><!-- fragment --><p>Note: we will not go into detail on how mustache templates work, for more information see e.g. <a href="https://mustache.github.io/mustache.5.html">here</a>. All of features supported by the kainjow library should be supported by our framework as well.</p>
 <p>Our CMake script will collect all <code>.mustache</code> files in <code>src/tools/kdb/gen/templates</code> into a header containing a <code>static const char *</code> field for each file and a <code>std::unordered_map</code> containing references to all the fields. The naming scheme is needed so that the other C++ code can access the files contents via the map. This approach was chosen to allow executing the code-generator without first running the install script.</p>
 <p>When you create a new <code>.mustache</code> file (either for a new part or a new partial), you need to invoke <code>cmake</code> again, so that all the files are collected.</p>
-<h2><a class="anchor" id="autotoc_md3442"></a>
+<h2><a class="anchor" id="autotoc_md3477"></a>
 Creating the supporting class</h2>
 <p>Since we need to some way of supplying data to our template, we have to create a subclass of <code>GenTemplate</code>.</p>
 <p>First we create a new directory for our template class in <code>src/tools/kdb/gen</code>, for our template it should be <code>src/tools/kdb/gen/example</code>. In this directory we then create <code>example.cpp</code> and <code>example.hpp</code>. If your template class becomes sufficiently complex, it may make sense to split the code into multiple classes and into multiple files, for this reason we recommend creating a new directory for each template. The CMake script will also automatically recognize your files, if you put them directly into <code>src/tools/kdb/gen</code>, but using additional subdirectories (beyond the one matching your template name) like <code>src/tools/kdb/gen/example/src</code> would require modifying `src/tools/kdb/CMakeLists.txt`.</p>
@@ -141,7 +141,7 @@ Creating the supporting class</h2>
 <div class="ttc" id="anamespacekdb_html"><div class="ttname"><a href="namespacekdb.html">kdb</a></div><div class="ttdoc">This is the main namespace for the C++ binding and libraries.</div><div class="ttdef"><b>Definition:</b> backend.hpp:31</div></div>
 </div><!-- fragment --><p>The framework will invoke <code>getTemplateData</code> for each part of our template with the <code>outputName</code> and <code>parentKey</code> as given on the command line, as well as the current part suffix (<code>part</code>) and the input keyset <code>ks</code>. All keys of the input keyset are guaranteed to be below <code>parentKey</code>.</p>
 <p>The code above simply iterates over the input KeySet and for each key creates an object <code>{ name: $keyName }</code>. All those objects are collected into a list, which is then stored under the key <code>keys</code> in the global object.</p>
-<h2><a class="anchor" id="autotoc_md3443"></a>
+<h2><a class="anchor" id="autotoc_md3478"></a>
 Adding the class to &lt;tt&gt;GenTemplateList&lt;/tt&gt;</h2>
 <p>To make the framework aware of our class (and by extension our template), we have to then add it to <code>GenTemplateList</code>. This is simply done by adding a line to the implementation of <code>GenTemplateList::GenTemplateList ()</code> in <a href="/home/jenkins/workspace/libelektra-release/src/tools/kdb/gen/template.cpp"><code>template.cpp</code></a>.</p>
 <p>For our example that is:</p>
@@ -149,18 +149,18 @@ Adding the class to &lt;tt&gt;GenTemplateList&lt;/tt&gt;</h2>
 </div><!-- fragment --><p>We need to specify <code>"example"</code> again, because this string defines how our template shall be called, i.e. what we need to specify in the terminal to invoke it.</p>
 <p>You also need to add the appropriate <code>#include</code> at the top of the file. In our case this is:</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;example/example.hpp&quot;</span></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3444"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3479"></a>
 Using the new template</h1>
 <p>Now you should be able to use the new template by running (after compiling/installing Elektra again):</p>
 <div class="fragment"><div class="line">kdb gen example user userkeys</div>
 </div><!-- fragment --><p>This should produce the file <code>userkeys.txt</code>. The file should be the same, as if we had called <code>kdb ls user:/ &gt; userkeys.txt</code>.</p>
-<h1><a class="anchor" id="autotoc_md3445"></a>
+<h1><a class="anchor" id="autotoc_md3480"></a>
 Advanced concepts</h1>
 <p>Lastly, we will discuss a few more advanced concepts.</p>
-<h2><a class="anchor" id="autotoc_md3446"></a>
+<h2><a class="anchor" id="autotoc_md3481"></a>
 Switching delimiters</h2>
 <p>Switching the delimiters is fully supported and already in use in the high-level API template to allow for easier formatting.</p>
-<h2><a class="anchor" id="autotoc_md3447"></a>
+<h2><a class="anchor" id="autotoc_md3482"></a>
 Parameters</h2>
 <p>Sometimes you want to incorporate user input beyond the contents of the input keyset into the code-generation. For example, if you generate a web page, you may need to now where it is going to be hosted, so that you can generate correct links. Another example would be letting the user choose the name of a generated function, when generating C code.</p>
 <p>The first case would be required parameter. Without the domain name, we cannot generate the links. The second example meanwhile may be an optional parameter. We could just use a sensible default name for the function, since it doesn't matter much which function the user will call in their own code.</p>
@@ -173,20 +173,20 @@ Parameters</h2>
 <div class="fragment"><div class="line">kdb gen ccode &lt;parentKey&gt; &lt;outputName&gt;</div>
 <div class="line"> </div>
 <div class="line">kdb gen ccode &lt;parentKey&gt; &lt;outputName&gt; function_name=foo</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3448"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3483"></a>
 Using partials</h2>
 <p>The use of partials is bit more involved than in other mustache frameworks. All the partial files for template <code>X</code> must be placed in the folder <code>src/tools/kdb/gen/templates/X</code> and must use the file extension <code>.mustache</code>. Apart from the the filename can be chosen arbitrarily.</p>
 <p>To use the partial named <code>Y</code> (i.e. the file <code>src/tools/kdb/gen/templates/X/Y.mustache</code>) you must use this mustache command:</p>
 <div class="fragment"><div class="line">{{&gt; partial.enum.c }}</div>
 </div><!-- fragment --><p>The prefix <code>partial.</code> is required by the framework, if you omit it, there will be an error.</p>
-<h2><a class="anchor" id="autotoc_md3449"></a>
+<h2><a class="anchor" id="autotoc_md3484"></a>
 Custom escape functions</h2>
 <p>By default mustache escapes values for use in HTML (unless <code>{{{ name }}}</code> or <code>{{&amp; name }}</code> is used). Since most of our templates are not HTML, the escape function can be customised. You simply have to override <code>GenTemplate::escapeFunction</code>. For an example see <code>HighlevelGenTemplate::escapeFunction</code> in <a href="/home/jenkins/workspace/libelektra-release/src/tools/kdb/gen/highlevel/highlevel.hpp"><code>src/tools/kdb/gen/highlevel/highlevel.hpp</code></a>, it is designed for C code instead of HTML.</p>
-<h2><a class="anchor" id="autotoc_md3450"></a>
+<h2><a class="anchor" id="autotoc_md3485"></a>
 Dynamic list of parts</h2>
 <p>For some templates it might be necessary to switch which parts are produced based on the given parameters. This can be done by overriding <code>getParts()</code> in your template class.</p>
 <p>To achieve a dynamic parts list, simply pass <em>all possible</em> parts in the constructor invocation. Then in your override of <code>getParts()</code> you simply inspect the given parameters and remove any parts that should not be generated.</p>
-<h2><a class="anchor" id="autotoc_md3451"></a>
+<h2><a class="anchor" id="autotoc_md3486"></a>
 Non-Mustache parts</h2>
 <p>It may also be useful to generate some output files without a mustache template. You could of course just write a template that renders as its string input data, but that won't work for binary files.</p>
 <p>The proper way to achieve non-mustache-based parts is to inspect the <code>part</code> value passed to <code>getTemplateData()</code>. When you detect a non-mustache-based part you write to the file named <code>outputName + part</code> and once you are done you return <code>kainjow::mustache::data(false)</code>. This tells the render function to not invoke mustache for this part and instead continue with the next part. </p>

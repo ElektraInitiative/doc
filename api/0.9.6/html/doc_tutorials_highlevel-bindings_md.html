@@ -45,7 +45,7 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_doc_tutorials_highlevel_bindings"></a> This document describes how and when to write a language binding for the high-level API.</p>
 <p>Writing bindings for high-level API is different from writing bindings for other parts of Elektra. This is mainly because the high-level API has different goals.</p>
-<h1><a class="anchor" id="autotoc_md3503"></a>
+<h1><a class="anchor" id="autotoc_md3538"></a>
 Goals</h1>
 <p>The goals of any high-level API (or binding to the C high-level API) for Elektra should be:</p>
 <ul>
@@ -57,20 +57,20 @@ Goals</h1>
  However, we still recommend to avoid errors as far as possible.</li>
 <li><b>Idiomatic Code:</b> If the target language has a concept of "idiomatic code", the API should fall into that category.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3504"></a>
+<h1><a class="anchor" id="autotoc_md3539"></a>
 When to write Bindings</h1>
 <p>Based on the goals above, you should decide, whether it is possible to write a binding for the C high-level API while preserving the goals.</p>
 <p>If you decide to write a binding, proceed with this tutorial.</p>
 <p>If not, designing an API to meet our goals is up to you. While designing the API you should keep in mind that you can always use code-generator (<code>kdb gen</code>) templates like the C API does.</p>
-<h1><a class="anchor" id="autotoc_md3505"></a>
+<h1><a class="anchor" id="autotoc_md3540"></a>
 How to write Bindings</h1>
 <p>Since the C high-level API consists of a shared library API and a code-generated part, your binding will also have these two parts.</p>
-<h2><a class="anchor" id="autotoc_md3506"></a>
+<h2><a class="anchor" id="autotoc_md3541"></a>
 Bindings for the &lt;tt&gt;highlevel&lt;/tt&gt; Library</h2>
 <p>Writing the binding for the <code>highlevel</code> library works the same way as writing a language binding for any part of Elektra. The only additional challenge is that the binding should still meet the same goals and (as far as possible) fulfill the same guarantees as the C API.</p>
 <p>Some languages like to split bindings into two parts. One version that maps the C API one-to-one and another part that builds on the first one. The second part then uses the languages additional features. Since our API isn't intended to be used directly, but through generated code, it might not be necessary to write the second part. It may be sufficient to write (or generate) a one-to-one mirror of the C API and use that in the code-generator template.</p>
 <p>The generated code should still be understandable. So if writing a more idiomatic API on top of the direct mapping, significantly simplifies the generated code (and maybe also the template), you should write such an API.</p>
-<h2><a class="anchor" id="autotoc_md3507"></a>
+<h2><a class="anchor" id="autotoc_md3542"></a>
 Bindings for the &lt;tt&gt;lowlevel&lt;/tt&gt; Library</h2>
 <p>Your programming language of choice must provide a way to call into C code (like <a href="https://golang.org/cmd/cgo/">cgo</a>).</p>
 <p>In general we prefer (in this order):</p>
@@ -88,7 +88,7 @@ Bindings for the &lt;tt&gt;lowlevel&lt;/tt&gt; Library</h2>
 </ul>
 <p>If you decide on mapping the functionality of kdb.h 1:1 it is pretty straightforward - whereas if you want to adapt or enhance some API's to leverage language features like iterators or operator overloading feel free to do so. The less “alien” the binding feels to its users the better.</p>
 <p>Remember that Elektra has internal iterators (for metadata+keysets) but in general we prefer external iterators by either copying the KeySet per iterator or using <code>ksAtCursor</code>.</p>
-<h2><a class="anchor" id="autotoc_md3508"></a>
+<h2><a class="anchor" id="autotoc_md3543"></a>
 Variadic Functions</h2>
 <p>Some languages for example cannot call variadic functions because in C the amount of parameters has to be known at compile-time. In Go for example this is not the case since it supports variable length arguments at runtime with the <code>...</code> operator.</p>
 <p>This is unfortunate because the low-level bindings rely heavily on variadic functions. It is possible to work around this problem by either</p>
@@ -96,7 +96,7 @@ Variadic Functions</h2>
 <li>Writing helper functions in C that call these variadic functions with a fixed amount of parameters or</li>
 <li>Imitating the behavior of a function e.g. <code><a class="el" href="group__key.html#gad23c65b44bf48d773759e1f9a4d43b89" title="A practical way to fully create a Key object in one step.">keyNew()</a></code> by calling multiple functions: <code><a class="el" href="group__key.html#gad23c65b44bf48d773759e1f9a4d43b89" title="A practical way to fully create a Key object in one step.">keyNew()</a></code> and <code><a class="el" href="group__keymeta.html#gae1f15546b234ffb6007d8a31178652b9" title="Set a new metadata Key.">keySetMeta()</a></code> for every metakey/value that was passed.</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md3509"></a>
+<h2><a class="anchor" id="autotoc_md3544"></a>
 Creating the Code-Generator Template</h2>
 <p>How to create a template for <code>kdb gen</code> is detailed in <a class="el" href="doc_tutorials_code-generator_md.html">this tutorial</a>.</p>
 <p>The created template should support the same input keysets (and parent keys) as the <code>highlevel</code> template. If and how exactly you implement the advanced features (structs, unions, ...) is up to you. Note: enums should always be supported (if your language has them) as they are one of the <code>type</code> plugins types.</p>
