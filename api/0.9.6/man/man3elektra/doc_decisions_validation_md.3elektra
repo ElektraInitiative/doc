@@ -1,0 +1,67 @@
+.TH "doc_decisions_validation_md" 3elektra "Mon Jun 7 2021" "Version 0.9.6" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_validation_md \- Validation 
+ 
+.SH "Problem"
+.PP
+Validation plugins operate as independent blackboxes\&. For every backend each mounted validation plugin iterates over the whole keyset, checks every key for its trigger metakey, and validates the key\&.
+.PP
+Currently all needed validation plugins need to be specified at mount-time - if additional validation is required, the backend has to be remounted with the required plugins and plugin configuration\&.
+.PP
+If validation of a key fails, each plugin decides on its own how to handle the issue and proceed in ways that might be different than what is expected or desired\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+While plugins should always fail and return an error if validation fails on kdbSet, there are be can be several different requirements for what should happen on kdbGet and handle problems e\&.g\&.
+.PP
+.IP "\(bu" 2
+only issue warnings
+.PP
+we want to read the whole configuration, but issue warnings if keys fail to validate instead
+.PP
+problems are handled external by an application, user, \&.\&.\&.
+.IP "\(bu" 2
+remove invalid keys
+.PP
+we want to read the whole configuration, but drop invalid keys
+.PP
+invalid keys might be replaced by default values, requested from the user, \&.\&.\&.
+.IP "\(bu" 2
+fail with error
+.PP
+we only want to read valid configurations, and fail with an error if the configuration is invalid
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Extend validation plugins to allow us to specify what should happen if a key fails to validate
+.IP "\(bu" 2
+Export a validation function that allows us to use an additional plugin to decide what should be done
+.PP
+.SH "Decision"
+.PP
+Use a wrapper plugin to iterate over the keyset and delegate the validation of each key to the corresponding validation plugin\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+Validation plugins don't need to know what should be done if the validation fails
+.IP "\(bu" 2
+We can run multiple validations on every key and improve error messages
+.IP "\(bu" 2
+Different ways of handling errors only need to be implemented once
+.PP
+.SH "Implications"
+.PP
+validation plugins have to export their validation routine
+.PP
+\fCstatic int validateKey(const Key * key, const Key * errorKey)\fP
+.PP
+returning 1 if validation succeeded, 0 on failure
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

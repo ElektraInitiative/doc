@@ -1,0 +1,149 @@
+\label{doc_tutorials_arrays_md_md_doc_tutorials_arrays}%
+\Hypertarget{doc_tutorials_arrays_md_md_doc_tutorials_arrays}%
+ \hypertarget{doc_tutorials_arrays_md_autotoc_md3415}{}\doxysection{Key-\/\+Value Pairs}\label{doc_tutorials_arrays_md_autotoc_md3415}
+The main building block of Elektra’s database are hierarchical \href{https://en.wikipedia.org/wiki/Key-value_database}{\texttt{ key-\/value pairs}}. You can create such a pair using \mbox{\hyperlink{doc_help_kdb-set_md}{\`{}kdb set\`{}}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/parent value}
+\DoxyCodeLine{\#> Create a new key user:/tests/parent with string "{}value"{}}
+
+\end{DoxyCode}
+
+
+. The command above created a key {\ttfamily user\+:/tests/parent} with the value {\ttfamily value}. Since Elektra uses a hierarchical database we can also create keys {\bfseries{below}} {\ttfamily user\+:/tests/parent}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# We can create keys with an empty value by passing an empty string.}
+\DoxyCodeLine{kdb set user:/tests/parent/son "{}"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/parent/son with string "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/parent/daughter "{}"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/parent/daughter with string "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/parent/daughter/grandchild "{}"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/parent/daughter/grandchild with string "{}"{}}
+
+\end{DoxyCode}
+
+
+. We can check the hierarchy of the keys using {\ttfamily kdb ls} and retrieve data using {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Elektra sorts keys alphabetically}
+\DoxyCodeLine{kdb ls user:/tests/parent}
+\DoxyCodeLine{\#> user:/tests/parent}
+\DoxyCodeLine{\#> user:/tests/parent/daughter}
+\DoxyCodeLine{\#> user:/tests/parent/daughter/grandchild}
+\DoxyCodeLine{\#> user:/tests/parent/son}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/parent}
+\DoxyCodeLine{\#> value}
+\DoxyCodeLine{kdb get user:/tests/parent/daughter}
+\DoxyCodeLine{\#>}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_arrays_md_autotoc_md3416}{}\doxysection{Array Keys}\label{doc_tutorials_arrays_md_autotoc_md3416}
+Since Elektra sorts keys alphabetically we can use the key-\/value pair structure described above to store sequences of values (aka. arrays).\hypertarget{doc_tutorials_arrays_md_autotoc_md3417}{}\doxysubsection{Empty Arrays}\label{doc_tutorials_arrays_md_autotoc_md3417}
+For an {\bfseries{empty array}} ({\ttfamily \mbox{[}\mbox{]}}) we just add the \mbox{\hyperlink{doc_help_elektra-metadata_md}{metakey}} {\ttfamily array}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Create an empty array with the name `user:/tests/sequence`}
+\DoxyCodeLine{kdb meta-\/set user:/tests/sequence array ''}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_arrays_md_autotoc_md3418}{}\doxysubsection{Array Elements}\label{doc_tutorials_arrays_md_autotoc_md3418}
+To create an {\bfseries{array element}} we start the basename of a key with the {\ttfamily \#} character and add the index of the array element afterwards. For example, the commands below adds three elements to our array {\ttfamily user\+:/tests/sequence}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/sequence/\#0 'First Element'}
+\DoxyCodeLine{kdb set user:/tests/sequence/\#1 'Second Element'}
+\DoxyCodeLine{\# Arrays do not need to be contiguous}
+\DoxyCodeLine{kdb set user:/tests/sequence/\#3 'Fourth Element'}
+
+\end{DoxyCode}
+
+
+. As you can see above arrays can contain “empty fields”\+: The key {\ttfamily user\+:/tests/sequence/\#2} is missing.
+
+For array elements with an index larger than {\ttfamily 9} we must add {\bfseries{underscores}} ({\ttfamily \+\_\+}) to the basename, so we do not destroy the alphabetic order of the array. For example, to add a eleventh element to our array we use the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/sequence/\#\_10 'Eleventh Element'}
+
+\end{DoxyCode}
+
+
+. The order of the array sequence is still correct afterwards, as the following command shows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# List all array elements}
+\DoxyCodeLine{kdb ls user:/tests/sequence/}
+\DoxyCodeLine{\#> user:/tests/sequence/\#0}
+\DoxyCodeLine{\#> user:/tests/sequence/\#1}
+\DoxyCodeLine{\#> user:/tests/sequence/\#3}
+\DoxyCodeLine{\#> user:/tests/sequence/\#\_10}
+
+\end{DoxyCode}
+
+
+. For larger indices we add {\bfseries{one underscore less, than the number of digits}} of the index. For example, to add a element with index {\ttfamily 1337} ({\ttfamily 4} digits) we use the basename {\ttfamily \#\+\_\+\+\_\+\+\_\+1337}. We can also generate the basename programmatically\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ruby -\/e 'print("{}\#"{}, "{}\_"{} * (ARGV[0].length -\/ 1), ARGV[0])' 12345}
+\DoxyCodeLine{\#> \#\_\_\_\_12345}
+\DoxyCodeLine{}
+\DoxyCodeLine{ruby -\/e 'print("{}\#"{}, "{}\_"{} * (ARGV[0].length -\/ 1), ARGV[0])' 0}
+\DoxyCodeLine{\#> \#0}
+\DoxyCodeLine{}
+\DoxyCodeLine{ruby -\/e 'print("{}\#"{}, "{}\_"{} * (ARGV[0].length -\/ 1), ARGV[0])' 42}
+\DoxyCodeLine{\#> \#\_42}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_arrays_md_autotoc_md3419}{}\doxysubsection{Metadata}\label{doc_tutorials_arrays_md_autotoc_md3419}
+Elektra’s arrays {\bfseries{require}} that you always add the metakey {\ttfamily array} to the array parent. Otherwise the values below the parent will not be interpreted as array elements, but rather as normal key-\/value pairs. To make the {\ttfamily array} metakey more useful \mbox{\hyperlink{doc_tutorials_plugins_md}{storage plugins}} should save the \mbox{\hyperlink{doc_decisions_array_md}{basename of the last key in the array parent}}. This of course works only, if the plugins already stores this information in the config file, either
+
+
+\begin{DoxyItemize}
+\item implicitly (e.\+g. the data below the array parent is stored as array/list/sequence in the config file), or
+\item explicitly (e.\+g. the plugin stores the metakey {\ttfamily array} directly in the config file)
+\end{DoxyItemize}
+
+. Either way, in some situations you might have to add this value manually via {\ttfamily kdb meta-\/set}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Add array elements}
+\DoxyCodeLine{kdb set user:/tests/favorites/superheros/\#0 'One-\/Punch Man'}
+\DoxyCodeLine{kdb set user:/tests/favorites/superheros/\#1 'Mermaid Man and Barnacle Boy'}
+\DoxyCodeLine{kdb set user:/tests/favorites/superheros/\#\_\_\_\_99999 'The guy with the bow and arrow'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The metakey `array` should save the basename of the last element.}
+\DoxyCodeLine{kdb meta-\/set user:/tests/favorites/superheros array '\#\_\_\_\_99999'}
+
+\end{DoxyCode}
+
+
+. This way you can always retrieve the last element of an array easily\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get user:/tests/favorites/superheros/`kdb meta-\/get user:/tests/favorites/superheros array`}
+\DoxyCodeLine{\#> The guy with the bow and arrow}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_arrays_md_autotoc_md3420}{}\doxysection{Closing Remarks}\label{doc_tutorials_arrays_md_autotoc_md3420}
+We close this tutorial by removing the data created by the commands above\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb rm -\/r user:/tests}
+
+\end{DoxyCode}

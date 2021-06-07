@@ -1,0 +1,168 @@
+\label{doc_tutorials_run_all_tests_with_docker_md_md_doc_tutorials_run_all_tests_with_docker}%
+\Hypertarget{doc_tutorials_run_all_tests_with_docker_md_md_doc_tutorials_run_all_tests_with_docker}%
+ Running all the tests like the build server requires multiple dependencies. To overcome this problem, instead of trying to install all the necessary dependencies on your own, an appropriate Docker image can be used. This way you can easily and quickly run all the tests.\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3641}{}\doxysection{Who Is This Guide For?}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3641}
+For anyone who wants to run all the tests, like it is done by the build server.
+
+This is a step-\/by-\/step guide. Just follow the steps and you are good to go!\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3642}{}\doxysection{Prerequisites}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3642}
+
+\begin{DoxyItemize}
+\item Docker for Linux containers has to be preinstalled. Please refer to \href{https://docs.docker.com/install/}{\texttt{ https\+://docs.\+docker.\+com/install/}} if you haven\textquotesingle{}t installed it yet. Your host OS can be either Linux, mac\+OS or Windows of course.
+\item Basic knowledge of Docker (not mandatory)
+\end{DoxyItemize}\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3643}{}\doxysection{What to Begin With?}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3643}
+\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3644}{}\doxysubsection{1. Docker Image}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3644}
+To build your own Docker image, run the following command from the source root directory\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker build -\/t buildelektra-\/sid \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg JENKINS\_USERID=\$(id -\/u) \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg JENKINS\_GROUPID=\$(id -\/g) \(\backslash\)}
+\DoxyCodeLine{        -\/f scripts/docker/debian/sid/Dockerfile \(\backslash\)}
+\DoxyCodeLine{        scripts/docker/debian/sid/}
+
+\end{DoxyCode}
+
+
+The build process depends on your Internet connection speed and the overall performance of your hardware. Most likely, it will take at least 5 minutes. Please be patient. Once you have built the image, you can reuse it multiple times.
+
+The image tag {\ttfamily buildelektra-\/sid} we suggested can be replaced by a name of your own choosing.
+
+Another alternative but not recommended(!) option would be to pick one of the publicly available Docker images of Elektra. If you do not know the difference, just pick this one -\/-\/$>$ \char`\"{}build-\/elektra-\/debian-\/stretch\char`\"{}. Unfortunately, it will take some time to download it, since it is pretty big, but you can be sure you\textquotesingle{}ll have all the needed dependencies. You can choose a light-\/weight Alpine image which won\textquotesingle{}t take long to download, however it is not recommended. This image does not contain all necessary dependencies.
+
+If you want to view all the available images, execute this command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker run -\/-\/rm anoxis/registry-\/cli -\/r https://hub-\/public.libelektra.org}
+
+\end{DoxyCode}
+
+
+You will see something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}
+\DoxyCodeLine{Image: build-\/elektra-\/debian-\/stretch}
+\DoxyCodeLine{  tag: 201906-\/ecf9161f41a8b472b3b0282a85a9f91d1f0f45357756e5451ae043fce8d0100e}
+\DoxyCodeLine{  tag: 201902-\/b6d49f470e1171348248b2f87ef397d58d7a2dae14d201f4073564079ce0c070}
+\DoxyCodeLine{  tag: 201903-\/b95dc56352aa684e16dfb8628bded4c69c712223f5d7ed99ebdd644852a32123}
+\DoxyCodeLine{  tag: 201905-\/ecf9161f41a8b472b3b0282a85a9f91d1f0f45357756e5451ae043fce8d0100e}
+\DoxyCodeLine{  tag: 201901-\/6b08855f13ba26e3ad1fa80e399b87df860cc24889f2d1854fa0050834567b26}
+\DoxyCodeLine{  tag: 201904-\/ecf9161f41a8b472b3b0282a85a9f91d1f0f45357756e5451ae043fce8d0100e}
+\DoxyCodeLine{  tag: 201904-\/1a6be7b9c3740a2338b14d08c757332cae5254ce58219b6cc2908c7bd6e4f460}
+\DoxyCodeLine{  tag: 201903-\/1a6be7b9c3740a2338b14d08c757332cae5254ce58219b6cc2908c7bd6e4f460}
+\DoxyCodeLine{  tag: 201903-\/6b08855f13ba26e3ad1fa80e399b87df860cc24889f2d1854fa0050834567b26}
+\DoxyCodeLine{  tag: 201902-\/6b08855f13ba26e3ad1fa80e399b87df860cc24889f2d1854fa0050834567b26}
+
+\end{DoxyCode}
+
+
+Afterwards pull your desired image as you would do from any public registry\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker pull hub-\/public.libelektra.org/<image\_name>:<tag\_name>}
+
+\end{DoxyCode}
+
+
+Example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker pull hub-\/public.libelektra.org/build-\/elektra-\/debian-\/stretch:201905-\/9dfe329fec01a6e40972ec4cc71874210f69933ab5f9e750a1c586fa011768ab}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3645}{}\doxysubsection{2. Run the Docker Container}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3645}
+You have to be in the root of the source directory of the Elektra Initiative, so that the container can properly map all the source files.
+
+So from your root source folder run the following\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker run -\/it -\/-\/rm \(\backslash\)}
+\DoxyCodeLine{-\/v "{}\$PWD:/home/jenkins/workspace"{} \(\backslash\)}
+\DoxyCodeLine{-\/w /home/jenkins/workspace \(\backslash\)}
+\DoxyCodeLine{buildelektra-\/sid}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3646}{}\doxysubsection{3. Build}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3646}
+After starting the container, you should be automatically inside it in the working directory {\ttfamily /home/jenkins/workspace}.
+
+Create folder folder where Elektra will be installed, create another folder for building the source and {\ttfamily cd} to it and like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir elektra-\/install \&\& mkdir elektra-\/build-\/docker \&\& cd elektra-\/build-\/docker}
+
+\end{DoxyCode}
+
+
+Build it with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ cmake /home/jenkins/workspace \(\backslash\)}
+\DoxyCodeLine{-\/DBINDINGS="{}ALL;-\/DEPRECATED"{} \(\backslash\)}
+\DoxyCodeLine{-\/DPLUGINS="{}ALL;-\/DEPRECATED"{} \(\backslash\)}
+\DoxyCodeLine{-\/DTOOLS="{}ALL"{} \(\backslash\)}
+\DoxyCodeLine{-\/DENABLE\_DEBUG="{}ON"{} \(\backslash\)}
+\DoxyCodeLine{-\/DKDB\_DB\_HOME="{}/home/jenkins/workspace/elektra-\/build-\/docker/.config/kdb/home"{} \(\backslash\)}
+\DoxyCodeLine{-\/DKDB\_DB\_SYSTEM="{}/home/jenkins/workspace/elektra-\/build-\/docker/.config/kdb/system"{} \(\backslash\)}
+\DoxyCodeLine{-\/DKDB\_DB\_SPEC="{}/home/jenkins/workspace/elektra-\/build-\/docker/.config/kdb/spec"{} \(\backslash\)}
+\DoxyCodeLine{-\/DBUILD\_DOCUMENTATION="{}OFF"{} \(\backslash\)}
+\DoxyCodeLine{-\/DCMAKE\_RULE\_MESSAGES="{}OFF"{} \(\backslash\)}
+\DoxyCodeLine{-\/DCMAKE\_INSTALL\_PREFIX="{}/home/jenkins/workspace/elektra-\/install"{} \(\backslash\)}
+\DoxyCodeLine{-\/DCOMMON\_FLAGS="{}-\/Werror"{}}
+
+\end{DoxyCode}
+
+
+and then with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make -\/j 10}
+
+\end{DoxyCode}
+
+
+The number 10 can be changed as follows\+: number of supported simultaneous threads by your CPU + 2. But don\textquotesingle{}t worry, this can only affect the speed of the building, it cannot really break it.
+
+Additionally, you may want to install Elektra inside the container, because the installed tests rely on it. The build server also does this and it is possible that the installed tests have different results (e.\+g. if test data is missing) Just run this command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make install}
+
+\end{DoxyCode}
+
+
+After Elektra has been installed we need to add it to the PATH variable, meaning you and the tests can interact with Elektra by typing/executing {\ttfamily kdb} in the command line.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export PATH="{}/home/jenkins/workspace/elektra-\/install/bin:\$PATH"{}}
+\DoxyCodeLine{export LD\_LIBRARY\_PATH="{}/home/jenkins/workspace/elektra-\/install/lib:\$LD\_LIBRARY\_PATH"{}}
+\DoxyCodeLine{export LUA\_CPATH="{}/home/jenkins/workspace/elektra-\/install/lib/lua/5.2/?.so;"{}}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3647}{}\doxysubsection{4. Run Tests}\label{doc_tutorials_run_all_tests_with_docker_md_autotoc_md3647}
+Finally run the tests. There are two sets of tests. Run the first one with this command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make run\_all}
+
+\end{DoxyCode}
+
+
+For the second set to run, remember to execute {\ttfamily make install} from the previous step. Run the second set with this command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb run\_all}
+
+\end{DoxyCode}
+ 

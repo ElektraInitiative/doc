@@ -1,0 +1,189 @@
+\label{doc_dev_architecture_md_md_doc_dev_architecture}%
+\Hypertarget{doc_dev_architecture_md_md_doc_dev_architecture}%
+ In this document we start to explain the implementation of Elektra. There are several follow-\/up documents which explain all details of\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_dev_error-handling_md}{error handling}},
+\item \mbox{\hyperlink{doc_dev_data-structures_md}{data structures}}, and
+\item finally the \mbox{\hyperlink{doc_dev_algorithm_md}{core algorithm}}.
+\end{DoxyItemize}
+
+We discuss problems and the solution space so that the reader can understand the rationale of how problems were solved.
+
+To help readers to understand the algorithm that glues together the plugins, we first describe some details of the \mbox{\hyperlink{doc_dev_data-structures_md}{data structures}}. Full knowledge of the \mbox{\hyperlink{doc_dev_algorithm_md}{algorithm}} is not presumed to be able to develop most plugins (with the exception of \mbox{\hyperlink{md_src_plugins_resolver_README_src_plugins_resolver_README_md}{the resolver}}).
+
+Further important concepts are explained in\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_elektra-bootstrapping_md}{bootstrapping}}
+\item \mbox{\hyperlink{doc_help_elektra-granularity_md}{granularity}}
+\item \mbox{\hyperlink{doc_help_elektra-sync-flag_md}{sync-\/flag}}
+\end{DoxyItemize}\hypertarget{doc_dev_architecture_md_autotoc_md2109}{}\doxysection{API}\label{doc_dev_architecture_md_autotoc_md2109}
+The aim of the Elektra Initiative is to design and implement a powerful API for configuration. When the project started, we assumed that this goal was easy to achieve, but dealing with the semantics turned out to be a difficult problem. For the implementation, an ambitious solution is required because of the necessary modularity to implement flexible backends as introduced in Elektra. But also the design of a good API has proved to be much more difficult than expected.\hypertarget{doc_dev_architecture_md_autotoc_md2110}{}\doxysubsection{Changes in the APIs}\label{doc_dev_architecture_md_autotoc_md2110}
+From Elektra 0.\+7 to Elektra 0.\+8, we changed the API of Elektra as little as possible. It should be mentioned that {\ttfamily Key\+Set} is now always sorted by name. The function {\ttfamily ks\+Sort()} is now depreciated and was removed. The handling of removed keys was modified. Additionally, the API for metadata has fundamentally changed, but the old interface still works. These changes will be described in \mbox{\hyperlink{doc_dev_metadata_md}{implementation of metadata}}. However, the implementation of Elektra changed radically as discussed in \mbox{\hyperlink{doc_dev_algorithm_md}{algorithm}}.\hypertarget{doc_dev_architecture_md_autotoc_md2111}{}\doxysubsection{API Design}\label{doc_dev_architecture_md_autotoc_md2111}
+API Design presents a critical craft every programmer should be aware of. We will shortly present some of the main design issues that matter and show how Elektra has solved them.
+
+A design goal is to detect errors early. As easy as it sounds, as difficult it is to actually achieve this goal. Elektra tries to avoid the problem by checking data being inserted into {\ttfamily Key} and {\ttfamily Key\+Set}. Elektra catches many errors like invalid key names soon. Elektra allows plugins to check the configuration before it is written into the key database so that problematic values are never stored.
+
+\char`\"{}\+Hard to use it wrong\char`\"{} tends to be a more important design objective than \char`\"{}\+Easy to use it right\char`\"{}. Searching for a stupid bug costs more time than falling into some standard traps which are explained in documentation. In Elektra, the data structures are robust and some efforts were taken to make misuse unlikely.
+
+Another fundamental principle is that the API must hide implementation details and should not be optimized towards speed. In Elektra, the actual process of making configuration permanent is completely hidden.
+
+\char`\"{}\+Off-\/by-\/one confusion\char`\"{} is a topic of its own. The best is to stick to the conventions the programming language gives. For returning sizes of strings, it must be clear whether a terminating `'\textbackslash{}0\textquotesingle{}\`{} is included or not. All such decisions must be consistent. In Elektra the terminating null is always included in the size.
+
+The interface must be as small as possible to tackle problems addressed by the library. Internal and external APIs must be separated. Internal APIs in libraries shall be declared as {\ttfamily static} to prevent its export. In Elektra, internal names start with {\ttfamily elektra} opposed to the external names starting with {\ttfamily key}, {\ttfamily ks} or {\ttfamily kdb}.
+
+Elektra always passes user context pointers, but never passes or receives a full data structure by value. It is impossible to be ABI compatible otherwise. Elektra is restrictive in what it returns (strong postconditions), but as liberal as possible for what comes in (preconditions are avoided where possible). In Elektra even null pointers are accepted for any argument.
+
+\char`\"{}\+Free everything you allocate\char`\"{} is a difficult topic in some cases. If Elektra cannot free space or other resources after every call, it provides a {\ttfamily close()} function. Everything will be freed. The tool {\bfseries{Valgrind}} with {\bfseries{Memcheck}} helps us locate problems. The whole test suite runs without any memory problems. The user is responsible for deleting all created {\ttfamily Key} and {\ttfamily Key\+Set} objects and closing the {\ttfamily KDB} handle.
+
+As a final statement, we note that the Unix philosophy should always be considered\+: \char`\"{}\+Do only one thing, but do it in the best way. Write it that way that programs work together well.\char`\"{}\hypertarget{doc_dev_architecture_md_autotoc_md2112}{}\doxysection{Modules}\label{doc_dev_architecture_md_autotoc_md2112}
+Elektra’s core can be compiled with a C compiler conforming to the ISO/\+IEC 9899\+:1999 standard\+:
+
+
+\begin{DoxyItemize}
+\item One line comments,
+\item inline functions,
+\item {\ttfamily snprintf()}
+\item inttypes.\+h and
+\item variable declaration at any place
+\end{DoxyItemize}
+
+are used in addition to what is already defined in the standard ISO/\+IEC 9899\+:1990, called {\bfseries{C99}} in the following text. Functions not conforming to C99 are considered to be not portable enough for Elektra and are separated into plugins. But there is one notable exception\+: it must be the core\textquotesingle{}s task to load plugins. Unfortunately, C99 does not know anything about modules. {\bfseries{POSIX}} (Portable Operating System Interface) provides {\ttfamily dlopen()}, but other operating systems have dissimilar APIs for that purpose. They sometimes behave differently, use other names for the libraries and have incompatible error reporting systems. Because of these requirements Elektra provides a small internal API to load such modules independently from the operating system. This API also hides the fact that modules must be loaded dynamically if they are not available statically.
+
+Plugins are usually realized with modules. Modules and libraries are technically the same in most systems. (One exception is mac\+OS.) After the module is loaded, the special function plugin factory is searched for. This function returns a new plugin. With the plugin factory the actual plugins are created.\hypertarget{doc_dev_architecture_md_autotoc_md2113}{}\doxysubsection{Static Loading}\label{doc_dev_architecture_md_autotoc_md2113}
+For the static loading of modules, the modules must be built-\/in. With {\ttfamily dlopen(const char$\ast$ file)} POSIX provides a solution to look up such symbols by passing a null pointer for the parameter {\ttfamily file}. Non-\/\+POSIX operating systems may not support this kind of static loading. Therefore, Elektra provides a C99 conforming solution for that problem\+: a data structure stores the pointers to the plugin factory of every plugin. The build system generates the source file of this data structure because it depends on built-\/in plugins.
+
+Elektra distinguishes internally between modules and plugins. Several plugins can be created out of a single module. During the creation process of the plugin, dynamic information -\/ like the configuration or the data handle -\/ is added.\hypertarget{doc_dev_architecture_md_autotoc_md2114}{}\doxysubsection{API}\label{doc_dev_architecture_md_autotoc_md2114}
+The API of {\bfseries{libloader}} consists of the following functions\+:
+
+Interface of Module System\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} elektraModulesInit (KeySet *modules, Key *error);}
+\DoxyCodeLine{elektraPluginFactory elektraModulesLoad (KeySet *modules,}
+\DoxyCodeLine{                \textcolor{keyword}{const} \textcolor{keywordtype}{char} *name, Key *error);}
+\DoxyCodeLine{\textcolor{keywordtype}{int} elektraModulesClose (KeySet *modules, Key *error);}
+
+\end{DoxyCode}
+
+
+{\ttfamily elektra\+Modules\+Init()} initializes the module cache and calls necessary operating system facilities if needed. {\ttfamily elektra\+Modules\+Load()} does the main work by either returning a pointer to the plugin factory from cache or loading it from the operating system. The plugin factory creates plugins that do not have references to the module anymore. {\ttfamily elektra\+Modules\+Close()} cleans up the cache and finalises all connections with the operating system.
+
+Not every plugin is loaded by {\ttfamily libloader}. For example, the {\itshape version plugin}, which exports version information, is implemented internally.\hypertarget{doc_dev_architecture_md_autotoc_md2115}{}\doxysection{Mount Point Configuration}\label{doc_dev_architecture_md_autotoc_md2115}
+{\ttfamily kdb mount} creates a {\bfseries{mount point configuration}} as shown in the example below. {\ttfamily fstab} is a unique name within the mount point configuration provided by the administrator.
+
+Example for a mount point configuration\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/path=fstab}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct=list FStab}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/device}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/dumpfreq}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/mpoint}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/options}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/passno}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/type}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/errorplugins}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/errorplugins/\#5\#resolver\#resolver\#}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/getplugins}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/getplugins/\#0\#resolver}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/getplugins/\#5\#fstab\#fstab\#}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/mountpoint /fstab}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#0\#resolver}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#1\#struct\#struct\#}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#2\#type\#type\#}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#3\#path\#path\#}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#3\#path\#path\#/config}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#3\#path\#path\#/config/path/allow=proc tmpfs none}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#5\#fstab}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#7\#resolver}
+
+\end{DoxyCode}
+
+
+Let us look at the subkeys below the key {\ttfamily system\+:/elektra/mountpoints/fstab}\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{config}}\+: Everything below {\ttfamily config} is the system\textquotesingle{}s configuration of the backend. Every plugin within the backend will find this configuration directly below {\ttfamily system} in its {\bfseries{plugin configuration}}. For example,
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/config/struct/FStab/mpoint}
+
+\end{DoxyCode}
+
+
+will be translated to
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/struct/FStab/mpoint}
+
+\end{DoxyCode}
+
+
+and inserted into the plugin configuration for all plugins in the {\ttfamily fstab} backend.
+
+It is the place where configuration can be provided for every plugin of a backend. The contract checker deduces this configuration to satisfy the contract for a plugin. Fstab, for example, claims in a contract that it needs \char`\"{}struct\char`\"{}. But the struct plugin needs a configuration to work properly. Fstab will provide this configuration. The {\bfseries{contract checker}} writes out the configuration looking like the one in this example.
+
+
+\begin{DoxyItemize}
+\item {\bfseries{config/path}}\+: is a common setting needed by the resolver plugin. It is the relative path to a filename that is used by this backend. On Unix systems, the resolver would determine the name {\ttfamily /etc/fstab} for system configuration.
+\item {\bfseries{mount point}}\+: is a key that represents the mount point. Its value is the location where the backend is mounted. If a mount point has an entry for both the user and the system hierarchy, it is called {\bfseries{cascading mount point}}. A cascading mount point differs from two separate mount points because internally only one backend is created. In the example, the mount point {\ttfamily /fstab} means that the backend handles both {\ttfamily user\+:/fstab} and {\ttfamily system\+:/fstab}. If the mount point is {\ttfamily /}, the backend will be mounted to all namespaces except {\ttfamily spec}, including both {\ttfamily user} and {\ttfamily system}.
+\item {\bfseries{errorplugins}}\+: presents a list of all plugins to be executed in the error case of {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} which will be explained in {\bfseries{error situation}}.
+\item {\bfseries{getplugins}}\+: is a list of all plugins used when reading the configuration from the key database. They are executed in {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}.
+\item {\bfseries{setplugins}}\+: contains a list of all plugins used when storing configuration. They are executed in {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}.
+\end{DoxyItemize}
+
+Each of the plugins inside the three lists may have the subkey {\ttfamily config}. The configuration below this subkey provides plugin specific configuration. This configuration appears in the user\textquotesingle{}s configuration of the plugin. Configuration is renamed properly. For example, the key
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints/fstab/setplugins/\#3\#path\#path\#/config/path/allow}
+
+\end{DoxyCode}
+
+
+is transformed to
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/path/allow}
+
+\end{DoxyCode}
+
+
+and appears in the plugin configuration of the path plugin inside the fstab backend.\hypertarget{doc_dev_architecture_md_autotoc_md2116}{}\doxysubsection{Referencing}\label{doc_dev_architecture_md_autotoc_md2116}
+The same plugin often must occur in more than one place within a backend. The most common use case is a plugin that has to be executed for both {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} and {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. It must be the same plugin if it preserves state between the executions.
+
+Other plugins additionally have to handle error or success situations. One example of exceptional intensive use is the resolver plugin. It is executed twice in {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. In {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} it is also used as shown above.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \#n$<$name$>$}\+: introduces a new plugin from the module {\ttfamily name} which cannot be referenced later. The cypher {\ttfamily n} appoints the actual placement of the plugin.
+\item {\ttfamily \#n\#$<$name$>$\#$<$label$>$\#}\+: also introduces a new plugin from the module {\ttfamily name} and gives it the name {\ttfamily label}. The last {\ttfamily \#} shows that a new name is being introduced.
+\item {\ttfamily \#n\#$<$ref$>$}\+: references back to a label which was introduced before. This configuration does not create a new plugin.
+\end{DoxyItemize}
+
+{\ttfamily kdb mount} implements the generation of these names as described above.\hypertarget{doc_dev_architecture_md_autotoc_md2117}{}\doxysubsection{Changing Mount Point Configuration}\label{doc_dev_architecture_md_autotoc_md2117}
+When the user changes the mount point configuration, without countermeasures, applications already started will continue to run with the old configuration. This could lead to a problem if backends in use are changed or removed. It is necessary to restart all such programs. Notification is the best way to deal with the situation. Changes of the mount point configuration, however, do not occur often. For some systems, the manual restart may also be appropriate.
+
+In this situation, applications can receive warning or error information if the configuration files are moved or removed. The most adverse situation occurs if the sequence of locking multiple files produces a {\itshape dead lock}. Under normal circumstances, the sequence of locking the files is deterministic, so either all locks can be requested or another program will be served first. But several programs with different mountpoint configurations running at the same time can cause a disaster. The problem gets even worse, because {\ttfamily kdb mount} is unable to detect such situations. Every specific mount point configuration for itself is trouble-\/free.
+
+But still a dead lock can arise when multiple programs run with different mountpoint configurations. Suppose we have a program {\ttfamily A} which uses the backends {\ttfamily B1} and {\ttfamily B2} that requests locks for the files {\ttfamily F1} and {\ttfamily F2}. Then the mount point configuration is changed. The user removes {\ttfamily B1} and introduces {\ttfamily B3}. {\ttfamily B3} is in a different path mounted after {\ttfamily B2}, but also accesses the same file {\ttfamily F1}. The program {\ttfamily B} starts after the mount point configuration is changed. So it uses the backends {\ttfamily B2} and {\ttfamily B3}. If the scheduler decides that first {\ttfamily A} and then {\ttfamily B} both successfully lock the files {\ttfamily F1} and {\ttfamily F2}, a dead lock situation happens because in the afterwards the applications {\ttfamily A} and {\ttfamily B} try to lock {\ttfamily F2} and {\ttfamily F1}.
+
+A manual solution for this problem is to enable {\ttfamily kdb} to output a list of processes that still use old mount point configuration. The administrator can restart these processes. The preferred solution is to use notification for mount point configuration changes or simply to use a lock-\/free resolver.
+
+Continue reading \mbox{\hyperlink{doc_dev_data-structures_md}{with the data structures}}. 

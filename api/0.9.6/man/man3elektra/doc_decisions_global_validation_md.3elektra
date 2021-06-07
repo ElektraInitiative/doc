@@ -1,0 +1,57 @@
+.TH "doc_decisions_global_validation_md" 3elektra "Mon Jun 7 2021" "Version 0.9.6" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_global_validation_md \- Global Validation 
+ 
+.SH "Problem"
+.PP
+Links and validation constraints might point to keys not loaded with the respective \fCkdbGet\fP\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+no workaround such as \fCkdb get -a\fP
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+global plugin can register additional backends to load
+.IP "\(bu" 2
+split \fCkdbGet\fP into multiple steps:
+.IP "  1." 6
+do \fCkdbGet\fP on \fCsystem:/elektra\fP to update mount points
+.IP "  2." 6
+first do \fCkdbGet\fP on the \fCspec:/\fP-namespace
+.IP "  3." 6
+then calculate which backends are needed
+.IP "  4." 6
+then fetch all backends as needed
+.PP
+
+.IP "\(bu" 2
+split loops in \fCkdbGet\fP not only according placements but also according namespace (get spec first)
+.PP
+.SH "Decision"
+.PP
+Not supported, admins/maintainers need to stay with their spec within what applications request by \fCkdbGet\fP\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+it is too expensive to always load all keys (@mpranj: is this true?)
+.IP "\(bu" 2
+problems in implementing to always get everything
+.IP "\(bu" 2
+it makes the parameter to \fCkdbGet\fP basically useless
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBInternal Cache\fP
+.PP
+.SH "Notes"
+.PP
+see #1291 

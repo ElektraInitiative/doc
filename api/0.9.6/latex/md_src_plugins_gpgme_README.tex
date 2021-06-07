@@ -1,0 +1,73 @@
+
+\begin{DoxyItemize}
+\item infos = Information about gpgme plugin is in keys below
+\item infos/author = Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\texttt{ peter.\+nirschl@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/provides = crypto
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = unittest configurable memleak experimental unfinished
+\item infos/metadata = crypto/encrypt gpg/binary
+\item infos/description = Cryptographic operations wit Gnu\+PG Made Easy (GPGME)
+\end{DoxyItemize}\hypertarget{md_src_plugins_gpgme_README_src_plugins_gpgme_README_md}{}\doxysection{Introduction}\label{md_src_plugins_gpgme_README_src_plugins_gpgme_README_md}
+The {\ttfamily gpgme} plugin is a filter plugin that enables users to encrypt values before they are persisted and to decrypt values after they have been read from a backend. The encryption and decryption is designed to work transparently.
+
+The cryptographic operations are performed by Gnu\+PG via the {\ttfamily libgpgme} library.\hypertarget{md_src_plugins_gpgme_README_autotoc_md224}{}\doxysection{Installation}\label{md_src_plugins_gpgme_README_autotoc_md224}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_gpgme_README_autotoc_md225}{}\doxysection{Dependencies}\label{md_src_plugins_gpgme_README_autotoc_md225}
+
+\begin{DoxyItemize}
+\item {\ttfamily libgpgme11} version 1.\+10 or later
+\end{DoxyItemize}\hypertarget{md_src_plugins_gpgme_README_autotoc_md226}{}\doxysection{Build Information}\label{md_src_plugins_gpgme_README_autotoc_md226}
+The plugin has been tested on Ubuntu 18.\+04 with {\ttfamily libgpgme} version 1.\+10.\hypertarget{md_src_plugins_gpgme_README_autotoc_md227}{}\doxysection{Examples}\label{md_src_plugins_gpgme_README_autotoc_md227}
+You can mount the plugin like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount test.ecf /t gpgme "{}encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D"{}}
+
+\end{DoxyCode}
+
+
+Now you can specify a key {\ttfamily user\+:/t/a} and protect its content by using\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/t/a}
+\DoxyCodeLine{kdb meta-\/set user:/t/a crypt/encrypt 1}
+\DoxyCodeLine{kdb set user:/t/a "{}secret"{}}
+
+\end{DoxyCode}
+
+
+The value of {\ttfamily user\+:/t/a} (for this example\+: \char`\"{}secret\char`\"{}) will be stored encrypted. You can still access the original value by using {\ttfamily kdb get}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get user:/t/a}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_gpgme_README_autotoc_md228}{}\doxysection{Configuration}\label{md_src_plugins_gpgme_README_autotoc_md228}
+\hypertarget{md_src_plugins_gpgme_README_autotoc_md229}{}\doxysubsection{Gnu\+PG Keys}\label{md_src_plugins_gpgme_README_autotoc_md229}
+The GPG recipient keys can be specified in two ways\+:
+
+
+\begin{DoxyEnumerate}
+\item The GPG recipient key can be specified as {\ttfamily encrypt/key} directly.
+\item If you want to specify multiple keys, you can enumerate them under {\ttfamily encrypt/key}.
+\end{DoxyEnumerate}
+
+The following example illustrates how multiple GPG recipient keys can be specified\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{encrypt/key/\#0}
+\DoxyCodeLine{encrypt/key/\#1}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_gpgme_README_autotoc_md230}{}\doxysubsection{Textmode}\label{md_src_plugins_gpgme_README_autotoc_md230}
+{\ttfamily gpgme} operates in textmode per default. In textmode the output of GPG is ASCII armored.
+
+Textmode can be disabled by setting {\ttfamily /gpgme/textmode} to {\ttfamily 0} in the plugin configuration.\hypertarget{md_src_plugins_gpgme_README_autotoc_md231}{}\doxysection{Technical Details}\label{md_src_plugins_gpgme_README_autotoc_md231}
+\hypertarget{md_src_plugins_gpgme_README_autotoc_md232}{}\doxysubsection{Message Format}\label{md_src_plugins_gpgme_README_autotoc_md232}
+The encrypted values are valid PGP messages, that can be decrypted and read solely by the Gnu\+PG binary without Elektra. 

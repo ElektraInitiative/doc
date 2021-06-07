@@ -1,0 +1,66 @@
+\label{doc_tutorials_run_reformatting_script_with_docker_md_md_doc_tutorials_run_reformatting_script_with_docker}%
+\Hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_md_doc_tutorials_run_reformatting_script_with_docker}%
+ Running the reformat-\/all script requires multiple dependencies. To overcome this problem, instead of trying to install all the necessary dependencies on your own, you can easily build a Docker image and run the script inside a Docker container based on this image.\hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3648}{}\doxysection{Who Is This Guide For?}\label{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3648}
+Do you want to run the reformat-\/all and the fix-\/spelling script easily and without any hassle? You\textquotesingle{}ve come to the right place.
+
+This is a step-\/by-\/step guide. Just follow the steps and you are good to go!\hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3649}{}\doxysection{Prerequisites}\label{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3649}
+
+\begin{DoxyItemize}
+\item Docker for Linux containers has to be preinstalled. Please refer to \href{https://docs.docker.com/install/}{\texttt{ https\+://docs.\+docker.\+com/install/}} if you haven\textquotesingle{}t installed it yet. Your host OS should better be Linux, because we are going to use your current Linux user ID for building the image.
+\item Basic knowledge of Docker (not mandatory)
+\end{DoxyItemize}\hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3650}{}\doxysection{What to Begin With?}\label{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3650}
+\hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3651}{}\doxysubsection{1. Build Your Own Docker Image}\label{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3651}
+Now you are going to build your own Docker image based on Debian.
+
+From the source root directory run the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker build -\/t buildelektra-\/sid \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg JENKINS\_USERID=\$(id -\/u) \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg JENKINS\_GROUPID=\$(id -\/g) \(\backslash\)}
+\DoxyCodeLine{        -\/f scripts/docker/debian/sid/Dockerfile \(\backslash\)}
+\DoxyCodeLine{        scripts/docker/debian/sid/}
+
+\end{DoxyCode}
+
+
+The build process depends on your Internet connection speed and the overall performance of your hardware. Most likely, it will take at least 5 minutes. Please be patient. Once you have built the image, you can reuse it multiple times.
+
+The image tag {\ttfamily buildelektra-\/sid} we suggested can be replaced by a name of your own choosing. Note that currently our {\ttfamily sid} image is the only one with all the necessary tools installed.\hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3652}{}\doxysubsection{2. Run the Docker Container}\label{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3652}
+After you built the image, you can execute a container like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker run -\/it -\/-\/rm \(\backslash\)}
+\DoxyCodeLine{        -\/v "{}\$PWD:/home/jenkins/workspace"{} \(\backslash\)}
+\DoxyCodeLine{        -\/w /home/jenkins/workspace \(\backslash\)}
+\DoxyCodeLine{        buildelektra-\/sid}
+
+\end{DoxyCode}
+
+
+Again, if you changed the image tag {\ttfamily buildelektra-\/sid}, please change it above as well.\hypertarget{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3653}{}\doxysubsection{3. Running the Script}\label{doc_tutorials_run_reformatting_script_with_docker_md_autotoc_md3653}
+After starting the container, you should be automatically inside it in the working directory {\ttfamily /home/jenkins/workspace}.
+
+Now run the script\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/all}
+
+\end{DoxyCode}
+
+
+All your files should be reformatted afterwards.
+
+To also fix spelling errors in your files, run the script\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/fix-\/spelling}
+
+\end{DoxyCode}
+
+
+All your spelling errors should be fixed afterwards. 

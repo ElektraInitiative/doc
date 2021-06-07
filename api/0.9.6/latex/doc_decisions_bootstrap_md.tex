@@ -1,0 +1,59 @@
+\label{doc_decisions_bootstrap_md_md_doc_decisions_bootstrap}%
+\Hypertarget{doc_decisions_bootstrap_md_md_doc_decisions_bootstrap}%
+ \hypertarget{doc_decisions_bootstrap_md_autotoc_md1669}{}\doxysection{Problem}\label{doc_decisions_bootstrap_md_autotoc_md1669}
+Currently the default backend (default.\+ecf) will also be used for bootstrapping. There are two problems with this approach\+:
+
+
+\begin{DoxyEnumerate}
+\item Thus the default backend first will be read with parent\+Key {\ttfamily system\+:/elektra} and later with parent\+Key {\ttfamily system\+:/}, it needs to store absolute paths and thus won\textquotesingle{}t work with most of the plugins (except dump).
+\item When {\ttfamily system} is large without mount points, everything is reread twice during bootstrapping.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1670}{}\doxysection{Constraints}\label{doc_decisions_bootstrap_md_autotoc_md1670}
+
+\begin{DoxyItemize}
+\item be compatible to mount points stored in {\ttfamily defaults.\+ecf}
+\item nice migration phase
+\item new setups should never bother about the compatibility mode
+\end{DoxyItemize}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1671}{}\doxysection{Assumptions}\label{doc_decisions_bootstrap_md_autotoc_md1671}
+
+\begin{DoxyItemize}
+\item Bootstrap should be fast and not unnecessarily read large files
+\end{DoxyItemize}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1672}{}\doxysection{Considered Alternatives}\label{doc_decisions_bootstrap_md_autotoc_md1672}
+
+\begin{DoxyItemize}
+\item Implement a hack so that {\ttfamily system\+:/elektra} is actually read as {\ttfamily system\+:/}. (Will not solve problem 2.)
+\begin{DoxyItemize}
+\item Its a hack.
+\item Its confusing and does not play well with persistent data with relative key names.
+\end{DoxyItemize}
+\item Split up without compatibility mode\+: would need to migrate all mount points by exporting (with old version!) and then importing (with new version!)
+\begin{DoxyItemize}
+\item I consider this too error prone, people might easily forget to export with the old version and then discard their mount points unintentional.
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1673}{}\doxysection{Decision}\label{doc_decisions_bootstrap_md_autotoc_md1673}
+Split up the concepts of default ({\ttfamily default.\+ecf}) and bootstrap ({\ttfamily elektra.\+ecf}) backend. During bootstrap only {\ttfamily elektra.\+ecf} is read. The default backend reading {\ttfamily default.\+ecf} is only relevant as long as no root backend is mounted.
+
+Algorithm\+:
+
+
+\begin{DoxyEnumerate}
+\item try to get system\+:/elektra using the file elektra.\+ecf (KDB\+\_\+\+DB\+\_\+\+INIT)
+\item if it works, mount the init backend to system\+:/elektra
+\end{DoxyEnumerate}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1674}{}\doxysection{Rationale}\label{doc_decisions_bootstrap_md_autotoc_md1674}
+
+\begin{DoxyItemize}
+\item Solves both problems
+\item Is fully compatible with any existing setup
+\item People can decide if and how to migrate
+\end{DoxyItemize}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1675}{}\doxysection{Implications}\label{doc_decisions_bootstrap_md_autotoc_md1675}
+
+\begin{DoxyItemize}
+\item added scripts/upgrade-\/bootstrap
+\end{DoxyItemize}\hypertarget{doc_decisions_bootstrap_md_autotoc_md1676}{}\doxysection{Related Decisions}\label{doc_decisions_bootstrap_md_autotoc_md1676}
+\hypertarget{doc_decisions_bootstrap_md_autotoc_md1677}{}\doxysection{Notes}\label{doc_decisions_bootstrap_md_autotoc_md1677}
+to upgrade to new system, either\+:
+
+
+\begin{DoxyItemize}
+\item touch /etc/kdb/elektra.ecf (loses old mount points)
+\item or do kdb export system\+:/elektra/mountpoints, kdb rm -\/r system\+:/elektra/mountpoints, kdb import system\+:/elektra/mountpoints 
+\end{DoxyItemize}

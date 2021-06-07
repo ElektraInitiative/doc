@@ -1,0 +1,39 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the process plugin is in keys below
+\item infos/author = Armin Wurzinger \href{mailto:e1528532@libelektra.org}{\texttt{ e1528532@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = pregetstorage getstorage postgetstorage presetstorage setstorage
+\item infos/status = maintained unittest shelltest configurable experimental unfinished
+\item infos/metadata =
+\item infos/description = executes other plugins inside an own process
+\end{DoxyItemize}\hypertarget{md_src_plugins_process_README_src_plugins_process_README_md}{}\doxysection{Introduction}\label{md_src_plugins_process_README_src_plugins_process_README_md}
+The process plugin uses the {\ttfamily pluginprocess} library in order to execute other plugins inside an own process. This is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used. It is also useful for plugins which cause memory leaks to be isolated in an own process.\hypertarget{md_src_plugins_process_README_autotoc_md379}{}\doxysection{Installation}\label{md_src_plugins_process_README_autotoc_md379}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_process_README_autotoc_md380}{}\doxysection{Usage}\label{md_src_plugins_process_README_autotoc_md380}
+Mount this plugin and specify the plugin configuration parameter {\ttfamily plugin} to a plugin that exists on the system. The proxied plugin will then be executed in a separate process and this plugin handles the communication between the processes.\hypertarget{md_src_plugins_process_README_autotoc_md381}{}\doxysection{Dependencies}\label{md_src_plugins_process_README_autotoc_md381}
+The {\ttfamily pluginprocess} library, which is only available on POSIX environments currently.\hypertarget{md_src_plugins_process_README_autotoc_md382}{}\doxysection{Examples}\label{md_src_plugins_process_README_autotoc_md382}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount the dump plugin a separate process via the process plugin to `user:/examples/process`}
+\DoxyCodeLine{sudo kdb mount config.file user:/tests/process process plugin=dump}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/process/key value}
+\DoxyCodeLine{\#> Create a new key user:/tests/process/key with string "{}value"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/process/key}
+\DoxyCodeLine{\#> value}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -\/r user:/tests/process}
+\DoxyCodeLine{sudo kdb umount user:/tests/process}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_process_README_autotoc_md383}{}\doxysection{Limitations}\label{md_src_plugins_process_README_autotoc_md383}
+
+\begin{DoxyItemize}
+\item Currently only plugins that act on one of the above-\/mentioned {\ttfamily placements} can be proxied successfully. Other metainformation like {\ttfamily needs} or {\ttfamily provides} or {\ttfamily recommends} will not be available when proxying using this plugin.
+\item This plugin cannot act as a proxy for itself to prevent loops. 
+\end{DoxyItemize}

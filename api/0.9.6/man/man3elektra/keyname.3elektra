@@ -1,0 +1,1263 @@
+.TH "keyname" 3elektra "Mon Jun 7 2021" "Version 0.9.6" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keyname \- Name Manipulation Methods
+.PP
+ \- Methods to do various operations on Key names\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBkeyName\fP (const Key *key)"
+.br
+.RI "Returns a pointer to the abbreviated real internal \fCkey\fP name\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetNameSize\fP (const Key *key)"
+.br
+.RI "Bytes needed to store the Key's name (excluding owner)\&. "
+.ti -1c
+.RI "const void * \fBkeyUnescapedName\fP (const Key *key)"
+.br
+.RI "Returns a Key's name, separated by NULL bytes and without backslashes for escaping\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetUnescapedNameSize\fP (const Key *key)"
+.br
+.RI "Returns the size of the Key's unescaped name including embedded and terminating NULL characters\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetName\fP (const Key *key, char *returnedName, size_t maxSize)"
+.br
+.RI "Get abbreviated Key name (excluding owner)\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetUnescapedName\fP (const Key *key, char *returnedName, size_t maxSize)"
+.br
+.RI "Copies the unescaped name of a Key into \fCreturnedName\fP\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetName\fP (Key *key, const char *newName)"
+.br
+.RI "Set a new name to a Key\&. "
+.ti -1c
+.RI "ssize_t \fBkeyAddName\fP (Key *key, const char *newName)"
+.br
+.RI "Add an already escaped name part to the Key's name\&. "
+.ti -1c
+.RI "int \fBkeyReplacePrefix\fP (Key *key, const Key *oldPrefix, const Key *newPrefix)"
+.br
+.RI "Replaces a prefix of the key name of \fCkey\fP\&. "
+.ti -1c
+.RI "bool \fBelektraKeyNameValidate\fP (const char *name, bool isComplete)"
+.br
+.RI "Takes an escaped key name and validates it\&. "
+.ti -1c
+.RI "void \fBelektraKeyNameCanonicalize\fP (const char *name, char **canonicalName, size_t *canonicalSizePtr, size_t offset, size_t *usizePtr)"
+.br
+.RI "Takes a valid (non-)canonical key name and produces its canonical form\&. "
+.ti -1c
+.RI "void \fBelektraKeyNameUnescape\fP (const char *canonicalName, char *unescapedName)"
+.br
+.RI "Takes a canonical key name and unescapes it\&. "
+.ti -1c
+.RI "const char * \fBkeyBaseName\fP (const Key *key)"
+.br
+.RI "Returns a pointer to the unescaped Key's name where the basename starts\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetBaseNameSize\fP (const Key *key)"
+.br
+.RI "Calculates number of bytes needed to store basename of \fCkey\fP (including NULL terminator)\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetBaseName\fP (const Key *key, char *returned, size_t maxSize)"
+.br
+.RI "Copy the Key's basename to \fCreturned\fP\&. "
+.ti -1c
+.RI "size_t \fBelektraKeyNameEscapePart\fP (const char *part, char **escapedPart)"
+.br
+.RI "Takes a single key name part and produces its escaped form\&. "
+.ti -1c
+.RI "ssize_t \fBkeyAddBaseName\fP (Key *key, const char *baseName)"
+.br
+.RI "Adds \fCbaseName\fP to the name of \fCkey\fP\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetBaseName\fP (Key *key, const char *baseName)"
+.br
+.RI "Sets \fCbaseName\fP as the new basename for \fCkey\fP\&. "
+.ti -1c
+.RI "\fBelektraNamespace\fP \fBkeyGetNamespace\fP (const Key *key)"
+.br
+.RI "Returns the \fBelektraNamespace\fP for a Key\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetNamespace\fP (Key *key, \fBelektraNamespace\fP ns)"
+.br
+.RI "Changes the namespace of a Key\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to do various operations on Key names\&. 
+
+To use them: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+.PP
+These functions make it easier for C programmers to work with key names\&.
+.PP
+\fBTerminology of Key Names\fP
+.RS 4
+
+.IP "\(bu" 2
+A \fIkey name\fP (see \fBkeySetName()\fP and \fBkeyName()\fP) defines the place of a key within the key database\&. To be unique, it is always absolute and canonical\&.
+.IP "\(bu" 2
+Key names are composed out of many \fIkey name parts\fP split by a separator\&. These \fIkey name parts\fP do not contain an unescaped separator\&.
+.IP "\(bu" 2
+A \fIkey base name\fP (see \fBkeySetBaseName()\fP and \fBkeyAddBaseName()\fP) is the last part of the key name\&.
+.IP "\(bu" 2
+A \fIC-String\fP is a null terminated sequence of characters\&. So \\0 (null-character) must not occur within a C-String\&.
+.PP
+.RE
+.PP
+\fBNamespaces\fP
+.RS 4
+A namespace denotes the place the key comes from:
+.RE
+.PP
+.IP "\(bu" 2
+\fCspec:/something\fP for specification of other keys\&.
+.IP "\(bu" 2
+\fCproc:/something\fP for in-memory keys, e\&.g\&. commandline\&.
+.IP "\(bu" 2
+\fCdir:/something\fP for dir keys in current working directory
+.IP "\(bu" 2
+\fCsystem:/something\fP for system keys in /etc or /
+.IP "\(bu" 2
+\fCuser:/something\fP for user keys in home directory
+.IP "\(bu" 2
+\fCuser:username/something\fP for other users (deprecated: \fBkdbGet()\fP + \fBkdbSet()\fP currently unsupported)
+.IP "\(bu" 2
+\fC/something\fP for cascading keys (actually refers to one of the above, see also \fBksLookup()\fP)
+.PP
+\fBNote\fP
+.RS 4
+The rules are currently not formally specified and are subject of change in the next major release\&. So, always prefer:
+.IP "  \(bu" 4
+To use \fBkeySetName()\fP and \fBkeyAddName()\fP to get the canonified version of the keyname
+.IP "  \(bu" 4
+To use \fBkeySetBaseName()\fP and \fBkeyAddBaseName()\fP to get an escaped key name part\&.
+.IP "  \(bu" 4
+Not to escape or canonify with your own algorithms!
+.IP "  \(bu" 4
+To use \fBkeyUnescapedName()\fP and \fBkeyBaseName()\fP to have access to the key name without escape sequences (key name parts are null terminated)
+.IP "  \(bu" 4
+Not to unescape the strings yourself!
+.PP
+.RE
+.PP
+\fBSyntax for Key Names\fP
+.RS 4
+Key names and key name parts have following goals:
+.IP "  \(bu" 4
+The C-String passed to \fBkeySetName()\fP and \fBkeyAddName()\fP may be any C-String\&.
+.IP "  \(bu" 4
+The \fIkey name parts\fP (e\&.g\&. \fBkeySetBaseName()\fP, \fBkeyBaseName()\fP) may be any C-String\&. Escaping is needed to achieve both goals\&.
+.PP
+.RE
+.PP
+\fBSemantics for Key Name Parts\fP
+.RS 4
+
+.IP "  \(bu" 4
+% denotes an empty key name part\&.
+.PP
+.RE
+.PP
+\fBCanonicalization for Key Names\fP
+.RS 4
+
+.IP "  \(bu" 4
+/ (slash) is the separator between key name parts\&.
+.IP "  \(bu" 4
+// is shortened to /
+.IP "  \(bu" 4
+trailing / (slashes) are removed
+.IP "  \(bu" 4
+\&. (dot) and \&.\&. (dot-dot) is removed in an canonical key name, with following rules:
+.IP "    \(bu" 6
+/\&./ is shortened to /
+.IP "    \(bu" 6
+_/\&.\&./ is shortened to _
+.PP
+
+.PP
+.RE
+.PP
+\fBConventions for key names\fP
+.RS 4
+
+.IP "  \(bu" 4
+Key name parts starting with # are array elements\&. Then only _ (underscore) followed by 0-9 is allowed\&. So we have the regular expression #[_]*[0-9]+ with the further limitation that the number of _ is defined by the number of digits-1\&.
+.IP "  \(bu" 4
+Key name parts starting with _ are reserved for special purposes (if you use this within a plugin you still have to make sure _ is escaped properly)
+.IP "  \(bu" 4
+Key name parts starting with @ are reserved for special purposes (if you use this within a plugin you still have to make sure @ is escaped properly)
+.PP
+.RE
+.PP
+\fBEscaping rules\fP
+.RS 4
+
+.IP "  \(bu" 4
+\\ (backslash) is the escape character for the situations as described here (and only these)\&. The \\ character must only be escaped, when one of the following rules apply\&.
+.IP "  \(bu" 4
+Stray escape characters are only possible in the end of the string\&.
+.IP "  \(bu" 4
+\\/ allows one to escape / (any uneven number of \\)\&. Does not introduce a new part\&.
+.IP "  \(bu" 4
+Any uneven number N of \\ before / allows you to escape / with the N/2 of \\ prefixed\&. Does not introduce a new part\&.
+.IP "  \(bu" 4
+\\\\/ allows one to use \\ as character before / and introduces a new part\&.
+.IP "  \(bu" 4
+Any even number N of \\ before / allows you to have N/2 of \\ prefixed before a / which introduces a new part\&.
+.IP "  \(bu" 4
+Use \\\&. and \\\&.\&. if you want your key name part to represent \&. and \&.\&.
+.IP "  \(bu" 4
+\\\\\&. and \\\\\&.\&. allows us to use \\ as character before \&. and \&.\&. (and so on)
+.IP "  \(bu" 4
+Use \\% if you want your key name part to start with % (and does not represent an empty name)
+.IP "  \(bu" 4
+Using \\\\% allows one to use \\ as character before % (and so on)
+.PP
+.RE
+.PP
+\fBSemantics for Key Name Specifications\fP
+.RS 4
+
+.IP "  \(bu" 4
+_ denotes that the key name part is arbitrary (syntax as described above)\&.
+.IP "  \(bu" 4
+# denotes that the key name part has array syntax\&.
+.IP "  \(bu" 4
+names surrounded by % (e\&.g\&. %profile%) denotes a placeholder\&. 
+.PP
+.RE
+.PP
+
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "void elektraKeyNameCanonicalize (const char * name, char ** canonicalName, size_t * canonicalSizePtr, size_t offset, size_t * usizePtr)"
+
+.PP
+Takes a valid (non-)canonical key name and produces its canonical form\&. As a side-effect it can also calculate the size of the corresponding unescaped key name\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIname\fP The key name that is processed 
+.br
+\fIcanonicalName\fP Output buffer for the canonical name 
+.br
+\fIcanonicalSizePtr\fP Pointer to size of \fCcanonicalName\fP 
+.br
+\fIoffset\fP Offset into \fCcanonicalName\fP 
+.br
+\fIusizePtr\fP Output variable for the size of the unescaped name
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCname\fP MUST be a valid (non-)canonical key name\&. If it is not, the result is undefined 
+.PP
+\fCcanonicalName\fP MUST be a valid first argument for \fBelektraRealloc()\fP when cast to void** 
+.PP
+\fCcanonicalSizePtr\fP >= \fCoffset\fP 
+.PP
+\fCoffset\fP MUST be 0 or \fC*canonicalName + offset\fP MUST point to the zero-termintor of a valid canonical key name that starts at \fC*canonicalName\fP 
+.PP
+if \fCoffset\fP is 0 then \fC*usizePtr\fP MUST 0, otherwise \fC*usizePtr\fP MUST be the correct unescaped size of the existing canonical name in \fC*canonicalName\fP
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBelektraKeyNameValidate\fP 
+.RE
+.PP
+
+.SS "size_t elektraKeyNameEscapePart (const char * part, char ** escapedPart)"
+
+.PP
+Takes a single key name part and produces its escaped form\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIpart\fP A single key name part, i\&.e\&. contained '/' will be escaped, '\\0' terminates part 
+.br
+\fIescapedPart\fP Output buffer for the escaped form
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCescapedPart\fP MUST be a valid first argument for \fBelektraRealloc()\fP when cast to \fCvoid**\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+The size of the escaped form excluding the zero terminator 
+.RE
+.PP
+
+.SS "void elektraKeyNameUnescape (const char * canonicalName, char * unescapedName)"
+
+.PP
+Takes a canonical key name and unescapes it\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIcanonicalName\fP The canonical name to unescape 
+.br
+\fIunescapedName\fP Output buffer for the unescaped name
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCcanonicalName\fP MUST be a canonical key name\&. If this is not the case, the result is undefined\&. 
+.PP
+\fCunescapedName\fP MUST be allocated to the correct size\&.
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBelektraKeyNameCanonicalize\fP 
+.RE
+.PP
+
+.SS "bool elektraKeyNameValidate (const char * name, bool isComplete)"
+
+.PP
+Takes an escaped key name and validates it\&. Complete key names must inlcude a namespace or a leading slash\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIname\fP The escaped key name to check 
+.br
+\fIisComplete\fP Whether or not \fCname\fP is supposed to be a complete key name
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI#true\fP If \fCname\fP is a valid key name\&. 
+.br
+\fI#false\fP Otherwise 
+.RE
+.PP
+
+.SS "ssize_t keyAddBaseName (Key * key, const char * baseName)"
+
+.PP
+Adds \fCbaseName\fP to the name of \fCkey\fP\&. \fCbaseName\fP will be escaped before adding it to the name of \fCkey\fP\&. No other part of the Key's name will be affected\&.
+.PP
+Assumes that \fCkey\fP is a directory and will append \fCbaseName\fP to it\&. The function adds the path separator for concatenating\&.
+.PP
+If \fCkey\fP has the name \fC'system:/dir1/dir2'\fP and this method is called with \fCbaseName\fP \fC'mykey'\fP, the resulting key will have the name \fC'system:/dir1/dir2/mykey'\fP\&.
+.PP
+When \fCbaseName\fP is 0, nothing will happen and the size of the name is returned\&.
+.PP
+The escaping rules apply as in \fBabove \fP\&.
+.PP
+A simple example is: 
+.PP
+.nf
+Key * k = keyNew ("user:/my/long", KEY_END);
+keyAddBaseName (k, "myname");
+printf ("%s\n", keyName (k)); // will print user:/my/long/myname
+keyDel (k);
+
+.fi
+.PP
+ E\&.g\&. if you add \&. it will be escaped: 
+.PP
+.nf
+        keySetName (k, "system:/valid");
+        succeed_if (keyAddBaseName (k, "\&.") >= 0, "could not add a base name");
+        succeed_if_same_string (keyName (k), "system:/valid/\\\&.");
+        succeed_if_same_string (keyBaseName (k), "\&.");
+
+.fi
+.PP
+ 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to add the basename to 
+.br
+\fIbaseName\fP the string to append to the Key's name
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the size in bytes of the Key's new name including the NULL terminator 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if the Key has no name 
+.br
+\fI-1\fP on NULL pointers 
+.br
+\fI-1\fP if Key was inserted into KeySet before 
+.br
+\fI-1\fP if the Key was read-only 
+.br
+\fI-1\fP on memory allocation errors
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeySetBaseName()\fP for setting the basename of a Key 
+.PP
+\fBkeySetName()\fP for setting the name of a \fBKey\fP 
+.RE
+.PP
+
+.SS "ssize_t keyAddName (Key * key, const char * newName)"
+
+.PP
+Add an already escaped name part to the Key's name\&. The same way as in \fBkeySetName()\fP this method finds the canonical pathname:
+.IP "\(bu" 2
+it will ignore /\&./
+.IP "\(bu" 2
+it will remove a level when /\&.\&./ is used
+.IP "\(bu" 2
+it will remove multiple slashes ////
+.PP
+.PP
+For example: 
+.PP
+.nf
+Key * k = keyNew ("user:/x/r", KEY_END);
+keyAddName (k, "\&.\&./y/a//\&./\&./z");
+assert (!strcmp (keyName (k), "user:/x/y/a/z"));
+keyDel (k);
+
+.fi
+.PP
+ Unlike \fBkeySetName()\fP it adds relative to the previous name and cannot change the namespace of a Key\&. For example: 
+.PP
+.nf
+Key * n = keyNew ("user:/away", KEY_END);
+keyAddName (n, "\&.\&./\&.\&./\&.\&./new/name");
+assert (!strcmp (keyName (n), "user:/new/name"));
+keyDel (n);
+
+.fi
+.PP
+ The passed name needs to be valid according the \fBkey name rules \fP\&. It is not allowed to:
+.IP "\(bu" 2
+be empty
+.IP "\(bu" 2
+end with unequal number of \\
+.PP
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCkey\fP MUST be a valid #Key
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key where a name should be added 
+.br
+\fInewName\fP the new name to add to the name of \fCkey\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+new size of the escaped name of \fCkey\fP 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if \fCkey == NULL\fP or \fCnewName == NULL\fP 
+.br
+\fI-1\fP \fCnewName\fP is not a valid escaped name 
+.br
+\fI-1\fP \fCkey\fP is read-only
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeySetName()\fP for setting a Key's name 
+.PP
+\fBkeyAddBaseName()\fP for adding a basename to a Key 
+.RE
+.PP
+
+.SS "const char* keyBaseName (const Key * key)"
+
+.PP
+Returns a pointer to the unescaped Key's name where the basename starts\&. This is a much more efficient version of \fBkeyGetBaseName()\fP and you should use it if you are responsible enough to not mess up things\&. The name might change or even point to a wrong place after a \fBkeySetName()\fP\&. So make sure to copy the memory before the name changes\&.
+.PP
+\fBkeyBaseName()\fP returns '' when the Key has no basename\&. The reason is 
+.PP
+.nf
+       keySetName (k, "");
+        succeed_if_same_string (keyBaseName (k), "");
+        keySetName (k, "user:/");
+        succeed_if_same_string (keyBaseName (k), "");
+
+.fi
+.PP
+ There is also support for really empty basenames: 
+.PP
+.nf
+        keySetName (k, "system:/valid");
+        succeed_if (keyAddBaseName (k, "") >= 0, "could not add a base name");
+        succeed_if_same_string (keyName (k), "system:/valid/%");
+        succeed_if_same_string (keyBaseName (k), "");
+
+.fi
+.PP
+ 
+.PP
+\fBNote\fP
+.RS 4
+You must never use the pointer returned by \fBkeyBaseName()\fP method to change the name\&. You should use \fBkeySetBaseName()\fP instead\&.
+.PP
+Do not assume that \fBkeyBaseName()\fP points to the same region as \fBkeyName()\fP does\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to obtain the basename from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to the Key's basename 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI''\fP when the Key has no (base)name 
+.br
+\fI0\fP on NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetBaseName()\fP for getting a copy of the Key's basename 
+.PP
+\fBkeyGetBaseNameSize()\fP for getting the size of the Key's basename 
+.PP
+\fBkeyName()\fP for getting a pointer to the Key's name 
+.RE
+.PP
+
+.SS "ssize_t keyGetBaseName (const Key * key, char * returned, size_t maxSize)"
+
+.PP
+Copy the Key's basename to \fCreturned\fP\&. The copy will include a NULL terminator which will be considered for the returned size\&. Nothing will be copied if \fCmaxSize\fP is smaller than the size of the basename\&.
+.PP
+Some examples:
+.IP "\(bu" 2
+basename of \fCsystem:/some/keyname\fP is \fCkeyname\fP 
+.IP "\(bu" 2
+basename of \fC'user:/tmp/some key'\fP is \fC'some key'\fP 
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to extract basename from 
+.br
+\fIreturned\fP a pre-allocated buffer for storing the basename 
+.br
+\fImaxSize\fP size of the buffer \fCreturned\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+number of bytes copied to \fCreturned\fP 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP when Key's name is empty 
+.br
+\fI-1\fP on NULL pointers 
+.br
+\fI-1\fP when maxSize is 0 or larger than SSIZE_MAX 
+.br
+\fI-1\fP when maxSize is smaller than the size of the Key's basename
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyBaseName()\fP for getting a pointer to the Key's basename 
+.PP
+\fBkeyGetBaseNameSize()\fP for getting the size of a Key's basename 
+.PP
+\fBkeyName()\fP, \fBkeyGetName()\fP for getting a pointer / copy of the whole name 
+.PP
+\fBkeySetName()\fP for setting a Key's name 
+.RE
+.PP
+
+.SS "ssize_t keyGetBaseNameSize (const Key * key)"
+
+.PP
+Calculates number of bytes needed to store basename of \fCkey\fP (including NULL terminator)\&. Key names consisting of only root names (e\&.g\&. \fC'system:/'\fP or \fC'user:/'\fP or \fC'user:domain'\fP ) do not have basenames\&. In this case the function will return 1, because only a NULL terminator is needed for storage\&.
+.PP
+Basenames are denoted as:
+.IP "\(bu" 2
+\fCsystem:/some/thing/basename\fP -> \fCbasename\fP 
+.IP "\(bu" 2
+\fCuser:domain/some/thing/base\\/name\fP > \fCbase\\/name\fP 
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to get the size of the basename from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+size in bytes of the Key's basename including NULL terminator 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if the Key's basename is NULL
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyBaseName()\fP for getting a pointer to a Key's basename 
+.PP
+\fBkeyGetBaseName()\fP for getting a copy of a Key's basename 
+.PP
+\fBkeyName()\fP, \fBkeyGetName()\fP for getting a pointer / copy of the whole name 
+.PP
+\fBkeySetName()\fP for setting a Key's name 
+.RE
+.PP
+
+.SS "ssize_t keyGetName (const Key * key, char * returnedName, size_t maxSize)"
+
+.PP
+Get abbreviated Key name (excluding owner)\&. When there is not enough space to write the name, nothing will be written and -1 will be returned\&.
+.PP
+\fCmaxSize\fP is limited to SSIZE_MAX\&. When this value is exceeded, -1 will be returned\&. The reason for that is, that any value higher is just a negative return value passed by accident\&. \fBelektraMalloc()\fP is not as failure tolerant and would try to allocate memory accordingly\&.
+.PP
+.PP
+.nf
+char *getBack = elektraMalloc (keyGetNameSize(key));
+keyGetName(key, getBack, keyGetNameSize(key));
+.fi
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to get the name from 
+.br
+\fIreturnedName\fP pre-allocated buffer to write the Key's name 
+.br
+\fImaxSize\fP maximum number of bytes that will fit in returnedName, including the NULL terminator
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+number of bytes written to \fCreturnedName\fP 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP when only NULL terminator was written 
+.br
+\fI-1\fP when Key's name is longer than maxSize or maxSize is 0 or maxSize is greater than SSIZE_MAX 
+.br
+\fI-1\fP \fCkey\fP or \fCreturnedName\fP is NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetNameSize()\fP for getting the size of a Key's name 
+.PP
+\fBkeyName()\fP for getting a pointer to a Key's name 
+.PP
+\fBkeyGetBaseName()\fP for getting a Key's base name 
+.PP
+\fBkeyGetNamespace()\fP for getting the namespace of a Key's name 
+.RE
+.PP
+
+.SS "ssize_t keyGetNameSize (const Key * key)"
+
+.PP
+Bytes needed to store the Key's name (excluding owner)\&. For an empty Key name you need one byte to store the ending NULL\&. For that reason, 1 is returned when the name is empty\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to get the name size from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+number of bytes needed, including NULL terminator, to store Key's name (excluding owner) 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if Key has no name 
+.br
+\fI-1\fP on NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetName()\fP for getting the Key's name 
+.PP
+\fBkeyGetUnescapedNameSize()\fP for getting the size of the unescaped name 
+.RE
+.PP
+
+.SS "\fBelektraNamespace\fP keyGetNamespace (const Key * key)"
+
+.PP
+Returns the \fBelektraNamespace\fP for a Key\&. To handle every namespace a Key could have, you can use the following snippet: 
+.PP
+.nf
+switch (keyGetNamespace (k))
+{
+case KEY_NS_SPEC:
+        printf ("spec namespace\n");
+        break;
+case KEY_NS_PROC:
+        printf ("proc namespace\n");
+        break;
+case KEY_NS_DIR:
+        printf ("dir namespace\n");
+        break;
+case KEY_NS_USER:
+        printf ("user namespace\n");
+        break;
+case KEY_NS_SYSTEM:
+        printf ("system namespace\n");
+        break;
+case KEY_NS_NONE:
+        printf ("no key\n");
+        break;
+case KEY_NS_META:
+        printf ("metakey\n");
+        break;
+case KEY_NS_CASCADING:
+        printf ("cascading key\n");
+        break;
+}
+
+.fi
+.PP
+ To loop over all valid namespaces use: 
+.PP
+.nf
+for (elektraNamespace ns = KEY_NS_FIRST; ns <= KEY_NS_LAST; ++ns)
+{
+        // work with namespace
+        printf ("%d\n", ns);
+}
+
+.fi
+.PP
+ 
+.PP
+\fBNote\fP
+.RS 4
+This method might be extended\&. There is no guarantee that a Key with a specific namespace will retain that namespace after recompilation\&. Make sure that your compiler gives you a warning for unhandled switches (gcc: -Wswitch or -Wswitch-enum if you want to handle default) and look out for those warnings when recompiling\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to get the namespace from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the namespace of the Key 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIKEY_NS_NONE\fP if Key is NULL
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeySetNamespace()\fP for setting a Key's namespace 
+.RE
+.PP
+
+.SS "ssize_t keyGetUnescapedName (const Key * key, char * returnedName, size_t maxSize)"
+
+.PP
+Copies the unescaped name of a Key into \fCreturnedName\fP\&. It will only copy the whole name\&. If the buffer is too small, an error code will be returned\&.
+.PP
+To ensure the buffer is big enough, you can use \fBkeyGetUnescapedNameSize()\fP to get the correct size\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to extract the unescaped name from 
+.br
+\fIreturnedName\fP the buffer to write the unescaped name into 
+.br
+\fImaxSize\fP maximum number of bytes that can be copied into \fCreturnedName\fP 
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCkey\fP MUST be a valid #Key and \fCkey != NULL\fP 
+.PP
+\fCreturnedName\fP MUST be allocated to be at least \fCmaxSize\fP bytes big 
+.PP
+\fCreturnedName\fP must not be NULL
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the actual size of the Key's unescaped name, i\&.e\&. the number of bytes copied into \fCreturnedName\fP 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP Precondition error 
+.br
+\fI-2\fP the size of the unescaped name is greater than \fCmaxSize\fP 
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetUnescapedNameSize()\fP for getting the size of the unescaped name 
+.PP
+\fBkeyGetName()\fP for getting the Key's escaped name 
+.RE
+.PP
+
+.SS "ssize_t keyGetUnescapedNameSize (const Key * key)"
+
+.PP
+Returns the size of the Key's unescaped name including embedded and terminating NULL characters\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key where to get the size of the unescaped name from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+The size of the Key's unescaped name 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on NULL pointer 
+.br
+\fI0\fP if Key has no name
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyUnescapedName()\fP for getting a pointer to the unescaped name 
+.PP
+\fBkeyGetUnescapedName()\fP for getting a copy of the unescaped name 
+.PP
+\fBkeyGetNameSize()\fP for getting the size of the escaped name 
+.RE
+.PP
+
+.SS "const char* keyName (const Key * key)"
+
+.PP
+Returns a pointer to the abbreviated real internal \fCkey\fP name\&. This is a much more efficient version of \fBkeyGetName()\fP and can use it if you are responsible enough to not mess up things\&. You are not allowed to change anything in the returned array\&. The content of that string may change after \fBkeySetName()\fP and similar functions\&. If you need a copy of the name, consider using \fBkeyGetName()\fP\&.
+.PP
+\fBReturn values\fP
+.RS 4
+\fI''\fP when there is no keyName\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetName(key,"");
+keyName(key); // you would expect "" here
+keyDel(key);
+
+.fi
+.PP
+.RE
+.PP
+Valid key names are:
+.PP
+.IP "\(bu" 2
+\fCspec:/something\fP for specification of other keys\&.
+.IP "\(bu" 2
+\fCproc:/something\fP for in-memory keys, e\&.g\&. commandline\&.
+.IP "\(bu" 2
+\fCdir:/something\fP for dir keys in current working directory
+.IP "\(bu" 2
+\fCsystem:/something\fP for system keys in /etc or /
+.IP "\(bu" 2
+\fCuser:/something\fP for user keys in home directory
+.IP "\(bu" 2
+\fCuser:username/something\fP for other users (deprecated: \fBkdbGet()\fP + \fBkdbSet()\fP currently unsupported)
+.IP "\(bu" 2
+\fC/something\fP for cascading keys (actually refers to one of the above, see also \fBksLookup()\fP)
+.PP
+\fBNote\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyName()\fP method to set a new value\&. Use \fBkeySetName()\fP instead\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key you want to get the name from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to the Key's name which must not be changed\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI''\fP when Key's name is empty 
+.br
+\fI0\fP on NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetNameSize()\fP for the string length 
+.PP
+\fBkeyGetName()\fP as alternative to get a copy 
+.PP
+\fBkeyUnescapedName\fP to get an unescaped \fBKey\fP name 
+.RE
+.PP
+
+.PP
+
+.SS "int keyReplacePrefix (Key * key, const Key * oldPrefix, const Key * newPrefix)"
+
+.PP
+Replaces a prefix of the key name of \fCkey\fP\&. The function only modifies \fCkey\fP, if is is below (or same as) \fColdPrefix\fP (see \fBkeyIsBelowOrSame()\fP) and they both have the same namespace (this is not always the case with \fBkeyIsBelowOrSame()\fP)\&.
+.PP
+In simple terms this function operates as follows:
+.IP "1." 4
+If before calling this function \fCkey\fP and \fColdPrefix\fP had the same name, then afterwards \fCkey\fP will have the same name as \fCnewPrefix\fP\&.
+.IP "2." 4
+If \fCkey\fP was in the same namespace as and below \fColdPrefix\fP, then after calling this function \fCkey\fP will be in the same namespace as and below \fCnewPrefix\fP\&.
+.IP "3." 4
+Otherwise \fCkey\fP will not be modified\&.
+.PP
+.PP
+Note: We use \fCconst Key *\fP arguments for the prefixes instead of \fCconst char *\fP to ensure only valid key names can be passed as arguments\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP The key that will be manipulated\&. 
+.br
+\fIoldPrefix\fP The name of this key will be removed from the front of the name of \fCkey\fP\&. 
+.br
+\fInewPrefix\fP The name of this key will be added to the front of \fCkey\fP, after the name of \fColdPrefix\fP is removed\&.
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if \fCkey\fP, \fColdPrefix\fP or \fCnewPrefix\fP are NULL or the name of \fCkey\fP is marked as read-only 
+.br
+\fI0\fP if \fCkey\fP is not below (or same as) \fColdPrefix\fP, i\&.e\&. there is no prefix to replace 
+.br
+\fI1\fP if the prefix was sucessfully replaced 
+.RE
+.PP
+
+.SS "ssize_t keySetBaseName (Key * key, const char * baseName)"
+
+.PP
+Sets \fCbaseName\fP as the new basename for \fCkey\fP\&. Only the basename of the Key will be affected\&.
+.PP
+A simple example is: 
+.PP
+.nf
+Key * k = keyNew ("user:/my/long/name", KEY_END);
+keySetBaseName (k, "myname");
+printf ("%s\n", keyName (k)); // will print user:/my/long/myname
+keyDel (k);
+
+.fi
+.PP
+ All text after the last \fC'/'\fP in the Key's name is erased and \fCbaseName\fP is appended\&. If \fCbaseName\fP is 0 (NULL), then the last part of the Key's name is removed without replacement\&. The root name of the Key will not be removed though\&.
+.PP
+Let us suppose \fCkey\fP has name \fC'system:/dir1/dir2/key1'\fP\&. If \fCbaseName\fP is \fC'key2'\fP, the resulting key name will be \fC'system:/dir1/dir2/key2'\fP\&. If \fCbaseName\fP is 0 (NULL), the resulting key name will be \fC'system:/dir1/dir2'\fP\&. If \fCbaseName\fP is empty, the resulting key name will be \fC'system:/dir1/dir2/%'\fP, where \fC'%'\fP denotes an empty base name, as also shown in the following code:
+.PP
+.PP
+.nf
+        keySetName (k, "system:/valid");
+        keySetBaseName (k, "");
+        succeed_if_same_string (keyName (k), "system:/%");
+        succeed_if_same_string (keyBaseName (k), "");
+.fi
+.PP
+ \fBkeySetBaseName()\fP does proper escaping on the supplied name argument\&.
+.PP
+You can use character sequences as \fCbaseName\fP (e\&.g\&. \fC'\&.'\fP (dot), \fC'\&.\&.'\fP (dot-dot), \fC'%'\fP (empty basename))\&. They will be properly escaped and will not have their usual meaning\&.
+.PP
+If you want to add to the basename instead of changing it, use \fBkeyAddBaseName()\fP\&. If you do not want any escaping, use \fBkeyAddName()\fP\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key whose basename to set 
+.br
+\fIbaseName\fP the new basename for the Key
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the size in bytes of the new key name 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on NULL pointers 
+.br
+\fI-1\fP if Key was inserted into KeySet before 
+.br
+\fI-1\fP if Key is read-only 
+.br
+\fI-1\fP on allocation errors
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyAddBaseName()\fP for adding a basename instead of changing it 
+.PP
+\fBkeyAddName()\fP for adding a name without escaping 
+.PP
+\fBkeySetName()\fP for setting a completely new name 
+.PP
+\fBName Manipulation Methods\fP for more details on special names 
+.RE
+.PP
+
+.SS "ssize_t keySetName (Key * key, const char * newName)"
+
+.PP
+Set a new name to a Key\&. A valid name is one of the forms:
+.IP "\(bu" 2
+\fCspec:/something\fP for specification of other keys\&.
+.IP "\(bu" 2
+\fCproc:/something\fP for in-memory keys, e\&.g\&. commandline\&.
+.IP "\(bu" 2
+\fCdir:/something\fP for dir keys in current working directory
+.IP "\(bu" 2
+\fCsystem:/something\fP for system keys in /etc or /
+.IP "\(bu" 2
+\fCuser:/something\fP for user keys in home directory
+.IP "\(bu" 2
+\fCuser:username/something\fP for other users (deprecated: \fBkdbGet()\fP + \fBkdbSet()\fP currently unsupported)
+.IP "\(bu" 2
+\fC/something\fP for cascading keys (actually refers to one of the above, see also \fBksLookup()\fP)
+.PP
+.PP
+An invalid name either has an invalid namespace or a wrongly escaped \\ at the end of the name\&.
+.PP
+See \fBkey names \fP for the exact rules\&.
+.PP
+The last form has explicitly set the owner, to let the library know in which user folder to save the Key\&. A owner is a user name\&. If it is not defined (the second form), current user is used\&.
+.PP
+You should always follow the guidelines for Key tree structure creation\&.
+.PP
+A private copy of the Key name will be stored, and the \fCnewName\fP parameter can be freed after this call\&.
+.PP
+\&.\&., \&. and / will be handled as in filesystem paths\&. A valid name will be build out of the (valid) name what you pass, e\&.g\&. user:///sw/\&.\&./sw//\&./\&./MyApp -> user:/sw/MyApp
+.PP
+On invalid names, NULL or '' the name will be '' afterwards\&.
+.PP
+\fBReturns\fP
+.RS 4
+size of the new Key name in bytes, including NULL terminator 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if \fCkey\fP or \fCkeyName\fP is NULL or \fCkeyName\fP is empty or invalid 
+.br
+\fI-1\fP if Key was inserted to a KeySet before 
+.br
+\fI-1\fP if Key name is read-only
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key whose name to set 
+.br
+\fInewName\fP the new name for the Key
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetName()\fP for getting a copy of the Key's name 
+.PP
+\fBkeyName()\fP for getting a pointer to the Key's name 
+.PP
+\fBkeySetBaseName()\fP, \fBkeyAddBaseName()\fP for manipulating the base name 
+.RE
+.PP
+
+.SS "ssize_t keySetNamespace (Key * key, \fBelektraNamespace\fP ns)"
+
+.PP
+Changes the namespace of a Key\&. The rest of the Key's name remains unchanged\&.
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCns\fP MUST be a valid namespace and not \fBKEY_NS_NONE\fP 
+.PP
+\fCkey\fP MUST be a valid #Key, especially \fCkey != NULL\fP
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP The #Key whose namespace will be changed 
+.br
+\fIns\fP The new namespace of for \fCkey\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the new size in bytes of the Key's namespace 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP precondition error
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetNamespace()\fP for getting a Key's namespace 
+.RE
+.PP
+
+.SS "const void* keyUnescapedName (const Key * key)"
+
+.PP
+Returns a Key's name, separated by NULL bytes and without backslashes for escaping\&. Slashes are replaced with NULL bytes\&. Therefore unescaped names of cascading Keys start with a NULL byte\&. Otherwise escaped characters, e\&.g\&. non-hierarchy slashes, will be unescaped\&.
+.PP
+This name is essential if you want to iterate over parts of the Key's name, compare Key names or check relations of Keys in the hierarchy\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key whose unescaped name to get
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the name in its unescaped form 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on NULL pointers 
+.br
+\fI''\fP if Key's name is empty
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetUnescapedName()\fP for getting a copy of the unescaped name 
+.PP
+\fBkeyGetUnescapedNameSize()\fP for getting the size of the unescaped name 
+.PP
+\fBkeyName()\fP for getting the escaped name of the Key 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

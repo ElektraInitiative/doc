@@ -1,0 +1,152 @@
+.TH "md_src_plugins_dump_README" 3elektra "Mon Jun 7 2021" "Version 0.9.6" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_dump_README \- Plugin: dump 
+
+.IP "\(bu" 2
+infos = Information about the dump plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org, Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/dump
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = productive maintained conformant unittest tested nodep -1000
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = Dumps into a format tailored for complete KeySet semantics
+.PP
+.SH "Introduction"
+.PP
+This plugin is a storage plugin that supports full Elektra semantics\&. Combined with a resolver plugin it already assembles a fully featured backend\&. No other plugins are needed\&.
+.SH "Format"
+.PP
+The file starts with the magic word \fCkdbOpen\fP followed by a version number (currently \fC2\fP) and a newline\&. The plugin can read files of version \fC1\fP and \fC2\fP, but it only writes version \fC2\fP\&.
+.PP
+After this first line, the format consists of a series of commands\&. The supported commands are \fC$key\fP, \fC$meta\fP and \fC$copymeta\fP\&. We use the \fC$\fP prefix to make the commands standout more\&. However, \fC$\fP does not always mean command\&. Keynames and values could also start with \fC$\fP, but since the plugin always knows whether a command or something else comes next, we do not need any kind of escaping\&.
+.PP
+The \fC$key\fP command creates a new key\&. It takes 5 arguments\&. The first 3 are on the same line separated by a space\&. The other two are on separate lines:
+.PP
+.PP
+.nf
+$key <type> <nsize> <vsize>
+<name>
+<value>
+.fi
+.PP
+.PP
+\fC<type>\fP is either \fCstring\fP or \fCbinary\fP and indicates what kind of value the key contains\&. \fC<nsize>\fP and \fC<vsize>\fP are the name size and value size respectively\&. For the name and for string values, the size does not include the null-terminator present in C strings\&. For binary keys all bytes (including any null-terminators) are counted\&. \fC<name>\fP and \fC<value>\fP are the keyname and key value\&. Because we know their length, they can contain arbitrary characters\&. Even newlines are allowed\&. The newlines between \fC<name>\fP and \fC<value>\fP, and after \fC<value>\fP are just to make the file more readable\&. They must be present, but they do not determine where \fC<name>\fP or \fC<value>\fP end\&.
+.PP
+The \fC$meta\fP command adds a new metakey to the last key\&. It is very similar to the \fC$key\fP command, but it only takes 4 arguments\&. There is no type argument, because metakeys always have string values\&.
+.PP
+.PP
+.nf
+$meta <nsize> <vsize>
+<name>
+<value>
+.fi
+.PP
+.PP
+The arguments work just like they do for \fC$key\fP\&.
+.PP
+Finally, there is \fC$copymeta\fP\&. It is needed, because a \fCkeyCopyMeta\fP call results in two keys with the same metakey (equal pointers)\&. To achieve this, we indicate which metakey should be copied from which key\&. The \fC$copymeta\fP command also takes 4 arguments:
+.PP
+.PP
+.nf
+$copymeta <knsize> <mnsize>
+<keyname>
+<metaname>
+.fi
+.PP
+.PP
+\fC<keyname>\fP is the name of the key from which the metadata is copied and \fC<knsize>\fP is its size (without the null-terminator)\&. Similarly, \fC<metaname>\fP is the name of the metakey that is copied and \fC<mnsize>\fP is its size (without the null-terminator)\&.
+.PP
+There is also \fC$end\fP\&. It is used to signal the end of the data to the plugin\&. The \fC$end\fP command is completely optional\&. Without it, the plugin will just read the file until the end\&. However, in streaming use \fC$end\fP is needed, because there is no end of the 'file'\&.
+.SS "Format Examples"
+The following is an example \fCdump\fP file that was mounted at \fCsystem:/elektra/mountpoints\fP:
+.PP
+.PP
+.nf
+kdbOpen 2
+$key binary 0 0
+
+
+$meta 6 0
+binary
+
+$meta 7 27
+comment
+Below are the mount points\&.
+$key string 4 18
+dbus
+serialized Backend
+$key string 11 0
+dbus/config
+
+$meta 7 71
+comment
+This is a configuration for a backend,
+see subkeys for more information
+$key string 12 0
+fstab/config
+
+$copymeta 11 7
+dbus/config
+comment
+$end
+.fi
+.PP
+.PP
+A few things you might have noticed:
+.PP
+.IP "\(bu" 2
+The first key has an empty name, because it is the root key of this mountpoint\&.
+.IP "\(bu" 2
+The value size of \fC0\fP for the first key makes it a \fCNULL\fP key, but only because it is \fCbinary\fP\&. The third key (\fC$key string 11 0\fP) also has value size 0, but is a \fCstring\fP key\&. This means its value is an empty string \fC''\fP\&.
+.IP "\(bu" 2
+The empty lines after \fC$key binary 0 -1\fP and \fCdbus/config\fP are because the respective names/values are empty\&.
+.IP "\(bu" 2
+The comment above \fC$key string 25 0\fP shows that newlines in key values are completely fine, because we know what size the value has to be\&.
+.PP
+.SH "Limitations"
+.PP
+(status -1000)
+.PP
+.IP "\(bu" 2
+It is quite slow
+.PP
+.SH "Examples"
+.PP
+Export a KeySet using \fCdump\fP:
+.PP
+.PP
+.nf
+kdb export system:/example dump > example\&.ecf
+.fi
+.PP
+.PP
+Import a KeySet using \fCdump\fP:
+.PP
+.PP
+.nf
+cat example\&.ecf | kdb import system:/example dump
+.fi
+.PP
+.PP
+Using grep/diff or other Unix tools on the dump file\&. Make sure that you treat it as text file, e\&.g\&.:
+.PP
+.PP
+.nf
+grep --text 'mount points' example\&.ecf
+.fi
+.PP
+ 

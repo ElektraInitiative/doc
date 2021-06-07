@@ -1,0 +1,43 @@
+\label{doc_decisions_holes_md_md_doc_decisions_holes}%
+\Hypertarget{doc_decisions_holes_md_md_doc_decisions_holes}%
+ A hole is the absence of a key, which has keys below it, e.\+g. if {\ttfamily some/key} is missing in a property file\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{some = value}
+\DoxyCodeLine{some/key/below = value}
+
+\end{DoxyCode}
+
+
+{\ttfamily some} has a non-\/leaf value. Another example of a non-\/leaf value in XML ({\ttfamily abc})\+: {\ttfamily $<$abc$>$value$<$def$>$value2$<$/def$>$$<$/abc$>$} interpreted by xerces plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{abc/def = value2}
+\DoxyCodeLine{abc = value}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_holes_md_autotoc_md1877}{}\doxysection{Problem}\label{doc_decisions_holes_md_autotoc_md1877}
+Config files ideally do not copy any structure if they only want to set a single key.\hypertarget{doc_decisions_holes_md_autotoc_md1878}{}\doxysection{Constraints}\label{doc_decisions_holes_md_autotoc_md1878}
+
+\begin{DoxyItemize}
+\item strongly hierarchically structured data must still be supported
+\end{DoxyItemize}\hypertarget{doc_decisions_holes_md_autotoc_md1879}{}\doxysection{Assumptions}\label{doc_decisions_holes_md_autotoc_md1879}
+\hypertarget{doc_decisions_holes_md_autotoc_md1880}{}\doxysection{Considered Alternatives}\label{doc_decisions_holes_md_autotoc_md1880}
+
+\begin{DoxyItemize}
+\item data structure must always be complete
+\item prohibit non-\/leaves values
+\end{DoxyItemize}\hypertarget{doc_decisions_holes_md_autotoc_md1881}{}\doxysection{Decision}\label{doc_decisions_holes_md_autotoc_md1881}
+Support holes and values for non-\/leaves in a Key\+Set if the underlying format allows it.
+
+If the underlying format does not support it and there is also not an obvious way how to circumvent it -- e.\+g., JSON which does not have comments -- holes and values in non-\/leaves can be supported with key names starting with ®elektra.\hypertarget{doc_decisions_holes_md_autotoc_md1882}{}\doxysection{Rationale}\label{doc_decisions_holes_md_autotoc_md1882}
+
+\begin{DoxyItemize}
+\item It fits very good to the idea of key-\/value.
+\item Some formats support it (e.\+g. XML supports non-\/leaves values; property-\/files support holes).
+\item It can be useful for migration purposes, e.\+g. there is {\ttfamily /some/key}, and later {\ttfamily /some/key/enable} gets added. Then it is beneficial if {\ttfamily /some/key} still can hold a value.
+\end{DoxyItemize}\hypertarget{doc_decisions_holes_md_autotoc_md1883}{}\doxysection{Implications}\label{doc_decisions_holes_md_autotoc_md1883}
+\hypertarget{doc_decisions_holes_md_autotoc_md1884}{}\doxysection{Related Decisions}\label{doc_decisions_holes_md_autotoc_md1884}
+\hypertarget{doc_decisions_holes_md_autotoc_md1885}{}\doxysection{Notes}\label{doc_decisions_holes_md_autotoc_md1885}

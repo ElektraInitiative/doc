@@ -1,0 +1,45 @@
+\label{doc_decisions_internal_cache_md_md_doc_decisions_internal_cache}%
+\Hypertarget{doc_decisions_internal_cache_md_md_doc_decisions_internal_cache}%
+ \hypertarget{doc_decisions_internal_cache_md_autotoc_md1895}{}\doxysection{Problem}\label{doc_decisions_internal_cache_md_autotoc_md1895}
+When doing \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} possible more keys are returned which might be confusing. When doing a second \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} with a new keyset no keys might be returned, because it is up-\/to-\/date.
+
+When doing \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} a deep duplication is needed.
+
+Idea\+: keep a duplicated keyset internally. Return (non-\/deep?) duplications exactly of the parts as requested.\hypertarget{doc_decisions_internal_cache_md_autotoc_md1896}{}\doxysection{Constraints}\label{doc_decisions_internal_cache_md_autotoc_md1896}
+\hypertarget{doc_decisions_internal_cache_md_autotoc_md1897}{}\doxysection{Assumptions}\label{doc_decisions_internal_cache_md_autotoc_md1897}
+\hypertarget{doc_decisions_internal_cache_md_autotoc_md1898}{}\doxysection{Considered Alternatives}\label{doc_decisions_internal_cache_md_autotoc_md1898}
+
+\begin{DoxyItemize}
+\item no cache (current situation)
+\item flat cache with COW
+\item deep duplicated cache
+\item Use global plugin to implement internal cache.
+\item Use global mmap plugin and make \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} to always retrieve everything.
+\end{DoxyItemize}\hypertarget{doc_decisions_internal_cache_md_autotoc_md1899}{}\doxysection{Decision}\label{doc_decisions_internal_cache_md_autotoc_md1899}
+Not yet decided.\hypertarget{doc_decisions_internal_cache_md_autotoc_md1900}{}\doxysection{Rationale}\label{doc_decisions_internal_cache_md_autotoc_md1900}
+Semantics can be provided without additional code or overhead in the core.\hypertarget{doc_decisions_internal_cache_md_autotoc_md1901}{}\doxysection{Implications}\label{doc_decisions_internal_cache_md_autotoc_md1901}
+\hypertarget{doc_decisions_internal_cache_md_autotoc_md1902}{}\doxysection{Related Decisions}\label{doc_decisions_internal_cache_md_autotoc_md1902}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_global_validation_md}{Global Validation}}
+\end{DoxyItemize}\hypertarget{doc_decisions_internal_cache_md_autotoc_md1903}{}\doxysection{Notes}\label{doc_decisions_internal_cache_md_autotoc_md1903}
+internal caches lead to duplication of memory consumption (most of it is avoided by reference counting, though)
+
+in some cases caches cannot be avoided? -\/$>$ filesys, databases?\hypertarget{doc_decisions_internal_cache_md_autotoc_md1904}{}\doxysubsection{Cache Discussion}\label{doc_decisions_internal_cache_md_autotoc_md1904}
+{\bfseries{Pros\+:}}
+
+
+\begin{DoxyItemize}
+\item not more keys than needed
+\item kdb\+Get avoids IO even if done somewhere else
+\item KDB handles could be more locally
+\end{DoxyItemize}
+
+{\bfseries{Cons\+:}}
+
+
+\begin{DoxyItemize}
+\item not possible to access cache with current architecture, KDB high level API
+\item implementation overhead
+\item where should the caches be 
+\end{DoxyItemize}

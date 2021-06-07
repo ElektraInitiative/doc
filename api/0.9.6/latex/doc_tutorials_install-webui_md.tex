@@ -1,0 +1,291 @@
+\label{doc_tutorials_install-webui_md_md_doc_tutorials_install_webui}%
+\Hypertarget{doc_tutorials_install-webui_md_md_doc_tutorials_install_webui}%
+ {\itshape an API and web user interface to remotely manage Elektra instances}
+
+The configuration view of elektra-\/web is similar to the tree view of the \href{https://master.libelektra.org/src/tools/qt-gui}{\texttt{ qt-\/gui}}, but with dynamic fields rendered via key metadata.\hypertarget{doc_tutorials_install-webui_md_autotoc_md3528}{}\doxysection{Dependencies}\label{doc_tutorials_install-webui_md_autotoc_md3528}
+Elektra-\/web requires\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://libelektra.org/}{\texttt{ Elektra}} with the \href{https://master.libelektra.org/src/plugins/yajl/}{\texttt{ {\ttfamily yajl} plugin}} installed
+\item A recent \href{https://nodejs.org/en/}{\texttt{ node.\+js}} installation (at least 6.\+x)
+\item \href{https://golang.org/}{\texttt{ Go}} with version $>$ 1.\+13
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3529}{}\doxysection{Building with elektra-\/web Tool}\label{doc_tutorials_install-webui_md_autotoc_md3529}
+To build Elektra with the elektra-\/web tool\+:
+
+
+\begin{DoxyItemize}
+\item Install Node.\+js, Go and dependencies for {\ttfamily yajl} plugin (see links above)
+\item Configure libelektra build with the elektra-\/web tool, e.\+g. {\ttfamily cmake .. -\/DTOOLS=\char`\"{}kdb;web\char`\"{}}
+\item Build libelektra\+: {\ttfamily make}
+\item Install libelektra\+: {\ttfamily sudo make install}
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3530}{}\doxysection{Getting Started}\label{doc_tutorials_install-webui_md_autotoc_md3530}
+
+\begin{DoxyItemize}
+\item Start an elektrad instance\+: {\ttfamily kdb run-\/elektrad}
+\item Start the client\+: {\ttfamily kdb run-\/web}
+\item You can now access the client on\+: \href{http://localhost:33334}{\texttt{ http\+://localhost\+:33334}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3531}{}\doxysection{Getting Started (docker)}\label{doc_tutorials_install-webui_md_autotoc_md3531}
+
+\begin{DoxyItemize}
+\item Create and run a new docker container\+: {\ttfamily docker run -\/d -\/it -\/p 33333\+:33333 -\/p 33334\+:33334 elektra/web}
+\item You can now access the client on\+: \href{http://localhost:33334}{\texttt{ http\+://localhost\+:33334}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3532}{}\doxysection{Running from source}\label{doc_tutorials_install-webui_md_autotoc_md3532}
+
+\begin{DoxyItemize}
+\item Install dependencies (see above)
+\item Clone libelektra repo and {\ttfamily cd libelektra/src/tools/web}
+\item Install and start an elektrad instance\+:
+\begin{DoxyItemize}
+\item {\ttfamily cd elektrad}
+\item {\ttfamily go build}
+\item {\ttfamily ./elektrad} (replaces {\ttfamily kdb run-\/elektrad})
+\end{DoxyItemize}
+\item Install and start the client (connects to the elektrad instance)\+:
+\begin{DoxyItemize}
+\item {\ttfamily cd client}
+\item {\ttfamily npm install}
+\item {\ttfamily npm start} (replaces {\ttfamily kdb run-\/web})
+\end{DoxyItemize}
+\item You can now access the client on\+: \href{http://localhost:33334}{\texttt{ http\+://localhost\+:33334}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3533}{}\doxysection{Use-\/cases}\label{doc_tutorials_install-webui_md_autotoc_md3533}
+\hypertarget{doc_tutorials_install-webui_md_autotoc_md3534}{}\doxysubsection{Running elektra-\/web on a Single Instance}\label{doc_tutorials_install-webui_md_autotoc_md3534}
+If you do not want to configure multiple instances, you can set the {\ttfamily INSTANCE} environment variable to the server you want to configure. You can also set {\ttfamily user\+:/sw/elektra/web/\#0/current/instance} to the host. Make sure to enter a full HTTP URL, e.\+g. {\ttfamily \href{http://localhost:33333}{\texttt{ http\+://localhost\+:33333}}}.
+
+If this configuration option is set, elektra-\/web will load the configuration page for that instance instead of the main overview page.
+
+If you want to host elektra-\/web with the client and elektrad on the same instance, after starting elektrad via {\ttfamily kdb run-\/elektrad}, you can run start the client as follows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{INSTANCE="{}http://localhost:33333"{} kdb run-\/web}
+
+\end{DoxyCode}
+
+
+It is also possible to set visibility by prefixing the host with {\ttfamily VISIBILITY@}.
+
+For example ({\ttfamily advanced} visibility, {\ttfamily user} is default)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{INSTANCE="{}advanced@http://localhost:33333"{} kdb run-\/web}
+
+\end{DoxyCode}
+
+
+Now, when you open \href{http://localhost:33334}{\texttt{ http\+://localhost\+:33334}} in your browser, the configuration page for the instance will be opened immediately.\hypertarget{doc_tutorials_install-webui_md_autotoc_md3535}{}\doxysubsection{Using a Different $<$tt$>$kdb$<$/tt$>$ Executable}\label{doc_tutorials_install-webui_md_autotoc_md3535}
+It is possible to change the {\ttfamily kdb} executable that elektra-\/web uses by setting the {\ttfamily KDB} environment variable, this is not needed for {\ttfamily elektrad}.
+
+For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb run-\/elektrad}
+\DoxyCodeLine{KDB="{}/usr/local/custom/bin/kdb"{} kdb run-\/web}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_install-webui_md_autotoc_md3536}{}\doxysection{Overview}\label{doc_tutorials_install-webui_md_autotoc_md3536}
+Elektra web consists of multiple components\+:
+
+
+\begin{DoxyItemize}
+\item (multiple) servers running an elektra daemon (\`{}elektrad\`{})
+\item a single server to communicate with the elektra daemons and serve the client (\`{}webd\`{})
+\item a web browser that accesses the client (Web UI) on the \`{}webd\`{} server (\`{}client\`{})
+\end{DoxyItemize}
+
+\hypertarget{doc_tutorials_install-webui_md_autotoc_md3537}{}\doxysection{API}\label{doc_tutorials_install-webui_md_autotoc_md3537}
+
+
+\href{https://apiblueprint.org/}{\texttt{ API blueprints}} are available for both APIs\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://master.libelektra.org/doc/api_blueprints/elektrad.apib}{\texttt{ elektrad}}, documentation\+: \href{https://elektrad.docs.apiary.io/}{\texttt{ https\+://elektrad.\+docs.\+apiary.\+io/}}
+\item \href{https://master.libelektra.org/doc/api_blueprints/webd.apib}{\texttt{ webd}}, documentation\+: \href{https://elektrawebd.docs.apiary.io/}{\texttt{ https\+://elektrawebd.\+docs.\+apiary.\+io/}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3538}{}\doxysection{Test REST API on localhost}\label{doc_tutorials_install-webui_md_autotoc_md3538}
+In order to test API on localhost, you have to start elektrad instance. You can do it in two ways\+:
+
+
+\begin{DoxyItemize}
+\item run manually (if you would like to start it manually or you don\textquotesingle{}t have eletrad-\/web tool installed)
+\begin{DoxyItemize}
+\item {\ttfamily cd libelektra/src/tools/web}
+\item {\ttfamily cd elektrad}
+\item {\ttfamily go build}
+\item {\ttfamily ./elektrad}
+\end{DoxyItemize}
+\item by installing elektrad tool together with Elektra and run it
+\begin{DoxyItemize}
+\item please see the section {\ttfamily Building with elektra-\/web Tool}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+Now the server is runing on \href{http://localhost:33333}{\texttt{ http\+://localhost\+:33333}}. After that you can test API with help of Postman or other tool, which allows to send REST API requests.
+
+Additional note. It is recommended to install the elektrad tool than starting the server manually. When Elektra is installed, the {\ttfamily kdb} command together with its tools is installed globally. For instance, whenever you would like to write any shell script, which has to start a REST API server, you can just add the following line {\ttfamily kdb run-\/elektrad} inside your file and save it. After that, the created shell script can be executed from any directory.
+
+Examples\+:
+
+let\textquotesingle{}s create the new key-\/value pair {\ttfamily user\+:/test} and set its value to 5. You can do it next way\+:
+
+
+\begin{DoxyItemize}
+\item through the command terminal 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/test 5}
+
+\end{DoxyCode}
+
+\item through the rest api using curl 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{curl -\/X PUT -\/H "{}Content-\/Type: text/plain"{} -\/-\/data "{}5"{} http://localhost:33333/kdb/user/test}
+
+\end{DoxyCode}
+
+\end{DoxyItemize}
+
+The output of the commandline tool will be\+: {\ttfamily Set string to \char`\"{}5\char`\"{}}. If the specified key didn\textquotesingle{}t exist before, then the output will be {\ttfamily Create a new key user\+:/test with string \char`\"{}5\char`\"{}}. Elektrad will respond with code {\ttfamily 200}.
+
+Now, the command
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{curl http://localhost:33333/kdb/user/test}
+
+\end{DoxyCode}
+
+
+will return us the value of the specified key {\ttfamily user\+:/test}, which is stored in the database right now
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    "{}exists"{}: true,}
+\DoxyCodeLine{    "{}name"{}: "{}test"{},}
+\DoxyCodeLine{    "{}path"{}: "{}user:/test"{},}
+\DoxyCodeLine{    "{}ls"{}: [}
+\DoxyCodeLine{        "{}user:/test"{}}
+\DoxyCodeLine{    ],}
+\DoxyCodeLine{    "{}value"{}: "{}5"{},}
+\DoxyCodeLine{    "{}meta"{}: "{}"{}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_install-webui_md_autotoc_md3539}{}\doxysection{Auth}\label{doc_tutorials_install-webui_md_autotoc_md3539}
+Currently, webd does not support authentication. The best way to work around this is to use a reverse proxy (e.\+g. \href{https://www.nginx.com/resources/admin-guide/reverse-proxy/}{\texttt{ nginx reverse proxy}}).
+
+Once you set up a reverse proxy on your web server, you can use it to authenticate users, e.\+g. by \href{https://www.digitalocean.com/community/tutorials/how-to-set-up-password-authentication-with-nginx-on-ubuntu-14-04}{\texttt{ username/password auth}}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3540}{}\doxysection{Code Structure}\label{doc_tutorials_install-webui_md_autotoc_md3540}
+{\ttfamily elektrad/} -\/ contains the daemon to interact with a single elektra instance ~\newline
+ {\ttfamily webd/} -\/ contains a daemon to serve the client and interact with multiple elektra instances
+
+{\ttfamily client/} -\/ contains the elektra-\/web client (Web UI)
+
+
+\begin{DoxyItemize}
+\item {\ttfamily src/actions/} -\/ Redux actions to access the KDB or display notifications in the UI
+\item {\ttfamily src/components/} -\/ React components
+\begin{DoxyItemize}
+\item {\ttfamily pages/} -\/ pages in the app
+\begin{DoxyItemize}
+\item {\ttfamily Home.\+jsx} -\/ the main page (overview of all instances)
+\item {\ttfamily Configuration.\+jsx} -\/ configuration page (single instance)
+\end{DoxyItemize}
+\item {\ttfamily Tree\+Item/} -\/ contains all UI components related to a single item in the tree view
+\begin{DoxyItemize}
+\item {\ttfamily dialogs/} -\/ these dialogs are opened when certain actions are pressed (icons next to the tree items)
+\begin{DoxyItemize}
+\item {\ttfamily Add\+Dialog.\+jsx} -\/ dialog to create a new (sub-\/)key
+\item {\ttfamily Duplicate\+Dialog.\+jsx} -\/ dialog to duplicate a key
+\item {\ttfamily Edit\+Dialog.\+jsx} -\/ dialog to edit a key value
+\item {\ttfamily Remove\+Dialog.\+jsx} -\/ dialog to confirm the removal of a key
+\item {\ttfamily Settings\+Dialog.\+jsx} -\/ dialog to edit metadata (new metadata can be implemented here)
+\item {\ttfamily $\ast$\+Sub\+Dialog.jsx} -\/ sub-\/dialogs of the Settings\+Dialog
+\end{DoxyItemize}
+\item {\ttfamily fields/} -\/ special input fields to display various values
+\end{DoxyItemize}
+\item {\ttfamily App.\+jsx} -\/ defines app structure and routes
+\end{DoxyItemize}
+\item {\ttfamily src/index.\+js} -\/ main entry point of the app (fetches instances and renders UI)
+\item {\ttfamily src/containers/} -\/ contains components that are connected to Redux
+\item {\ttfamily src/css/} -\/ contains CSS styles
+\item {\ttfamily src/reducers/} -\/ contains Redux reducers (used to process actions)
+\end{DoxyItemize}\hypertarget{doc_tutorials_install-webui_md_autotoc_md3541}{}\doxysection{Development Guides}\label{doc_tutorials_install-webui_md_autotoc_md3541}
+\hypertarget{doc_tutorials_install-webui_md_autotoc_md3542}{}\doxysubsection{Updating Dependencies}\label{doc_tutorials_install-webui_md_autotoc_md3542}
+Lockfiles ({\ttfamily package-\/lock.\+json}) can be updated by simply deleting the current lock file and running {\ttfamily npm install}, which creates a new lock file.
+
+Check for outdated dependencies via {\ttfamily npm outdated}. Dependencies can then be updated by running {\ttfamily npm update}.\hypertarget{doc_tutorials_install-webui_md_autotoc_md3543}{}\doxysubsection{Building Docker Image}\label{doc_tutorials_install-webui_md_autotoc_md3543}
+Run the following command in the {\ttfamily scripts/docker/web/} directory, replacing {\ttfamily 1.\+5.\+0} with the latest version\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker build -\/t elektra/web:1.5.0 -\/t elektra/web:latest .}
+
+\end{DoxyCode}
+
+
+Test the image\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker run -\/d -\/it -\/p 33333:33333 -\/p 33334:33334 elektra/web:1.5.0}
+
+\end{DoxyCode}
+
+
+Publish it to the docker registry\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker push elektra/web:1.5.0}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_install-webui_md_autotoc_md3544}{}\doxysubsection{Adding Support for New Metadata}\label{doc_tutorials_install-webui_md_autotoc_md3544}
+
+\begin{DoxyItemize}
+\item Create a new sub dialog by, for example, copying the {\ttfamily Number\+Sub\+Dialog.\+jsx} file (or similar) to a new file in the {\ttfamily client/src/components/\+Tree\+Item/dialogs} folder.
+\item Include the sub dialog by adding it to the {\ttfamily Settings\+Dialog.\+jsx} file in the same folder. For example, it could be added before the Additional\+Metakeys\+Sub\+Dialog at the end of the file\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{+     <NewSubDialog}
+\DoxyCodeLine{+       onChange=\{this.handleEdit('check/something')\}}
+\DoxyCodeLine{+       value=\{this.getMeta('check/something', '')\}}
+\DoxyCodeLine{+       saved=\{this.getSaved('check/something')\}}
+\DoxyCodeLine{+     />}
+\DoxyCodeLine{      <AdditionalMetakeysSubDialog}
+\DoxyCodeLine{        handleEdit=\{this.handleEdit.bind(this)\}}
+\DoxyCodeLine{        getMeta=\{this.getMeta.bind(this)\}}
+\DoxyCodeLine{        getSaved=\{this.getSaved.bind(this)\}}
+\DoxyCodeLine{        meta=\{this.props.meta\}}
+\DoxyCodeLine{        deleteMeta=\{this.props.deleteMeta\}}
+\DoxyCodeLine{      />}
+\DoxyCodeLine{    </FocusTrapDialog>}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Mark the meta keys as handled by adding them to the {\ttfamily HANDLED\+\_\+\+METADATA} array in {\ttfamily client/src/components/\+Tree\+Item/dialogs/utils.\+js}\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export const HANDLED\_METADATA = [}
+\DoxyCodeLine{  ...,}
+\DoxyCodeLine{  'visibility',}
+\DoxyCodeLine{  'binary',}
+\DoxyCodeLine{+ 'check/something',}
+\DoxyCodeLine{]}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Validation can then be added by handling metadata in the {\ttfamily client/src/components/\+Tree\+Item/fields/validate\+Type.\+js} file to the {\ttfamily validate\+Type} function.
+\item Rendering fields in a special way when certain metakeys are present can be done by adjusting the {\ttfamily render\+Special\+Value} function in the {\ttfamily client/src/components/\+Tree\+Item/index.\+js} file. 
+\end{DoxyItemize}

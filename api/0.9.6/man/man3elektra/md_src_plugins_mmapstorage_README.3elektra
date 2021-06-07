@@ -1,0 +1,110 @@
+.TH "md_src_plugins_mmapstorage_README" 3elektra "Mon Jun 7 2021" "Version 0.9.6" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_mmapstorage_README \- Plugin: mmapstorage 
+
+.IP "\(bu" 2
+infos = Information about the mmapstorage plugin is in keys below
+.IP "\(bu" 2
+infos/author = Mihael Pranjić mpranj@limun.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/mmapstorage
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest shelltest specific
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = high performance storage using memory mapped files
+.PP
+.SH "Introduction"
+.PP
+This is a high performance storage plugin that supports full Elektra semantics\&.
+.SH "Format"
+.PP
+The storage format uses Elektra's in-memory data layout and employs the \fCmmap()\fP system call to read/write data\&. The format is not portable across different architectures/platforms\&. The format can be seen as a memory dump of a keyset\&. Therefore, the files must not be edited by hand\&. Files written by mmapstorage are not intended to be human-readable\&.
+.SH "Usage"
+.PP
+Mount mmapstorage using \fCkdb mount\fP:
+.PP
+.PP
+.nf
+sudo kdb mount config\&.mmap user:/tests/mmapstorage mmapstorage
+.fi
+.PP
+.PP
+Unmount mmapstorage using \fCkdb umount\fP:
+.PP
+.PP
+.nf
+sudo kdb umount user:/tests/mmapstorage
+.fi
+.PP
+.SH "Compiling"
+.PP
+The mmapstorage has two compilation variants:
+.PP
+.IP "1." 4
+mmapstorage
+.IP "2." 4
+mmapstorage_crc
+.PP
+.PP
+The \fCmmapstorage\fP will always be compiled on a supported system (see \fCDependencies\fP)\&. When zlib is available, we will additionally compile the \fCmmapstorage_crc\fP variant\&. The first variant does not do a CRC32 checksum of the critical data, while the second variant always checks the CRC32 checksum for additional security\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The \fCmmapstorage\fP variant is part of the \fClibelektra5\fP package and the \fCmmapstorage_crc\fP is part of the \fClibelektra5-extra\fP package\&.
+.SH "Dependencies"
+.PP
+POSIX compliant system (including XSI extensions)\&.
+.PP
+Additionally, zlib is needed for the \fCmmapstorage_crc\fP compilation variant: \fCzlib1g-dev\fP or \fCzlib-devel\fP\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# Mount mmapstorage to `user:/tests/mmapstorage`
+sudo kdb mount config\&.mmap user:/tests/mmapstorage mmapstorage
+
+# Add some values via `kdb set`
+kdb set user:/tests/mmapstorage 'Some root key'
+kdb set user:/tests/mmapstorage/dir 'Directory within the hierarchy\&.'
+kdb set user:/tests/mmapstorage/dir/leaf 'A leaf node holding some valuable data\&.'
+kdb meta-set  user:/tests/mmapstorage/dir/leaf superMetaKey 'Metadata is supported too\&.'
+
+# List the configuration tree below `user:/tests/mmapstorage`
+kdb ls user:/tests/mmapstorage
+#> user:/tests/mmapstorage
+#> user:/tests/mmapstorage/dir
+#> user:/tests/mmapstorage/dir/leaf
+
+# Retrieve the new values
+kdb get user:/tests/mmapstorage
+#> Some root key
+kdb get user:/tests/mmapstorage/dir
+#> Directory within the hierarchy\&.
+kdb get user:/tests/mmapstorage/dir/leaf
+#> A leaf node holding some valuable data\&.
+kdb meta-get  user:/tests/mmapstorage/dir/leaf superMetaKey
+#> Metadata is supported too\&.
+
+# Undo modifications to the database
+kdb rm -r user:/tests/mmapstorage
+
+# Unmount mmapstorage
+sudo kdb umount user:/tests/mmapstorage
+.fi
+.PP
+.SH "Limitations"
+.PP
+Mapped files shall not be altered, otherwise the behavior is undefined\&.
+.PP
+The \fCmmap()\fP system call only supports regular files and so does the mmapstorage plugin with one notable exception: The plugin detects when it is called with the files \fC/dev/stdin\fP and \fC/dev/stdout\fP and makes an internal copy\&. This makes the plugin compatible with \fCkdb import\fP and \fCkdb export\fP\&. 

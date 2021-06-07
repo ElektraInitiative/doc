@@ -1,0 +1,85 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the blockresolver plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = resolver
+\item infos/recommends =
+\item infos/placements = rollback getresolver setresolver commit
+\item infos/status = unittest nodep libc configurable preview experimental difficult unfinished concept
+\item infos/metadata =
+\item infos/description = resolver for parts in a file configuration file
+\end{DoxyItemize}\hypertarget{md_src_plugins_blockresolver_README_src_plugins_blockresolver_README_md}{}\doxysection{Introduction}\label{md_src_plugins_blockresolver_README_src_plugins_blockresolver_README_md}
+The {\ttfamily blockresolver} can be used to only resolve a tagged block inside a configuration file.\hypertarget{md_src_plugins_blockresolver_README_autotoc_md60}{}\doxysection{Installation}\label{md_src_plugins_blockresolver_README_autotoc_md60}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_blockresolver_README_autotoc_md61}{}\doxysubsection{Implementation Details}\label{md_src_plugins_blockresolver_README_autotoc_md61}
+{\ttfamily blockresolver} extracts the requested block from the configurations file and writes it into a temporary file. Afterwards Elektra will only work on the temporary file until kdb\+Set is called. On kdb\+Set the contents of the temporary file will be merged with parts outside of the requested block from the original file.\hypertarget{md_src_plugins_blockresolver_README_autotoc_md62}{}\doxysection{Usage}\label{md_src_plugins_blockresolver_README_autotoc_md62}
+\begin{DoxyVerb}`kdb mount -R blockresolver /path/to/my/file /mountpoint -c identifier="identifier-tag"`
+\end{DoxyVerb}
+ where {\ttfamily identifier} specifies the tag {\ttfamily blockresolver} will search for in the configuration file.
+
+A block consists of 2 parts\+:
+
+
+\begin{DoxyItemize}
+\item beginning\+: the identifier suffixed with {\ttfamily start}
+\item end\+: the identifier suffixed with {\ttfamily stop}
+\end{DoxyItemize}\hypertarget{md_src_plugins_blockresolver_README_autotoc_md63}{}\doxysection{Limitations}\label{md_src_plugins_blockresolver_README_autotoc_md63}
+Currently the identifier must be unique.\hypertarget{md_src_plugins_blockresolver_README_autotoc_md64}{}\doxysection{Example}\label{md_src_plugins_blockresolver_README_autotoc_md64}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: system:/tests/blockresolver}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# create testfile}
+\DoxyCodeLine{kdb set system:/tests/blockfile \$(mktemp)}
+\DoxyCodeLine{echo 'text'                   >  \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo 'more text'              >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo 'some more text'         >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo '>>> block config start' >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo 'key1=val1'            >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo '>>> block config stop'  >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo 'text again'             >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo 'and more text'          >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{echo 'text'                   >> \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount -\/R blockresolver \$(kdb get system:/tests/blockfile) system:/tests/blockresolver -\/c identifier="{}>>> block config"{} mini}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# check testfile}
+\DoxyCodeLine{cat \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{\#> text}
+\DoxyCodeLine{\#> more text}
+\DoxyCodeLine{\#> some more text}
+\DoxyCodeLine{\#> >>> block config start}
+\DoxyCodeLine{\#> key1=val1}
+\DoxyCodeLine{\#> >>> block config stop}
+\DoxyCodeLine{\#> text again}
+\DoxyCodeLine{\#> and more text}
+\DoxyCodeLine{\#> text}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# only the block between the tags is read!}
+\DoxyCodeLine{kdb export system:/tests/blockresolver mini}
+\DoxyCodeLine{\# STDOUT-\/REGEX: key1.*=.*val1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# add a new key to the resolved block}
+\DoxyCodeLine{kdb set system:/tests/blockresolver/key12 val12}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{\#> text}
+\DoxyCodeLine{\#> more text}
+\DoxyCodeLine{\#> some more text}
+\DoxyCodeLine{\#> >>> block config start}
+\DoxyCodeLine{\#> key1=val1}
+\DoxyCodeLine{\#> key12=val12}
+\DoxyCodeLine{\#> >>> block config stop}
+\DoxyCodeLine{\#> text again}
+\DoxyCodeLine{\#> and more text}
+\DoxyCodeLine{\#> text}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -\/r system:/tests/blockresolver}
+\DoxyCodeLine{rm \$(kdb get system:/tests/blockfile)}
+\DoxyCodeLine{kdb rm system:/tests/blockfile}
+\DoxyCodeLine{sudo kdb umount system:/tests/blockresolver}
+
+\end{DoxyCode}
+ 

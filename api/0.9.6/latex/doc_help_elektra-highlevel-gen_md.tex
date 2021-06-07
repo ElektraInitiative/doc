@@ -1,0 +1,392 @@
+\label{doc_help_elektra-highlevel-gen_md_md_doc_help_elektra_highlevel_gen}%
+\Hypertarget{doc_help_elektra-highlevel-gen_md_md_doc_help_elektra_highlevel_gen}%
+ This document focuses on the advanced features of the high-\/level API code-\/generator template. We assume you already familiarized yourself with the basic features explained in \mbox{\hyperlink{doc_help_kdb-gen-highlevel_md}{\`{}kdb-\/gen-\/highlevel(1)\`{}}}.\hypertarget{doc_help_elektra-highlevel-gen_md_autotoc_md2253}{}\doxysection{Configuration Options}\label{doc_help_elektra-highlevel-gen_md_autotoc_md2253}
+The parameters that are relevant to the concepts described here are (for the rest see \mbox{\hyperlink{doc_help_kdb-gen-highlevel_md}{\`{}kdb-\/gen-\/highlevel(1)}})\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily embedded\+Spec}\+: allowed values\+: {\ttfamily full} (default), {\ttfamily defaults}, {\ttfamily none}
+\item {\ttfamily spec\+Validation}\+: allowed values\+: {\ttfamily none} (default), {\ttfamily minimal}
+\item {\ttfamily enum\+Conv}\+: allowed values\+: {\ttfamily strcmp}, {\ttfamily switch}, {\ttfamily auto} (default)
+\end{DoxyItemize}
+
+Using {\ttfamily embedded\+Spec} you can configure how much of the specification is embedded into your application. By default we use {\ttfamily full}. This means the full specification is embedded into your application\textquotesingle{}s binary. Since this can drastically increase the size of the binary, you can also choose {\ttfamily defaults} or {\ttfamily none}. The {\ttfamily defaults} setting embeds a reduced version of the specification, which only contains the metadata required by {\ttfamily elektra\+Open}. By setting {\ttfamily embedded\+Spec=none} you can also remove this reduced specification.
+
+The advantage of using {\ttfamily full} is that your application is contained in a single executable file. If you don\textquotesingle{}t use {\ttfamily full}, the code-\/generator produces an additional {\ttfamily .spec.\+eqd} file and omits specload function (called {\ttfamily exit\+For\+Specload} by default). This file contains the full specification in quickdump format. You can either mount it directly via {\ttfamily quickdump}, or if you want the features of {\ttfamily specload} use a {\ttfamily specload} configuration like this\+: {\ttfamily app=/usr/bin/cat args=\#0 args/\#0=\char`\"{}path-\/to-\/spec-\/output-\/file\char`\"{}}.
+
+Setting {\ttfamily embedded\+Spec=none} is only recommended, if you must have the minimal binary size and you know what you are doing. In this case no defaults are passed to {\ttfamily elektra\+Open} and defaults are only handled via the {\ttfamily spec} plugin. If the specification/configuration isn\textquotesingle{}t mounted, the getter functions may fail.
+
+To avoid this case of a misconfigured mountpoint, you can use {\ttfamily spec\+Validation=minimal}. It is by far not a perfect solution, but it will cause the initialization function (by default named {\ttfamily load\+Configuration}) to fail, if the specification is not mounted at the expected mountpoint or if the specification was not {\ttfamily spec-\/mount}ed.\hypertarget{doc_help_elektra-highlevel-gen_md_autotoc_md2254}{}\doxysection{Enums}\label{doc_help_elektra-highlevel-gen_md_autotoc_md2254}
+We support the mapping of a set of string values to a native C {\ttfamily enum}. To use this feature, you need to write your specification the same way that the enum part of the {\ttfamily type} plugin expects.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[myenum]}
+\DoxyCodeLine{type=enum}
+\DoxyCodeLine{check/enum=\#\_4}
+\DoxyCodeLine{check/enum/\#0=none}
+\DoxyCodeLine{check/enum/\#1=red}
+\DoxyCodeLine{check/enum/\#2=green}
+\DoxyCodeLine{check/enum/\#4=blue}
+\DoxyCodeLine{default=blue}
+
+\end{DoxyCode}
+
+
+The above specification will generate the following C {\ttfamily enum}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{enum}}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    ELEKTRA\_ENUM\_MYENUM\_NONE = 0,}
+\DoxyCodeLine{    ELEKTRA\_ENUM\_MYENUM\_RED = 1,}
+\DoxyCodeLine{    ELEKTRA\_ENUM\_MYENUM\_GREEN = 2,}
+\DoxyCodeLine{    ELEKTRA\_ENUM\_MYENUM\_BLUE = 4,}
+\DoxyCodeLine{\} ElektraEnumMyenum;}
+
+\end{DoxyCode}
+
+
+As you can see the integer values of the different enum values are taken from the indices of the {\ttfamily check/enum/\#} array. You may also use e.\+g. {\ttfamily gen/enum/\#2/value=1 $<$$<$ 1} to set a different value. The {\ttfamily gen/enum/\#/value} values are inserted literally into the C files, so the values must be valid C code. The name of the enum may be configured via {\ttfamily gen/enum/type}. If you want to use an existing {\ttfamily enum} and map its values to strings you can turn the generation of the enum off, by adding {\ttfamily gen/enum/create=0}. In this case you have to add a header that defines the {\ttfamily enum} or {\ttfamily typedef}s it, to the {\ttfamily headers} parameter of the code-\/generator invocation.
+
+Like with any other key, the code-\/generator produces {\ttfamily static inline} getter and setter functions for the key. Since there are no generic functions for the conversion of the strings into the enum values, we also generate those\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ELEKTRA\_KEY\_TO\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+\DoxyCodeLine{ELEKTRA\_TO\_STRING\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+\DoxyCodeLine{ELEKTRA\_TO\_CONST\_STRING\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+\DoxyCodeLine{}
+\DoxyCodeLine{ELEKTRA\_GET\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+\DoxyCodeLine{ELEKTRA\_GET\_ARRAY\_ELEMENT\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+\DoxyCodeLine{ELEKTRA\_SET\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+\DoxyCodeLine{ELEKTRA\_SET\_ARRAY\_ELEMENT\_SIGNATURE (ElektraEnumMyenum, EnumMyenum);}
+
+\end{DoxyCode}
+
+
+These functions are not generated per key, but per enum type. If multiple keys use the same enum type (both need to define the full metadata, including the full set of values), we only generate one set of these functions.
+
+The getter and setter functions won\textquotesingle{}t be explained here, they work like any of the other getter and setter functions of the high-\/level API.
+
+The other three functions are used to convert between the string values and the generated {\ttfamily enum}. You may find these useful in your application. You can call them via e.\+g. {\ttfamily ELEKTRA\+\_\+\+KEY\+\_\+\+TO (Enum\+Myenum)}. The difference between {\ttfamily ELEKTRA\+\_\+\+TO\+\_\+\+STRING} and {\ttfamily ELEKTRA\+\_\+\+TO\+\_\+\+CONST\+\_\+\+STRING} is that the first returns a {\ttfamily char $\ast$} allocated via {\ttfamily elektra\+Malloc}, while the second returns a static {\ttfamily constchar $\ast$}.
+
+Both {\ttfamily ELEKTRA\+\_\+\+TO\+\_\+\+STRING} and {\ttfamily ELEKTRA\+\_\+\+TO\+\_\+\+CONST\+\_\+\+STRING} are always implemented via a straightforward {\ttfamily switch} statement. The implementation of {\ttfamily ELEKTRA\+\_\+\+KEY\+\_\+\+TO} on the other hand can be changed via the {\ttfamily enum\+Conv} parameter. If you set {\ttfamily enum\+Conv=strcmp}, we will generate a code analogous to\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (strcmp (\textcolor{keywordtype}{string}, \textcolor{stringliteral}{"{}none"{}}) == 0) \{ \textcolor{comment}{/* ... */} \}}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (strcmp (\textcolor{keywordtype}{string}, \textcolor{stringliteral}{"{}red"{}}) == 0) \{ \textcolor{comment}{/* ... */} \}}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (strcmp (\textcolor{keywordtype}{string}, \textcolor{stringliteral}{"{}green"{}}) == 0) \{ \textcolor{comment}{/* ... */} \}}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (strcmp (\textcolor{keywordtype}{string}, \textcolor{stringliteral}{"{}blue"{}}) == 0) \{ \textcolor{comment}{/* ... */} \}}
+
+\end{DoxyCode}
+
+
+This code is not really optimal, since we really only need to look at the first character to determine the correct enum value. This is where {\ttfamily enum\+Conv=switch} comes in. With this option, we generate a series of (nested, if necessary) switch/case statements\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{switch} (\textcolor{keywordtype}{string}[0])}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\textcolor{keywordflow}{case} \textcolor{charliteral}{'b'}: \textcolor{comment}{/* blue */}}
+\DoxyCodeLine{\textcolor{keywordflow}{case} \textcolor{charliteral}{'g'}: \textcolor{comment}{/* green */}}
+\DoxyCodeLine{\textcolor{keywordflow}{case} \textcolor{charliteral}{'n'}: \textcolor{comment}{/* none */}}
+\DoxyCodeLine{\textcolor{keywordflow}{case} \textcolor{charliteral}{'r'}: \textcolor{comment}{/* red */}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Of course this version also has its own problems. Take for example the the enum with the values\+: {\ttfamily blue}, {\ttfamily blueish} and {\ttfamily brown}. With {\ttfamily enum\+Conv=switch} this would generate the following code\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{switch} (\textcolor{keywordtype}{string}[0])}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\textcolor{keywordflow}{case} \textcolor{charliteral}{'b'}:}
+\DoxyCodeLine{    \textcolor{keywordflow}{switch} (\textcolor{keywordtype}{string}[1])}
+\DoxyCodeLine{    \{}
+\DoxyCodeLine{    \textcolor{keywordflow}{case} \textcolor{charliteral}{'l'}:}
+\DoxyCodeLine{        \textcolor{keywordflow}{switch} (\textcolor{keywordtype}{string}[2])}
+\DoxyCodeLine{        \{}
+\DoxyCodeLine{        \textcolor{keywordflow}{case} \textcolor{charliteral}{'u'}:}
+\DoxyCodeLine{            \textcolor{keywordflow}{switch} (\textcolor{keywordtype}{string}[3])}
+\DoxyCodeLine{            \{}
+\DoxyCodeLine{            \textcolor{keywordflow}{case} \textcolor{charliteral}{'e'}:}
+\DoxyCodeLine{                \textcolor{keywordflow}{switch} (\textcolor{keywordtype}{string}[4])}
+\DoxyCodeLine{                \{}
+\DoxyCodeLine{                \textcolor{keywordflow}{case} \textcolor{charliteral}{'i'}: \textcolor{comment}{/* blueish */}}
+\DoxyCodeLine{                \}}
+\DoxyCodeLine{                \textcolor{comment}{/* blue */}}
+\DoxyCodeLine{            \}}
+\DoxyCodeLine{            \textcolor{keywordflow}{break};}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{        \textcolor{keywordflow}{break};}
+\DoxyCodeLine{        \textcolor{keywordflow}{case} \textcolor{charliteral}{'r'}: \textcolor{comment}{/* brown */}}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{    \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+This is already quite hard to read and {\ttfamily blueish} isn\textquotesingle{}t even that long.
+
+To provide a compromise between readability and performance, we default to {\ttfamily enum\+Conv=auto}. This options uses the switch version, if the depth is less than 3, and the {\ttfamily strcmp} version in all other cases. A depth of {\ttfamily n} means looking at the first {\ttfamily n} characters {\ttfamily string\mbox{[}0\mbox{]}, string\mbox{[}1\mbox{]}, ..., string\mbox{[}n-\/1\mbox{]}}. In other words a depth of {\ttfamily n} uses {\ttfamily n} switch statements.\hypertarget{doc_help_elektra-highlevel-gen_md_autotoc_md2255}{}\doxysection{Structs}\label{doc_help_elektra-highlevel-gen_md_autotoc_md2255}
+The {\ttfamily highlevel} template also has support for structs. By setting {\ttfamily type = struct} on a key, you can enable the generation of a native C {\ttfamily struct} for the keys below it.
+
+We will look at this simple example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[mystruct]}
+\DoxyCodeLine{type=struct}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{default="{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{[mystruct/a]}
+\DoxyCodeLine{type=string}
+\DoxyCodeLine{default="{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{[mystruct/b]}
+\DoxyCodeLine{type=long}
+\DoxyCodeLine{default=8}
+
+\end{DoxyCode}
+
+
+Note\+: That we set {\ttfamily check/type=any} and {\ttfamily default=\char`\"{}\char`\"{}}. This is to avoid problems with the {\ttfamily type} plugin, which doesn\textquotesingle{}t know about {\ttfamily struct}s.
+
+The generated struct looks like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }ElektraStructMystruct}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    \textcolor{keyword}{const} \textcolor{keywordtype}{char} * a;}
+\DoxyCodeLine{    kdb\_long\_t b;}
+\DoxyCodeLine{\} ElektraStructMystruct;}
+
+\end{DoxyCode}
+
+
+Similar to enums, you can customise the generated struct via additional metadata\+:
+
+
+\begin{DoxyItemize}
+\item Metadata for the key with {\ttfamily type=struct}\+:
+\begin{DoxyItemize}
+\item {\ttfamily gen/struct/type} can be used to set the name of the generated struct.
+\item {\ttfamily gen/struct/create=0} disables the struct generation and only generates the accessor functions. Use this to use structs defined elsewhere. Don\textquotesingle{}t forget to include the needed header in the {\ttfamily headers} parameter.
+\item {\ttfamily gen/struct/alloc} (values {\ttfamily 0}, {\ttfamily 1}) sets whether the struct is {\itshape allocating}. This changes how the getter works and also has some other implications. By default structs are non-\/allocating.
+\item {\ttfamily gen/struct/depth} sets the how many levels below the {\ttfamily type=struct} key, we will include in the generated struct. Note that keys ending in {\ttfamily /\#} (i.\+e. array keys) count as one level above. So {\ttfamily mystruct/x/\#} would be included with the default {\ttfamily gen/struct/depth=1}.
+\end{DoxyItemize}
+\item Metadata for keys corresponding to fields of the struct\+:
+\begin{DoxyItemize}
+\item {\ttfamily gen/struct/field} sets the name of the field in the generated struct.
+\item {\ttfamily gen/struct/field/ignore=1} ignores this key during struct generation, i.\+e. we don\textquotesingle{}t create a field for it.
+\item {\ttfamily gen/array/sizefield} sets the name of the field used to store the size of arrays. Only useful on array keys. For example, by default the size of the array key {\ttfamily mystruct/x/\#} is stored in {\ttfamily x\+Size}, while the array is accessed via the field {\ttfamily x}.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+We will also generate getter and setter functions\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ELEKTRA\_GET\_SIGNATURE (ElektraStructMystruct *, StructMystruct);}
+\DoxyCodeLine{\textcolor{comment}{// or ELEKTRA\_GET\_OUT\_PTR\_SIGNATURE (ElektraStructMystruct, StructMystruct);}}
+\DoxyCodeLine{ELEKTRA\_GET\_ARRAY\_ELEMENT\_SIGNATURE (ElektraStructMystruct *, StructMystruct);}
+\DoxyCodeLine{\textcolor{comment}{// or ELEKTRA\_GET\_OUT\_PTR\_ARRAY\_ELEMENT\_SIGNATURE (ElektraStructMystruct, StructMystruct);}}
+\DoxyCodeLine{}
+\DoxyCodeLine{ELEKTRA\_SET\_SIGNATURE (\textcolor{keyword}{const} ElektraStructMystruct *, StructMystruct);}
+\DoxyCodeLine{ELEKTRA\_SET\_ARRAY\_ELEMENT\_SIGNATURE (\textcolor{keyword}{const} ElektraStructMystruct *, StructMystruct);}
+
+\end{DoxyCode}
+
+
+The difference between {\ttfamily ELEKTRA\+\_\+\+GET\+\_\+\+SIGNATURE} and {\ttfamily ELEKTRA\+\_\+\+GET\+\_\+\+OUT\+\_\+\+PTR\+\_\+\+SIGNATURE} is explained in the next section. Both versions are called via {\ttfamily ELEKTRA\+\_\+\+GET (...) (...)}.
+
+Allocating structs also generate {\ttfamily ELEKTRA\+\_\+\+STRUCT\+\_\+\+FREE (/$\ast$ struct name $\ast$/)}, which is used to free the allocated memory.\hypertarget{doc_help_elektra-highlevel-gen_md_autotoc_md2256}{}\doxysubsection{Allocating vs. Non-\/\+Allocating}\label{doc_help_elektra-highlevel-gen_md_autotoc_md2256}
+The main difference between allocating and non-\/allocating structs, is how their getter function works.
+
+Allocating structs use a getter similar to the one primitive types, strings and enums use. It returns a pointer to a newly allocated struct, which has to be freed using the generated {\ttfamily ELEKTRA\+\_\+\+STRUCT\+\_\+\+FREE} function.
+
+Non-\/allocating structs meanwhile use a different kind of getter declared via {\ttfamily ELEKTRA\+\_\+\+GET\+\_\+\+OUT\+\_\+\+PTR\+\_\+\+SIGNATURE} instead of {\ttfamily ELEKTRA\+\_\+\+GET\+\_\+\+SIGNATURE}. This version doesn\textquotesingle{}t return a pointer, instead it takes a pointer to an existing struct and only sets its fields. This is why you have to use the convenience macros {\ttfamily elektra\+Fill\+Struct} and {\ttfamily elektra\+Fill\+StructV} for these structs.
+
+Non-\/allocating structs are also more limited than their allocating counterparts. They do not support arrays or struct references. They also cannot be for unions. Their main advantage is that you can use non-\/allocating structs without (additional) {\ttfamily malloc}/{\ttfamily free}, by providing a stack allocated pointer to the getter function.\hypertarget{doc_help_elektra-highlevel-gen_md_autotoc_md2257}{}\doxysubsection{Struct references}\label{doc_help_elektra-highlevel-gen_md_autotoc_md2257}
+Structs cannot be nested, but they can reference each other. This allows for complex and possibly recursive structures. Take for example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[person/\#]}
+\DoxyCodeLine{type=struct}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{default="{}"{}}
+\DoxyCodeLine{gen/struct/alloc=1}
+\DoxyCodeLine{}
+\DoxyCodeLine{[person/\#/name]}
+\DoxyCodeLine{type=string}
+\DoxyCodeLine{default=Max}
+\DoxyCodeLine{}
+\DoxyCodeLine{[person/\#/mother]}
+\DoxyCodeLine{type=struct\_ref}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{default="{}"{}}
+\DoxyCodeLine{check/reference=recursive}
+\DoxyCodeLine{check/reference/restrict=../../../person/\#}
+\DoxyCodeLine{}
+\DoxyCodeLine{[person/\#/children/\#]}
+\DoxyCodeLine{type=struct\_ref}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{default="{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{[person/\#/children]}
+\DoxyCodeLine{default="{}"{}}
+\DoxyCodeLine{check/reference=recursive}
+\DoxyCodeLine{check/reference/restrict=../../../person/\#}
+
+\end{DoxyCode}
+
+
+This results in a struct like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }ElektraStructPerson}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    \textcolor{keyword}{struct }ElektraStructPerson * mother;}
+\DoxyCodeLine{        kdb\_long\_long\_t childrenSize;}
+\DoxyCodeLine{        \textcolor{keyword}{struct }ElektraStructPerson ** children;}
+\DoxyCodeLine{        \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name;}
+\DoxyCodeLine{\} ElektraStructPerson;}
+
+\end{DoxyCode}
+
+
+As you can see an instance of {\ttfamily Elektra\+Struct\+Person} may reference different instances. To declare this we must add a key with {\ttfamily type=struct\+\_\+ref}. We use the metakeys of the {\ttfamily reference} plugin (which should be mounted to validate reference) to define what struct we want to reference. We also again set {\ttfamily check/type=any} and {\ttfamily default=\char`\"{}\char`\"{}} to please the {\ttfamily type} plugin.
+
+Struct references are also supported as arrays, in which case the {\ttfamily check/reference} keys must be on a different key than the rest of the metadata, because of how the {\ttfamily reference} plugin works. The example above shows this with {\ttfamily person/\#/children} and {\ttfamily person/\#/children/\#}.
+
+If you access an element of the {\ttfamily person/\#} array via the getter function, we will recursively read the references structs. Writing structs that contain struct references or setting {\ttfamily struct\+\_\+ref} keys directly is not supported.
+
+Struct references can also exist outside of structs and maybe accessed directly via the generated accessor functions. Please, be careful when handling struct references, since invalid references will cause fatal errors.\hypertarget{doc_help_elektra-highlevel-gen_md_autotoc_md2258}{}\doxysection{Unions}\label{doc_help_elektra-highlevel-gen_md_autotoc_md2258}
+The most advanced feature of the code-\/generator are unions. Sometimes we want a reference inside a struct, but it is not always to the same struct. For example in a menu structure, we might have a list of entries that are either submenus or actual items that execute a command.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[menu/\#]}
+\DoxyCodeLine{type=\textcolor{keyword}{struct}}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{gen/\textcolor{keyword}{struct}/alloc=1}
+\DoxyCodeLine{}
+\DoxyCodeLine{[menu/\#/name]}
+\DoxyCodeLine{type=\textcolor{keywordtype}{string}}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{}
+\DoxyCodeLine{[menu/\#/entries/\#]}
+\DoxyCodeLine{type=struct\_ref}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{gen/reference/discriminator/\textcolor{keyword}{enum} = MenuEntryType}
+\DoxyCodeLine{gen/reference/discriminator/\textcolor{keyword}{union }= MenuEntry}
+\DoxyCodeLine{gen/reference/restrict/\#0/discriminator = item}
+\DoxyCodeLine{gen/reference/restrict/\#1/discriminator = menu}
+\DoxyCodeLine{}
+\DoxyCodeLine{[menu/\#/entries]}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{check/reference=recursive}
+\DoxyCodeLine{check/reference/restrict=\#1}
+\DoxyCodeLine{check/reference/restrict/\#0=@/menu/\#}
+\DoxyCodeLine{check/reference/restrict/\#1=@/item/\#}
+\DoxyCodeLine{}
+\DoxyCodeLine{[menu/\#/discriminator]}
+\DoxyCodeLine{type = discriminator}
+\DoxyCodeLine{check/type = \textcolor{keyword}{enum}}
+\DoxyCodeLine{check/\textcolor{keyword}{enum} = \#1}
+\DoxyCodeLine{check/\textcolor{keyword}{enum}/\#0 = item}
+\DoxyCodeLine{check/\textcolor{keyword}{enum}/\#1 = menu}
+\DoxyCodeLine{gen/\textcolor{keyword}{enum}/type=MenuEntryType}
+\DoxyCodeLine{\textcolor{keywordflow}{default} = menu}
+\DoxyCodeLine{}
+\DoxyCodeLine{[item/\#]}
+\DoxyCodeLine{type=\textcolor{keyword}{struct}}
+\DoxyCodeLine{check/type=any}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{gen/\textcolor{keyword}{struct}/alloc=1}
+\DoxyCodeLine{}
+\DoxyCodeLine{[item/\#/name]}
+\DoxyCodeLine{type=\textcolor{keywordtype}{string}}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{}
+\DoxyCodeLine{[item/\#/command]}
+\DoxyCodeLine{type=\textcolor{keywordtype}{string}}
+\DoxyCodeLine{\textcolor{keywordflow}{default}=\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{}
+\DoxyCodeLine{[item/\#/entries]}
+\DoxyCodeLine{check/reference/restrict=}
+\DoxyCodeLine{}
+\DoxyCodeLine{[item/\#/discriminator]}
+\DoxyCodeLine{type = discriminator}
+\DoxyCodeLine{check/type = \textcolor{keyword}{enum}}
+\DoxyCodeLine{check/\textcolor{keyword}{enum} = \#1}
+\DoxyCodeLine{check/\textcolor{keyword}{enum}/\#0 = item}
+\DoxyCodeLine{check/\textcolor{keyword}{enum}/\#1 = menu}
+\DoxyCodeLine{gen/\textcolor{keyword}{enum}/type=MenuEntryType}
+\DoxyCodeLine{\textcolor{keywordflow}{default} = item}
+
+\end{DoxyCode}
+
+
+As you can see the unions feature requires quite a bit more setup. We will start with {\ttfamily menu/\#/entries/\#}. It is set to {\ttfamily type=struct\+\_\+ref} like you would do for normal struct reference, but the accompanying {\ttfamily menu/\#/entries} uses {\ttfamily check/reference/restrict} as an array. This tells the {\ttfamily reference} plugin that any of the given reference restrictions are allowed. Therefore we could be referencing one of several structs and the code-\/generator has to deal with that somehow.
+
+To allow alternative references, we need to define {\ttfamily gen/reference/discriminator/union} and {\ttfamily gen/reference/discriminator/enum} on the key with {\ttfamily type=struct\+\_\+ref}. The former of these defines the name of the native C {\ttfamily union} the code-\/generator creates\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{union }\{}
+\DoxyCodeLine{    \textcolor{keyword}{struct }ElektraStructMenu * item;}
+\DoxyCodeLine{    \textcolor{keyword}{struct }ElektraStructMenu * menu;}
+\DoxyCodeLine{\} MenuEntry;}
+
+\end{DoxyCode}
+
+
+The other required metakey defines which enum shall be used as a discriminator between the union values\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{enum} \{}
+\DoxyCodeLine{    ELEKTRA\_ENUM\_MENU\_ENTRY\_TYPE\_ITEM = 0,}
+\DoxyCodeLine{    ELEKTRA\_ENUM\_MENU\_ENTRY\_TYPE\_MENU = 1}
+\DoxyCodeLine{\} MenuEntryType;}
+
+\end{DoxyCode}
+
+
+Each of the possibly referenced structs must have a discriminator key. This key must be part of the struct, it must have {\ttfamily type=discriminator} and should have {\ttfamily check/type=enum}. All the discriminator keys must also set {\ttfamily gen/enum/type} to the same value as chosen for {\ttfamily gen/reference/discriminator/enum} and all of them have to define the same enum, via the {\ttfamily check/enum/\#} array. The values also have to match the values of the {\ttfamily gen/reference/restrict/\#/discriminator} metakeys on the {\ttfamily type=struct\+\_\+ref} key.
+
+The generated structs will then look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }Menu}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name;}
+\DoxyCodeLine{        kdb\_long\_long\_t entriesSize;}
+\DoxyCodeLine{        MenuEntryType * entryTypes;}
+\DoxyCodeLine{        MenuEntry * entries;}
+\DoxyCodeLine{\} Menu;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }Item}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name;}
+\DoxyCodeLine{        \textcolor{keyword}{const} cahr * command;}
+\DoxyCodeLine{\} Menu;}
+
+\end{DoxyCode}
+
+
+As you can see the discriminator field is excluded from the struct itself and stored in a separate array. We do generate getter and free functions for unions, but we don\textquotesingle{}t recommend using them directly. There are no setter functions for unions, because they involve struct references. 

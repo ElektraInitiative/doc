@@ -1,0 +1,274 @@
+\hypertarget{mount_8c}{}\doxysection{mount.\+c File Reference}
+\label{mount_8c}\index{mount.c@{mount.c}}
+
+
+Internals of mount functionality.  
+
+
+{\ttfamily \#include $<$kdbassert.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}kdbinternal.\+h\char`\"{}}\newline
+Include dependency graph for mount.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mount_8c__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{mount_8c_a1ff489dcf9cab7c95f88bb5a89242d9d}{mount\+Open}} (KDB $\ast$kdb, Key\+Set $\ast$config, Key\+Set $\ast$modules, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Creates a trie from a given configuration. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{mount_8c_a30835e0251609a411eea1d629f5f1729}{mount\+Default}} (KDB $\ast$kdb, Key\+Set $\ast$modules, int in\+Fallback, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Reopens the default backend and mounts the default backend if needed. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{mount_8c_a8804e7b18f929766e461766ab3aaeb1f}{elektra\+Mount\+Globals\+Load\+Plugin}} (Plugin $\ast$$\ast$plugin, Key\+Set $\ast$reference\+Plugins, Key $\ast$cur, Key\+Set $\ast$global, Key\+Set $\ast$system, Key\+Set $\ast$modules, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Loads global plugin. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{mount_8c_aef6fc92aedac3c04188c89e8a54f3c5f}{mount\+Modules}} (KDB $\ast$kdb, Key\+Set $\ast$modules, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Mount all module configurations. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{mount_8c_a23024da76a37a7d29b95d052ba17644e}{mount\+Version}} (KDB $\ast$kdb, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Mount the version backend. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{mount_8c_aae740f9dc4ff807f236a78a443c66524}{mount\+Backend}} (KDB $\ast$kdb, Backend $\ast$backend, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Mounts a backend into the trie. \end{DoxyCompactList}\item 
+Key $\ast$ \mbox{\hyperlink{mount_8c_af951e2745e17d7b716632362199f3a30}{mount\+Get\+Mountpoint}} (KDB $\ast$handle, const char $\ast$where)
+\begin{DoxyCompactList}\small\item\em Lookup a mountpoint in a handle for a specific key. \end{DoxyCompactList}\item 
+Backend $\ast$ \mbox{\hyperlink{mount_8c_af949f28a2f16cff516f8b1db88010fbe}{mount\+Get\+Backend}} (KDB $\ast$handle, const char $\ast$where)
+\begin{DoxyCompactList}\small\item\em Lookup a backend handle for a specific key. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Internals of mount functionality. 
+
+\begin{DoxyCopyright}{Copyright}
+BSD License (see LICENSE.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{mount_8c_a8804e7b18f929766e461766ab3aaeb1f}\label{mount_8c_a8804e7b18f929766e461766ab3aaeb1f}} 
+\index{mount.c@{mount.c}!elektraMountGlobalsLoadPlugin@{elektraMountGlobalsLoadPlugin}}
+\index{elektraMountGlobalsLoadPlugin@{elektraMountGlobalsLoadPlugin}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{elektraMountGlobalsLoadPlugin()}{elektraMountGlobalsLoadPlugin()}}
+{\footnotesize\ttfamily int elektra\+Mount\+Globals\+Load\+Plugin (\begin{DoxyParamCaption}\item[{Plugin $\ast$$\ast$}]{plugin,  }\item[{Key\+Set $\ast$}]{reference\+Plugins,  }\item[{Key $\ast$}]{cur,  }\item[{Key\+Set $\ast$}]{global,  }\item[{Key\+Set $\ast$}]{system,  }\item[{Key\+Set $\ast$}]{modules,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Loads global plugin. 
+
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & on failure \\
+\hline
+{\em 0} & on empty plugin name (nothing configured at given position) \\
+\hline
+{\em 1} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{mount_8c_aae740f9dc4ff807f236a78a443c66524}\label{mount_8c_aae740f9dc4ff807f236a78a443c66524}} 
+\index{mount.c@{mount.c}!mountBackend@{mountBackend}}
+\index{mountBackend@{mountBackend}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountBackend()}{mountBackend()}}
+{\footnotesize\ttfamily int mount\+Backend (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{kdb,  }\item[{Backend $\ast$}]{backend,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Mounts a backend into the trie. 
+
+\begin{DoxyPrecond}{Precondition}
+user must pass correctly allocated backend 
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+sets reference counter of backend
+\end{DoxyPostcond}
+\begin{DoxyWarning}{Warning}
+in case of init and default backends, the reference counter needs to be modified {\itshape after} calling mount\+Backend.
+\end{DoxyWarning}
+
+\begin{DoxyParams}{Parameters}
+{\em kdb} & the handle to work with \\
+\hline
+{\em backend} & the backend to mount \\
+\hline
+{\em error\+Key} & the key used to report warnings \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & on failure \\
+\hline
+{\em 1} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{mount_8c_a30835e0251609a411eea1d629f5f1729}\label{mount_8c_a30835e0251609a411eea1d629f5f1729}} 
+\index{mount.c@{mount.c}!mountDefault@{mountDefault}}
+\index{mountDefault@{mountDefault}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountDefault()}{mountDefault()}}
+{\footnotesize\ttfamily int mount\+Default (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{kdb,  }\item[{Key\+Set $\ast$}]{modules,  }\item[{int}]{in\+Fallback,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Reopens the default backend and mounts the default backend if needed. 
+
+\begin{DoxyPrecond}{Precondition}
+Default Backend is closed. mount\+Open was executed before.
+\end{DoxyPrecond}
+
+\begin{DoxyParams}{Parameters}
+{\em kdb} & the handle to work with \\
+\hline
+{\em modules} & the current list of loaded modules \\
+\hline
+{\em error\+Key} & the key used to report warnings \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & on error \\
+\hline
+{\em 0} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{mount_8c_af949f28a2f16cff516f8b1db88010fbe}\label{mount_8c_af949f28a2f16cff516f8b1db88010fbe}} 
+\index{mount.c@{mount.c}!mountGetBackend@{mountGetBackend}}
+\index{mountGetBackend@{mountGetBackend}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountGetBackend()}{mountGetBackend()}}
+{\footnotesize\ttfamily Backend$\ast$ mount\+Get\+Backend (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{handle,  }\item[{const char $\ast$}]{where }\end{DoxyParamCaption})}
+
+
+
+Lookup a backend handle for a specific key. 
+
+The required canonical name is ensured by using a key as parameter, which will transform the key to canonical representation.
+
+Will return handle when no more specific KDB could be found.
+
+If key is 0 or invalid the default backend will be returned.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & is the data structure, where the mounted directories are saved. \\
+\hline
+{\em where} & the key name, that should be looked up. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the backend handle associated with the key 
+\end{DoxyReturn}
+\mbox{\Hypertarget{mount_8c_af951e2745e17d7b716632362199f3a30}\label{mount_8c_af951e2745e17d7b716632362199f3a30}} 
+\index{mount.c@{mount.c}!mountGetMountpoint@{mountGetMountpoint}}
+\index{mountGetMountpoint@{mountGetMountpoint}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountGetMountpoint()}{mountGetMountpoint()}}
+{\footnotesize\ttfamily Key$\ast$ mount\+Get\+Mountpoint (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{handle,  }\item[{const char $\ast$}]{where }\end{DoxyParamCaption})}
+
+
+
+Lookup a mountpoint in a handle for a specific key. 
+
+Will return a key representing the mountpoint or null if there is no appropriate mountpoint e.\+g. its the root mountpoint.
+
+\begin{DoxyParagraph}{Example\+:}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB * handle = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}}();}
+\DoxyCodeLine{Key *mountpoint=0;}
+\DoxyCodeLine{mountpoint=kdbGetMountpoint(handle, \textcolor{stringliteral}{"{}system:/template"{}});}
+\DoxyCodeLine{}
+\DoxyCodeLine{printf(\textcolor{stringliteral}{"{}The backend I am using is \%s mounted in \%s\(\backslash\)n"{}},}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(mountpoint),}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(mountpoint));}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (handle);}
+
+\end{DoxyCode}
+
+\end{DoxyParagraph}
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & is the data structure, where the mounted directories are saved. \\
+\hline
+{\em where} & the key name, that should be looked up. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the mountpoint associated with the key 
+\end{DoxyReturn}
+\mbox{\Hypertarget{mount_8c_aef6fc92aedac3c04188c89e8a54f3c5f}\label{mount_8c_aef6fc92aedac3c04188c89e8a54f3c5f}} 
+\index{mount.c@{mount.c}!mountModules@{mountModules}}
+\index{mountModules@{mountModules}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountModules()}{mountModules()}}
+{\footnotesize\ttfamily int mount\+Modules (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{kdb,  }\item[{Key\+Set $\ast$}]{modules,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Mount all module configurations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kdb} & the handle to work with \\
+\hline
+{\em modules} & the current list of loaded modules \\
+\hline
+{\em error\+Key} & the key used to report warnings\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & if not rootkey was found \\
+\hline
+{\em 0} & otherwise \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{mount_8c_a1ff489dcf9cab7c95f88bb5a89242d9d}\label{mount_8c_a1ff489dcf9cab7c95f88bb5a89242d9d}} 
+\index{mount.c@{mount.c}!mountOpen@{mountOpen}}
+\index{mountOpen@{mountOpen}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountOpen()}{mountOpen()}}
+{\footnotesize\ttfamily int mount\+Open (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{kdb,  }\item[{Key\+Set $\ast$}]{config,  }\item[{Key\+Set $\ast$}]{modules,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Creates a trie from a given configuration. 
+
+The config will be deleted within this function.
+
+\begin{DoxyNote}{Note}
+mount\+Default is not allowed to be executed before
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em kdb} & the handle to work with \\
+\hline
+{\em modules} & the current list of loaded modules \\
+\hline
+{\em config} & the configuration which should be used to build up the trie. \\
+\hline
+{\em error\+Key} & the key used to report warnings \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & on failure \\
+\hline
+{\em 0} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{mount_8c_a23024da76a37a7d29b95d052ba17644e}\label{mount_8c_a23024da76a37a7d29b95d052ba17644e}} 
+\index{mount.c@{mount.c}!mountVersion@{mountVersion}}
+\index{mountVersion@{mountVersion}!mount.c@{mount.c}}
+\doxysubsubsection{\texorpdfstring{mountVersion()}{mountVersion()}}
+{\footnotesize\ttfamily int mount\+Version (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{kdb,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Mount the version backend. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kdb} & the handle to work with \\
+\hline
+{\em error\+Key} & the key used to report warnings\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & on success \\
+\hline
+\end{DoxyRetVals}

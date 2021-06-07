@@ -1,0 +1,110 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the profile plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = libc nodep global preview unfinished
+\item infos/metadata =
+\item infos/description = helps switching between configuration profiles
+\end{DoxyItemize}\hypertarget{md_src_plugins_profile_README_src_plugins_profile_README_md}{}\doxysection{Usage}\label{md_src_plugins_profile_README_src_plugins_profile_README_md}
+Following the elektra keyname convention application configurations are stored under {\ttfamily /sw/org/myapp/\#} and {\ttfamily /sw/org/myapp/\#0/current}is the profile to be used. The {\ttfamily profile} plugin provides an easy way to switch configuration profiles.
+
+The key {\ttfamily /sw/org/myapp/\#0/profile} defines what profile should be used as {\ttfamily current}, e.\+g. {\ttfamily /sw/org/myapp/\#0/profile = myprofile}. If a key {\ttfamily /sw/org/myapp/\#0/myprofile/key} is found and no key {\ttfamily /sw/org/myapp/\#0/current/key} exists an override key will be created linking {\ttfamily /sw/org/myapp/\#0/currrent/key} to {\ttfamily /sw/org/myapp/\#0/myapp/key} If neither {\ttfamily /sw/org/myapp/\#0/current/key} nor {\ttfamily /sw/org/myapp/\#0/myprofile/key} is found, but {\ttfamily /sw/org/myapp/\#0/\%/key}, {\ttfamily /sw/org/myapp/\#0/current/key} will be linked to {\ttfamily /sw/org/myapp/\#0/\%/key}.
+
+So a cascading lookup will automatically implement following preferences (next to the namespace preferences)\+:
+
+
+\begin{DoxyEnumerate}
+\item Usage of key in {\ttfamily current}
+\item Usage of key in the profile set with {\ttfamily profile}
+\item Usage of key in the {\ttfamily \%} fallback profile
+\end{DoxyEnumerate}\hypertarget{md_src_plugins_profile_README_autotoc_md385}{}\doxysection{Installation}\label{md_src_plugins_profile_README_autotoc_md385}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_profile_README_autotoc_md386}{}\doxysection{Example}\label{md_src_plugins_profile_README_autotoc_md386}
+Suppose we have the configuration file {\ttfamily profile.\+ini} in {\ttfamily $\sim$/.config}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat profile.ini}
+\DoxyCodeLine{\#> []}
+\DoxyCodeLine{\#> profile = myprofile}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#> [current]}
+\DoxyCodeLine{\#> key2 = will win}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#> [myprofile]}
+\DoxyCodeLine{\#> key1 = test1}
+\DoxyCodeLine{\#> key2 = test2}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#> [\%]}
+\DoxyCodeLine{\#> key2 = failed?}
+\DoxyCodeLine{\#> key3 = test3}
+
+\end{DoxyCode}
+
+
+Then we simply mount it {\itshape without} the profile plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount profile.ini /sw/org/myapp/\#0 ini}
+
+\end{DoxyCode}
+
+
+But we have to make sure that the profile plugin is mounted globally\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb global-\/mount profile}
+
+\end{DoxyCode}
+
+
+Then we can access {\ttfamily /sw/org/myapp/\#0} in a profile-\/aware way\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls /sw}
+\DoxyCodeLine{\#> spec:/sw/org/myapp/\#0/current/key1}
+\DoxyCodeLine{\#> spec:/sw/org/myapp/\#0/current/key3}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/\%}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/\%/key2}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/\%/key3}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/current}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/current/key2}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/profile}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/myprofile}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/myprofile/key1}
+\DoxyCodeLine{\#> user:/sw/org/myapp/\#0/myprofile/key2}
+
+\end{DoxyCode}
+
+
+As we can see with the {\ttfamily -\/v} option, we will fetch keys from our {\ttfamily myprofile} even though we request {\ttfamily current}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get -\/v /sw/org/myapp/\#0/current/key1}
+\DoxyCodeLine{\#> got 25 keys}
+\DoxyCodeLine{\#> searching spec:/sw/org/myapp/\#0/current/key1, found: spec:/sw/org/myapp/\#0/current/key1, options: KDB\_O\_CALLBACK}
+\DoxyCodeLine{\#> The resulting keyname is user:/sw/org/myapp/\#0/myprofile/key1}
+\DoxyCodeLine{\#> test1}
+
+\end{DoxyCode}
+
+
+To switch profile we simply have to set one key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/sw/org/myapp/\#0/profile newprofile}
+
+\end{DoxyCode}
+
+
+Usually, this will be done via commandline by setting {\ttfamily proc\+:/sw/org/myapp/\#0/profile}. 

@@ -1,0 +1,38 @@
+.TH "doc_dev_error-message_md" 3elektra "Mon Jun 7 2021" "Version 0.9.6" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_error-message_md \- Error Message 
+ Elektra has a lot of developers and hence the error messages vary in how they are written\&. This guideline should unify the message format so that users will get consistent error messages\&.
+.PP
+.IP "\(bu" 2
+All error messages start with a capital letter\&. Reword sentences that theoretically require a lowercase first letter such as regex patterns, method names or variable strings ('%s'-strings) to have a normal word at the start of the sentence\&. Also surround method names with single quotes\&. Example: \fC\fBkdbSet()\fP not supported\fP should be changed to `Method '\fBkdbSet()\fP' is not supported`
+.IP "\(bu" 2
+Always report all information which could be useful for the user\&. For some error types, templates are provided to not forget something\&. (eg\&. keys, files, errno, etc\&.)
+.IP "\(bu" 2
+If the error reason is in beneath a variable string (such as \fCerrno\fP or a caught exception), write \fC'Reason: %s', variable_as_string\fP at the end of the error message\&. Also end the preceding sentence with a dot\&. Example: \fC'XY failed\&. Reason: %s', exception\&.what()\fP\&.
+.IP "\(bu" 2
+The last sentence (or single sentence of your message if you just provide one) must not end with a dot\&. This should encourage users to continue reading if other messages appear\&.
+.IP "\(bu" 2
+If your message has multiple sentences, separate them with dots and start with a capital letter like you would do in the normal English language\&.
+.IP "\(bu" 2
+Short but many sentences are preferable over long ones\&.
+.IP "\(bu" 2
+Use abbreviations and acronyms with care\&. Not everybody will know them\&. You can write them in brackets though\&. (eg\&. \fCNo Byte Order Mark (BOM) found\fP instead of \fCNo BOM found\fP\&. But \fCXML does not support feature xy\fP is fine)\&.
+.IP "\(bu" 2
+Never use exclamation marks at the end of sentences\&.
+.IP "\(bu" 2
+If it is unclear where embedded strings in error messages start and end ('%s'-strings), surround them by single quotes '\&. Sentences containing a variable string and end with \fCReason: s\fP do not need extra quotes because it is clear where they start and end\&.
+.PP
+.SH "Examples"
+.PP
+Actual reason might be in errno or an exception
+.PP
+.IP "\(bu" 2
+\fC'The configuration file %s contains invalid syntax at line %s\&. Reason: %s', file\&.path(), line, e\&.what()\fP Result: \fCThe configuration file /etc/conf/file\&.csv contains invalid syntax at line 6\&. Reason: Missing column\fP
+.IP "\(bu" 2
+\fC'Could not rename file %s\&. Reason: %s' file\&.path(), e\&.what()\fP Result: \fCCould not rename file /etc/conf/file\&.yml\&. Reason: File is not existent\fP
+.IP "\(bu" 2
+`'The key %s contained the value &rsquo;%s', but only 'unmounted' is supported for non-global clauses at the moment', keyName(key), keyString(key)\fC Result:\fPThe key user:/my/key contained the value 'mounted', but only 'unmounted' is supported for non-global clauses at the moment` 
+.PP
+
