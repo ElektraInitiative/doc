@@ -1,0 +1,113 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the multifile plugin is in keys below
+\item infos/author = Thomas \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = resolver storage
+\item infos/recommends =
+\item infos/placements = getresolver setresolver commit rollback getstorage setstorage
+\item infos/status = compatible specific shelltest nodep configurable
+\item infos/metadata =
+\item infos/description = mounts multiple files within a directory
+\end{DoxyItemize}\hypertarget{md_src_plugins_multifile_README_src_plugins_multifile_README_md}{}\doxysection{Introduction}\label{md_src_plugins_multifile_README_src_plugins_multifile_README_md}
+For some applications it is beneficially to have multiple configuration files. One way to achieve this, is to mount different files for the application.
+
+In some situations we are not able to specify every configuration file with separate mounts because new configuration files might be created any time. Instead we want to include every configuration file matching a given pattern.
+
+The multifile-\/resolver does so by calling resolver and storage plugins for each file matching a given pattern.\hypertarget{md_src_plugins_multifile_README_autotoc_md363}{}\doxysection{Plugin Configuration}\label{md_src_plugins_multifile_README_autotoc_md363}
+
+\begin{DoxyItemize}
+\item {\ttfamily recursive}\+: If present, fts (3) will be used to traverse the directory tree and fnmatch to match {\ttfamily pattern} to the filename. If not present, glob (3) with {\ttfamily pattern} will be used on the directory
+\item {\ttfamily pattern}\+: The pattern to be used to match configuration files.
+\item {\ttfamily storage}\+: The storage plugin to use.
+\item {\ttfamily resolver}\+: The resolver plugin to use.
+\item \textquotesingle{}child/$<$configname$>$\textquotesingle{}\+: configuration passed to the child backends, {\ttfamily child/} part gets removed.
+\end{DoxyItemize}\hypertarget{md_src_plugins_multifile_README_autotoc_md364}{}\doxysection{Usage}\label{md_src_plugins_multifile_README_autotoc_md364}
+{\ttfamily kdb mount -\/R multifile -\/c storage=\char`\"{}toml\char`\"{},pattern=\char`\"{}$\ast$/$\ast$.\+toml\char`\"{},resolver=\char`\"{}resolver\char`\"{} /path /mountpoint}
+
+{\ttfamily kdb mount -\/R multifile -\/c storage=\char`\"{}toml\char`\"{},pattern=\char`\"{}$\ast$.\+toml\char`\"{},recursive=,resolver=\char`\"{}resolver\char`\"{} /path /mountpoint}\hypertarget{md_src_plugins_multifile_README_autotoc_md365}{}\doxysection{Examples}\label{md_src_plugins_multifile_README_autotoc_md365}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{rm -\/rf \$(dirname \$(kdb file user:/))/multitest || \$(exit 0)}
+\DoxyCodeLine{mkdir -\/p \$(dirname \$(kdb file user:/))/multitest || \$(exit 0)}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat > \$(dirname \$(kdb file user:/))/multitest/lo.toml << EOF \(\backslash\)}
+\DoxyCodeLine{[lo]\(\backslash\)}
+\DoxyCodeLine{addr = "{}127.0.0.1"{}\(\backslash\)}
+\DoxyCodeLine{encap = "{}Loopback"{}\(\backslash\)}
+\DoxyCodeLine{EOF}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat > \$(dirname \$(kdb file user:/))/multitest/lan.toml << EOF \(\backslash\)}
+\DoxyCodeLine{[eth0]\(\backslash\)}
+\DoxyCodeLine{addr = "{}192.168.1.216"{}\(\backslash\)}
+\DoxyCodeLine{encap = "{}Ethernet"{}\(\backslash\)}
+\DoxyCodeLine{EOF}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat > \$(dirname \$(kdb file user:/))/multitest/wlan.toml << EOF \(\backslash\)}
+\DoxyCodeLine{[wlan0]\(\backslash\)}
+\DoxyCodeLine{addr = "{}192.168.1.125"{}\(\backslash\)}
+\DoxyCodeLine{encap = "{}Ethernet"{}\(\backslash\)}
+\DoxyCodeLine{EOF}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount -\/R multifile -\/c storage="{}toml"{},pattern="{}*.toml"{},resolver="{}resolver"{} multitest user:/tests/multifile}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/multifile}
+\DoxyCodeLine{\#> user:/tests/multifile/lan.toml/eth0}
+\DoxyCodeLine{\#> user:/tests/multifile/lan.toml/eth0/addr}
+\DoxyCodeLine{\#> user:/tests/multifile/lan.toml/eth0/encap}
+\DoxyCodeLine{\#> user:/tests/multifile/lo.toml/lo}
+\DoxyCodeLine{\#> user:/tests/multifile/lo.toml/lo/addr}
+\DoxyCodeLine{\#> user:/tests/multifile/lo.toml/lo/encap}
+\DoxyCodeLine{\#> user:/tests/multifile/wlan.toml/wlan0}
+\DoxyCodeLine{\#> user:/tests/multifile/wlan.toml/wlan0/addr}
+\DoxyCodeLine{\#> user:/tests/multifile/wlan.toml/wlan0/encap}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/multifile/lan.toml/eth0/addr 10.0.0.2}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/multifile/lan.toml/eth0/addr}
+\DoxyCodeLine{\#> 10.0.0.2}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/multifile/lan.toml/eth0/encap}
+\DoxyCodeLine{\#> Ethernet}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat > \$(dirname \$(kdb file user:/))/multitest/test.toml << EOF \(\backslash\)}
+\DoxyCodeLine{[testsection]\(\backslash\)}
+\DoxyCodeLine{key = "{}val"{}\(\backslash\)}
+\DoxyCodeLine{EOF}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/multifile/test.toml}
+\DoxyCodeLine{\#> user:/tests/multifile/test.toml/testsection}
+\DoxyCodeLine{\#> user:/tests/multifile/test.toml/testsection/key}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/multifile}
+\DoxyCodeLine{\#> user:/tests/multifile/lan.toml/eth0}
+\DoxyCodeLine{\#> user:/tests/multifile/lan.toml/eth0/addr}
+\DoxyCodeLine{\#> user:/tests/multifile/lan.toml/eth0/encap}
+\DoxyCodeLine{\#> user:/tests/multifile/lo.toml/lo}
+\DoxyCodeLine{\#> user:/tests/multifile/lo.toml/lo/addr}
+\DoxyCodeLine{\#> user:/tests/multifile/lo.toml/lo/encap}
+\DoxyCodeLine{\#> user:/tests/multifile/test.toml/testsection}
+\DoxyCodeLine{\#> user:/tests/multifile/test.toml/testsection/key}
+\DoxyCodeLine{\#> user:/tests/multifile/wlan.toml/wlan0}
+\DoxyCodeLine{\#> user:/tests/multifile/wlan.toml/wlan0/addr}
+\DoxyCodeLine{\#> user:/tests/multifile/wlan.toml/wlan0/encap}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests/multifile/test.toml}
+\DoxyCodeLine{}
+\DoxyCodeLine{stat \$(dirname \$(kdb file user:/))/multifile/test.toml}
+\DoxyCodeLine{\# RET:1}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb umount user:/tests/multifile}
+\DoxyCodeLine{rm -\/rf \$(dirname \$(kdb file user:/))/multitest || \$(exit 0)}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_multifile_README_autotoc_md366}{}\doxysection{Limitations}\label{md_src_plugins_multifile_README_autotoc_md366}
+
+\begin{DoxyItemize}
+\item You cannot get rid of the configuration file name.
+\item You cannot create or delete configuration files.
+\item The resolving will always be done with the default resolver plugin, despite the configuration option.
+\item Not all file names are supported (see \href{https://issues.libelektra.org/2124}{\texttt{ https\+://issues.\+libelektra.\+org/2124}})
+\item Cannot handle conflicts (see \href{https://issues.libelektra.org/2527}{\texttt{ https\+://issues.\+libelektra.\+org/2527}}) 
+\end{DoxyItemize}

@@ -1,0 +1,126 @@
+\hypertarget{md_src_plugins_mmapstorage_shelltests_src_plugins_mmapstorage_shelltests_md}{}\doxysection{Additional shell tests for mmapstorage}\label{md_src_plugins_mmapstorage_shelltests_src_plugins_mmapstorage_shelltests_md}
+This file contains important shell tests for mmapstorage which do not fit well into the plugin README.\hypertarget{md_src_plugins_mmapstorage_shelltests_autotoc_md346}{}\doxysection{Test kdb export \& import (stat\+: pipe size known)}\label{md_src_plugins_mmapstorage_shelltests_autotoc_md346}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Make temp file}
+\DoxyCodeLine{kdb set system:/tests/mmaptempfile \$(mktemp)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Mount mmapstorage to `user:/tests/mmapstorage`}
+\DoxyCodeLine{sudo kdb mount config.mmap user:/tests/mmapstorage mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add some values via `kdb set`}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/test1 test1}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/test2 test2}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/test1/test3 test3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# List the configuration tree below `user:/tests/mmapstorage`}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new values}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> test1}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test2}
+\DoxyCodeLine{\#> test2}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> test3}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/mmapstorage mmapstorage > \$(kdb get system:/tests/mmaptempfile)}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb import user:/tests/mmapstorage mmapstorage < \$(kdb get system:/tests/mmaptempfile)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# List the configuration tree below `user:/tests/mmapstorage`}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new values}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> test1}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test2}
+\DoxyCodeLine{\#> test2}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> test3}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Unmount mmapstorage}
+\DoxyCodeLine{sudo kdb umount user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Remove temp file}
+\DoxyCodeLine{rm \$(kdb get system:/tests/mmaptempfile)}
+\DoxyCodeLine{kdb rm -\/r system:/tests/mmaptempfile}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_mmapstorage_shelltests_autotoc_md347}{}\doxysection{Test kdb export \& import (stat\+: pipe size unknown)}\label{md_src_plugins_mmapstorage_shelltests_autotoc_md347}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Make temp file}
+\DoxyCodeLine{kdb set system:/tests/mmaptempfile \$(mktemp)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Mount mmapstorage to `user:/tests/mmapstorage`}
+\DoxyCodeLine{sudo kdb mount config.mmap user:/tests/mmapstorage mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add some values via `kdb set`}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/test1 test1}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/test2 test2}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/test1/test3 test3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# List the configuration tree below `user:/tests/mmapstorage`}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new values}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> test1}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test2}
+\DoxyCodeLine{\#> test2}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> test3}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/mmapstorage mmapstorage > \$(kdb get system:/tests/mmaptempfile)}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat \$(kdb get system:/tests/mmaptempfile) | kdb import user:/tests/mmapstorage mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# List the configuration tree below `user:/tests/mmapstorage`}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/test2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new values}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1}
+\DoxyCodeLine{\#> test1}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test2}
+\DoxyCodeLine{\#> test2}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/test1/test3}
+\DoxyCodeLine{\#> test3}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Unmount mmapstorage}
+\DoxyCodeLine{sudo kdb umount user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Remove temp file}
+\DoxyCodeLine{rm \$(kdb get system:/tests/mmaptempfile)}
+\DoxyCodeLine{kdb rm -\/r system:/tests/mmaptempfile}
+
+\end{DoxyCode}
+ 

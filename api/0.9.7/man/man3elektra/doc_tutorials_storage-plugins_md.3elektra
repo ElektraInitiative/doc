@@ -1,0 +1,240 @@
+.TH "doc_tutorials_storage-plugins_md" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_storage-plugins_md \- How-To: Write a (Well Behaved) Storage Plugin 
+ The \fBplugin tutorial\fP already covers some of the most interesting parts on how to write a (storage) plugin\&. This text will tell you a little bit more about how a storage plugin should act\&. While it is usually relatively easy to create a plugin that stores basic key-value pairs, adding advanced features such as support for
+.PP
+.IP "\(bu" 2
+\fBarrays\fP, and
+.IP "\(bu" 2
+\fBmetadata\fP,
+.PP
+.PP
+takes more work\&. Before you continue with this text, please make sure that you read all of the linked documents above\&.
+.SH "Don’t Add Additional Keys"
+.PP
+One common problem of storage plugins is, that they store too many keys\&. For example, if the user adds the keys
+.PP
+.IP "\(bu" 2
+\fCuser:/tests/storage/root\fP and
+.IP "\(bu" 2
+\fCuser:/tests/storage/root/level1/level2/level3\fP,
+.PP
+.PP
+then your plugin should only store those two keys\&. \fBDo not\fP add the keys
+.PP
+.IP "\(bu" 2
+\fCuser:/tests/storage/root/level1\fP, or
+.IP "\(bu" 2
+\fCuser:/tests/storage/root/level1/level2\fP
+.PP
+.PP
+to the key set\&. One plugin that handles this situation properly is \fBYAML CPP\fP, as the following \fCMarkdown Shell Recorder\fP test shows:
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user:/tests/storage yamlcpp
+
+# Add key-value pairs
+kdb set user:/tests/storage/root 🐓
+kdb set user:/tests/storage/root/level1/level2/level3 🐣
+
+# Make sure that YAML CPP did not store any additional keys
+kdb ls user:/tests/storage/root
+#> user:/tests/storage/root
+#> user:/tests/storage/root/level1/level2/level3
+
+# Undo modifications to the key database
+kdb rm -r user:/tests/storage
+sudo kdb umount user:/tests/storage
+.fi
+.PP
+.PP
+\&. For more information on why we allow “holes” in the hierarchy, please take a look \fBhere\fP\&.
+.SH "Differentiate Between Empty Keys and Keys Containing an Empty String"
+.PP
+Elektra supports both binary and textual values\&. The main difference between binary and textual data is that textual data always ends with a null byte\&. Therefore you are not allowed to store the code point \fC0\fP inside textual data\&. Binary data does not have this limitation\&.
+.PP
+The simplest textual data is the empty string (\fC''\fP = \fC0\fP) and has length 1, while the simplest binary data stores nothing at all and therefore has length 0\&. In the \fCkdb\fP utility you can disambiguate between these value by checking for the \fBmetakey `binary`\fP\&. The following \fCMarkdown Shell Recorder\fP test shows how a storage plugin should handle empty values\&.
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user:/tests/storage yamlcpp
+
+kdb set user:/tests/storage/empty ''
+#> Create a new key user:/tests/storage/empty with string ""
+kdb get user:/tests/storage/empty
+#>
+kdb meta-ls user:/tests/storage/empty
+#>
+
+# Undo modifications to the key database
+kdb rm -r user:/tests/storage
+sudo kdb umount user:/tests/storage
+.fi
+.PP
+.SH "Convert Boolean Data"
+.PP
+Elektra uses \fB`0` and `1` to represent binary data\fP\&. A storage plugin that uses other values (e\&.g\&. \fCfalse\fP and \fCtrue\fP) needs to convert these values to \fC0\fP and \fC1\fP\&. The \fCMarkdown Shell Recorder\fP test below shows that \fBYAML CPP\fP handles the conversion from and to \fCYAML’s boolean type\fP properly\&. In the test we also use the \fB`type` plugin\fP to makes sure that YAML CPP interacts correctly with this essential plugin\&.
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user:/tests/storage yamlcpp type
+
+kdb set user:/tests/storage/bool/value true
+kdb meta-set user:/tests/storage/bool/value type boolean
+kdb get user:/tests/storage/bool/value
+#> 1
+
+kdb set user:/tests/storage/bool/value 1
+kdb get user:/tests/storage/bool/value
+#> 1
+
+kdb set user:/tests/storage/bool/value false
+kdb get user:/tests/storage/bool/value
+#> 0
+
+kdb set user:/tests/storage/bool/value 'non boolean'
+# RET: 5
+
+kdb get user:/tests/storage/bool/value
+#> 0
+
+# Undo modifications to the key database
+kdb rm -r user:/tests/storage
+sudo kdb umount user:/tests/storage
+.fi
+.PP
+.SH "Support Values Inside Non-Leaf Keys"
+.PP
+Sometimes the most “natural” mapping of key-value pairs to a file format might cause a storage plugin to not be able to store values in so called directory (non-leaf) keys\&.
+.PP
+For example, in a key set that contains the keys:
+.PP
+.PP
+.nf
+user:/directory
+user:/directory/leaf1
+user:/directory/leaf2
+user:/leaf3
+.fi
+.PP
+.PP
+, all keys at the bottom of the hierarchy:
+.PP
+.PP
+.nf
+        user
+      /      \
+  directory  leaf3
+   /     \
+leaf1   leaf2
+.fi
+.PP
+.PP
+, such as
+.PP
+.IP "\(bu" 2
+\fCuser:/directory/leaf1\fP
+.IP "\(bu" 2
+\fCuser:/directory/leaf2\fP
+.IP "\(bu" 2
+\fCuser:/leaf3\fP
+.PP
+.PP
+are called leaf keys, while \fCuser:/directory\fP is a directory key\&. Plugins such as \fBYAJL\fP or \fBYAML CPP\fP will not be able to store data in the key with the name \fCuser:/directory\fP directly\&. To work around this issue these plugin use the \fBDirectory Value plugin\fP\&. In the ReadMe of the \fCDirectory Value plugin\fP and \fCYAML CPP\fP you will find more information about this issue, and how to handle it\&.
+.PP
+The following Markdown Shell Recorder test shows \fBthe proper behavior\fP:
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user:/tests/storage yamlcpp
+
+# Add key-value pair (leaf key)
+kdb set user:/tests/storage/root 🐓
+# Since we add a key below `user:/tests/storage/root`, the key
+# `user:/tests/storage/root` turns from a leaf key to a directory key\&.
+kdb set user:/tests/storage/root/level1/level2/level3 🐣
+
+# Make sure that the directory key still stores the correct value
+kdb get user:/tests/storage/root
+#> 🐓
+
+# Check the value of the leaf key
+kdb get user:/tests/storage/root/level1/level2/level3
+#> 🐣
+
+# Undo modifications to the key database
+kdb rm -r user:/tests/storage
+sudo kdb umount user:/tests/storage
+.fi
+.PP
+.PP
+\&. To make sure that your storage plugin works correctly, please just replace \fCyamlcpp\fP with the name of your plugin and verify that the test above still works\&.
+.SH "Support Array And Non-Array Data Properly"
+.PP
+You already learned about the array syntax and the mandatory \fCarray\fP metakey in the \fBarray tutorial\fP\&. Now it is time to check, if your storage plugin supports array and non-array keys properly\&. Let us look at a concrete example\&. We use a key set that contains the following keys as example:
+.PP
+.PP
+.nf
+user:/tests/storage/array
+user:/tests/storage/array/#0
+user:/tests/storage/array/#1
+user:/tests/storage/map
+user:/tests/storage/map/#0
+user:/tests/storage/map/#1
+.fi
+.PP
+.PP
+\&. If we assume that only \fCuser:/tests/storage/array\fP stores the metakey \fCarray\fP, then the keys
+.PP
+.IP "\(bu" 2
+\fCuser:/tests/storage/array/#0\fP, and
+.IP "\(bu" 2
+\fCuser:/tests/storage/array/#1\fP
+.PP
+.PP
+represent array elements, while
+.PP
+.IP "\(bu" 2
+\fCuser:/tests/storage/map/#0\fP, and
+.IP "\(bu" 2
+\fCuser:/tests/storage/map/#1\fP
+.PP
+.PP
+are normal key-value pairs\&. The following example shows that the storage plugin \fCYAML CPP\fP handles this situation properly:
+.PP
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.yaml user:/tests/storage yamlcpp
+
+# Create an array containing two elements
+kdb meta-set user:/tests/storage/array array ''
+kdb set user:/tests/storage/array/#0 one
+kdb set user:/tests/storage/array/#1 two
+
+# The array parent key stores the basename of the last element
+kdb meta-get user:/tests/storage/array array
+#> #1
+
+# If you do not add the metakey `array`, then keys
+# containing array syntax `#0`, `#1`, … will not be
+# interpreted as arrays\&.
+kdb set user:/tests/storage/map ""
+kdb set user:/tests/storage/map/#0 ""
+kdb set user:/tests/storage/map/#1 ""
+kdb meta-get user:/tests/storage/map array
+# RET: 2
+
+# Undo modifications to the key database
+kdb rm -r user:/tests/storage
+sudo kdb umount user:/tests/storage
+.fi
+.PP
+

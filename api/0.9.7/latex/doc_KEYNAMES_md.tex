@@ -1,0 +1,429 @@
+\label{doc_KEYNAMES_md_md_doc_KEYNAMES}%
+\Hypertarget{doc_KEYNAMES_md_md_doc_KEYNAMES}%
+ This document is a full explanation of how {\itshape key names} work in Elektra.\hypertarget{doc_KEYNAMES_md_autotoc_md2614}{}\doxysection{0. Reference Implementation}\label{doc_KEYNAMES_md_autotoc_md2614}
+In addition to this document, a reference Python implementation can be found in keynames.py. The goal of the Python implementation is not to be fast, or to be used in any way other than as a reference. If there are any discrepancies between this document, the Python implementation and the actual C implementation in \href{/home/jenkins/workspace/libelektra-release/src/libs/elektra/keyname.c}{\texttt{ src/libs/elektra/keyname.\+c}}, you should consider them as follows\+:
+
+
+\begin{DoxyEnumerate}
+\item The C implementation is optimized for speed and thus much harder to implement correctly.
+\item In most cases, this document outranks the Python implementation. There may, however, be cases where the language in this document was too vague and the Python implementation is actually correct.
+\item If two of the sources agree, the third one is probably incorrect. Although again, if one of the agreeing sources is the C implementation it could still be the case that there is a mistake.
+\end{DoxyEnumerate}
+
+In any case\+: If you find any discrepancies, please file a bug report at \href{https://issues.libelektra.org/new}{\texttt{ https\+://issues.\+libelektra.\+org/new}}.
+
+\begin{quote}
+{\itshape Note\+:} Mistakes happen. The goal of the Python implementation was to provide a reference that has a very high likelihood of being correct. \end{quote}
+{\itshape To Elektra developers\+:} Feel free to add any unclear or previous incorrect examples to the test cases in \href{/home/jenkins/workspace/libelektra-release/tests/ctest/test_keyname.c}{\texttt{ tests/ctest/test\+\_\+keyname.\+c}}. These tests are very fast (1000+ test cases per second) and the more tests the better.\hypertarget{doc_KEYNAMES_md_autotoc_md2615}{}\doxysection{1. Key Name Parts and Namespaces}\label{doc_KEYNAMES_md_autotoc_md2615}
+Before we dive into key names, we need to talk about key name parts and namespaces.
+
+Each key is part of one of these {\itshape namespaces}\+:
+
+
+\begin{DoxyItemize}
+\item cascading
+\item meta
+\item spec
+\item proc
+\item dir
+\item user
+\item system
+\item default
+\end{DoxyItemize}
+
+Each of these namespaces has a very specific meaning, explained in \href{\#12-namespaces-and-root-keys}{\texttt{ Section 1.\+2}}.
+
+Apart from the namespace, a key name is just a series of zero or more {\itshape key name parts}. Each key name part is just an arbitrary (possibly empty) sequence of non-\/zero bytes.
+
+So without knowing anything about how key names are written, we could say that there is a key in the namespace \char`\"{}system\char`\"{} with the key name parts \char`\"{}elektra\char`\"{}, \char`\"{}version\char`\"{} and \char`\"{}info\char`\"{}.
+
+\begin{quote}
+{\itshape Note\+:} Not every such sequence, is a valid key name. For more information see \href{\#4-valid-and-invalid-key-names}{\texttt{ Section 4}} \end{quote}
+\hypertarget{doc_KEYNAMES_md_autotoc_md2616}{}\doxysubsection{1.\+1. Key Hierarchy}\label{doc_KEYNAMES_md_autotoc_md2616}
+Elektra\textquotesingle{}s keys commonly look like Unix paths\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/elektra/version/info}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\itshape Note\+:} How this representation works exactly and how namespaces come into play, will be explained in the next section. For now, we only care that there is some similarity to Unix paths. \end{quote}
+This is on purpose. Elektra\textquotesingle{}s {\itshape key database (KDB)} is designed to resemble a Unix filesystem as much as possible. In particular, the KDB has a similar hierarchy. More generally, all key names exhibit this hierarchy. By going back to thinking about a key name as a namespace and a series of key name parts, we can define this {\itshape key hierarchy}.
+
+Each namespace has a separate hierarchy. The relation between these, will be explored in the next section. For now, we just look at a single namespace.
+
+In a Unix filesystems, we commonly talk about files and directories. We also say a file is located within a directory. But you might also know that in Unix \char`\"{}everything is a file\char`\"{}. This applies to directories as well, but \char`\"{}a file is located within a file\char`\"{} is a bit clunky, so you might say \char`\"{}file \`{}\+A\`{} is located below file \`{}\+B\`{}\char`\"{}, if {\ttfamily B} is a file within the directory {\ttfamily A}. What makes {\ttfamily A} a directory is just the fact that there can be other files below {\ttfamily A} \href{\#footnote-1}{\texttt{ \mbox{[}1\mbox{]}}}. \label{_ref-footnote-1}%
+\hypertarget{doc_KEYNAMES_md_autotoc_md2617}{}\doxysubsubsection{1.\+1.\+1. The \char`\"{}is below\char`\"{} Relation}\label{doc_KEYNAMES_md_autotoc_md2617}
+This relation of \char`\"{}is below\char`\"{} is also what defines Elektra\textquotesingle{}s key hierarchy. Based on a key {\ttfamily K} with {\ttfamily n} key name parts, we say\+:
+
+
+\begin{DoxyItemize}
+\item A key {\ttfamily Km} is {\itshape below} {\ttfamily K}, if {\ttfamily Km} has {\ttfamily n+m} key name parts and the first {\ttfamily n} key name parts of {\ttfamily Km} are equal to the key name parts of {\ttfamily K} (in the same order).
+\item A key {\ttfamily K1} is {\itshape directly below} {\ttfamily K}, if {\ttfamily K1} is below {\ttfamily K} and {\ttfamily K1} has {\ttfamily n+1} key name parts.
+\end{DoxyItemize}
+
+Here are a few examples to show how this works in practice (using the Unix-\/path-\/like representation teased above)\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Key 1   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Key 2   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Relation    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Key 1   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Key 2   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Relation    }\\\cline{1-3}
+\endhead
+{\ttfamily /elektra/version/info}   &{\ttfamily /elektra/version}   &\char`\"{}\+Key 1\char`\"{} is directly below \char`\"{}\+Key 2\char`\"{}    \\\cline{1-3}
+{\ttfamily /elektra/version/info}   &{\ttfamily /elektra}   &\char`\"{}\+Key 1\char`\"{} is below \char`\"{}\+Key 2\char`\"{}    \\\cline{1-3}
+{\ttfamily /elektra}   &{\ttfamily /elektra/version/info}   &\char`\"{}\+Key 2\char`\"{} is below \char`\"{}\+Key 1\char`\"{}    \\\cline{1-3}
+{\ttfamily /elektra/version/info}   &{\ttfamily /elektra/version/info}   &\char`\"{}\+Key 1\char`\"{} and \char`\"{}\+Key 2\char`\"{} are equal    \\\cline{1-3}
+{\ttfamily /elektra/version/info}   &{\ttfamily /elektra/data}   &no relation    \\\cline{1-3}
+{\ttfamily /elektra/data}   &{\ttfamily /elektra/version}   &\char`\"{}\+Key 1\char`\"{} and \char`\"{}\+Key 2\char`\"{} are siblings   \\\cline{1-3}
+\end{longtabu}
+
+
+You can think of the key hierarchy (within a single namespace) as a big tree of keys. Each node in the tree is a single key {\ttfamily K} and the children of the nodes are the keys that are directly below {\ttfamily K}.
+
+
+
+The diagram above shows the key hierarchy of the keys in the table above ({\ttfamily A} -\/$>$ {\ttfamily B} denotes {\ttfamily A} is directly below {\ttfamily B}).
+
+\begin{quote}
+{\itshape Note\+:} While we could use the directory vs. file terminology for Elektra as well, it is recommended to avoid it. This is because in Elektra, every key may have an associated value. In particular a key may have a value, even if there are other keys below it. This value is {\bfseries{not}}, as a beginner might suspect, the set of keys below it, like you could say the value of a directory is the set of files (and directories) within. The value is just another value, like any other key would have.
+
+Instead, we recommend the terms {\itshape leaf key} and {\itshape non-\/leaf key}, as these are commonly used for tree-\/like structures and their definitions fit perfectly. \end{quote}
+\hypertarget{doc_KEYNAMES_md_autotoc_md2618}{}\doxysubsubsection{1.\+1.\+2. The \char`\"{}parent\char`\"{} Confusion}\label{doc_KEYNAMES_md_autotoc_md2618}
+As an inverse to \char`\"{}is below\char`\"{} we sometimes use \char`\"{}parent\char`\"{}. For example\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily /elektra/version} is directly below {\ttfamily /elektra}, so {\ttfamily /elektra} is the (direct) parent of {\ttfamily /elektra/version}
+\item {\ttfamily /elektra/version/info} is below {\ttfamily /elektra}, so {\ttfamily /elektra} is a parent of {\ttfamily /elektra/version}
+\item {\ttfamily /elektra/version/info} and {\ttfamily /elektra/version} are below {\ttfamily /elektra}, so {\ttfamily /elektra} is the common parent.
+\end{DoxyItemize}
+
+This terminology can be easy to confuse, as \char`\"{}parent\char`\"{} is used for multiple different things. If the context doesn\textquotesingle{}t make it clear what \char`\"{}parent\char`\"{} means, you might consider more clear terms, e.\+g. other common terms for tree-\/like structures. For example, you could use \char`\"{}ancestor\char`\"{} and \char`\"{}direct parent\char`\"{} as a clear differentiation.
+
+There is also the term \char`\"{}(the) parent key\char`\"{}. In many cases, this is refers to a very specific key in the given context that is a \char`\"{}common parent\char`\"{} to a certain set of keys. If you are working within such a context, be careful about \char`\"{}a parent key\char`\"{} vs. \char`\"{}the parent key\char`\"{}.\hypertarget{doc_KEYNAMES_md_autotoc_md2619}{}\doxysubsection{1.\+2. Namespaces and Root Keys}\label{doc_KEYNAMES_md_autotoc_md2619}
+We mentioned above that there are different namespaces in Elektra. Now we will explain their meaning.
+
+To recap, Elektra knows these namespaces\+:
+
+
+\begin{DoxyItemize}
+\item cascading
+\item meta
+\item spec
+\item proc
+\item dir
+\item user
+\item system
+\item default
+\end{DoxyItemize}
+
+We mentioned above that there are key names with zero key name parts, i.\+e. just namespace. These are called {\itshape root keys} (based on Unix\textquotesingle{}s filesystem root, as well as the root of a tree).
+
+Let us explore them one by one\+:
+
+
+\begin{DoxyItemize}
+\item The simplest namespace is the $\ast$$\ast$\char`\"{}meta\char`\"{}$\ast$$\ast$. The namespace \char`\"{}meta\char`\"{} is used exclusively for meta keys, i.\+e. keys that are attached to another key as metadata. The key hierarchy of the namespace \char`\"{}meta\char`\"{} is entirely separate from the key hierarchies in the other namespaces. Without external information, you cannot determine from a key name with namespace \char`\"{}meta\char`\"{}, which key this metakey is attached to.
+\item keys with namespace $\ast$$\ast$\char`\"{}proc\char`\"{}$\ast$$\ast$ only exist in memory and are scoped to the current {\bfseries{proc}}ess.
+\item keys with namespace $\ast$$\ast$\char`\"{}dir\char`\"{}$\ast$$\ast$ are scoped to a single filesystem {\bfseries{dir}}ectory. They will (normally) be stored somewhere within this directory. Currently, there is no way of knowing which filesystem directory a key with namespace \char`\"{}dir\char`\"{} is scoped to. Elektra only uses keys scoped to the current working directory.
+\item Similarly, keys with namespace $\ast$$\ast$\char`\"{}user\char`\"{}$\ast$$\ast$ are scoped to a single {\bfseries{user}}. They will (normally) be stored somewhere within the user\textquotesingle{}s home directory. Again, there is no way of knowing which user a key is scoped to and Elektra only uses keys scoped to the current user, i.\+e. the one that executed the application.
+\item The namespace $\ast$$\ast$\char`\"{}system\char`\"{}$\ast$$\ast$ is what makes Elektra global. keys with namespace \char`\"{}system\char`\"{} are the same for all users of the system, independent of context. They are stored in system level directory.
+\item keys with namespace $\ast$$\ast$\char`\"{}default\char`\"{}$\ast$$\ast$ are special. While you could create them manually, you normally don\textquotesingle{}t want to. It is used for keys with default values for namespace resolution (explained below). keys with this namespace are also in-\/memory only.
+\item Then there is $\ast$$\ast$\char`\"{}spec\char`\"{}$\ast$$\ast$. This namespace, like \char`\"{}meta\char`\"{}, is separate from the rest. We use it for keys that are part of a specification used to describe other keys. The metadata of every key with namespace \char`\"{}spec\char`\"{} describes a specification for the keys that have the same key name part but a different namespace (except \char`\"{}meta\char`\"{}). So the namespace \char`\"{}spec\char`\"{} has a closer relation to the others than \char`\"{}meta\char`\"{}.
+\item Now just the namespace $\ast$$\ast$\char`\"{}cascading\char`\"{}$\ast$$\ast$ remains. This namespace is used for namespace resolution (see below). It is the one that applications and end-\/users will use most commonly when interacting with Elektra. keys with namespace \char`\"{}cascading\char`\"{} are never stored. Not on disk and normally also not in a {\ttfamily Key\+Set}.
+\end{DoxyItemize}
+
+There is also a certain ranking between the namespaces \char`\"{}proc\char`\"{}, \char`\"{}dir\char`\"{}, \char`\"{}user\char`\"{}, \char`\"{}system\char`\"{} and \char`\"{}default\char`\"{}. Namely, that they override each other in exactly this order. Given two key names with identical key name parts, but one with namespace \char`\"{}dir\char`\"{} and one with namespace \char`\"{}user\char`\"{}, the one with namespace \char`\"{}dir\char`\"{} should be considered more specific and should be preferred.
+
+A special feature of Elektra is {\itshape namespace resolution}. Namespace resolution is the process of finding an appropriate namespace for a key based on a key name with namespace \char`\"{}cascading\char`\"{}. It is most commonly used, when you need to find which key in the KDB should be used, based on a series of key name parts.
+
+To resolve the namespace, we just look at each of the namespaces in the ranking defined above. We then use the first namespace where the key actually exists. Namespace resolution is performed, when {\ttfamily ks\+Lookup}/{\ttfamily ks\+Lookup\+By\+Name} is called with a key name with namespace \char`\"{}cascading\char`\"{} \href{\#footnote-2}{\texttt{ \mbox{[}2\mbox{]}}}. \label{_ref-footnote-2}%
+ This is also done, if you call {\ttfamily kdb get} or {\ttfamily kdb set} with a key name with namespace \char`\"{}cascading\char`\"{}.\hypertarget{doc_KEYNAMES_md_autotoc_md2620}{}\doxysection{2. Escaped Names}\label{doc_KEYNAMES_md_autotoc_md2620}
+The standard way to represent a key name in Elektra is this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/version/info}
+
+\end{DoxyCode}
+
+
+This can be deconstructed into\+:
+
+
+\begin{DoxyItemize}
+\item The namespace\+: {\ttfamily system}
+\item The namespace separator\+: {\ttfamily \+:}
+\item A part separator\+: {\ttfamily /}
+\item A key name part\+: {\ttfamily elektra}
+\item A part separator\+: {\ttfamily /}
+\item A key name part\+: {\ttfamily version}
+\item A part separator\+: {\ttfamily /}
+\item A key name part\+: {\ttfamily info}
+\item The invisible null terminator
+\end{DoxyItemize}
+
+\begin{quote}
+{\itshape Note\+:} It might seem strange, that there is a part {\bfseries{separator}} before the first part. This makes sense, because then the part separator always introduces a new part. A better fitting description would be \char`\"{}part introducer\char`\"{}. But since we commonly call {\ttfamily /} a separator, we will stick to this terminology. \end{quote}
+For keys in the namespace \char`\"{}cascading\char`\"{}, we omit both the namespace itself and as well as the namespace separator\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/elektra/version/info}
+
+\end{DoxyCode}
+
+
+We also have a special rule for the root keys, i.\+e. the key names with zero key name parts and just a namespace. According to above rules {\ttfamily system\+:} would be the escaped name of the root key for the namespace \char`\"{}system\char`\"{} and the escaped name for the root key of the namespace \char`\"{}cascading\char`\"{} would be an empty string. But this is not the case. We use {\ttfamily system\+:/} and {\ttfamily /} instead. The exact details will be explored later, but for now just remember, that an (escaped) key name {\bfseries{always}} contains at least one part separator ({\ttfamily /}).
+
+But there is a problem. We said a key name part is \char`\"{}an arbitrary sequence of non-\/zero bytes\char`\"{}. This means \char`\"{}elektra/version\char`\"{} is a key name part as well. Since the slash {\ttfamily /} would conflict with the part separator, we can escape it with a backslash {\ttfamily \textbackslash{}} (and {\ttfamily \textbackslash{}} can be escaped with another {\ttfamily \textbackslash{}})\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/elektra\(\backslash\)/version/info/back\(\backslash\)\(\backslash\)slash}
+
+\end{DoxyCode}
+
+
+This can be deconstructed into\+:
+
+
+\begin{DoxyItemize}
+\item A part separator\+: {\ttfamily /}
+\item A key name part\+: {\ttfamily elektra/version}
+\item A part separator\+: {\ttfamily /}
+\item A key name part\+: {\ttfamily info}
+\item A key name part\+: {\ttfamily back\textbackslash{}slash}
+\item An invisible null terminator
+\end{DoxyItemize}
+
+\begin{quote}
+{\itshape Note\+:} When talking about a single key name part {\ttfamily /} and {\ttfamily \textbackslash{}} are never escaped. \end{quote}
+Because of this escaping mechanism, we call this the {\itshape escaped name} of a key.
+
+Elektra\textquotesingle{}s key names are designed to mimic Unix paths to some extent. To this end we support the commonly used {\ttfamily /.} and {\ttfamily /..}. This is one reason, why we need to differentiate between {\itshape canonical} key names and {\itshape non-\/canonical} key names.\hypertarget{doc_KEYNAMES_md_autotoc_md2621}{}\doxysubsection{2.\+1. (\+Non-\/)\+Canonical (\+Escaped) Key Names}\label{doc_KEYNAMES_md_autotoc_md2621}
+Following the syntax of Unix paths, in Elektra both {\ttfamily /elektra/./version} and {\ttfamily /elektra/version} refer to the same key. Similarly, {\ttfamily /elektra/../version} and {\ttfamily /version} refer to the same key.
+
+To give each key a unique key name, we need to introduce a {\itshape canonical (escaped) key name}. For Unix paths, we could say that the canonical path is the shortest possible path that refers to a file. In Elektra this doesn\textquotesingle{}t quite work, but will use this definition for now.
+
+\begin{quote}
+{\itshape Note\+:} Only escaped key names can be canonical or non-\/canonical, so we normally omit the \char`\"{}escaped\char`\"{} specifier. \end{quote}
+Let us look at a few examples to get a feeling for canonical and non-\/canonical key names.
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Non-\/canonical   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Canonical    }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Non-\/canonical   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Canonical    }\\\cline{1-2}
+\endhead
+{\ttfamily /elektra/./version}   &{\ttfamily /elektra/version}    \\\cline{1-2}
+{\ttfamily /elektra/../version}   &{\ttfamily /version}    \\\cline{1-2}
+{\ttfamily /elektra/.././version}   &{\ttfamily /version}    \\\cline{1-2}
+{\ttfamily /elektra///version}   &{\ttfamily /elektra/version}    \\\cline{1-2}
+{\ttfamily /elektra//../version}   &{\ttfamily /version}    \\\cline{1-2}
+{\ttfamily /elektra/./../version}   &{\ttfamily /version}    \\\cline{1-2}
+{\ttfamily /elektra/../../}   &{\ttfamily /}    \\\cline{1-2}
+{\ttfamily user\+:/elektra/../../}   &{\ttfamily user\+:/}    \\\cline{1-2}
+{\ttfamily /elektra/version/}   &{\ttfamily /elektra/version}   \\\cline{1-2}
+\end{longtabu}
+
+
+As you can see, the behavior of {\ttfamily .} and {\ttfamily ..} matches that of Unix paths as long as we are using the namesapce \char`\"{}cascading\char`\"{}. The namespace of a key name can never be changed via {\ttfamily ..}, so {\ttfamily user\+:/..} is equivalent to {\ttfamily user\+:/}.
+
+There is also a small difference in the last example. In Unix such paths would also refer to the same file, but in some Unix tools a trailing slash alters the behavior of the tool. In Elektra this is never the case. {\ttfamily /elektra/version/} and {\ttfamily /elektra/version} refer to the same key and are always treated as the same key name.
+
+The only exception are the root keys. The canonical key names for the root keys always end with a {\ttfamily /}. In fact, we will see \href{\#4-valid-and-invalid-key-names}{\texttt{ later}}, that removing the {\ttfamily /} makes the key name invalid.
+
+There also is a completely new addition in Elektra. Elektra has a notion of {\itshape array parts}. These are key name parts that denote an array index. How exactly these work, will be explored \href{\#4-valid-and-invalid-key-names}{\texttt{ later}}. For now, we only need to know that they start with an {\ttfamily \#} and their canonical form has {\ttfamily n} underscores followed by {\ttfamily n+1} digits.
+
+A few examples for array parts\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{2}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Non-\/canonical   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Canonical    }\\\cline{1-2}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Non-\/canonical   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Canonical    }\\\cline{1-2}
+\endhead
+{\ttfamily /elektra/\#10}   &{\ttfamily /elektra/\#\+\_\+10}    \\\cline{1-2}
+{\ttfamily /elektra/\#1234}   &{\ttfamily /elektra/\#\+\_\+\+\_\+\+\_\+1234}   \\\cline{1-2}
+\end{longtabu}
+\hypertarget{doc_KEYNAMES_md_autotoc_md2622}{}\doxysubsection{2.\+2. Other Escape Sequences}\label{doc_KEYNAMES_md_autotoc_md2622}
+We already know, that {\ttfamily /} and {\ttfamily \textbackslash{}} have to be escaped in an escaped key name. In addition to these two, there are a few more characters that have to be escaped. However, these additional characters may {\bfseries{only}} be escaped under certain conditions.
+
+The characters in question are\+: {\ttfamily .}, {\ttfamily \#}, {\ttfamily \%}. The conditions under which these characters can be escaped can be found \href{\#4.1.-illegal-escape-sequences}{\texttt{ below}}.\hypertarget{doc_KEYNAMES_md_autotoc_md2623}{}\doxysection{3. Unescaped Names}\label{doc_KEYNAMES_md_autotoc_md2623}
+While the escaped name of a key is nice for humans, it is not very well suited for machines. The escaping of path separators makes it hard to find the key name parts of a given key name. The escaped name is also not well suited for sorting \href{\#footnote-3}{\texttt{ \mbox{[}3\mbox{]}}}. \label{_ref-footnote-3}%
+
+
+Both of these flaws are solved by the {\itshape unescaped name}. In unescaped names we use a zero-\/byte as the part separator. Since a key name part cannot contain a zero-\/byte, we do not need an escaping mechanism for the path separator.
+
+However, these zero-\/bytes mean that the unescaped name is not a printable string and therefore not human-\/readable. This why we will only describe the unescaped name in the deconstructed form.
+
+The escaped names from above correspond to the following unescaped names\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily system\+:/elektra/version/info}
+\begin{DoxyItemize}
+\item The byte representing the namespace \char`\"{}system\char`\"{}\+: {\ttfamily 0x07}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily elektra}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily version}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily info}
+\item The terminator byte\+: {\ttfamily 0x00}
+\end{DoxyItemize}
+\item {\ttfamily /elektra/version/info}
+\begin{DoxyItemize}
+\item The byte representing the namespace \char`\"{}cascading\char`\"{}\+: {\ttfamily 0x01}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily elektra}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily version}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily info}
+\item The terminator byte\+: {\ttfamily 0x00}
+\end{DoxyItemize}
+\item {\ttfamily /elektra\textbackslash{}/version\textbackslash{}\textbackslash{}/info}
+\begin{DoxyItemize}
+\item The byte representing the namespace \char`\"{}cascading\char`\"{}\+: {\ttfamily 0x01}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily elektra/version\textbackslash{}}
+\item A part separator\+: {\ttfamily 0x00}
+\item A key name part\+: {\ttfamily info}
+\item The terminator byte\+: {\ttfamily 0x00}
+\end{DoxyItemize}
+\item {\ttfamily /}\+:
+\begin{DoxyItemize}
+\item The byte representing the namespace \char`\"{}cascading\char`\"{}\+: {\ttfamily 0x01}
+\item A part separator\+: {\ttfamily 0x00}
+\item The terminator byte\+: {\ttfamily 0x00}
+\end{DoxyItemize}
+\end{DoxyEnumerate}
+
+\begin{quote}
+{\itshape Note\+:} We use 0x\+ZZ to represent a single byte in hexadecimal. This form is only used when the context makes it clear that it represents a single byte and not a four character string. \end{quote}
+The process of turning an escaped name into the corresponding unescaped name is called {\itshape unescaping}. Turning an unescaped name back into an escaped name is called {\itshape escaping}.
+
+Unescaping works, by simply removing the backslashes {\ttfamily \textbackslash{}} that are used as escapes. This applies both to {\ttfamily \textbackslash{}/} and {\ttfamily \textbackslash{}\textbackslash{}} anywhere in key name parts, as well as to the escape sequences that are only used at the start of key name parts, e.\+g. {\ttfamily \textbackslash{}\#}.\hypertarget{doc_KEYNAMES_md_autotoc_md2624}{}\doxysection{4. Valid and Invalid Key Names}\label{doc_KEYNAMES_md_autotoc_md2624}
+Not all of the key names described by the above sections are valid under all circumstances. You might also say, that a key name as defined above does not necessarily refer to a key in the KDB. So while it might be a key name, there is no key that actually uses this name. Only {\itshape valid key names} refer to a key in the KDB and may be used by a key as its name. The remaining key names are referred to as {\itshape invalid key names}.
+
+For unescaped key names, it is pretty simple\+: Unescaped key names are valid key names, if all of the following are true\+:
+
+
+\begin{DoxyItemize}
+\item The first byte is a valid namespace byte, i.\+e. {\ttfamily 0x01} -\/ {\ttfamily 0x08}.
+\item The second byte is a zero-\/byte {\ttfamily 0x00}.
+\item The last byte is a zero-\/byte {\ttfamily 0x00}.
+\end{DoxyItemize}
+
+For this reason unescaped names for root keys are 3 bytes long, with the last two bytes being zero-\/byte. Between the second and the last byte, we find the key name parts separated by a zero-\/byte {\ttfamily 0x00}.
+
+For escaped key names it is easier to define, what makes an invalid key name, than what makes a valid key name, so we will go this route. An escaped key name is considered an invalid key name, if any of the following are true\+:
+
+
+\begin{DoxyItemize}
+\item It is an empty string.
+\item The last character before the invisible null terminator is a backslash {\ttfamily \textbackslash{}}. This is a dangling escape as we expect another character after the escape character {\ttfamily \textbackslash{}}.
+\item It contains a namespace (i.\+e. the namespace is not \char`\"{}cascading\char`\"{}), but the namespace separator {\ttfamily \+:} is not followed by a {\ttfamily /}. (This mainly applies to root keys.)
+\item It contains a namespace separator {\ttfamily \+:}, but the substring before the first {\ttfamily \+:} is not one of\+: {\ttfamily meta}, {\ttfamily spec}, {\ttfamily proc}, {\ttfamily dir}, {\ttfamily user}, {\ttfamily system} and {\ttfamily default}.
+\item It contains an illegal escape sequence (see below).
+\item It is the string {\ttfamily /\%} or consists of a namespace followed by the namespace separator {\ttfamily \+:} followed by {\ttfamily /\%}. In other words, the first escaped part is translated into an empty unescaped part. The unescaped names for these keys would collide with the root keys {\ttfamily /}, {\ttfamily user\+:/}, etc.
+\end{DoxyItemize}
+
+\begin{quote}
+{\itshape Note\+:} The C-\/\+API does not allow you to construct a {\ttfamily Key} with an invalid key name; for example {\ttfamily key\+New} (and {\ttfamily key\+VNew}) will return {\ttfamily NULL}. \end{quote}
+\hypertarget{doc_KEYNAMES_md_autotoc_md2625}{}\doxysubsection{4.\+1. Illegal Escape Sequences}\label{doc_KEYNAMES_md_autotoc_md2625}
+The escape sequences {\ttfamily \textbackslash{}\textbackslash{}} and {\ttfamily \textbackslash{}/} are always valid. For the other escape sequences certain conditions must be fulfilled\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \textbackslash{}.}\+: can be used at the start of a key name part, if the whole key name part is {\ttfamily \textbackslash{}.} or {\ttfamily \textbackslash{}..}. In other words, {\ttfamily \textbackslash{}} can be used to escape the behavior of {\ttfamily .} and {\ttfamily ..}.
+\item {\ttfamily \textbackslash{}\#}\+: can be used at the start of a key name part, if the key name part would be a non-\/canonical array part without the {\ttfamily \textbackslash{}}. specifically, {\ttfamily \textbackslash{}\#} can be used, if the key name part matches the regular expression {\ttfamily \textbackslash{}\textbackslash{}\#\mbox{[}1-\/9\mbox{]}\mbox{[}0-\/9\mbox{]}+} and the digits form a number less than or equal to 9223372036854775807 (= {\ttfamily 2$^\wedge$63 -\/ 1}). Meaning, {\ttfamily \textbackslash{}} can be used to avoid array part canonicalization.
+\item {\ttfamily \textbackslash{}\%}\+: can be used, if the whole key name part is {\ttfamily \textbackslash{}\%}. That is {\ttfamily \textbackslash{}\%} is the escaped version of {\ttfamily \%} (the empty key name part).
+\end{DoxyItemize}
+
+It may seem weird that some escape sequences have such specific requirements. This is necessary to create a 1\+:1 mapping between (canonical) escaped names and unescaped names. Without the restrictions, e.\+g. both {\ttfamily \textbackslash{}abc} and {\ttfamily abc} would be unescaped as {\ttfamily abc}. In addition, the conditions for {\ttfamily \textbackslash{}\#} have to be so specific, because {\ttfamily \textbackslash{}} must only be allowed, if it affects unescaping. For example, we cannot allow {\ttfamily \textbackslash{}\#abc}, because that would unescape into {\ttfamily \#abc}, just like {\ttfamily \#abc}.\hypertarget{doc_KEYNAMES_md_autotoc_md2626}{}\doxysubsection{4.\+2. Array Parts}\label{doc_KEYNAMES_md_autotoc_md2626}
+As mentioned above, Elektra has a notion of array parts. More specifically, certain key name parts will be interpreted as array indices under certain circumstances (see also documentation for arrays).
+
+We already mentioned above, that array parts have canonical and non-\/canoncial forms.
+
+A canonical array part is a hash-\/sign {\ttfamily \#} followed by {\ttfamily n} underscores ({\ttfamily \+\_\+}) followed by {\ttfamily n+1} digits. Additionally, the digits must form a number greater than or equal to {\ttfamily 0} and less than or equal to 9223372036854775807 (= {\ttfamily 2$^\wedge$63 -\/ 1}). The number must not have any leading {\ttfamily 0}s (except for the number zero itself).
+
+In non-\/canonical key names, the underscores ({\ttfamily \+\_\+}) are omitted. That is, either the correct number of underscores is used or no underscores at all.
+
+Any other key name part that starts with a {\ttfamily \#} is never an array part.
+
+{\bfseries{All}} key name parts starting with {\ttfamily \#} are valid. It does not matter, if the key name part is an array part or not. However, some parts of Elektra may expect array parts under certain circumstances. Providing other key name parts under such circumstances, may cause problems. If the context doesn\textquotesingle{}t call for an array part, then array parts behave no different and are treated as plain string just like any other key name part.
+
+Finally, some examples\+:
+
+\label{_ref-footnote-4}%
+
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Key name part   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Behavior in array   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Behavior elsewhere    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Key name part   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Behavior in array   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Behavior elsewhere    }\\\cline{1-3}
+\endhead
+{\ttfamily \#0}   &Index of first element   &Child named {\ttfamily \#0}    \\\cline{1-3}
+{\ttfamily \#\+\_\+10}   &Index of 11th element   &Child named {\ttfamily \#\+\_\+10}    \\\cline{1-3}
+{\ttfamily \#\+\_\+99}   &Index of 100th element   &Child named {\ttfamily \#\+\_\+99}    \\\cline{1-3}
+{\ttfamily \#\+\_\+\+\_\+100}   &Index of 101st element   &Child named {\ttfamily \#\+\_\+\+\_\+100}    \\\cline{1-3}
+{\ttfamily \#abc}   &Possible error \href{\#footnote-4}{\texttt{ \mbox{[}4\mbox{]}}}   &Child named {\ttfamily \#abc}    \\\cline{1-3}
+{\ttfamily \#\+\_\+100}   &Possible error \href{\#footnote-4}{\texttt{ \mbox{[}4\mbox{]}}}   &Child named {\ttfamily \#\+\_\+100}    \\\cline{1-3}
+{\ttfamily \#\+\_\+\+\_\+10}   &Possible error \href{\#footnote-4}{\texttt{ \mbox{[}4\mbox{]}}}   &Child named {\ttfamily \#\+\_\+\+\_\+10}    \\\cline{1-3}
+{\ttfamily \#10a}   &Possible error \href{\#footnote-4}{\texttt{ \mbox{[}4\mbox{]}}}   &Child named {\ttfamily \#10a}   \\\cline{1-3}
+\end{longtabu}
+\hypertarget{doc_KEYNAMES_md_autotoc_md2627}{}\doxysection{4.\+3. Reserved Key Names}\label{doc_KEYNAMES_md_autotoc_md2627}
+Apart from invalid key names, which cannot be constructed via the C-\/\+API, there are also {\itshape reserved key names}. These can be used with the C-\/\+API ({\ttfamily key\+New} returns a valid {\ttfamily Key $\ast$}), but there might be situations, in which {\ttfamily Key}s with such key names are treated differently or rejected entirely.
+
+Generally speaking, any part of Elektra may define that some key names have special meaning, are not allowed, etc. However, sometimes guaranteed compatibility with other parts of Elektra is required. A good example are storage plugins. A storage plugins should strive to be compatible with as much of Elektra as possible. But since the storage plugin doesn\textquotesingle{}t know anything about other plugins or even the application using Elektra, it is hard to attribute special meaning to certain key names.
+
+This is why there are two types of reserved key name\+:
+
+
+\begin{DoxyEnumerate}
+\item Any key name that is below {\ttfamily system\+:/elektra}\+: These key names are reserved for Elektra\textquotesingle{}s internals. Each of these keys has a very specific purpose that is defined globally for all of Elektra. Using such a key name automatically carries this meaning. Even outside the context in which Elektra uses these directly, you should never use {\ttfamily system\+:/elektra} keys for other purposes.
+\item Any key name containing the key name part {\ttfamily ®elektra}\+: These key names are reserved, but their meaning depends on the context. Similar to the \href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ METADATA.\+ini}} file for metadata, some conventions for these key names are defined in reserved name document.
+\end{DoxyEnumerate}
+
+\begin{quote}
+{\itshape Note\+:} We use UTF-\/8 here, so {\ttfamily ®elektra} is specifically the 9-\/byte sequence {\ttfamily C2 AE 65 6C 65 6B 74 72 61}. \end{quote}
+{\ttfamily Key}s with such key names will {\itshape never} be used in the interface between storage plugins and the rest of Elektra. This allows storage plugins to use {\ttfamily ®elektra} to encode things that otherwise wouldn\textquotesingle{}t be possible (e.\+g. values of non-\/leaf keys).
+
+\DoxyHorRuler{0}
+
+
+\label{_footnote-1}%
+\mbox{[}1\mbox{]}\+: This explanation of Unix paths and Unix filesystems, is not entirely accurate. But it is good enough for our purposes, so we will just ignore some details. \href{\#ref-footnote-1}{\texttt{ ↑}}
+
+\label{_footnote-2}%
+\mbox{[}2\mbox{]}\+: The actual process of resolution process that happens in {\ttfamily ks\+Lookup\+By\+Name} and {\ttfamily ks\+Lookup} is a bit more complicated. It may involve some keys with namespace \char`\"{}spec\char`\"{} as well. \href{\#ref-footnote-2}{\texttt{ ↑}}
+
+\label{_footnote-3}%
+\mbox{[}3\mbox{]}\+: For performance reasons, we want to make the comparison between to key names as fast as possible. A good solution is a single {\ttfamily memcmp}. But this doesn\textquotesingle{}t account for the fact that key names represent a hierarchy and that {\ttfamily /} has a special meaning\+: {\ttfamily /key/sub} should always be sorted after {\ttfamily /key} and before {\ttfamily /key.1}. With {\ttfamily memcmp}, {\ttfamily /key} is first, because it is the shortest and otherwise equal. But then we would get {\ttfamily /key.1} not {\ttfamily /key/sub}, because {\ttfamily / $<$ .} in ASCII. This cannot happen with zero-\/bytes as the separator, because there is no byte with a smaller value. \href{\#ref-footnote-3}{\texttt{ ↑}}
+
+\label{_footnote-4}%
+\mbox{[}4\mbox{]}\+: We classify this as a \char`\"{}possible error\char`\"{}, because not all parts of Elektra will fully validate all conventions and rules around arrays. In particular, a standard {\ttfamily Key\+Set} itself imposes no restrictions. Therefore, you can use any {\ttfamily Key\+Set} locally in your application. As soon as you pass the {\ttfamily Key\+Set} into an external function (e.\+g. {\ttfamily kdb\+Set}), however, errors may occur since the {\ttfamily Key\+Set} may pass through a function that requires {\ttfamily Key\+Set} which are properly validated against array rules. For more details what conventions and rules exist around arrays, see documentation for arrays. \href{\#ref-footnote-4}{\texttt{ ↑}} 

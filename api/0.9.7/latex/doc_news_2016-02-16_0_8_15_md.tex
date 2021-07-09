@@ -1,0 +1,473 @@
+\label{doc_news_2016-02-16_0_8_15_md_md_doc_news_2016_02_16_0_8_15}%
+\Hypertarget{doc_news_2016-02-16_0_8_15_md_md_doc_news_2016_02_16_0_8_15}%
+
+\begin{DoxyItemize}
+\item guid\+: 1ab4a560-\/c286-\/46d2-\/a058-\/1a8e7e208fe8
+\item author\+: Markus Raab
+\item pub\+Date\+: Tue, 16 Feb 2016 17\+:47\+:00 +0100
+\item short\+Desc\+: adds improved mounting, split of library \& configuration validation
+\end{DoxyItemize}
+
+In case you do not yet know about it, here is an abstract about Elektra\+:
+
+Elektra serves as a universal and secure framework to access configuration parameters in a global, hierarchical key database. Elektra provides a mature, consistent and easily comprehensible API. Its modularity effectively avoids code duplication across applications and tools regarding configuration tasks. Elektra abstracts from cross-\/platform-\/related issues and allows applications to be aware of other applications\textquotesingle{} configurations, leveraging easy application integration.
+
+See \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2735}{}\doxysection{Overview}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2735}
+This is one of the largest release up to now. It includes many user-\/visible improvements. Some highlights\+:
+
+
+\begin{DoxyItemize}
+\item Mounting is vastly improved\+: think about Debian\textquotesingle{}s \char`\"{}dpkg\char`\"{} to \char`\"{}apt\char`\"{}-\/like functionality
+\item In previous releases you could already specify the structure of the configuration. Now you can also automatically enforce this property.
+\item We split the shared library {\ttfamily libelektra} into smaller parts. Now users can link against the parts of the library they need.
+\item As always, the ABI and API is fully forward-\/compatible.
+\item The release contains improvements in the \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/decisions/bootstrap.md}{\texttt{ bootstrapping process}}.
+\item We improved the {\ttfamily ini}, {\ttfamily rename} and {\ttfamily crypto} plugins.
+\item The tool {\ttfamily kdb} now supports bookmarks and profiles.
+\item The new tool {\ttfamily kdb editor} allows you to edit KDB configuration in your favorite text editor.
+\item We are glad of the new packages for Debian, Arch Linux and Open\+WRT.
+\end{DoxyItemize}
+
+The same text as follows is also available \href{https://doc.libelektra.org/news/1ab4a560-c286-46d2-a058-1a8e7e208fe8.html}{\texttt{ here as html}} and \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/news/2016-02-16_0.8.15.md}{\texttt{ here on github}}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2736}{}\doxysection{Global Mount}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2736}
+Sometimes you simply want some functionality for the whole key database. For example, you want to enable logging or notification of configuration changes. In previous versions, you had to change every mountpoint individually. Even more problematic, every mountpoint created its individual logs and notifications, without any way for someone to know if an application has issued its last log/notification.
+
+These problems are now solved by global plugins. The same plugins are reused for this purpose. Also the mounting works nearly in the same way, you only have to omit the configuration file and the mountpoint\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb global-\/mount syslog journald dbus}
+
+\end{DoxyCode}
+
+
+Voilà, from now on every configuration change gets logged to syslog and journald. Additionally, every application gets notified via dbus.
+
+If you want it more verbose for debugging, you can easily do so by\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb global-\/mount logchange counter}
+
+\end{DoxyCode}
+
+
+Which gives you detailed information to standard output which keys were changed/edited/deleted. Additionally, Elektra counts how often the {\ttfamily counter} plugin is invoked.
+
+The underlying work for the global plugins, i.\+e. hooks in the core libraries and the {\ttfamily list} plugin that allows us to use many plugins without bloating the core was done by Thomas Waser.
+
+It was already possible in earlier versions of Elektra to specify the configuration of your program. Until now, this specification could be mainly used to to generate code as described \href{https://master.libelektra.org/src/tools/pythongen}{\texttt{ here}}. This release adds two more interesting options\+:
+
+
+\begin{DoxyEnumerate}
+\item the spec plugin, and
+\item the spec mount.
+\end{DoxyEnumerate}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2737}{}\doxysection{Spec Plugin}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2737}
+The most important global plugin that is now newly introduced with this release (thanks to Thomas Waser) is the {\ttfamily spec} plugin. By default it will be added for every global-\/mount. So for a new installation make sure you executed at least once\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb global-\/mount}
+
+\end{DoxyCode}
+
+
+The spec plugin is a global plugin that copies metadata from the {\ttfamily spec}-\/namespace to other namespaces. That means, it reads the specification, and makes sure that the configuration conforms to it. The actual validation is done by the many validation plugins already present.
+
+Lets start by saying a key is a long and must have at least the value 10\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb setmeta spec/example/longkey check/type long}
+
+\end{DoxyCode}
+
+
+Then we can create a key in a different namespace and see if the {\ttfamily spec} plugin applies the metadata correctly\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set /example/longkey 25}
+\DoxyCodeLine{kdb lsmeta /example/longkey}
+
+\end{DoxyCode}
+
+
+Should now at least print {\ttfamily check/type}. By itself, this is useful for documentation of keys. For example, the application developer says\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb setmeta spec/example/longkey description "{}Do not change"{}}
+\DoxyCodeLine{kdb setmeta spec/example/longkey example 30}
+
+\end{DoxyCode}
+
+
+The user can retrieve this documentation by\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb getmeta /example/longkey description}
+
+\end{DoxyCode}
+
+
+But we want {\ttfamily check/type} to be not only a documentation, but also enforced.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2738}{}\doxysection{Spec Mount}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2738}
+Using {\ttfamily kdb setmeta} extensively and always looking out that all plugins are mounted correctly is error-\/prone. So instead, one can directly mount the plugins as specified. For the example above one simply needs\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb setmeta spec/example mountpoint example.ecf}
+\DoxyCodeLine{kdb spec-\/mount /example}
+
+\end{DoxyCode}
+
+
+Now, when we try to modify {\ttfamily /example/longkey} it will be validated\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set /example/longkey a}
+\DoxyCodeLine{\#> Error (\#52) [...] long [not] matched [...] a}
+
+\end{DoxyCode}
+
+
+Based on the present metadata, the correct plugins (in this case {\ttfamily type} because of the metadata {\ttfamily check/type}) will be loaded.
+
+We can also create a whole specification file, first mount the specification and then the mountpoint according the specification, e.\+g when we have {\ttfamily battery.\+ini} in the folder {\ttfamily \$(dirname \$(kdb file spec))} with following content\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[]}
+\DoxyCodeLine{mountpoint = battery.ini}
+\DoxyCodeLine{infos/plugins = ini}
+\DoxyCodeLine{}
+\DoxyCodeLine{[level]}
+\DoxyCodeLine{check/enum = 'critical', 'low', 'high', 'full'}
+
+\end{DoxyCode}
+
+
+Then we can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# mount the file itself:}
+\DoxyCodeLine{kdb mount battery.ini spec/example/battery ni}
+\DoxyCodeLine{\# make sure all plugins are present (e.g. enum for check/enum):}
+\DoxyCodeLine{kdb spec-\/mount /example/battery}
+
+\end{DoxyCode}
+
+
+Now lets verify if it worked\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb lsmeta /example/battery/level}
+\DoxyCodeLine{\# we see it has a check/enum}
+\DoxyCodeLine{kdb getmeta /example/battery/level check/enum}
+\DoxyCodeLine{\# now we know allowed values}
+\DoxyCodeLine{kdb set /example/battery/level low}
+\DoxyCodeLine{\# success, low is ok!}
+\DoxyCodeLine{kdb set /example/battery/level wrong}
+\DoxyCodeLine{\# fails, not one of the allowed values!}
+
+\end{DoxyCode}
+
+
+The main idea of the spec-\/mount is\+: search a plugin for every specification (metadata) found in the spec-\/namespace.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2739}{}\doxysection{General Mount Improvements}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2739}
+In earlier versions {\ttfamily kdb mount} failed when plugin dependencies were not satisfied. Now dependencies will automatically be fulfilled, e.\+g.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount /etc/modules system/modules line}
+
+\end{DoxyCode}
+
+
+In earlier versions you would have got an error because of the missing {\ttfamily null} plugin. Now it simply adds the needed plugins.
+
+The plugins given in the command-\/line used to be real plugins. Now also so called providers are accepted.
+
+To make providers useful we need to actually know which plugin is the best candidate. To get the information we added a {\ttfamily infos/status} clause in the contract. In this clause the plugin developer adds many details how well the plugin is tested, reviewed, documented, maintained and so on. Based on this information, the best suited plugin will be chosen. For example, you now can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount /etc/security/limits.conf system/limits augeas \(\backslash\)}
+\DoxyCodeLine{        lens=Limits.lns logging}
+
+\end{DoxyCode}
+
+
+And the best suitable logger will automatically be chosen.
+
+The configuration variable {\ttfamily /sw/kdb/current/plugins} now allows us to pass plugin configuration with the same syntax as the plugin specification passed on the commandline. A subtle difference is that thus the shell-\/splitting of arguments is missing, it is not possible to include whitespaces in the plugin configuration that way.
+
+Now it is also possible to include the same plugin multiple times and also give them individual names. This feature is essential for script-\/based plugins, e.\+g. you now might add\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.x /example/mountpoint \(\backslash\)}
+\DoxyCodeLine{        lua\#resolver script=resolver.lua \(\backslash\)}
+\DoxyCodeLine{        lua\#storage script=storage.lua}
+
+\end{DoxyCode}
+
+
+Furthermore, {\ttfamily kdb mount} now supports recommendations, which can be enabled with {\ttfamily -\/-\/with-\/recommends}. E.\+g. supplied to the mount command using augeas above, comments will automatically transformed to metadata to avoid cluttering of the real configuration.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2740}{}\doxysection{Library Split}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2740}
+Up to now, Elektra consisted only of a single shared library, {\ttfamily libelektra.\+so}. Not all symbols in it were relevant to end users, for example, some were only needed by plugins. Others were only proposed and not yet part of the stable API. And finally, other symbols were not needed in some situations, e.\+g. the plugins do not need the {\ttfamily kdb} interface.
+
+Thus, we split {\ttfamily libelektra.\+so}, so that only coherent parts are in the same library\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libelektra-\/core.\+so} only contains the {\ttfamily Key\+Set} data structure and module loading. Every binary using Elektra should link against it.
+\item {\ttfamily libelektra-\/kdb.\+so} contains the missing {\ttfamily KDB} symbols. Together with the {\ttfamily core} they contain everything declared in {\ttfamily kdb.\+h}. Michael Zehender plans to have multiple variants of {\ttfamily libelektra-\/kdb.\+so} that use different kinds of concurrency. Headerfile\+: {\ttfamily $<$kdb.\+h$>$}
+\item {\ttfamily libelektra-\/ease.\+so} adds functionality missing in {\ttfamily core} to make the life for C programmers easier. New headerfile\+: {\ttfamily kdbease.\+h}
+\item {\ttfamily libelektra-\/proposal.\+so} adds functionality proposed for {\ttfamily core}. It directly uses internal structures of {\ttfamily core}, thus they always need to have exactly the same version. Headerfile\+: {\ttfamily \mbox{\hyperlink{kdbproposal_8h}{kdbproposal.\+h}}}
+\end{DoxyItemize}
+
+The source code is now better organized by the introduction of a {\ttfamily libs} folder. The explanation of every library can be found in \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/libs}{\texttt{ /src/libs/}}.
+
+The rationale of the library split is documented \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/decisions/library_split.md}{\texttt{ here}}. Shortly put, it was needed for further evolution and allowing us to grow and enhance without getting a fat core.
+
+Thanks to Manuel Mausz for fixing many bugs related to the library split and also adapting all the bindings for it.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2741}{}\doxysubsection{Benchmark}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2741}
+To show that the split does not make Elektra slower, Mihael Pranjić made a small benchmark. The real time of \href{https://github.com/ElektraInitiative/libelektra/blob/master/benchmarks/large.c}{\texttt{ benchmarks/large}} and revision 634ad924109d3cf5d9f83c33aacfdd341b8de17a
+
+
+\begin{DoxyEnumerate}
+\item kdb-\/static\+: Median \+:0.\+8800
+\item kdb-\/full\+: Median \+:0.\+8700
+\item kdb\+: Median \+:0.\+8700
+\end{DoxyEnumerate}
+
+So it seems that the split does not influence the time of running elektrified processes.
+
+{\itshape Times were measured with time(1) and the median is calculated for 21 runs of benchmarks/large. This was done using \href{https://github.com/ElektraInitiative/libelektra/blob/524397669f800cb76b742514fd3aaae7a58a07da/scripts/benchmark_libsplit.sh}{\texttt{ scripts/benchmark\+\_\+libsplit.\+sh}}}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2742}{}\doxysection{Compatibility}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2742}
+As always, the ABI and API is fully forward-\/compatible, i.\+e. programs compiled against an older 0.\+8 version of Elektra will continue to work (ABI) and you will be able to recompile every program without errors (API).
+
+We added {\ttfamily key\+Get\+Namespace} which allows us to handle all namespaces in a switch and to iterate all namespaces. This is essential, when a new namespace is added, thus then the compiler can warn you about every part where the new namespace is not yet considered. We currently do not plan to add a new namespace, but better be safe than sorry.
+
+The internal function {\ttfamily key\+Compare} now also detects any metadata change.
+
+libtools was nearly rewritten. Even though it is mostly API compatible (you should not use the low-\/level {\ttfamily Backend} anymore but instead use the {\ttfamily Backend\+Builder}), it is certainly not ABI compatible. If you have an undefined symbol\+: {\ttfamily \+\_\+\+ZN3kdb5tools7\+Backend9add\+Plugin\+ESs\+NS\+\_\+6\+Key\+SetE} you need to recompile your tool. Even the merging part has ABI incompatibility (different size of {\ttfamily \+\_\+\+ZTVN3kdb5tools7merging14\+New\+Key\+StrategyE}). Unfortunately, we still cannot guarantee compatibility in {\ttfamily libtools}, further changes are planned (e.\+g. implementing mounting of lazy plugins).
+
+The python(2) and lua interfaces changed, an additional argument (the plugin configuration) is passed to {\ttfamily open}.
+
+The INI plugin was rewritten, so many options changed in incompatible ways.
+
+The default format plugin (e.\+g. for import/export) is no longer hard coded to be {\ttfamily dump}. Instead KDB\+\_\+\+DEFAULT\+\_\+\+STORAGE will be used. To get KDB\+\_\+\+DEFAULT\+\_\+\+STORAGE you can use the constants plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount-\/info}
+\DoxyCodeLine{kdb get system/info/elektra/constants/cmake/KDB\_DEFAULT\_STORAGE}
+
+\end{DoxyCode}
+
+
+Thanks to Manuel Mausz plugins do no longer export any method other than {\ttfamily elektra\+Plugin\+Symbol}. It now will fail if you directly linked against plugins and did not correctly use their public interface. Please use the module loading and access functions via the contract.
+
+The CMake and Pkgconfig Files now only link against {\ttfamily elektra-\/core} and {\ttfamily elektra-\/kdb}. If you used some symbols not present in {\ttfamily kdb.\+h}, your application might not work anymore.
+
+{\ttfamily libelektra.\+so} is still present for compatibility reasons. It should not be used for new applications. Some unimportant parts, however, moved to the \char`\"{}sugar\char`\"{} libraries. E.\+g. the symbol {\ttfamily elektra\+Key\+Cut\+Name\+Part} is no longer part of {\ttfamily libelektra.\+so}.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2743}{}\doxysubsection{Bootstrapping}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2743}
+When you use {\ttfamily kdb\+Open} in Elektra as first step it reads mountpoint configuration from {\ttfamily /elektra}. This step is the only hard coded one, and all other places of the KDB\textquotesingle{}s tree can be customized as desired via mounting.
+
+The bootstrapping now changed, so that {\ttfamily /elektra} is not part of the default configuration {\ttfamily default.\+ecf} (or as configured with {\ttfamily KDB\+\_\+\+DB\+\_\+\+FILE}), but instead we use {\ttfamily elektra.\+ecf} (or as configured with {\ttfamily KDB\+\_\+\+DB\+\_\+\+INIT}). This behaviour solves the problem that {\ttfamily default.\+ecf} was read twice (and even differently, once for {\ttfamily /elektra} and once for {\ttfamily /}).
+
+To be fully compatible with previous mountpoints, Elektra will still read mountpoints from {\ttfamily default.\+ecf} as long as {\ttfamily elektra.\+ecf} is not present.
+
+To migrate the mountpoints to the new method, simply use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb upgrade-\/bootstrap}
+
+\end{DoxyCode}
+
+
+which basically exports {\ttfamily system/elektra/mountpoints}, then does {\ttfamily kdb rm -\/r system/elektra/mountpoints} so that {\ttfamily default.\+ecf} will be without an mountpoint and thus the compatibility mode does not apply anymore. As last step it will import again what it exported before.
+
+\href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/decisions/bootstrap.md}{\texttt{ Details are here}}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2744}{}\doxysection{Plugins}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2744}
+We already highlighted the new {\ttfamily spec} plugin, but also other plugins were improved at many places. Small other changes are\+:
+
+
+\begin{DoxyItemize}
+\item Conditionals now also support {\ttfamily assign/condition} syntax, thanks to Thomas Waser
+\item Lua and Python are not tagged experimental anymore. They now correctly add their configuration to the open-\/call.
+\item The plugin {\ttfamily yajl} (the json parser and generator) now also accepts the type {\ttfamily string} and yields better warnings on wrong types.
+\item Improved error message in the {\ttfamily type} plugin.
+\end{DoxyItemize}
+
+Larger changes were done in the following plugins\+:\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2745}{}\doxysubsection{INI}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2745}
+The INI plugin was rewritten and a huge effort was taken so that it fully-\/roundtrips and additionally preserves all comments and ordering. Currently, it is brand new. It is planned that it will replace {\ttfamily dump} in the future.
+
+Currently is has some minor problems when used as KDB\+\_\+\+DEFAULT\+\_\+\+STORAGE. You can avoid most problems by mounting a different file into root\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount root.ini /}
+
+\end{DoxyCode}
+
+
+Read \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/plugins/ini}{\texttt{ here about the details}}.
+
+A huge thanks to Thomas Waser.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2746}{}\doxysubsection{Rename}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2746}
+Thanks to Thomas Waser {\ttfamily rename} is now fixed for cascading keys. Additionally, it does not change the {\ttfamily sync} status of the keys so that notification plugins work properly afterwards.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2747}{}\doxysubsection{Crypto}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2747}
+The crypto plugin is a facility for securing sensitive Keys by symmetric encryption of the value. It acts as a filter plugin and it will only operate on Keys, which have the meta-\/key „crypto/encrypt“ set.
+
+The key derivation is still work-\/in-\/progress, so the plugin does not work with kdb yet. A planned method for key derivation is to utilize the gpg-\/agent.
+
+For now the plugin requires the following Keys within the plugin configuration in order to work properly\+:
+
+
+\begin{DoxyEnumerate}
+\item /crypto/key -\/ the cryptographic key (binary 256 bit long)
+\item /crypto/iv -\/ the initialization vector (binary 128 bit long)
+\end{DoxyEnumerate}
+
+Please note that this method of key input is for testing purposes only and should never be used in a productive environment!
+
+Thanks to Peter Nirschl, especially the patience for also supporting different platforms where dependencies need to be handled differently.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2748}{}\doxysection{KDB}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2748}
+A technical preview of a new tool was added\+: {\ttfamily kdb editor} allows you to edit any part of Elektra’s configuration with any editor and any syntax. It uses 3-\/way merging and other stable technology, but it currently does not provides a way to abort editing. So you only should use it with care.
+
+The tool {\ttfamily kdb list} now searches in the rpath for libraries and thus will also find plugins not present at compile time (using {\ttfamily glob}). Additionally, it sorts the plugins by {\ttfamily infos/status} score, which can also be printed with {\ttfamily -\/v}. The last plugins printed are the ones ranked highest.
+
+When running as root, {\ttfamily kdb} will now use the {\ttfamily system} namespace when writing configuration to cascading key names.
+
+Long paths are cumbersome to enter in the CLI. Thus one can define bookmarks now. Bookmarks are key names that start with {\ttfamily +}. They are only recognized by the {\ttfamily kdb} tool or tools that explicitly have support for it. Applications should not depend on the presence of a bookmark. For example, if you set the bookmark kdb\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user/sw/elektra/kdb/\#0/current/bookmarks}
+\DoxyCodeLine{kdb set user/sw/elektra/kdb/\#0/current/bookmarks/kdb user/sw/elektra/kdb/\#0/current}
+
+\end{DoxyCode}
+
+
+You are able to use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls +kdb/bookmarks}
+\DoxyCodeLine{kdb set +kdb/format ini}
+
+\end{DoxyCode}
+
+
+The kdb tool got much more robust when the initial configuration is broken, no man page viewer is present or Elektra was installed wrongly.
+
+The {\ttfamily -\/-\/help} usage is unified and improved.
+
+The new key naming conventions are now used for configuration of the {\ttfamily kdb}-\/tool itself\+: {\ttfamily /sw/elektra/kdb/\#0/\%/} and {\ttfamily /sw/elektra/kdb/\#0/current/} are additionally read. The option {\ttfamily -\/p}/{\ttfamily -\/-\/profile} is now supported for every command, it allows to fetch configuration from {\ttfamily /sw/elektra/kdb/\#0/$<$profile$>$/} instead of {\ttfamily current}. KDB is more robust when it cannot fetch its own configuration due to KDB errors.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2749}{}\doxysection{Coding Guidelines}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2749}
+Thanks to Kurt Micheli the code guidelines are \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/CODING.md}{\texttt{ now properly documented}}. Thanks to René Schwaiger we also provide a style file for clang-\/format.
+
+Furthermore we unified and fixed the source\+:
+
+
+\begin{DoxyItemize}
+\item only use @ for doxygen commands
+\item always use {\ttfamily elektra$\ast$} functions for allocation
+\item added a file header for every file
+\end{DoxyItemize}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2750}{}\doxysection{C++11 migration}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2750}
+Since we now only use C++11, we applied {\ttfamily clang-\/modernize} which simplified many loops and replaced many {\ttfamily 0} to {\ttfamily nullptr}. Additionally, we added {\ttfamily override} and {\ttfamily default} at many places.
+
+We removed all places where we had {\ttfamily ifdefs} to use {\ttfamily auto\+\_\+ptr} if no modern smart pointer is available.
+
+Because of these changes there is no easy way to compile Elektra without C++11 support, except by avoiding the C++ parts all together.
+
+The C++ {\ttfamily Key\+Set} now also supports a {\ttfamily get} to retrieve whole containers at once. By specializing {\ttfamily Key\+Set\+Type\+Wrapper} you can support your own containers. Currently only {\ttfamily map$<$string, T$>$} is supported (T is any type supported by {\ttfamily Key\+::get}).
+
+If you haven\textquotesingle{}t removed it from your flags already, there is no use anymore to set {\ttfamily ENABLE\+\_\+\+CXX11}.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2751}{}\doxysection{Documentation}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2751}
+The documentation was improved vastly. Most thanks to Kurt Micheli who did a lot of editing and fixed many places throughout the documentation Also thanks to Michael Zehender who added two paragraphs in the main README.\+md.
+
+Key names of applications should be called {\ttfamily /sw/org/app/\#0/current}, where {\ttfamily current} is the default profile (non given). {\ttfamily org} and {\ttfamily app} is supposed to not contain {\ttfamily /} and be completely lowercase. Key names are documented \mbox{\hyperlink{doc_help_elektra-key-names_md}{here}}. \mbox{\hyperlink{doc_tutorials_application-integration_md}{See also here}}. The main reason for long paths is the provided flexibility in the future (e.\+g. to use profiles and have a compatible path for new major versions of configuration). By using bookmarks, users should not be confronted by it too often.
+
+
+\begin{DoxyItemize}
+\item many man pages were improved
+\item many typos were fixed, thanks to Pino Toscano!
+\item Fix documentation for kdb list, thanks to Christian Berrer
+\item Compilation variants are explained better, thanks to Peter Nirschl for pointing out what was missing
+\item document ronn as dependency, thanks to Michael Zehender
+\item fix broken links, thanks to Daniel Bugl
+\end{DoxyItemize}
+
+Thanks to Kurt Micheli, developers are now warned during compilation on broken links in Markdown. The output format is the same as for gcc. Additionally, the markdown documentation of plugins now get a proper title in the pdf and html output of doxygen.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2752}{}\doxysection{Qt-\/\+Gui 0.\+0.\+10}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2752}
+Raffael Pancheri again updated qt-\/gui with many nice improvements\+:
+
+
+\begin{DoxyItemize}
+\item update existing nodes in case the config was changed outside the gui
+\item safely update tree
+\item add update signal to metadata
+\item fix crash when closing the GUI
+\item move Actions in separate file to make main.\+qml less clustered
+\item plugins do not output messages at startup
+\item {\ttfamily Backend\+Builder} is now used, which automatically takes cares of the correct ordering of plugins
+\item Qt 5.\+4 compatibility is still ensured
+\item C++11 is now used in Qt-\/\+Gui, too
+\end{DoxyItemize}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2753}{}\doxysection{Packaging and Build System}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2753}
+Elektra 0.\+8.\+14 now in Debian with qt-\/gui, man pages, thanks to Pino Toscano \href{https://packages.qa.debian.org/e/elektra/news/20151215T000031Z.html}{\texttt{ read more here}}
+
+Thanks to Gustavo Alvarez for updating and splitting the packages on Arch Linux!
+
+Thanks to \href{http://friends.ccbib.org/harald/supporting/}{\texttt{ Harald Geyer}}, Elektra is now packaged for Open\+WRT. We fixed a number of cross-\/compilation issues and now officially support building against musl libc, with one minor limitation\+: RPATH works differently on musl so you need to install all plugins directly in /usr/lib/ or set LD\+\_\+\+LIBRARY\+\_\+\+PATH. Report any bugs in \href{https://github.com/haraldg/packages}{\texttt{ Harald\textquotesingle{}s Open\+WRT packaging issue tracker}}.
+
+
+\begin{DoxyItemize}
+\item export errors/symbols are now called {\ttfamily elektra-\/export-\/symbols} and {\ttfamily elektra-\/export-\/symbols} and can be installed using {\ttfamily INSTALL\+\_\+\+BUILD\+\_\+\+TOOLS} (by default off). This is needed for cross-\/compilation. Thanks to Harald Geyer for reporting.
+\item some header files are renamed because they endlessly included themselves if the header files were found in wrong order. Thanks to Harald Geyer for reporting.
+\item fixed compilation when built on more than 20 cores with $>$= -\/j15, thanks to Gustavo Alvarez for reporting and Manuel Mausz for analyzing
+\item lua 5.\+1 now works too (except for iterators), thanks to Harald Geyer for reporting. thanks to Manuel Mausz for adding a new Find\+Lua.\+cmake
+\item pdf builds do not fail due to half written files, reported by René Schwaiger and fixed by Kurt Micheli
+\end{DoxyItemize}
+
+Read about \href{https://github.com/ElektraInitiative/libelektra\#packages}{\texttt{ other packages here}}.\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2754}{}\doxysection{Fixes and Improvements}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2754}
+
+\begin{DoxyItemize}
+\item 3 way merge now properly deals with binary data, thanks to Felix Berlakovich
+\item getenv\+: fix wrapping on powerpc, thanks to Pino Toscano
+\item markdownlinkconverter\+: fix char/int mismatch, thanks to Pino Toscano
+\item wresolver\+: use KDB\+\_\+\+MAX\+\_\+\+PATH\+\_\+\+LENGTH instead of PATH\+\_\+\+MAX, thanks to Pino Toscano
+\item Cleaning up \#ifdefs that break statements, thanks to Romero Malaquias
+\item Daniel Bugl tested the INI plugin
+\item cmake list\+\_\+filter was broken because of different behaviour in cmake\+\_\+parse\+\_\+arguments, thanks to Christian Berrer for reporting
+\item g++5.3 is now supported
+\item gtest does not link against pthread if not needed
+\item test cases that are built with BUILD\+\_\+\+SHARED also successfully work
+\item kdb list works when libs are in same path as plugins, thanks to Harald Geyer for reporting
+\item fix mac\+OS issues, thanks to Peter Nirschl, René Schwaiger and Mihael Pranjic
+\item fix resolver-\/baseflag docu, thanks to Harald Geyer for reporting
+\item do not create wrong directories called {\ttfamily (} and {\ttfamily )} in source, thanks to René Schwaiger
+\item fix cmake for systems where iconv is not part of libc, thanks to Michael Zehender and Peter Kümmel (for Find\+Iconv.\+cmake)
+\item fix segfault in libgetenv if root keys are present
+\item lua\+: fix Key\+:tostring(), thanks to Manuel Mausz
+\item add list of \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/bindings}{\texttt{ supported bindings}}, thanks to Manuel Mausz
+\end{DoxyItemize}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2755}{}\doxysection{Get It!}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2755}
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.15.tar.gz}{\texttt{ here}} and now also \href{https://github.com/ElektraInitiative/ftp/tree/master/releases/elektra-0.8.15.tar.gz}{\texttt{ here on github}}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+15.\+tar.\+gz
+\item size\+: 2338297
+\item md5sum\+: 33ec1e5982fb7fbd8893bf7b579b80f0
+\item sha1\+: 6b1fdd5aa5aaad6ba377b4bb5ef437e0c85319ff
+\item sha256\+: 6a406986cecb8d4a44485ced118ee803bc039b0824b72298e123b4dd47eb0b22
+\item sha512\+: 86a408dd546b33e3b437f92f415de7aee6a235189f9eab0762b3f44ab4c453ee369a53de10a9f5b0df1b446460b12c57c6b8b77c282648ec2a49f2328d9af13d
+\end{DoxyItemize}
+
+This release tarball now is also available \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.15.tar.gz.gpg}{\texttt{ signed by me using gpg}}
+
+already built API-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.15/html/}{\texttt{ here}}\hypertarget{doc_news_2016-02-16_0_8_15_md_autotoc_md2756}{}\doxysection{Stay tuned!}\label{doc_news_2016-02-16_0_8_15_md_autotoc_md2756}
+Subscribe to the \href{https://doc.libelektra.org/news/feed.rss}{\texttt{ RSS feed}} to always get the release notifications.
+
+For any questions and comments, please contact the \href{https://lists.sourceforge.net/lists/listinfo/registry-list}{\texttt{ Mailing List}} the issue tracker \href{https://git.libelektra.org/issues}{\texttt{ on github}} or by mail \href{mailto:elektra@markus-raab.org}{\texttt{ elektra@markus-\/raab.\+org}}.
+
+\href{https://doc.libelektra.org/news/1ab4a560-c286-46d2-a058-1a8e7e208fe8.html}{\texttt{ Permalink to this NEWS entry}}
+
+For more information, see \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}
+
+Best regards, Markus 

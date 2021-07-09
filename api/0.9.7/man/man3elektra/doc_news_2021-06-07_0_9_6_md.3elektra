@@ -1,0 +1,506 @@
+.TH "doc_news_2021-06-07_0_9_6_md" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2021-06-07_0_9_6_md \- 0\&.9\&.6 Release 
+
+.IP "\(bu" 2
+guid: ad3d9308-4019-46dc-9de0-b3b82de5302a
+.IP "\(bu" 2
+author: Mihael Pranjić
+.IP "\(bu" 2
+pubDate: Mon, 07 Jun 2021 09:48:41 +0200
+.IP "\(bu" 2
+shortDesc: Java Fixes, Documentation Updates, GCC 11 and Clang 12 Compatibility
+.PP
+.PP
+We are proud to release Elektra 0\&.9\&.6, the 7th release in preparation for Elektra 1\&.0\&.
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP\&.
+.PP
+You can try out the latest Elektra release using our docker image \fCelektra/elektra\fP\&. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run:
+.PP
+.PP
+.nf
+docker pull elektra/elektra
+docker run -it elektra/elektra
+.fi
+.PP
+.SH "Highlights"
+.PP
+.IP "\(bu" 2
+Java fixes: JNI plugin fixed and JNA bindings improved
+.IP "\(bu" 2
+Fedora 34 and Debian Bullseye packages added
+.IP "\(bu" 2
+Documentation Improvements & Cleanups
+.IP "\(bu" 2
+GCC 11 and Clang 12 compatibility
+.PP
+.SS "JNI plugin fixed"
+The JNI plugin was encountering a double free on open\&. This has been fixed in conjunction with an update to JNA binding release mechanism\&. The previously disabled JNI test have been fixed and enabled\&.
+.PP
+For how to write plugins, please refer to \fBjava-plugins\&.md\fP as well as the \fBJNI plugin\fP and \fBJNA binding\fP documentation\&.
+.PP
+\fBNote\fP that it is currently not possible to mount plugins written in Java (see \fC#3881\fP)\&.
+.SH "Plugins"
+.PP
+The following section lists news about the \fCplugins\fP we updated in this release\&.
+.SS "JNI"
+.IP "\(bu" 2
+Fixed double free issues and re-enabled tests
+.IP "\(bu" 2
+Updated documentation
+.IP "\(bu" 2
+Increased minimum required JDK version to 11
+.PP
+.PP
+_(Michael Tucek)_
+.PP
+Special thanks to _(Klemens Böswirth)_, _(Mihael Pranjić)_ and _(Robert Sowula)_ for helping with the problem analysis!
+.SS "Dbus, Dbusrecv and Zeromqsend"
+.IP "\(bu" 2
+Internal changes to ensure compatibility with the new \fCelektraNotificationContract\fP\&. _(Klemens Böswirth)_
+.PP
+.SS "Xerces"
+.IP "\(bu" 2
+Store length of an array in metakey array according to \fBarray decision\fP\&. _(Robert Sowula)_
+.PP
+.SS "YAML Smith and Yan LR"
+.IP "\(bu" 2
+Removed plugins\&. _(René Schwaiger)_
+.PP
+.SS "ni"
+.IP "\(bu" 2
+Silence Clang 12 warnings about suspicious string literal concatenation\&. _(Mihael Pranjić)_
+.PP
+.SS "Lua"
+.IP "\(bu" 2
+Removed outdated information from docs _(\fI\fP-kraschitzer)_
+.PP
+.SH "Libraries"
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.SS "Core"
+.IP "\(bu" 2
+Remove keyCompareBy(Name)?Owner _(\fI\fP-kraschitzer)_
+.PP
+.SH "Bindings"
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up to date with the multi-language support provided by Elektra\&.
+.SS "SWIG"
+.IP "\(bu" 2
+Remove \fC-Wno-shift-overflow warnings\fP option from SWIG bindings compile flags\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Suppress SWIG/Ruby bindings warning about \fCoperator != ignored\fP\&. _(Mihael Pranjić)_
+.PP
+.SS "JNA"
+.IP "\(bu" 2
+Increased minimum required JDK version to 11
+.IP "\(bu" 2
+Gradle wrapper and docker images upgraded to 7\&.0\&.2
+.IP "\(bu" 2
+Minumum Gradle version decreased to 6\&.0
+.IP "\(bu" 2
+Upgraded JNA dependency from 4\&.5\&.2 to 5\&.8\&.0
+.IP "\(bu" 2
+Updated Java binding API documentation
+.IP "\(bu" 2
+Migrated native resource clean-up from \fCfinalize()\fP to \fCCleaner\fP
+.IP "  \(bu" 4
+Please revisit the documentation for \fCKey::release\fP and \fCKeySet::release\fP for recommended resource release handling
+.IP "  \(bu" 4
+Currently automated native key and key set resource clean-up is deactivated due to some possible race conditions which might result in double free errors\&. Manual key release is also disabled to not break current API release semantic\&. This leads to memory leaks, which is a known issue and will be resolved in an upcoming release\&.
+.PP
+
+.IP "\(bu" 2
+Introduced multiple exceptions when native API calls fail - see updated Java doc for details
+.IP "\(bu" 2
+Introduced early parameter validation for values which would otherwise lead to unspecific errors in native API calls
+.IP "\(bu" 2
+Update \fCKey\fP API introducing the following changes:
+.IP "  \(bu" 4
+Extracted exceptions from \fCKey\fP class
+.IP "  \(bu" 4
+Fixed \fCKey::getCurrentMeta\fP
+.IP "  \(bu" 4
+Moved \fCElektra\&.KeyNewArgumentFlags\fP to \fCKey\&.NewArgumentTag\fP
+.IP "  \(bu" 4
+Changed return types from \fCint\fP to \fCboolean\fP or enabled a fluent interface where appropriate
+.IP "  \(bu" 4
+Renamed \fCKey::*Integer\fP to \fCKey::*Int\fP
+.IP "  \(bu" 4
+Renamed \fCKeyInvalidNameException\fP to \fCKeyNameException\fP
+.IP "  \(bu" 4
+Renamed \fCKeyTypeMismatchException\fP to \fCKeyBinaryTypeNotSupportedException\fP
+.IP "  \(bu" 4
+Introduced \fCKey::get*AndRelease\fP convenience methods
+.IP "  \(bu" 4
+Introduced \fCKey::createNameless\fP
+.IP "  \(bu" 4
+Introduced \fCKeyReleasedException\fP being thrown when a released \fCKey\fP is being accessed
+.IP "  \(bu" 4
+Introduced \fCKeyMetaException\fP
+.IP "  \(bu" 4
+Removed unused \fCKeyTypeConversionException\fP
+.IP "  \(bu" 4
+Removed \fCKey::needsSync\fP
+.IP "  \(bu" 4
+Removed \fCKey::isNull\fP
+.IP "    \(bu" 6
+\fCKeyReleasedException\fP is now being thrown when a released (= previously \fCisNull\fP) \fCKey\fP is being accessed
+.IP "    \(bu" 6
+\fCKey\fPs with no backing native key pointer cannot be created anymore
+.PP
+
+.PP
+
+.IP "\(bu" 2
+Updated \fCKeySet\fP API introducing the following changes:
+.IP "  \(bu" 4
+Changed return type enabling a fluent interface where appropriate
+.IP "  \(bu" 4
+Renamed \fCKeySet::head\fP to \fCKeySet::first\fP
+.IP "  \(bu" 4
+Renamed \fCKeySet::tail\fP to \fCKeySet::last\fP
+.IP "  \(bu" 4
+Introduced \fCKeySetReleasedException\fP being thrown when a released \fCKeySet\fP is being accessed
+.IP "  \(bu" 4
+Introduced \fCKeySetAppendException\fP
+.IP "  \(bu" 4
+Removed \fCKeySet::create(int, Object[])\fP
+.IP "  \(bu" 4
+Removed \fCKeySet::needsSync\fP
+.IP "  \(bu" 4
+Methods which have been returning a nullable \fCKey\fP, now return an \fCOptional<Key>´ -\fPKeySet::lookup*\fCnow returns\fPOptional<Key>\fC -\fPKey::getMeta<tt>now returnsOptional<Key>`
+.IP "    \(bu" 6
+Example: ```java // checking whether the key has been found BEFORE API change Key found = ks\&.lookup('/some/key'); if (found != null) { // process found key } \fC \fPjava // checking whether the key has been found AFTER API change ks\&.lookup('/some/key')\&.ifPresent(k -> // process found key ); ``\fC\fP
+.PP
+
+.PP
+
+.IP "\(bu" 2
+\fCUpdated\fPKDB\fCAPI introducing the following changes:
+.IP "  \(bu" 4
+IntroducedKDBClosedException\fCbeing thrown when a closed\fPKDB\fCsession is being accessed\fP
+.IP "  \(bu" 4
+\fCIntroduced\fPKDB::get(Key)\fC\fP
+.IP "  \(bu" 4
+\fCIntroduced\fPKDB::open()\fC\fP
+.IP "  \(bu" 4
+\fCIntroduced\fPKDB::open(KeySet)\fC\fP
+.IP "  \(bu" 4
+\fCIntroduced\fPKDB::goptsContract(String[], String[], Key, KeySet)`
+.IP "  \(bu" 4
+Changed return type enabling a fluent interface where appropriate
+.PP
+\fP
+.IP "\(bu" 2
+\fCUpdated tests accordingly\fP
+.PP
+.PP
+\fC_(Michael Tucek)_\fP
+.PP
+\fC\fP
+.SH "Tools"
+.PP
+\fC
+.IP "\(bu" 2
+Remove \fCkdb set\fP functionality that creates a null key\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Rename elektraStrnDup to elektraMemDup _(\fI\fP-kraschitzer)_
+.IP "\(bu" 2
+Update specmount error message _(\fI\fP-kraschitzer)_
+.IP "\(bu" 2
+Update \fCelektraMemDup\fP to \fCvoid *\fP and update the documentation\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+There have been a few bugfixes for elektrad\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Update \fClodash\fP and \fChosted-git-info\fP dependencies of \fCwebd\fP due to security update\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Scripts"
+.PP
+\fC
+.IP "\(bu" 2
+Require clang-format 12 for reformatting C and Java\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Use basename of release file in \fCgenerate-hashsums\fP\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Use \fCshfmt\fP v3\&.2\&.4 to reformat shell scripts\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Use \fCcmake-format\fP v0\&.6\&.13 (\fCcmakelang\fP) to reformat CMake\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Aptly repositories are now automatically created if they do not exist during a package release\&. _(Robert Sowula)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Documentation"
+.PP
+\fC
+.IP "\(bu" 2
+Added reviews for all functions contained in the Elektra Core API\&. _(@lawli3t)_
+.IP "\(bu" 2
+Added packaging section to news template\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Minor readability improvement in \fBhighlevel\&.md\fP\&. _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Fix examples of spec plugin\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Added reviews for all functions contained in the Elektra Core API\&. _(@lawli3t)_
+.IP "\(bu" 2
+Document package names of plugins, bindings and tools\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Small update in API docu related to different namespaces in returned keys\&. _(Markus Raab)_
+.IP "\(bu" 2
+Improved docu of \fBnoresolver\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Improved plugin tutorial\&. _(Markus Raab)_
+.IP "\(bu" 2
+Adding info about syncing forks to \fCdoc/GIT\&.md\fP\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Work on \fBCOMPILE\&.md\fP and \fBINSTALL\&.md\fP\&. _(\fI\fP-kraschitzer)_
+.IP "\(bu" 2
+Update and correct licensing information\&. _(\fI\fP-kraschitzer)_
+.IP "\(bu" 2
+Rename \fBRELEASE\&.md\fP\&. _(\fI\fP-kraschitzer)_
+.IP "\(bu" 2
+Improved documentation for module kdb in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Improved documentation for module key in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Improved documentation for module keyname in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Improved documentation for module keyvalue in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Improved documentation for module keymeta in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Improved documentation for module keytest in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Improved documentation for module keyset in Elektra Core\&. _(@lawli3t)_
+.IP "\(bu" 2
+Fixed example in the 'mount-configuration-files' tutorial \fC#3722\fP\&. _(Philipp Oppel)_
+.IP "\(bu" 2
+Update and correct third party licensing information\&. _(\fI\fP-kraschitzer)_
+.IP "\(bu" 2
+Use Ronn-NG instead of unmaintained ronn to generate man pages\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Re-generate man pages to add missing information and remove unnecessary symbols and escaping\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Update \fCdoc/Doxyfile\fP to Doxygen 1\&.9\&.1 and fix a syntax error with the \fCFILTER_PATTERNS\fP directive\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Tests"
+.PP
+\fC
+.IP "\(bu" 2
+Fix failing \fCtestshell_markdown_tutorial_crypto\fP on Mac OS and other OS with GnuPG version >= 2\&.3\&.1\&. _(Peter Nirschl @petermax2)_
+.IP "\(bu" 2
+Use clang-format 12 for Restyled and update Restyled version\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Update all Restyled formatters to current versions\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Packaging"
+.PP
+\fC
+.IP "\(bu" 2
+We now package the Ruby bindings, ruby plugin and the gitresolver plugin\&. _(Robert Sowula)_
+.IP "\(bu" 2
+We added Fedora 34 packages\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+We added Debian Bullseye packages\&. _(Robert Sowula)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Build"
+.PP
+\fC \fP
+.SS "CMake"
+\fC
+.IP "\(bu" 2
+Disable binding tests when \fCBUILD_TESTING\fP is disabled\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Remove unused \fCFindCppCMS\&.cmake\fP CMake module and unused \fCBoost\fP variables\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SS "Docker"
+\fC
+.IP "\(bu" 2
+Add Fedora 34 images\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+We added release images that come with pre-installed dependencies and sudo permissions for each distribution we build packages for\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Use Clang 12 and Gradle 7\&.0 in Debian Sid image\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Remove Boost and some unused dependencies from all Docker images\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Use Gradle 7\&.0 and Ronn-NG \fC0\&.10\&.1\&.pre1\fP in Docker images\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Remove unused Debian Buster \fCdoc\fP image\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Infrastructure"
+.PP
+\fC \fP
+.SS "Cirrus"
+\fC
+.IP "\(bu" 2
+Use Clang 12 and Python 3\&.9 for macOS builds\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Pin GnuPG version to 2\&.2\&.x\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Update Fedora image to version 34\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Clean up unused dependencies in Arch Linux image and add Ronn-NG to generate man pages\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SS "GitHub Actions"
+\fC
+.IP "\(bu" 2
+Pin GnuPG version to 2\&.2\&.x\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Enable \fCjni\fP plugin and fix \fCJAVA_HOME\fP detection\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SS "Jenkins"
+\fC
+.IP "\(bu" 2
+We now build and test on Fedora 34 and 33\&. Fedora 32 was removed from the CI\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Build release documentation on Debian Sid, due to newer TeX and Doxygen packages\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SS "Travis"
+\fC
+.IP "\(bu" 2
+Update Ubuntu to Focal, use GCC 10 and clean up travis scripts\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Website"
+.PP
+\fC The website is generated from the repository, so all information about plugins, bindings and tools are always up to date\&. Furthermore, we changed:\fP
+.PP
+\fC
+.IP "\(bu" 2
+Update \fChighlight\&.js\fP due to a \fCReDOS vulnerability\fP and upgrade other dependencies as well\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Catch errors when code highlighting fails\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Get rid of unused code: authentication, backend, users, snippets and conversion service\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Fix docsearch sourcemap error\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Update \fClodash\fP dependency due to security update\&. _(Mihael Pranjić)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Outlook"
+.PP
+\fC We are currently working on following topics:\fP
+.PP
+\fC
+.IP "\(bu" 2
+Elektrify KDE _(Dardan Haxhimustafa)_, _(Felix Resch)_ and _(Mihael Pranjić)_
+.IP "\(bu" 2
+1\&.0 API _(Stefan Hanreich)_ and _(Klemens Böswirth)_
+.IP "\(bu" 2
+Improve Java Development Experience _(Michael Tucek)_
+.IP "\(bu" 2
+Elektrify GNOME _(Mihael Pranjić)_
+.IP "\(bu" 2
+Continious Releases _(Robert Sowula)_
+.IP "\(bu" 2
+KDB access using FUSE _(Alexander Firbas)_
+.IP "\(bu" 2
+Default TOML plugin _(Jakob Fischer)_
+.IP "\(bu" 2
+Improve Plugin Framework _(Klemens Böswirth)_
+.IP "\(bu" 2
+Improve 3-way merge _(Dominic Jäger)_
+.IP "\(bu" 2
+Shell completion _(Ulrike Schäfer)_
+.IP "\(bu" 2
+Ansible module _(Thomas Waser)_
+.PP
+\fP
+.PP
+\fC\fP
+.SH "Statistics"
+.PP
+\fC We closed \fC40 issues\fP for this release\&.\fP
+.PP
+\fCAbout 17 authors changed 627 files with 15988 insertions(+) and 16768 deletions(-) in 465 commits\&.\fP
+.PP
+\fCThanks to all authors for making this release possible!\fP
+.PP
+\fC\fP
+.SH "Join the Initiative!"
+.PP
+\fC We welcome new contributors! Read \fChere\fP about how to get started\&.\fP
+.PP
+\fCAs first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.\fP
+.PP
+\fC\fP
+.SH "Get the Release!"
+.PP
+\fC You can download the release from \fChere\fP or \fCGitHub\fP\fP
+.PP
+\fCThe \fChashsums are:\fP\fP
+.PP
+\fC
+.IP "\(bu" 2
+name: elektra-0\&.9\&.6\&.tar\&.gz
+.IP "\(bu" 2
+size: 7650067
+.IP "\(bu" 2
+md5sum: ed33e7b61f2b1ed3742f3bc6dd046d53
+.IP "\(bu" 2
+sha1: fd6082ee38e31e54b66a96a50fc4d20c9c107c89
+.IP "\(bu" 2
+sha256: c8e75f4d21bf3bd6b1028e776af9ff644a17a7dfbb1f2052f50392767deea197
+.PP
+\fP
+.PP
+\fCThe release tarball is also available signed using GnuPG from \fChere\fP or on \fCGitHub\fP\fP
+.PP
+\fCThe following GPG Key was used to sign this release: 12CC44541E1B8AD9B66AFAD55262E7353324914A\fP
+.PP
+\fCAlready built API-Docu can be found \fChere\fP or on \fCGitHub\fP\&.\fP
+.PP
+\fC\fP
+.SH "Stay tuned!"
+.PP
+\fC Subscribe to the \fCRSS feed\fP to always get the release notifications\&.\fP
+.PP
+\fCIf you also want to participate, or for any questions and comments please contact us via our issue tracker \fCon GitHub\fP\&.\fP
+.PP
+\fC\fCPermalink to this NEWS entry\fP\fP
+.PP
+\fCFor more information, see \fChttps://libelektra\&.org\fP\fP
+.PP
+\fCBest regards, \fCElektra Initiative\fP \fP

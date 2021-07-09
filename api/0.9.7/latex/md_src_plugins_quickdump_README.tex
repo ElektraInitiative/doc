@@ -1,0 +1,112 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the quickdump plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\texttt{ k.\+boeswirth+git@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage/quickdump
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained compatible tested nodep libc preview
+\item infos/metadata =
+\item infos/description = much quicker version of dump (2x or more in most cases)
+\end{DoxyItemize}\hypertarget{md_src_plugins_quickdump_README_src_plugins_quickdump_README_md}{}\doxysection{Introduction}\label{md_src_plugins_quickdump_README_src_plugins_quickdump_README_md}
+{\ttfamily quickdump} is a storage plugin based on the {\ttfamily dump} format. It is a lot quicker (see \mbox{\hyperlink{md_src_plugins_quickdump_benchmarks_src_plugins_quickdump_benchmarks_md}{benchmarks.md}}) than the old {\ttfamily dump} plugin, because it does not use commands and stores string lengths as binary data. Through these changes all string comparisons and integer-\/string conversions can be eliminated, which made up for a lot of the time spent by the {\ttfamily dump} plugin.
+
+The format is also useful for IPC and streaming, because of this it is used by the {\ttfamily specload} plugin.\hypertarget{md_src_plugins_quickdump_README_autotoc_md425}{}\doxysection{Format}\label{md_src_plugins_quickdump_README_autotoc_md425}
+A {\ttfamily quickdump} file starts with the magic number {\ttfamily 0x454b444200000003}. The first 4 bytes are the ASCII codes for {\ttfamily EKDB} (for Elektra KDB), followed by a version number. This 64-\/bit is always stored as big-\/endian (i.\+e. the way it is written above).
+
+After the magic number the file is just a list of Keys. Each Key consists of a name, a value and any number of metakey names and values. Each name and value is written as a 64-\/bit length {\ttfamily n} followed by exactly {\ttfamily n} bytes of data. For strings we do not store a null terminator. Therefore the length also does not account for that. When reading a string, the plugin allocates {\ttfamily n+1} bytes and sets the last one to {\ttfamily 0}. Note that ALL lengths are stored in little-\/endian format, because most modern machines are little-\/endian. To save disk space, we use a variable length encoding for integers. The exact format is described below.
+
+We don\textquotesingle{}t store the full name of the key. Instead we only store the name relative to the parent key.
+
+The end of a key is marked by a null byte. This cannot be confused with null bytes embedded in binary key values, because of the length prefixes before each key and metavalue.
+
+To distinguish between binary and string keys the (length of the) key value is prefixed with either a {\ttfamily b} or an {\ttfamily s}. Each metakey is prefixed with an {\ttfamily m}, unless we detect that the same metakey was already present on a previous key (e.\+g. through {\ttfamily key\+Copy\+Meta}). In this case the prefix {\ttfamily c} is used and instead of the metakey name and value, we write the name of the previous key and the metakey name.\hypertarget{md_src_plugins_quickdump_README_autotoc_md426}{}\doxysubsection{Variable Length Integer encoding}\label{md_src_plugins_quickdump_README_autotoc_md426}
+The basic idea of the format is to store integers in base 128. This means we only use 7 bits per byte and the 8th bit (marker bit) indicates whether or not there are more bytes to read. However, to make things more efficient we move all those marker bits to the first byte. Then we can read one byte and immediately know, how much bytes follow. This is similar to what UTF-\/8 does.
+
+The table below shows how the encoding works. The first byte is shown in full ({\ttfamily x} is either {\ttfamily 0} or {\ttfamily 1}), then {\ttfamily \mbox{[}n\mbox{]}} indicates that {\ttfamily n} bytes of data follow.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{xxxxxxx1     up to  7 bits in 1 byte}
+\DoxyCodeLine{xxxxxx10 [1] up to 14 bits in 2 bytes}
+\DoxyCodeLine{xxxxx100 [2] up to 21 bits in 3 bytes}
+\DoxyCodeLine{xxxx1000 [3] up to 28 bits in 4 bytes}
+\DoxyCodeLine{xxx10000 [4] up to 35 bits in 5 bytes}
+\DoxyCodeLine{xx100000 [5] up to 42 bits in 6 bytes}
+\DoxyCodeLine{x1000000 [6] up to 49 bits in 7 bytes}
+\DoxyCodeLine{10000000 [7] up to 56 bits in 8 bytes}
+\DoxyCodeLine{00000000 [8] up to 64 bits in 9 bytes}
+
+\end{DoxyCode}
+
+
+Thanks to \href{https://github.com/stoklund/varint}{\texttt{ https\+://github.\+com/stoklund/varint}} for listing various integer encodings.\hypertarget{md_src_plugins_quickdump_README_autotoc_md427}{}\doxysection{Usage}\label{md_src_plugins_quickdump_README_autotoc_md427}
+Like any other storage plugin, you simply use {\ttfamily quickdump} during mounting, import or export.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount quickdump.eqd user:/tests/quickdump quickdump}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_quickdump_README_autotoc_md428}{}\doxysection{Dependencies}\label{md_src_plugins_quickdump_README_autotoc_md428}
+None.\hypertarget{md_src_plugins_quickdump_README_autotoc_md429}{}\doxysection{Examples}\label{md_src_plugins_quickdump_README_autotoc_md429}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount a backend using quickdump}
+\DoxyCodeLine{sudo kdb mount quickdump.eqd user:/tests/quickdump quickdump}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set some keys and metakeys}
+\DoxyCodeLine{kdb set user:/tests/quickdump/key value}
+\DoxyCodeLine{\#> Create a new key user:/tests/quickdump/key with string "{}value"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set user:/tests/quickdump/key meta "{}metavalue"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/quickdump/otherkey "{}other value"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/quickdump/otherkey with string "{}other value"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Show resulting file (not part of test, because xxd is not available everywhere)}
+\DoxyCodeLine{\# xxd \$(kdb file user:/tests/quickdump/key)}
+\DoxyCodeLine{\# 00000000: 454b 4442 0000 0003 076b 6579 730b 7661  EKDB.....keys.va}
+\DoxyCodeLine{\# 00000010: 6c75 656d 096d 6574 6113 6d65 7461 7661  luem.meta.metava}
+\DoxyCodeLine{\# 00000020: 6c75 6500 116f 7468 6572 6b65 7973 176f  lue..otherkeys.o}
+\DoxyCodeLine{\# 00000030: 7468 6572 2076 616c 7565 00              ther value.}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Change mounted file (in a very stupid way to enable shell-\/recorder testing):}
+\DoxyCodeLine{cp \$(kdb file user:/tests/quickdump/key) a.tmp}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# 1. change key from 'value' to 'other value'}
+\DoxyCodeLine{(head -\/c 13 a.tmp; printf "{}\%bother value"{} '\(\backslash\)0027'; tail -\/c 40 a.tmp) > b.tmp}
+\DoxyCodeLine{}
+\DoxyCodeLine{rm a.tmp}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# 2. add copy metadata instruction to otherkey}
+\DoxyCodeLine{(head -\/c 64 b.tmp; printf "{}c\%bkey\%bmeta\(\backslash\)0"{} '\(\backslash\)0007' '\(\backslash\)0011') > c.tmp}
+\DoxyCodeLine{}
+\DoxyCodeLine{rm b.tmp}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# test file name, so KDB isn't destroyed if mounting failed}
+\DoxyCodeLine{[ "{}x\$(kdb file user:/tests/quickdump/key)"{} != "{}x\$(kdb file user:/)"{} ] \&\& mv c.tmp \$(kdb file user:/tests/quickdump/key)}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/quickdump/key}
+\DoxyCodeLine{\#> other value}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/quickdump/key meta}
+\DoxyCodeLine{\#> metavalue}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/quickdump/otherkey}
+\DoxyCodeLine{\#> other value}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/quickdump/otherkey meta}
+\DoxyCodeLine{\#> metavalue}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/quickdump}
+\DoxyCodeLine{sudo kdb umount user:/tests/quickdump}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_quickdump_README_autotoc_md430}{}\doxysection{Limitations}\label{md_src_plugins_quickdump_README_autotoc_md430}
+None. 

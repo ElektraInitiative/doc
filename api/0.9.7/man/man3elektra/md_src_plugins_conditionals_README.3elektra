@@ -1,0 +1,160 @@
+.TH "md_src_plugins_conditionals_README" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_conditionals_README \- Plugin: conditionals 
+
+.IP "\(bu" 2
+infos = Information about the conditionals plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = unittest nodep libc global preview
+.IP "\(bu" 2
+infos/metadata = check/condition assign/condition condition/validsuffix check/condition/any/# check/condition/all/# check/condition/none/# assign/condition/#
+.IP "\(bu" 2
+infos/description = ensures key values through conditions
+.PP
+.SH "Introduction"
+.PP
+This plugin uses if-then-else like conditions\&. It also works as global plugin\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-extra\fP\&.
+.SH "Check Syntax"
+.PP
+Stored in the metakey \fCcheck/condition\fP to validate data is:
+.PP
+\fC(IF-condition) ? (THEN-condition) : (ELSE-condition)\fP where the ELSE-condition is optional
+.PP
+Condition: \fCKey\fP \fIOperation\fP `('String' | '1234\&.56' | Key | '')`
+.PP
+Operations: \fC!=, ==, <, <=, =>, >, :=\fP, where:
+.PP
+.IP "\(bu" 2
+\fC:=\fP is used to set a key value
+.IP "\(bu" 2
+others are for comparison as in C
+.PP
+.SS "Testing if Key Exists"
+\fC(! a/key)\fP evaluates to true if the key \fCa/key\fP doesn't exist, to false if it exists\&.
+.SS "Assign Syntax"
+.PP
+.nf
+(IF-condition) ? ('ThenValue') : ('ElseValue')
+.fi
+.PP
+.PP
+Depending on if the condition is met, either 'ThenValue' or 'ElseValue' will be assigned as key value if the metakey \fCassign/condition\fP is used\&.
+.SS "Experimental: Nested Conditions"
+Multiple conditions can be nested and combined using parentheses and \fC&&\fP (logical AND) or \fC||\fP (logical OR)\&. Additional parentheses must be used to form valid conditions again\&. \fC(\fP \fC(condition 1) && (condition 2)\fP \fC)\fP
+.SS "Valid Suffix"
+The \fCcondition/validsuffix\fP can be used to define a list of valid suffixes to numeric values\&. If two operants have the same valid suffix or one of them no suffix they will be treated by their numeric value ignoring their suffix\&. `condition/validsuffix = 'm', 'cm', 'km'\fCwould treat\fP2\&.3m\fCjust as the numeric value\fP2\&.3` when comparing to another value having the same or no suffix\&.
+.SS "Keynames"
+Keynames are all either relative to to-be-tested key (starting with \fC\&./\fP or \fC\&.\&./\fP), relative to the parentkey (starting with \fC@/\fP) or absolute (e\&.g\&. \fCsystem:/key\fP)\&.
+.SS "Multiple Statements"
+It's also possible to test multiple conditions using \fCcheck/condition/{any,all,none}\fP as a meta array\&. Where \fCany\fP means that at least one statement has to evaluate to true, \fCall\fP that all statements have to evaluate to true, and \fCnone\fP that no statement is allowed to evaluate to false (default)\&. For multiple assign statements use \fCassign/condition\fP as a meta array\&. The first \fCassign/condition/#\fP statement that evaluates to true will be assigned and the rest ignored\&.
+.SH "Example"
+.PP
+.PP
+.nf
+(this/key  != 'value') ? (then/key == some/other/key) : (or/key <= '125')
+.fi
+.PP
+.PP
+Meaning: IF \fCthis/key\fP NOT EQUAL TO `'value'\fCTHEN\fPthen/key\fCMUST EQUAL\fPsome/other/key\fCELSE\fPor/key\fCMUST BE LESS THAN\fP125`
+.PP
+Another full example:
+.PP
+.PP
+.nf
+#Backup-and-Restore:user:/tests/conditionals
+
+sudo kdb mount conditionals\&.dump user:/tests/conditionals conditionals dump
+
+kdb set user:/tests/conditionals/fkey 3\&.0
+kdb set user:/tests/conditionals/hkey hello
+
+# will succeed
+kdb meta-set user:/tests/conditionals/key check/condition "(\&.\&./hkey == 'hello') ? (\&.\&./fkey == '3\&.0')"
+
+# will fail
+kdb meta-set user:/tests/conditionals/key check/condition "(\&.\&./hkey == 'hello') ? (\&.\&./fkey == '5\&.0')"
+# RET:5
+# ERROR:C03200
+.fi
+.PP
+.PP
+Assignment example:
+.PP
+.PP
+.nf
+kdb set user:/tests/conditionals/hkey Hello
+kdb meta-set user:/tests/conditionals/hkey assign/condition "(\&./ == 'Hello') ? ('World')"
+# alternative syntax: "(\&.\&./hkey == 'Hello') ? ('World')
+
+kdb get user:/tests/conditionals/hkey
+#> World
+
+# cleanup
+kdb rm -r user:/tests/conditionals
+sudo kdb umount user:/tests/conditionals
+.fi
+.PP
+.PP
+Global plugin example:
+.PP
+.PP
+.nf
+# Backup old list of global plugins
+kdb set user:/tests/msr $(mktemp)
+kdb export system:/elektra/globalplugins > $(kdb get user:/tests/msr)
+
+sudo kdb mount main\&.ini /tests/conditionals ni
+sudo kdb mount sub\&.ini /tests/conditionals/sub ni
+
+# mount conditionals as global plugin
+sudo kdb global-mount conditionals || $(exit 0)
+
+# create testfiles
+echo 'key1=val1'                                               >  `kdb file /tests/conditionals`
+echo '[key1]'                                                    >> `kdb file /tests/conditionals`
+echo "check/condition=(\&./ == 'val1') ? (\&.\&./sub/key == 'true')" >> `kdb file /tests/conditionals`
+
+echo "key=false" > `kdb file /tests/conditionals/sub`
+
+# should fail and yield an error
+kdb export /tests/conditionals ni
+# ERROR:C03200
+# Sorry, module conditionals issued the error C03200:
+# Validation failed: Validation of Key key1: (\&./ == 'val1') ? (\&.\&./sub/key == 'true') failed\&. ((\&.\&./sub/key == 'true') failed)
+
+kdb set /tests/conditionals/sub/key true
+
+# should succeed
+kdb export /tests/conditionals ni
+
+# cleanup
+kdb rm -r /tests/conditionals
+sudo kdb umount /tests/conditionals/sub
+sudo kdb umount /tests/conditionals
+
+sudo kdb global-umount conditionals
+
+kdb rm -r system:/elektra/globalplugins
+kdb import system:/elektra/globalplugins < $(kdb get user:/tests/msr)
+rm $(kdb get user:/tests/msr)
+kdb rm user:/tests/msr
+.fi
+.PP
+ 

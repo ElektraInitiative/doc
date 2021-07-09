@@ -1,0 +1,74 @@
+.TH "md_src_plugins_passwd_README" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_passwd_README \- Plugin: passwd 
+
+.IP "\(bu" 2
+infos = Information about the passwd plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/passwd
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained reviewed conformant compatible coverage specific unittest tested nodep libc configurable experimental limited
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = storage plugin for passwd files
+.PP
+.SH "Introduction"
+.PP
+This plugin parses \fCpasswd\fP files, e\&.g\&. \fC/etc/passwd\fP\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SH "Implementation Details"
+.PP
+The non-POSIX function \fCfgetpwent\fP (GNU_SOURCE) will be used to read the file supplied by the resolver\&. As a fallback we implemented our own version based on musls \fCfgetpwent\fP\&.
+.PP
+For writing \fCputpwent\fP (GNU_SOURCE) will be used\&. If it is not available the plugin will write straight to the config file\&.
+.SH "Requirements"
+.PP
+For the plugin to be build at least \fCPOSIX_C_SOURCE >= 200809L\fP compatibility is required\&.
+.SH "Configuration"
+.PP
+If the config key \fCindex\fP is set to \fCname\fP passwd entries will be sorted by name, if not set or set to \fCuid\fP passwd entries will be sorted by uid
+.SH "Fields"
+.PP
+.IP "\(bu" 2
+\fCgecos\fP contains the full name of the account
+.IP "\(bu" 2
+\fCgid\fP contains the accounts primary group id
+.IP "\(bu" 2
+\fChome\fP contains the path to the accounts home directory
+.IP "\(bu" 2
+\fCshell\fP contains the accounts default shell
+.IP "\(bu" 2
+\fCuid\fP contains the accounts uid
+.IP "\(bu" 2
+\fCname\fP contains the account name
+.PP
+.SH "Usage"
+.PP
+.PP
+.nf
+kdb mount /etc/passwd system:/passwd passwd index=name
+kdb export system:/passwd/root
+#> gecos = root
+#> gid = 0
+#> home = /root
+#> passwd = x
+#> shell = /bin/zsh
+#> uid = 0
+.fi
+.PP
+ 

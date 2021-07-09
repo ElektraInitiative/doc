@@ -1,0 +1,449 @@
+.TH "doc_KEYNAMES_md" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_KEYNAMES_md \- Key Names in Elektra 
+ This document is a full explanation of how \fIkey names\fP work in Elektra\&.
+.SH "0\&. Reference Implementation"
+.PP
+In addition to this document, a reference Python implementation can be found in \fBkeynames\&.py\fP\&. The goal of the Python implementation is not to be fast, or to be used in any way other than as a reference\&. If there are any discrepancies between this document, the Python implementation and the actual C implementation in \fCsrc/libs/elektra/keyname\&.c\fP, you should consider them as follows:
+.PP
+.IP "1." 4
+The C implementation is optimized for speed and thus much harder to implement correctly\&.
+.IP "2." 4
+In most cases, this document outranks the Python implementation\&. There may, however, be cases where the language in this document was too vague and the Python implementation is actually correct\&.
+.IP "3." 4
+If two of the sources agree, the third one is probably incorrect\&. Although again, if one of the agreeing sources is the C implementation it could still be the case that there is a mistake\&.
+.PP
+.PP
+In any case: If you find any discrepancies, please file a bug report at https://issues.libelektra.org/new\&.
+.PP
+.RS 4
+\fINote:\fP Mistakes happen\&. The goal of the Python implementation was to provide a reference that has a very high likelihood of being correct\&. 
+.RE
+.PP
+\fITo Elektra developers:\fP Feel free to add any unclear or previous incorrect examples to the test cases in \fCtests/ctest/test_keyname\&.c\fP\&. These tests are very fast (1000+ test cases per second) and the more tests the better\&.
+.SH "1\&. Key Name Parts and Namespaces"
+.PP
+Before we dive into key names, we need to talk about key name parts and namespaces\&.
+.PP
+Each key is part of one of these \fInamespaces\fP:
+.PP
+.IP "\(bu" 2
+cascading
+.IP "\(bu" 2
+meta
+.IP "\(bu" 2
+spec
+.IP "\(bu" 2
+proc
+.IP "\(bu" 2
+dir
+.IP "\(bu" 2
+user
+.IP "\(bu" 2
+system
+.IP "\(bu" 2
+default
+.PP
+.PP
+Each of these namespaces has a very specific meaning, explained in \fCSection 1\&.2\fP\&.
+.PP
+Apart from the namespace, a key name is just a series of zero or more \fIkey name parts\fP\&. Each key name part is just an arbitrary (possibly empty) sequence of non-zero bytes\&.
+.PP
+So without knowing anything about how key names are written, we could say that there is a key in the namespace 'system' with the key name parts 'elektra', 'version' and 'info'\&.
+.PP
+.RS 4
+\fINote:\fP Not every such sequence, is a valid key name\&. For more information see \fCSection 4\fP 
+.RE
+.PP
+.SS "1\&.1\&. Key Hierarchy"
+Elektra's keys commonly look like Unix paths:
+.PP
+.PP
+.nf
+/elektra/version/info
+.fi
+.PP
+.PP
+.RS 4
+\fINote:\fP How this representation works exactly and how namespaces come into play, will be explained in the next section\&. For now, we only care that there is some similarity to Unix paths\&. 
+.RE
+.PP
+This is on purpose\&. Elektra's \fIkey database (KDB)\fP is designed to resemble a Unix filesystem as much as possible\&. In particular, the KDB has a similar hierarchy\&. More generally, all key names exhibit this hierarchy\&. By going back to thinking about a key name as a namespace and a series of key name parts, we can define this \fIkey hierarchy\fP\&.
+.PP
+Each namespace has a separate hierarchy\&. The relation between these, will be explored in the next section\&. For now, we just look at a single namespace\&.
+.PP
+In a Unix filesystems, we commonly talk about files and directories\&. We also say a file is located within a directory\&. But you might also know that in Unix 'everything is a file'\&. This applies to directories as well, but 'a file is located within a file' is a bit clunky, so you might say 'file `A` is located below file `B`', if \fCB\fP is a file within the directory \fCA\fP\&. What makes \fCA\fP a directory is just the fact that there can be other files below \fCA\fP \fC[1]\fP\&. 
+.SS "1\&.1\&.1\&. The 'is below' Relation"
+This relation of 'is below' is also what defines Elektra's key hierarchy\&. Based on a key \fCK\fP with \fCn\fP key name parts, we say:
+.PP
+.IP "\(bu" 2
+A key \fCKm\fP is \fIbelow\fP \fCK\fP, if \fCKm\fP has \fCn+m\fP key name parts and the first \fCn\fP key name parts of \fCKm\fP are equal to the key name parts of \fCK\fP (in the same order)\&.
+.IP "\(bu" 2
+A key \fCK1\fP is \fIdirectly below\fP \fCK\fP, if \fCK1\fP is below \fCK\fP and \fCK1\fP has \fCn+1\fP key name parts\&.
+.PP
+.PP
+Here are a few examples to show how this works in practice (using the Unix-path-like representation teased above):
+.PP
+Key 1   Key 2   Relation    \fC/elektra/version/info\fP   \fC/elektra/version\fP   'Key 1' is directly below 'Key 2'    \fC/elektra/version/info\fP   \fC/elektra\fP   'Key 1' is below 'Key 2'    \fC/elektra\fP   \fC/elektra/version/info\fP   'Key 2' is below 'Key 1'    \fC/elektra/version/info\fP   \fC/elektra/version/info\fP   'Key 1' and 'Key 2' are equal    \fC/elektra/version/info\fP   \fC/elektra/data\fP   no relation    \fC/elektra/data\fP   \fC/elektra/version\fP   'Key 1' and 'Key 2' are siblings   
+.PP
+You can think of the key hierarchy (within a single namespace) as a big tree of keys\&. Each node in the tree is a single key \fCK\fP and the children of the nodes are the keys that are directly below \fCK\fP\&.
+.PP
+.PP
+The diagram above shows the key hierarchy of the keys in the table above (\fCA\fP -> \fCB\fP denotes \fCA\fP is directly below \fCB\fP)\&.
+.PP
+.RS 4
+\fINote:\fP While we could use the directory vs\&. file terminology for Elektra as well, it is recommended to avoid it\&. This is because in Elektra, every key may have an associated value\&. In particular a key may have a value, even if there are other keys below it\&. This value is \fBnot\fP, as a beginner might suspect, the set of keys below it, like you could say the value of a directory is the set of files (and directories) within\&. The value is just another value, like any other key would have\&.
+.PP
+Instead, we recommend the terms \fIleaf key\fP and \fInon-leaf key\fP, as these are commonly used for tree-like structures and their definitions fit perfectly\&. 
+.RE
+.PP
+.SS "1\&.1\&.2\&. The 'parent' Confusion"
+As an inverse to 'is below' we sometimes use 'parent'\&. For example:
+.PP
+.IP "\(bu" 2
+\fC/elektra/version\fP is directly below \fC/elektra\fP, so \fC/elektra\fP is the (direct) parent of \fC/elektra/version\fP
+.IP "\(bu" 2
+\fC/elektra/version/info\fP is below \fC/elektra\fP, so \fC/elektra\fP is a parent of \fC/elektra/version\fP
+.IP "\(bu" 2
+\fC/elektra/version/info\fP and \fC/elektra/version\fP are below \fC/elektra\fP, so \fC/elektra\fP is the common parent\&.
+.PP
+.PP
+This terminology can be easy to confuse, as 'parent' is used for multiple different things\&. If the context doesn't make it clear what 'parent' means, you might consider more clear terms, e\&.g\&. other common terms for tree-like structures\&. For example, you could use 'ancestor' and 'direct parent' as a clear differentiation\&.
+.PP
+There is also the term '(the) parent key'\&. In many cases, this is refers to a very specific key in the given context that is a 'common parent' to a certain set of keys\&. If you are working within such a context, be careful about 'a parent key' vs\&. 'the parent key'\&.
+.SS "1\&.2\&. Namespaces and Root Keys"
+We mentioned above that there are different namespaces in Elektra\&. Now we will explain their meaning\&.
+.PP
+To recap, Elektra knows these namespaces:
+.PP
+.IP "\(bu" 2
+cascading
+.IP "\(bu" 2
+meta
+.IP "\(bu" 2
+spec
+.IP "\(bu" 2
+proc
+.IP "\(bu" 2
+dir
+.IP "\(bu" 2
+user
+.IP "\(bu" 2
+system
+.IP "\(bu" 2
+default
+.PP
+.PP
+We mentioned above that there are key names with zero key name parts, i\&.e\&. just namespace\&. These are called \fIroot keys\fP (based on Unix's filesystem root, as well as the root of a tree)\&.
+.PP
+Let us explore them one by one:
+.PP
+.IP "\(bu" 2
+The simplest namespace is the **'meta'**\&. The namespace 'meta' is used exclusively for meta keys, i\&.e\&. keys that are attached to another key as metadata\&. The key hierarchy of the namespace 'meta' is entirely separate from the key hierarchies in the other namespaces\&. Without external information, you cannot determine from a key name with namespace 'meta', which key this metakey is attached to\&.
+.IP "\(bu" 2
+keys with namespace **'proc'** only exist in memory and are scoped to the current \fBproc\fPess\&.
+.IP "\(bu" 2
+keys with namespace **'dir'** are scoped to a single filesystem \fBdir\fPectory\&. They will (normally) be stored somewhere within this directory\&. Currently, there is no way of knowing which filesystem directory a key with namespace 'dir' is scoped to\&. Elektra only uses keys scoped to the current working directory\&.
+.IP "\(bu" 2
+Similarly, keys with namespace **'user'** are scoped to a single \fBuser\fP\&. They will (normally) be stored somewhere within the user's home directory\&. Again, there is no way of knowing which user a key is scoped to and Elektra only uses keys scoped to the current user, i\&.e\&. the one that executed the application\&.
+.IP "\(bu" 2
+The namespace **'system'** is what makes Elektra global\&. keys with namespace 'system' are the same for all users of the system, independent of context\&. They are stored in system level directory\&.
+.IP "\(bu" 2
+keys with namespace **'default'** are special\&. While you could create them manually, you normally don't want to\&. It is used for keys with default values for namespace resolution (explained below)\&. keys with this namespace are also in-memory only\&.
+.IP "\(bu" 2
+Then there is **'spec'**\&. This namespace, like 'meta', is separate from the rest\&. We use it for keys that are part of a specification used to describe other keys\&. The metadata of every key with namespace 'spec' describes a specification for the keys that have the same key name part but a different namespace (except 'meta')\&. So the namespace 'spec' has a closer relation to the others than 'meta'\&.
+.IP "\(bu" 2
+Now just the namespace **'cascading'** remains\&. This namespace is used for namespace resolution (see below)\&. It is the one that applications and end-users will use most commonly when interacting with Elektra\&. keys with namespace 'cascading' are never stored\&. Not on disk and normally also not in a \fCKeySet\fP\&.
+.PP
+.PP
+There is also a certain ranking between the namespaces 'proc', 'dir', 'user', 'system' and 'default'\&. Namely, that they override each other in exactly this order\&. Given two key names with identical key name parts, but one with namespace 'dir' and one with namespace 'user', the one with namespace 'dir' should be considered more specific and should be preferred\&.
+.PP
+A special feature of Elektra is \fInamespace resolution\fP\&. Namespace resolution is the process of finding an appropriate namespace for a key based on a key name with namespace 'cascading'\&. It is most commonly used, when you need to find which key in the KDB should be used, based on a series of key name parts\&.
+.PP
+To resolve the namespace, we just look at each of the namespaces in the ranking defined above\&. We then use the first namespace where the key actually exists\&. Namespace resolution is performed, when \fCksLookup\fP/\fCksLookupByName\fP is called with a key name with namespace 'cascading' \fC[2]\fP\&.  This is also done, if you call \fCkdb get\fP or \fCkdb set\fP with a key name with namespace 'cascading'\&.
+.SH "2\&. Escaped Names"
+.PP
+The standard way to represent a key name in Elektra is this:
+.PP
+.PP
+.nf
+system:/elektra/version/info
+.fi
+.PP
+.PP
+This can be deconstructed into:
+.PP
+.IP "\(bu" 2
+The namespace: \fCsystem\fP
+.IP "\(bu" 2
+The namespace separator: \fC:\fP
+.IP "\(bu" 2
+A part separator: \fC/\fP
+.IP "\(bu" 2
+A key name part: \fCelektra\fP
+.IP "\(bu" 2
+A part separator: \fC/\fP
+.IP "\(bu" 2
+A key name part: \fCversion\fP
+.IP "\(bu" 2
+A part separator: \fC/\fP
+.IP "\(bu" 2
+A key name part: \fCinfo\fP
+.IP "\(bu" 2
+The invisible null terminator
+.PP
+.PP
+.RS 4
+\fINote:\fP It might seem strange, that there is a part \fBseparator\fP before the first part\&. This makes sense, because then the part separator always introduces a new part\&. A better fitting description would be 'part introducer'\&. But since we commonly call \fC/\fP a separator, we will stick to this terminology\&. 
+.RE
+.PP
+For keys in the namespace 'cascading', we omit both the namespace itself and as well as the namespace separator:
+.PP
+.PP
+.nf
+/elektra/version/info
+.fi
+.PP
+.PP
+We also have a special rule for the root keys, i\&.e\&. the key names with zero key name parts and just a namespace\&. According to above rules \fCsystem:\fP would be the escaped name of the root key for the namespace 'system' and the escaped name for the root key of the namespace 'cascading' would be an empty string\&. But this is not the case\&. We use \fCsystem:/\fP and \fC/\fP instead\&. The exact details will be explored later, but for now just remember, that an (escaped) key name \fBalways\fP contains at least one part separator (\fC/\fP)\&.
+.PP
+But there is a problem\&. We said a key name part is 'an arbitrary sequence of non-zero bytes'\&. This means 'elektra/version' is a key name part as well\&. Since the slash \fC/\fP would conflict with the part separator, we can escape it with a backslash \fC\\\fP (and \fC\\\fP can be escaped with another \fC\\\fP):
+.PP
+.PP
+.nf
+/elektra\/version/info/back\\slash
+.fi
+.PP
+.PP
+This can be deconstructed into:
+.PP
+.IP "\(bu" 2
+A part separator: \fC/\fP
+.IP "\(bu" 2
+A key name part: \fCelektra/version\fP
+.IP "\(bu" 2
+A part separator: \fC/\fP
+.IP "\(bu" 2
+A key name part: \fCinfo\fP
+.IP "\(bu" 2
+A key name part: \fCback\\slash\fP
+.IP "\(bu" 2
+An invisible null terminator
+.PP
+.PP
+.RS 4
+\fINote:\fP When talking about a single key name part \fC/\fP and \fC\\\fP are never escaped\&. 
+.RE
+.PP
+Because of this escaping mechanism, we call this the \fIescaped name\fP of a key\&.
+.PP
+Elektra's key names are designed to mimic Unix paths to some extent\&. To this end we support the commonly used \fC/\&.\fP and \fC/\&.\&.\fP\&. This is one reason, why we need to differentiate between \fIcanonical\fP key names and \fInon-canonical\fP key names\&.
+.SS "2\&.1\&. (Non-)Canonical (Escaped) Key Names"
+Following the syntax of Unix paths, in Elektra both \fC/elektra/\&./version\fP and \fC/elektra/version\fP refer to the same key\&. Similarly, \fC/elektra/\&.\&./version\fP and \fC/version\fP refer to the same key\&.
+.PP
+To give each key a unique key name, we need to introduce a \fIcanonical (escaped) key name\fP\&. For Unix paths, we could say that the canonical path is the shortest possible path that refers to a file\&. In Elektra this doesn't quite work, but will use this definition for now\&.
+.PP
+.RS 4
+\fINote:\fP Only escaped key names can be canonical or non-canonical, so we normally omit the 'escaped' specifier\&. 
+.RE
+.PP
+Let us look at a few examples to get a feeling for canonical and non-canonical key names\&.
+.PP
+Non-canonical   Canonical    \fC/elektra/\&./version\fP   \fC/elektra/version\fP    \fC/elektra/\&.\&./version\fP   \fC/version\fP    \fC/elektra/\&.\&./\&./version\fP   \fC/version\fP    \fC/elektra///version\fP   \fC/elektra/version\fP    \fC/elektra//\&.\&./version\fP   \fC/version\fP    \fC/elektra/\&./\&.\&./version\fP   \fC/version\fP    \fC/elektra/\&.\&./\&.\&./\fP   \fC/\fP    \fCuser:/elektra/\&.\&./\&.\&./\fP   \fCuser:/\fP    \fC/elektra/version/\fP   \fC/elektra/version\fP   
+.PP
+As you can see, the behavior of \fC\&.\fP and \fC\&.\&.\fP matches that of Unix paths as long as we are using the namesapce 'cascading'\&. The namespace of a key name can never be changed via \fC\&.\&.\fP, so \fCuser:/\&.\&.\fP is equivalent to \fCuser:/\fP\&.
+.PP
+There is also a small difference in the last example\&. In Unix such paths would also refer to the same file, but in some Unix tools a trailing slash alters the behavior of the tool\&. In Elektra this is never the case\&. \fC/elektra/version/\fP and \fC/elektra/version\fP refer to the same key and are always treated as the same key name\&.
+.PP
+The only exception are the root keys\&. The canonical key names for the root keys always end with a \fC/\fP\&. In fact, we will see \fClater\fP, that removing the \fC/\fP makes the key name invalid\&.
+.PP
+There also is a completely new addition in Elektra\&. Elektra has a notion of \fIarray parts\fP\&. These are key name parts that denote an array index\&. How exactly these work, will be explored \fClater\fP\&. For now, we only need to know that they start with an \fC#\fP and their canonical form has \fCn\fP underscores followed by \fCn+1\fP digits\&.
+.PP
+A few examples for array parts:
+.PP
+Non-canonical   Canonical    \fC/elektra/#10\fP   \fC/elektra/#_10\fP    \fC/elektra/#1234\fP   \fC/elektra/#___1234\fP   
+.SS "2\&.2\&. Other Escape Sequences"
+We already know, that \fC/\fP and \fC\\\fP have to be escaped in an escaped key name\&. In addition to these two, there are a few more characters that have to be escaped\&. However, these additional characters may \fBonly\fP be escaped under certain conditions\&.
+.PP
+The characters in question are: \fC\&.\fP, \fC#\fP, \fC%\fP\&. The conditions under which these characters can be escaped can be found \fCbelow\fP\&.
+.SH "3\&. Unescaped Names"
+.PP
+While the escaped name of a key is nice for humans, it is not very well suited for machines\&. The escaping of path separators makes it hard to find the key name parts of a given key name\&. The escaped name is also not well suited for sorting \fC[3]\fP\&. 
+.PP
+Both of these flaws are solved by the \fIunescaped name\fP\&. In unescaped names we use a zero-byte as the part separator\&. Since a key name part cannot contain a zero-byte, we do not need an escaping mechanism for the path separator\&.
+.PP
+However, these zero-bytes mean that the unescaped name is not a printable string and therefore not human-readable\&. This why we will only describe the unescaped name in the deconstructed form\&.
+.PP
+The escaped names from above correspond to the following unescaped names:
+.PP
+.IP "1." 4
+\fCsystem:/elektra/version/info\fP
+.IP "  \(bu" 4
+The byte representing the namespace 'system': \fC0x07\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCelektra\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCversion\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCinfo\fP
+.IP "  \(bu" 4
+The terminator byte: \fC0x00\fP
+.PP
+
+.IP "2." 4
+\fC/elektra/version/info\fP
+.IP "  \(bu" 4
+The byte representing the namespace 'cascading': \fC0x01\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCelektra\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCversion\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCinfo\fP
+.IP "  \(bu" 4
+The terminator byte: \fC0x00\fP
+.PP
+
+.IP "3." 4
+\fC/elektra\\/version\\\\/info\fP
+.IP "  \(bu" 4
+The byte representing the namespace 'cascading': \fC0x01\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCelektra/version\\\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+A key name part: \fCinfo\fP
+.IP "  \(bu" 4
+The terminator byte: \fC0x00\fP
+.PP
+
+.IP "4." 4
+\fC/\fP:
+.IP "  \(bu" 4
+The byte representing the namespace 'cascading': \fC0x01\fP
+.IP "  \(bu" 4
+A part separator: \fC0x00\fP
+.IP "  \(bu" 4
+The terminator byte: \fC0x00\fP
+.PP
+
+.PP
+.PP
+.RS 4
+\fINote:\fP We use 0xZZ to represent a single byte in hexadecimal\&. This form is only used when the context makes it clear that it represents a single byte and not a four character string\&. 
+.RE
+.PP
+The process of turning an escaped name into the corresponding unescaped name is called \fIunescaping\fP\&. Turning an unescaped name back into an escaped name is called \fIescaping\fP\&.
+.PP
+Unescaping works, by simply removing the backslashes \fC\\\fP that are used as escapes\&. This applies both to \fC\\/\fP and \fC\\\\\fP anywhere in key name parts, as well as to the escape sequences that are only used at the start of key name parts, e\&.g\&. \fC\\#\fP\&.
+.SH "4\&. Valid and Invalid Key Names"
+.PP
+Not all of the key names described by the above sections are valid under all circumstances\&. You might also say, that a key name as defined above does not necessarily refer to a key in the KDB\&. So while it might be a key name, there is no key that actually uses this name\&. Only \fIvalid key names\fP refer to a key in the KDB and may be used by a key as its name\&. The remaining key names are referred to as \fIinvalid key names\fP\&.
+.PP
+For unescaped key names, it is pretty simple: Unescaped key names are valid key names, if all of the following are true:
+.PP
+.IP "\(bu" 2
+The first byte is a valid namespace byte, i\&.e\&. \fC0x01\fP - \fC0x08\fP\&.
+.IP "\(bu" 2
+The second byte is a zero-byte \fC0x00\fP\&.
+.IP "\(bu" 2
+The last byte is a zero-byte \fC0x00\fP\&.
+.PP
+.PP
+For this reason unescaped names for root keys are 3 bytes long, with the last two bytes being zero-byte\&. Between the second and the last byte, we find the key name parts separated by a zero-byte \fC0x00\fP\&.
+.PP
+For escaped key names it is easier to define, what makes an invalid key name, than what makes a valid key name, so we will go this route\&. An escaped key name is considered an invalid key name, if any of the following are true:
+.PP
+.IP "\(bu" 2
+It is an empty string\&.
+.IP "\(bu" 2
+The last character before the invisible null terminator is a backslash \fC\\\fP\&. This is a dangling escape as we expect another character after the escape character \fC\\\fP\&.
+.IP "\(bu" 2
+It contains a namespace (i\&.e\&. the namespace is not 'cascading'), but the namespace separator \fC:\fP is not followed by a \fC/\fP\&. (This mainly applies to root keys\&.)
+.IP "\(bu" 2
+It contains a namespace separator \fC:\fP, but the substring before the first \fC:\fP is not one of: \fCmeta\fP, \fCspec\fP, \fCproc\fP, \fCdir\fP, \fCuser\fP, \fCsystem\fP and \fCdefault\fP\&.
+.IP "\(bu" 2
+It contains an illegal escape sequence (see below)\&.
+.IP "\(bu" 2
+It is the string \fC/%\fP or consists of a namespace followed by the namespace separator \fC:\fP followed by \fC/%\fP\&. In other words, the first escaped part is translated into an empty unescaped part\&. The unescaped names for these keys would collide with the root keys \fC/\fP, \fCuser:/\fP, etc\&.
+.PP
+.PP
+.RS 4
+\fINote:\fP The C-API does not allow you to construct a \fCKey\fP with an invalid key name; for example \fCkeyNew\fP (and \fCkeyVNew\fP) will return \fCNULL\fP\&. 
+.RE
+.PP
+.SS "4\&.1\&. Illegal Escape Sequences"
+The escape sequences \fC\\\\\fP and \fC\\/\fP are always valid\&. For the other escape sequences certain conditions must be fulfilled:
+.PP
+.IP "\(bu" 2
+\fC\\\&.\fP: can be used at the start of a key name part, if the whole key name part is \fC\\\&.\fP or \fC\\\&.\&.\fP\&. In other words, \fC\\\fP can be used to escape the behavior of \fC\&.\fP and \fC\&.\&.\fP\&.
+.IP "\(bu" 2
+\fC\\#\fP: can be used at the start of a key name part, if the key name part would be a non-canonical array part without the \fC\\\fP\&. specifically, \fC\\#\fP can be used, if the key name part matches the regular expression \fC\\\\#[1-9][0-9]+\fP and the digits form a number less than or equal to 9223372036854775807 (= \fC2^63 - 1\fP)\&. Meaning, \fC\\\fP can be used to avoid array part canonicalization\&.
+.IP "\(bu" 2
+\fC\\%\fP: can be used, if the whole key name part is \fC\\%\fP\&. That is \fC\\%\fP is the escaped version of \fC%\fP (the empty key name part)\&.
+.PP
+.PP
+It may seem weird that some escape sequences have such specific requirements\&. This is necessary to create a 1:1 mapping between (canonical) escaped names and unescaped names\&. Without the restrictions, e\&.g\&. both \fC\\abc\fP and \fCabc\fP would be unescaped as \fCabc\fP\&. In addition, the conditions for \fC\\#\fP have to be so specific, because \fC\\\fP must only be allowed, if it affects unescaping\&. For example, we cannot allow \fC\\#abc\fP, because that would unescape into \fC#abc\fP, just like \fC#abc\fP\&.
+.SS "4\&.2\&. Array Parts"
+As mentioned above, Elektra has a notion of array parts\&. More specifically, certain key name parts will be interpreted as array indices under certain circumstances (see also \fBdocumentation for arrays\fP)\&.
+.PP
+We already mentioned above, that array parts have canonical and non-canoncial forms\&.
+.PP
+A canonical array part is a hash-sign \fC#\fP followed by \fCn\fP underscores (\fC_\fP) followed by \fCn+1\fP digits\&. Additionally, the digits must form a number greater than or equal to \fC0\fP and less than or equal to 9223372036854775807 (= \fC2^63 - 1\fP)\&. The number must not have any leading \fC0\fPs (except for the number zero itself)\&.
+.PP
+In non-canonical key names, the underscores (\fC_\fP) are omitted\&. That is, either the correct number of underscores is used or no underscores at all\&.
+.PP
+Any other key name part that starts with a \fC#\fP is never an array part\&.
+.PP
+\fBAll\fP key name parts starting with \fC#\fP are valid\&. It does not matter, if the key name part is an array part or not\&. However, some parts of Elektra may expect array parts under certain circumstances\&. Providing other key name parts under such circumstances, may cause problems\&. If the context doesn't call for an array part, then array parts behave no different and are treated as plain string just like any other key name part\&.
+.PP
+Finally, some examples:
+.PP
+.PP
+Key name part   Behavior in array   Behavior elsewhere    \fC#0\fP   Index of first element   Child named \fC#0\fP    \fC#_10\fP   Index of 11th element   Child named \fC#_10\fP    \fC#_99\fP   Index of 100th element   Child named \fC#_99\fP    \fC#__100\fP   Index of 101st element   Child named \fC#__100\fP    \fC#abc\fP   Possible error \fC[4]\fP   Child named \fC#abc\fP    \fC#_100\fP   Possible error \fC[4]\fP   Child named \fC#_100\fP    \fC#__10\fP   Possible error \fC[4]\fP   Child named \fC#__10\fP    \fC#10a\fP   Possible error \fC[4]\fP   Child named \fC#10a\fP   
+.SH "4\&.3\&. Reserved Key Names"
+.PP
+Apart from invalid key names, which cannot be constructed via the C-API, there are also \fIreserved key names\fP\&. These can be used with the C-API (\fCkeyNew\fP returns a valid \fCKey *\fP), but there might be situations, in which \fCKey\fPs with such key names are treated differently or rejected entirely\&.
+.PP
+Generally speaking, any part of Elektra may define that some key names have special meaning, are not allowed, etc\&. However, sometimes guaranteed compatibility with other parts of Elektra is required\&. A good example are storage plugins\&. A storage plugins should strive to be compatible with as much of Elektra as possible\&. But since the storage plugin doesn't know anything about other plugins or even the application using Elektra, it is hard to attribute special meaning to certain key names\&.
+.PP
+This is why there are two types of reserved key name:
+.PP
+.IP "1." 4
+Any key name that is below \fCsystem:/elektra\fP: These key names are reserved for Elektra's internals\&. Each of these keys has a very specific purpose that is defined globally for all of Elektra\&. Using such a key name automatically carries this meaning\&. Even outside the context in which Elektra uses these directly, you should never use \fCsystem:/elektra\fP keys for other purposes\&.
+.IP "2." 4
+Any key name containing the key name part \fC®elektra\fP: These key names are reserved, but their meaning depends on the context\&. Similar to the \fCMETADATA\&.ini\fP file for metadata, some conventions for these key names are defined in \fBreserved name document\fP\&.
+.PP
+.PP
+.RS 4
+\fINote:\fP We use UTF-8 here, so \fC®elektra\fP is specifically the 9-byte sequence \fCC2 AE 65 6C 65 6B 74 72 61\fP\&. 
+.RE
+.PP
+\fCKey\fPs with such key names will \fInever\fP be used in the interface between storage plugins and the rest of Elektra\&. This allows storage plugins to use \fC®elektra\fP to encode things that otherwise wouldn't be possible (e\&.g\&. values of non-leaf keys)\&.
+.PP
+.PP
+.PP
+[1]: This explanation of Unix paths and Unix filesystems, is not entirely accurate\&. But it is good enough for our purposes, so we will just ignore some details\&. \fC↑\fP
+.PP
+[2]: The actual process of resolution process that happens in \fCksLookupByName\fP and \fCksLookup\fP is a bit more complicated\&. It may involve some keys with namespace 'spec' as well\&. \fC↑\fP
+.PP
+[3]: For performance reasons, we want to make the comparison between to key names as fast as possible\&. A good solution is a single \fCmemcmp\fP\&. But this doesn't account for the fact that key names represent a hierarchy and that \fC/\fP has a special meaning: \fC/key/sub\fP should always be sorted after \fC/key\fP and before \fC/key\&.1\fP\&. With \fCmemcmp\fP, \fC/key\fP is first, because it is the shortest and otherwise equal\&. But then we would get \fC/key\&.1\fP not \fC/key/sub\fP, because \fC/ < \&.\fP in ASCII\&. This cannot happen with zero-bytes as the separator, because there is no byte with a smaller value\&. \fC↑\fP
+.PP
+[4]: We classify this as a 'possible error', because not all parts of Elektra will fully validate all conventions and rules around arrays\&. In particular, a standard \fCKeySet\fP itself imposes no restrictions\&. Therefore, you can use any \fCKeySet\fP locally in your application\&. As soon as you pass the \fCKeySet\fP into an external function (e\&.g\&. \fCkdbSet\fP), however, errors may occur since the \fCKeySet\fP may pass through a function that requires \fCKeySet\fP which are properly validated against array rules\&. For more details what conventions and rules exist around arrays, see \fBdocumentation for arrays\fP\&. \fC↑\fP 

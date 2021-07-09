@@ -1,0 +1,483 @@
+.TH "doc_news_2016-06-14_0_8_17_md" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2016-06-14_0_8_17_md \- 0\&.8\&.17 Release 
+
+.IP "\(bu" 2
+guid: e6153a39-c4bd-41c3-bc86-785d451eb6c5
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Tue, 14 Jun 2016 08:32:44 +0200
+.IP "\(bu" 2
+shortDesc: adds several improvements & survey about configuration
+.PP
+.SH "Survey"
+.PP
+First off: We created a survey questionnaire to gather more knowledge about the relevance of configuration systems\&. If you are involved in the development of free and open source software (FLOSS) you are the person we are looking for\&.
+.PP
+It would be a great help if you take this survey\&. It will be available till 18\&.07\&.2016 (anywhere on earth)\&.
+.PP
+For every thoroughly and not anonymously finished survey € 40 cent will be donated to one of the following organizations of your choice:
+.PP
+.IP "\(bu" 2
+LimeSurvey (LimeService, kindly hosts this survey)
+.IP "\(bu" 2
+SPI (General Donation: 0 A\&.D\&., LibreOffice, Debian, ArchLinux, …)
+.IP "\(bu" 2
+FSFE
+.IP "\(bu" 2
+GNOME
+.IP "\(bu" 2
+KDE
+.IP "\(bu" 2
+Mozilla (Firefox)
+.IP "\(bu" 2
+Wikimedia Foundation (Wikipedia)
+.PP
+.SH "Why should I use Elektra?"
+.PP
+The three main points relevant for most people are:
+.PP
+.IP "1." 4
+Even though Elektra provides a global keydatabase configuration files stay human read- and writable which allows us to integrate unmodified software\&.
+.IP "2." 4
+Flexible adoption on how the configuration is accessed via plugins: you can run arbitrary code, e\&.g\&. do a \fCgit commit\fP or log/notify when configuration files are changed\&.
+.IP "3." 4
+Elektra allows you to specify configuration values:
+.IP "  \(bu" 4
+use the value of other configuration values (symbolic links)
+.IP "  \(bu" 4
+calculate the values based on other configuration values
+.IP "  \(bu" 4
+validation configuration files
+.IP "  \(bu" 4
+\fCgenerate code based on it\fP
+.IP "  \(bu" 4
+\fCand much more\fP
+.PP
+
+.PP
+.PP
+Read more about \fCWhy using Elektra\fP, which also contains since this release unique features, further reasons and limitations\&.
+.PP
+For a small demo see here
+.PP
+\fC\fP.SH "Highlights"
+.PP
+.IP "\(bu" 2
+Qt-Gui reworked mounting and native icons
+.IP "\(bu" 2
+Full macOS Support, Build Server improvements and new beginner friendly tasks
+.IP "\(bu" 2
+allows us to mount csv, json and xml (and other common provider names) without needing to know plugin names
+.IP "\(bu" 2
+colored output for kdb tools
+.IP "\(bu" 2
+Experimental GSettings support
+.PP
+.SH "Beginner friendly tasks"
+.PP
+In this release starting developing Elektra gets easier:
+.PP
+.IP "\(bu" 2
+\fCELEKTRA_DEBUG\fP adds run-time checks and makes stack traces as if Elektra would not use plugins
+.IP "\(bu" 2
+\fCCMakeLists\&.txt\fP for plugins got simplified, in most cases it should be not more than calling a single function, even if unit tests and test data are present
+.IP "\(bu" 2
+We prepared \fCbeginner friendly tasks\fP for you\&.
+.PP
+.PP
+For details about \fCELEKTRA_DEBUG\fP and cmake, see individual points below\&.
+.SH "Find-Tools"
+.PP
+There is now a fine collection of external scripts which can executed by \fCkdb + <script>\fP\&. The new script \fCkdb find-tools\fP provides full text search over the meta data as provided by the scripts\&.
+.PP
+.IP "\(bu" 2
+\fCkdb find-tools -b BRIEF\fP to search for a short text\&.
+.IP "\(bu" 2
+\fCkdb find-tools -a AUTHOR\fP to search for an author\&.
+.IP "\(bu" 2
+\fCkdb find-tools -d DATE\fP to search for a creation date\&.
+.IP "\(bu" 2
+\fCkdb find-tools -e EXECUTE\fP to search for a type\&.
+.PP
+.PP
+Developers should now \fCadd MetaData for their scripts\&.\fP\&.
+.PP
+Thanks to Kurt Micheli!
+.SH "macOS Support"
+.PP
+Because of its POSIX support one might think it would be trivial to support macOS\&. Unfortunately there were many small issues, especially in the regular expression handling and the filesystem\&.
+.PP
+Nevertheless we finally fully support macOS and the newly added travis build server makes sure it will stay this way\&.
+.PP
+A huge thanks to Manuel Mausz and Mihael Pranjić for fixing the issues and setting up travis:
+.PP
+.IP "\(bu" 2
+jni plugin now can load Elektra (avoids using \fC\&.so\fP) thanks to Mihael Pranjić
+.IP "\(bu" 2
+initial creation of travis\&.yml thanks to Manuel Mausz
+.IP "\(bu" 2
+Add all 3 different XCode setups and some macOS fixes thanks to Mihael Pranjić
+.PP
+.SH "jenkins"
+.PP
+Now (nearly) every build job can be triggered from Pull Requests\&. For example:
+.PP
+.IP "\(bu" 2
+jenkins build \fClibelektra\fP please
+.PP
+.PP
+For a full list see \fChere\fP\&.
+.PP
+Thanks to Mihael Pranjić for the setup!
+.SH "Fixes"
+.PP
+.IP "\(bu" 2
+fix inconsistency with one excluded compilation variant, thanks to Harald Geyer for reporting #698
+.IP "\(bu" 2
+fix dynamic searching of installed plugins, needed so that kdb list-tools works correctly thanks to Harald Geyer for reporting
+.IP "\(bu" 2
+kdbtimer, \fCinclude <vector>\fP as needed by some compilers, a big thanks to Andreas Bombe for the non-maintainer upload in Debian to fix it for upcoming Debian release
+.IP "\(bu" 2
+also find yajl header files if installed in non-standard include directories, thanks to Mihael Pranjić
+.IP "\(bu" 2
+glib: make sure we use all definitions returned by pkg-config #719, fixes build on FreeBSD now glib bindings need cmake 2\&.8\&.12 thanks to Mihael Pranjić for reporting/testing and Manuel Mausz for fixing
+.IP "\(bu" 2
+fix INI for macOS (did require some non-portable sorting properties of \fCqsort\fP\&.)
+.IP "\(bu" 2
+INI makes INI-specific meta-data private by prefixing \fCini\fP\&.
+.IP "\(bu" 2
+\fCkdb export\fP also works under MinGW, thanks to Gabriel Rauter
+.PP
+.SH "Rework Add Plugin"
+.PP
+.IP "\(bu" 2
+prefer to link shared
+.IP "\(bu" 2
+add plugin tests when using link shared
+.IP "\(bu" 2
+make ADD_TEST simpler (without calling add_plugintest)
+.IP "\(bu" 2
+make installation of test data simpler + honor INSTALL_TESTING option
+.IP "\(bu" 2
+fix installation of test_data (do not install whole dir)
+.IP "\(bu" 2
+introduce cache so that it is enough to pass parameters to \fCadd_plugin*\fP once
+.IP "\(bu" 2
+avoid PLUGIN_DIRECTORY_NAME and change CMAKE_CURRENT_SOURCE_DIR and CMAKE_CURRENT_BINARY_DIR instead
+.IP "\(bu" 2
+add_plugin: remove unused option SHARED_SOURCES
+.IP "\(bu" 2
+implement a 3rd phase to add test cases: correctly handles dependencies of test cases to bindings
+.IP "\(bu" 2
+fix testmod_jni
+.PP
+.SH "CMake"
+.PP
+for maintainers:
+.PP
+.IP "\(bu" 2
+The cmake variables KDB_DB_SYSTEM and KDB_DB_HOME are now STRING and not PATH\&.
+.IP "\(bu" 2
+BUILD_FULL and BUILD_STATIC are now OFF by default
+.IP "\(bu" 2
+building with BUILD_SHARED is now preferred (for all examples, test cases,\&.\&.\&.)
+.IP "\(bu" 2
+ELEKTRA_DEBUG_BUILD and ELEKTRA_VERBOSE_BUILD is not used anymore\&.
+.IP "\(bu" 2
+ENABLE_DEBUG was added: it does not add debug symbols but run-time assertions\&.
+.IP "\(bu" 2
+More cmake variables are marked as advanced\&.
+.PP
+.PP
+for developers:
+.PP
+.IP "\(bu" 2
+BUILD_STATIC and BUILD_FULL is now OFF by default (nearly) all unit tests now also work with BUILD_SHARED
+.IP "\(bu" 2
+to support shared unit tests, a third phase was added when adding plugins inconsistent adding (across phases) of plugins and unit tests is reported
+.IP "\(bu" 2
+in \fCadd_plugin\fP remove SHARED_SOURCES, and add \fCADD_TEST\fP and \fCINSTALL_TEST_DATA\fP\&.
+.PP
+.PP
+and fixes:
+.PP
+.IP "\(bu" 2
+adding plugin tests is now much simpler, simply use \fCADD_TEST\fP in \fCadd_plugin\fP\&.
+.IP "\(bu" 2
+KDB_DB_SYSTEM and KDB_DB_HOME are now STRING and not PATH because of incorrect resolving of \fC~\fP\&.
+.IP "\(bu" 2
+lua bindings tests: make sure lua executable matches with the lua libraries version thanks to Mihael Pranjić
+.IP "\(bu" 2
+lua bindings: do not use hard-coded \fClua\fP executable\&.
+.IP "\(bu" 2
+Fix cmake configure when BUILD_DOCUMENTATION is set to OFF thanks to Kurt Micheli
+.PP
+.PP
+See more about changes to plugin adding in cmake in the \fCplugin decision\fP\&.
+.SH "Experimental GSettings support"
+.PP
+As part of the ongoing work of the bachelor thesis \fCIntegration of Elektra into the GNOME desktop environment\fP we now have experimental support for Elektra as a GSettings backend on Linux (We will look into getting macOS support on a later date)\&. When installed, applications using GSettings default backend will write to Elektra below the \fC/sw\fP key\&. The GSettings bindings are intended as a preview version so please do not use them in a production system\&.
+.PP
+To build the GSettings backend you have to explicitly add the binding even if \fCALL\fP is given\&. e\&.g\&. \fC-DBINDINGS=gsettings\fP \fC-DBINDINGS='ALL;gsettings'\fP
+.PP
+All needed core functionality of a GSettings backend is already implemented\&. This includes notification support if you have your \fC/sw\fP mounted with the dbus plugin\&.
+.PP
+Please report any bugs you encounter\&.
+.PP
+For further information regarding the status of the implementations please refer to the corresponding \fCREADME\fP and \fCticket\fP\&.
+.SH "Common Provider Names"
+.PP
+Mounting now supports to mount commonly known names even if the name is not a plugin\&. If more than one plugin is available automatically the best one is selected\&. The selection process works by annotating different qualities of the plugins, see \fCinfos/status\fP in the README\&.md of individual plugins\&.
+.PP
+E\&.g\&. to mount a file using a json plugin (called yajl because of the library's name it build upon)
+.PP
+.PP
+.nf
+kdb mount file\&.json json
+.fi
+.PP
+.SH "New Cachefilter Plugin"
+.PP
+stores filtered keys internally so that they do not get accidentally lost and can be written to the storage again without the user having to remember including them in the writeout
+.PP
+The longer term goal is to add such global plugins per default, so that the usage of the API is easier\&.
+.PP
+For now you can simply add it using:
+.PP
+.PP
+.nf
+kdb global-mount cachefilter
+.fi
+.PP
+.PP
+Thanks to Marvin Mall\&.
+.SH "Qt GUI 0\&.0\&.12"
+.PP
+The Qt GUI receives new features and a better gnome integration\&. Its version number was updated to 0\&.0\&.12 (beta)\&. Major features:
+.PP
+.IP "\(bu" 2
+use native icons (Qt GUI xdg icon theme support rework) thanks to Gabriel Rauter
+.IP "\(bu" 2
+update desktop entry org\&.libelektra\&.elektra-qt-editor\&.desktop with new symbolic icon of Elektra’s logo so that qt-gui can nicely started from within Gnome thanks to Gabriel Rauter
+.IP "\(bu" 2
+Add new layout elements to backend wizard and integrate new BackendBuilder functionality (See Common Provider Names) to qt-gui thanks to Raffael Pancheri
+.PP
+.PP
+Bug fixes:
+.PP
+.IP "\(bu" 2
+Reset to defaults now reverts back to build-in defaults\&.
+.IP "\(bu" 2
+Make clicks on search icon focus on search textfield\&.
+.IP "\(bu" 2
+save settings when settings dialog is closed\&.
+.IP "\(bu" 2
+fix crash of qt-gui when crypto plugin was enabled (and added /shutdown option to enable previous behaviour) thanks to Peter Nirschl
+.IP "\(bu" 2
+fix qt-gui fails to synchronize because of readonly plugins thanks to Raffael Pancheri
+.IP "\(bu" 2
+Rename desktop file: correct reverse url from org\&.elektra to \fBorg\&.libelektra\fP\&.
+.IP "\(bu" 2
+Rename elektra-qt to elektra-qt-editor\&.
+.IP "\(bu" 2
+Rename ChooseColorWindow: The ChooseColorWindows will be replaced by a AppearanceSettingsWindow, all references to ChooseColor, choose color have been replaced by AppearanceSettings or choose appearance\&.
+.PP
+.PP
+Other improvements:
+.PP
+.IP "\(bu" 2
+Install \fCelektra-qt-editor\fP binary so both the desktop files TryExec works and people not starting the gui trough \fCkdb qt-gui\fP have a speaking name in their process list\&.
+.IP "\(bu" 2
+Replace occurrences of \fCElektra Editor\fP with \fCElektra Qt Editor\fP so that we use the same name in all places apart from the tools binary\&.
+.IP "\(bu" 2
+Introduce Appearance Settings Window: Appearance Settings Window contains both color settings as well as a switch to disable or enable the system icon theme\&. For this to work we had to introduce the setting in \fCguisettings\fP\&. We also added a private function in \fCguisettings\fP to get and set settings with a boolean value\&.
+.IP "\(bu" 2
+Tree reload on Settings close: We now synch and refresh the tree view on closing of the settings window if any settings have been changed, so changes can be seen imediatly in the tree\&.
+.IP "\(bu" 2
+Add qt5 svg module as dependency: the qt5 svg module is needed so we can display icon themes that provide svg as icon format\&.
+.IP "\(bu" 2
+Add and install symbolic icon with the installation of the Elektra Qt Editor\&.
+.PP
+.PP
+Thanks to Gabriel Rauter and Raffael Pancheri for the engagement in improving qt-gui\&.
+.SH "Colored kdb tool"
+.PP
+A big thanks to Gabriel Rauter for improving the user experience with the kdb tool\&. On errors and in \fCkdb info\fP it was often quite hard to find the relevant text\&.
+.PP
+Now important parts are highlighted by bold or colorful text\&. This helps to spot the important information immediately without sacrificing information that would be important for a detailed analysis\&.
+.PP
+Every tool now has the option \fC--color\fP and \fC-C\fP which is set to \fCauto\fP per default\&. By writing to:
+.PP
+.PP
+.nf
+kdb set user/sw/elektra/kdb/#0/color off
+.fi
+.PP
+.PP
+one can go back to previous behavior\&.
+.SH "Documentation"
+.PP
+.IP "\(bu" 2
+improve documentation about how to pop a key
+.IP "\(bu" 2
+document how to avoid running test cases as root in \fCTESTING\&.md\fP\&.
+.IP "\(bu" 2
+document guarantees of \fCelektraPluginGetData\fP, thanks to Marvin Mall
+.IP "\(bu" 2
+doc mentions that -1 should be returned \fIalways\fP when an error is set
+.IP "\(bu" 2
+many more spelling mistakes were fixed and useless whitespace was removed, thanks to René Schwaiger
+.IP "\(bu" 2
+describe preferences when plugins are included/excluded
+.IP "\(bu" 2
+improvements in \fCksCopy\fP, \fCksPop\fP, \fCkdbGet\fP and \fCkdbSet\fP \fCAPI description\fP
+.IP "\(bu" 2
+added \fCWHY document\fP
+.IP "\(bu" 2
+updated \fCplugin decision\fP to include 3rd phase
+.PP
+.SH "ELEKTRA_DEBUG build"
+.PP
+ENABLE_DEBUG now enables a debug build for Elektra\&. It has nothing to do with debug symbols, but:
+.PP
+.IP "\(bu" 2
+it enables assertions
+.IP "\(bu" 2
+it enables \fCundefinied behavior sanitizer\fP for clang
+.IP "\(bu" 2
+plugins will not be closed so that stack traces are more useful (using \fCRTLD_NODELETE\fP)
+.PP
+.PP
+\fCENABLE_DEBUG\fP is recommended for every developer, even if you are not modifying Elektra itself\&. The assertions will give you hints on API misusage\&.
+.PP
+For example, \fCkeyNew\fP was known to be error-prone\&. \fCENABLE_DEBUG\fP now will report wrong parameters by an assertion\&.
+.PP
+The old options \fCELEKTRA_DEBUG\fP and \fCELEKTRA_VERBOSE\fP are not available anymore\&.
+.PP
+Thanks to:
+.PP
+.IP "\(bu" 2
+Thomas Waser for pointing to \fCRTLD_NODELETE\fP
+.IP "\(bu" 2
+Gabriel Rauter for fixing qt-gui with \fC-DENABLE_DEBUG=ON\fP
+.PP
+.PP
+The constants plugin was updated to provide \fCcmake/ENABLE_LOGGER\fP \fCcmake/ENABLE_DEBUG\fP and will no longer provide \fCcmake/ELEKTRA_DEBUG_BUILD\fP \fCcmake/ELEKTRA_VERBOSE_BUILD\fP
+.SH "Other"
+.PP
+.IP "\(bu" 2
+Gabriel Rauter is now listed in \fCAUTHORS\&.md\fP
+.IP "\(bu" 2
+constants plugin: configure_file now uses current binary directory, not cluttering the main build directory\&.
+.IP "\(bu" 2
+fix ssize_t for VS2015, thanks to Gabriel Rauter
+.IP "\(bu" 2
+gtest: fix linking when using arch systemd-nspawn, thanks to Marvin Mall
+.IP "\(bu" 2
+\fCLD_LIBRARY_PATH\fP is added to lua and python bindings needed for macOS, thanks to Mihael Pranjić
+.IP "\(bu" 2
+Fix external unit test for Ubuntu 15\&.04 by putting files before the flags, thanks to Marvin Mall
+.IP "\(bu" 2
+symbols in \fCNi_\fP namespace are now in \fCelektraNi_\fP
+.IP "\(bu" 2
+add more ipv4 and ipv6 test cases for IP adress validation checker
+.IP "\(bu" 2
+crypto-plugin avoid usage of hardcoded error numbers, thanks to Peter Nirschl
+.IP "\(bu" 2
+do not use number for resolver position
+.IP "\(bu" 2
+to fix a compiler warning in macOS, we made the printf format specifier of time_t more portable, thanks to René Schwaiger
+.IP "\(bu" 2
+many preparations for global plugins and mmap
+.IP "\(bu" 2
+in the constants plugin \fCcmake/BUILTIN_PLUGIN_FOLDER\fP, \fCBUILTIN_DATA_FOLDER\fP and \fCBUILTIN_EXEC_FOLDER\fP were added\&.
+.IP "\(bu" 2
+doxygen is only run once during build, thanks to René Schwaiger
+.IP "\(bu" 2
+add script configure-home to build Elektra that it will resolve all pathes to home-directories
+.IP "\(bu" 2
+add script metaini-to-c that converts METADATA\&.ini to C-code, thanks to Thomas Waser
+.IP "\(bu" 2
+add note that default values must be present for code generation, thanks to Martin Schleiss
+.IP "\(bu" 2
+avoid \fCseq\fP as it is not available in some \fC*BSD\fP, thanks to Mihael Pranjić
+.IP "\(bu" 2
+make jni testmod check consistent to others
+.PP
+.SH "Compatibility"
+.PP
+As always, the ABI and API is fully forward- and backward-compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile every program without errors (API)\&. This time you can even compile programs against 0\&.8\&.17 and run with 0\&.8\&.16\&.
+.PP
+For the qt-gui the svg module is added as dependency\&.
+.PP
+New and missing files in the installation:
+.PP
+.IP "\(bu" 2
+\fCelektra-qt-editor\fP is installed in the path (needed for TryExec in Desktop file)
+.IP "\(bu" 2
+\fClibelektrasettings\&.so\fP will be installed if \fCgsettings\fP binding is enabled
+.IP "\(bu" 2
+\fClibelektra-cachefilter\&.so\fP is the new cachefilter plugin
+.IP "\(bu" 2
+\fCtool_exec/testmod_cachefilter\fP is its unit test
+.IP "\(bu" 2
+\fCtool_exec/find-tools\fP is a new python script to find other tools
+.IP "\(bu" 2
+\fCappdata/org\&.libelektra\&.elektra-qt-editor\&.appdata\&.xml\fP
+.IP "\(bu" 2
+\fCicons/hicolor/scalable/apps/elektra-symbolic\&.svg\fP
+.IP "\(bu" 2
+\fCshare/man/man1/kdb-find-tools\&.1\fP
+.PP
+.PP
+Renamed files:
+.PP
+.IP "\(bu" 2
+\fCapplications/org\&.elektra\&.elektra-qt\&.desktop\fP got renamed to \fCapplications/org\&.libelektra\&.elektra-qt-editor\&.desktop\fP\&.
+.PP
+.PP
+Removed files:
+.PP
+.IP "\(bu" 2
+Some of the installed 'test data' actually was source code from Elektra\&. Test data from the following plugins is affected: \fChosts\fP, \fCini\fP, \fClineendings\fP,
+.PP
+.PP
+Temporarily removed files:
+.PP
+.IP "\(bu" 2
+\fCtestmod_lua\fP, \fCtestmod_python\fP and \fCtestmod_python2\fP do not work in a shared build and are temporarily disabled if \fCBUILD_SHARED\fP is enabled\&. Also their test data is affected\&.
+.PP
+.SH "Get It!"
+.PP
+You can download the release from \fChere\fP and also \fChere on github\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.17\&.tar\&.gz
+.IP "\(bu" 2
+size: 2459542
+.IP "\(bu" 2
+md5sum: e53efdb9a5e0852c58b21280b1e6c07d
+.IP "\(bu" 2
+sha1: a1abcd4ac5aabfc60c34da98a02c4636e4634b5c
+.IP "\(bu" 2
+sha256: a6a41afb0160feef84f7d1e0d199da26022ff8cb52ed455a0d306b589838d8f5
+.PP
+.PP
+This release tarball now is also available \fCsigned by me using gpg\fP
+.PP
+already built API-Docu can be found \fChere\fP
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the \fCMailing List\fP the issue tracker \fCon github\fP or by email elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, Markus 

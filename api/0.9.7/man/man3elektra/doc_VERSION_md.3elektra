@@ -1,0 +1,91 @@
+.TH "doc_VERSION_md" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_VERSION_md \- Version 
+ The version of Elektra is handled with the kdb\&.h macros \fCKDB_VERSION\fP which is a string and \fCKDB_VERSION_MAJOR\fP, \fCKDB_VERSION_MINOR\fP and \fCKDB_VERSION_PATCH\fP which are numbers for the publicly announced versions\&.
+.PP
+The version can also be retrieved at run-time from KDB:
+.PP
+.PP
+.nf
+system:/elektra/version/constants/KDB_VERSION
+system:/elektra/version/constants/KDB_VERSION_MAJOR
+system:/elektra/version/constants/KDB_VERSION_MINOR
+system:/elektra/version/constants/KDB_VERSION_PATCH
+.fi
+.PP
+.SH "Scope"
+.PP
+The version applies to following parts of Elektra:
+.PP
+.IP "\(bu" 2
+the API for programs using Elektra\&. Its interface is declared in \fBsrc/include/kdb\&.h\fP\&. Both applications and plugins use this API\&.
+.IP "\(bu" 2
+the high-level API as declared in \fCsrc/include/elektra\&.h\fP\&.
+.IP "\(bu" 2
+the API to plugins as declared in \fCsrc/plugins/doc/doc\&.h\fP\&.
+.IP "\(bu" 2
+the API to \fClibease\fP
+.IP "\(bu" 2
+the API to \fClibmeta\fP
+.IP "\(bu" 2
+the API to \fClibmerge\fP
+.IP "\(bu" 2
+the API to \fCmodule loading\fP
+.IP "\(bu" 2
+the API to \fClibnotification\fP
+.IP "\(bu" 2
+the API to \fClibopts\fP
+.IP "\(bu" 2
+plugins that have \fCinfos/status\fP of \fCcompatible\fP\&.
+.IP "\(bu" 2
+the CLI tool \fCkdb\fP with its command-line arguments, KDB access and its return values\&.
+.PP
+.SH "Behavior"
+.PP
+The behavior of Elektra is defined by (in that order):
+.PP
+.IP "1." 4
+\fBABI\fP test cases
+.IP "2." 4
+Non-ABI test cases (including Shell Recorder)
+.IP "3." 4
+The \fCAPI documentation\fP
+.IP "4." 4
+The \fBman pages\fP
+.IP "5." 4
+Tutorials (excluding Shell Recorder)
+.IP "6." 4
+Examples
+.PP
+.PP
+Any inconsistency within this artifacts within each other or with the implementation constitutes a bug\&.
+.SH "Compatibility"
+.PP
+This section describes under which circumstances API and ABI incompatibilities may occur\&. As Elektra developer your mission is to avoid any unwanted incompatibilities\&. The tool icheck which checks the interfaces mentioned in the Scope may help you\&.
+.PP
+Elektra uses a stricter version of \fCSemantic Versioning 2\&.0\&.0\fP, with the extensions explained here\&.
+.PP
+In \fC1\&.0\&.*\fP the API and ABI must be always forward-compatible and backwards-compatible\&. That means that Elektra's libraries may be upgraded and downgraded without any effect on applications, only bug or docu fixes are allowed\&.
+.PP
+In minor or patch version updates the API and ABI must be always forward-compatible, but not backwards-compatible\&. That means that a program written and compiled against 1\&.0\&.0 compiles and links against 1\&.1\&.0\&. But because it is not necessarily backwards-compatible a program written for 1\&.1\&.0 may not link or compile against Elektra 1\&.0\&.0 (but it compiles if you use the compatible subset, maybe by using #ifdefs)\&. Also here applications must continue to work as originally intended\&.
+.PP
+When you add a new function you break ABI and API backward- compatibility (but not forward)\&. You are only allowed to do so in a \fC1\&.*\fP change\&.
+.PP
+In the signature you are only allowed to add const to any parameter\&. You are \fInot\fP allowed to use subtypes to the objects, in C means you are not allowed to call any functions of an object which appear new\&. C does \fInot\fP type check that, it's your responsibility\&.
+.PP
+What C also does not check are the pre and postconditions\&. That means you are not allowed to demand more client code (e\&.g\&. first accept a NULL pointer and in the next version you crash on it) and you are not allowed to return values that the previous version did not return\&. It is a complex topic, so better don't underestimate it, but generally said the methods should behave on the same data the same way\&.
+.PP
+As we use \fBsymbol versioning\fP, the SO_VERSION of Elektra always remains the same, even if the major version changes\&. That means, if we rename or remove a function in the \fC2\&.0\fP release, applications that linked against Elektra \fC1\&.0\fP can still link against Elektra \fC2\&.0\fP but they do not necessarily compile with Elektra \fC2\&.0\fP anymore\&. Once the code is adapted to use \fC2\&.0\fP, it cannot link against \fC1\&.0\fP anymore\&. Note that this feature is only available on platforms that support symbol versioning\&. For other platforms, all applications need to be recompiled for every major version\&.
+.PP
+In major upgrades, changes of behavior is possible even if it might break some use cases of some applications\&. Furthermore, symbols that already have been deprecated before, might be removed\&. For example, in \fC1\&.0\fP there is a deprecated method \fCksNext\fP (not available in \fCkdb\&.h\fP)\&. Thus in \fC2\&.0\fP it is subject to be removed\&.
+.PP
+References: http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html http://packages.debian.org/de/sid/icheck
+.SH "Bindings"
+.PP
+Bindings are in general tied to Elektra's version number except for the patch level\&. So bindings can only add or change functionality when Elektra's core does\&. This is a quite severe restriction but makes the version much easier to understand for users\&. It serves the goal that Elektra does not prefer any programming languages, instead people expect from Elektra version \fCx\&.y\&.*\fP identical functionality\&.
+.PP
+The patch level can be chosen by bindings as wanted\&. Using the binding \fCx\&.y\&.z\fP does not mean that Elektra \fCx\&.y\&.z\fP will be used on the target system\&. Please read the changelog of the binding maintainers to know about which bug fixes are included\&.
+.PP
+The patch level might also be used to fix bugs within bindings\&. This means that applications can only introspect the patch level of Elektra by getting \fCsystem:/elektra/version/constants/KDB_VERSION_PATCH\fP but not by static patch levels the binding might provide\&. This should be no problem, as the patch level is supposed to not change the behavior\&. 

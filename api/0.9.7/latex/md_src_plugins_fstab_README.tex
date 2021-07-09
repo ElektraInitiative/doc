@@ -1,0 +1,128 @@
+
+\begin{DoxyItemize}
+\item infos = Information about FSTAB plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = storage/fstab
+\item infos/needs =
+\item infos/recommends = struct type path
+\item infos/placements = getstorage setstorage
+\item infos/status = unittest nodep difficult limited unfinished old
+\item infos/description = Parses files in a syntax like /etc/fstab file
+\end{DoxyItemize}\hypertarget{md_src_plugins_fstab_README_src_plugins_fstab_README_md}{}\doxysection{Introduction}\label{md_src_plugins_fstab_README_src_plugins_fstab_README_md}
+This plugin is an implementation of a parser and generator of the /etc/fstab file.\hypertarget{md_src_plugins_fstab_README_autotoc_md213}{}\doxysection{Installation}\label{md_src_plugins_fstab_README_autotoc_md213}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_fstab_README_autotoc_md214}{}\doxysection{Old fstab Entries}\label{md_src_plugins_fstab_README_autotoc_md214}
+(Deprecated, remove this section after it is reimplemented in the new way)
+
+For each device in fstab elektra will store the following keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{pseudoname/device}
+\DoxyCodeLine{pseudoname/mpoint}
+\DoxyCodeLine{pseudoname/type}
+\DoxyCodeLine{pseudoname/options}
+\DoxyCodeLine{pseudoname/dumpfreq}
+\DoxyCodeLine{pseudoname/passno}
+
+\end{DoxyCode}
+
+
+Each represents a column in fstab.
+
+The pseudoname can be any name for setting keys, the will be generated when getting keys, so don\textquotesingle{}t expect the same name.
+
+the directory {\ttfamily /} will be called {\ttfamily rootfs}
+
+all swap devices will be called {\ttfamily swap\+XX} with a number from 00 on for XX
+
+otherwise the mount point without the \textquotesingle{}/\textquotesingle{} character will be used.
+
+At the other point there is the issue with the pseudonames, you can\textquotesingle{}t rely on the pseudoname you have set.
+
+The biggest issue is that you can\textquotesingle{}t change or delete existing entries. All entries you set will be appended to the other filesystems.
+
+So if you get the filesystems and change the type of the file system of the rootfs and set it again the resulting fstab will be like\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/dev/sda6       /               ext3>-\/-\/-\/-\/   >-\/-\/-\/-\/defaults,errors=remount-\/ro 0 1}
+\DoxyCodeLine{/dev/sda6       /               jfs>-\/-\/-\/-\/   >-\/-\/-\/-\/defaults,errors=remount-\/ro 0 1}
+
+\end{DoxyCode}
+
+
+which will be not like you desired!
+
+setmntent is used, so it is only conforming to BSD 4.\+3 and linux and you can\textquotesingle{}t use any comments.\hypertarget{md_src_plugins_fstab_README_autotoc_md215}{}\doxysection{New fstab Entries}\label{md_src_plugins_fstab_README_autotoc_md215}
+Specification\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[/\_]}
+\DoxyCodeLine{type = array}
+\DoxyCodeLine{explanation = the name of the key is the mount point (so the former}
+\DoxyCodeLine{  mpoint is not needed); the value is the number of entries in the}
+\DoxyCodeLine{  array}
+\DoxyCodeLine{[/\_/\#]}
+\DoxyCodeLine{explanation = an entry in the array}
+\DoxyCodeLine{[/\_/\#/device]}
+\DoxyCodeLine{[/\_/\#/type]}
+\DoxyCodeLine{[/\_/\#/options]}
+\DoxyCodeLine{[/\_/\#/dumpfreq]}
+\DoxyCodeLine{[/\_/\#/passno]}
+
+\end{DoxyCode}
+
+
+Example\+: A fstab that looks like\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/dev/sr0        /media/cdrom   udf,iso9660 user,noauto     0       0}
+
+\end{DoxyCode}
+
+
+would have a key name that is an array (so the value is the number of children, in this case 1)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/filesystems/\(\backslash\)/media\(\backslash\)/cdrom}
+
+\end{DoxyCode}
+
+
+with the array entry\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/filesystems/\(\backslash\)/media\(\backslash\)/cdrom0/\#0/}
+
+\end{DoxyCode}
+
+
+So when following line is added
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/dev/sr0        /media/cdrom   ramfs user,noauto     0       0}
+
+\end{DoxyCode}
+
+
+Implementation hint\+: use {\ttfamily \mbox{\hyperlink{group__keyname_gaa942091fc4bd5c2699e49ddc50829524}{key\+Add\+Base\+Name()}}} to get escaping of {\ttfamily /}, then add array items below it
+
+If a mount point exists more than once (that could be proc, swap or overlay mount points) the array below gets incremented (otherwise \#0 is used for every unique entry).
+
+The order of the array must, of course, be preserved. Other lines may be reordered for now, a proper \char`\"{}order\char`\"{} could be done later.
+
+Spaces in the names are replaced by \textbackslash{}040 in the fstab.\hypertarget{md_src_plugins_fstab_README_autotoc_md216}{}\doxysection{Example}\label{md_src_plugins_fstab_README_autotoc_md216}
+Mount the plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount /etc/fstab system:/filesystems fstab struct type path}
+
+\end{DoxyCode}
+ 

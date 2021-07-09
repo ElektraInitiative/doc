@@ -1,0 +1,659 @@
+.TH "org.libelektra.KDB" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+org.libelektra.KDB \- Represents a session with the \fBElektra\fP key database\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.PP
+Inherits AutoCloseable\&.
+.SS "Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "void \fBclose\fP ()  throws KDBException 	"
+.br
+.RI "Closes the \fBKDB\fP session and frees native resources associated with it\&. "
+.ti -1c
+.RI "void \fBclose\fP (\fBKey\fP errorKey)  throws KDBException 	"
+.br
+.RI "Closes the \fBKDB\fP session and frees native resources associated with it\&. "
+.ti -1c
+.RI "\fBKeySet\fP \fBget\fP (\fBKey\fP parentKey)  throws KDBException 	"
+.br
+.RI "Fetches at least all keys that are sub-keys or children of sub-keys of the supplied parent key\&. "
+.ti -1c
+.RI "\fBKDB\fP \fBget\fP (\fBKeySet\fP keySet, \fBKey\fP parentKey)  throws KDBException 	"
+.br
+.RI "Fetches at least all keys that are sub-keys or children of sub-keys of the supplied parent key\&. "
+.ti -1c
+.RI "\fBKDB\fP \fBset\fP (\fBKeySet\fP keySet, \fBKey\fP errorKey)  throws KDBException 	"
+.br
+.RI "Will update changed keys of the given key set in the backend\&. "
+.in -1c
+.SS "Static Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "static \fBKDB\fP \fBopen\fP ()  throws KDBException 	"
+.br
+.RI "Opens a new \fBKDB\fP session\&. "
+.ti -1c
+.RI "static \fBKDB\fP \fBopen\fP (\fBKey\fP errorKey)  throws KDBException 	"
+.br
+.RI "Opens a new \fBKDB\fP session using the specified\&. "
+.ti -1c
+.RI "static \fBKDB\fP \fBopen\fP (\fBKeySet\fP contract)  throws KDBException 	"
+.br
+.RI "Opens \fBKDB\fP session using the specified\&. "
+.ti -1c
+.RI "static \fBKDB\fP \fBopen\fP (\fBKeySet\fP contract, \fBKey\fP errorKey)  throws KDBException 	"
+.br
+.RI "Opens \fBKDB\fP session using the specified\&. "
+.ti -1c
+.RI "static \fBKeySet\fP \fBgoptsContract\fP (String[] args, String[] env, \fBKey\fP parentKey, \fBKeySet\fP goptsConfig)"
+.br
+.RI "Creates a \fBcontract\fP for use with \fBKDB#open(KeySet, Key)\fP that mounts and configures the\&. "
+.ti -1c
+.RI "static void \fBgoptsContract\fP (\fBKeySet\fP contract, String[] args, String[] env, \fBKey\fP parentKey, \fBKeySet\fP goptsConfig)"
+.br
+.RI "Creates a \fBcontract\fP for use with \fBKDB#open(KeySet, Key)\fP that mounts and configures the\&. "
+.in -1c
+.SS "Protected Member Functions"
+
+.in +1c
+.ti -1c
+.RI "Pointer \fBgetPointer\fP ()"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Represents a session with the \fBElektra\fP key database\&. 
+
+@apiNote Close after usage, or simply use a try-with-resources statement 
+.SH "Member Function Documentation"
+.PP 
+.SS "void org\&.libelektra\&.KDB\&.close () throws \fBKDBException\fP\fC [inline]\fP"
+
+.PP
+Closes the \fBKDB\fP session and frees native resources associated with it\&. 
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if opening the session fails - see specialization of \fBKDBException\fP 
+.br
+\fIKDBClosedException\fP if this session has already been closed 
+.RE
+.PP
+
+.SS "void org\&.libelektra\&.KDB\&.close (\fBKey\fP errorKey) throws \fBKDBException\fP\fC [inline]\fP"
+
+.PP
+Closes the \fBKDB\fP session and frees native resources associated with it\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIerrorKey\fP \fBKey\fP holding error and warning information 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if opening the session fails - see specialization of \fBKDBException\fP 
+.br
+\fIKDBClosedException\fP if this session has already been closed 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+parentKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ is
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBKey::createNameless()\fP 
+.RE
+.PP
+
+.SS "\fBKeySet\fP org\&.libelektra\&.KDB\&.get (\fBKey\fP parentKey) throws \fBKDBException\fP\fC [inline]\fP"
+
+.PP
+Fetches at least all keys that are sub-keys or children of sub-keys of the supplied parent key\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIparentKey\fP Root key which name is used to fetch keys below it 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+New \fBKeySet\fP containing the fetched keys 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if loading keys fails - see specialization of \fBKDBException\fP 
+.br
+\fIKDBClosedException\fP if this session has already been closed 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+parentKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP 
+.RE
+.PP
+
+.SS "\fBKDB\fP org\&.libelektra\&.KDB\&.get (\fBKeySet\fP keySet, \fBKey\fP parentKey) throws \fBKDBException\fP\fC [inline]\fP"
+
+.PP
+Fetches at least all keys that are sub-keys or children of sub-keys of the supplied parent key\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkeySet\fP \fBKeySet\fP used to store the fetched keys 
+.br
+\fIparentKey\fP Root key which name is used to fetch keys below it 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+This \fBKDB\fP session, enabling a fluent interface 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if loading keys fails - see specialization of \fBKDBException\fP 
+.br
+\fIKDBClosedException\fP if this session has already been closed 
+.br
+\fIKeySetReleasedException\fP if
+.PP
+.nf
+keySet 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+parentKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if
+.PP
+.nf
+keySet 
+
+.fi
+.PP
+ or
+.PP
+.nf
+parentKey 
+
+.fi
+.PP
+ is 
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+
+.SS "Pointer org\&.libelektra\&.KDB\&.getPointer ()\fC [inline]\fP, \fC [protected]\fP"
+
+.PP
+\fBReturns\fP
+.RS 4
+JNA pointer to the native pointer for this key set 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fIKDBClosedException\fP if this \fBKDB\fP session has already been closed 
+.RE
+.PP
+
+.SS "static void org\&.libelektra\&.KDB\&.goptsContract (\fBKeySet\fP contract, String[] args, String[] env, \fBKey\fP parentKey, \fBKeySet\fP goptsConfig)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Creates a \fBcontract\fP for use with \fBKDB#open(KeySet, Key)\fP that mounts and configures the\&. 
+.PP
+.nf
+gopts 
+
+.fi
+.PP
+ plugin
+.PP
+\fBParameters\fP
+.RS 4
+\fIcontract\fP the \fBKeySet\fP into which the contract is written 
+.br
+\fIargs\fP the arguments that will be converted into argc and argv for gopts 
+.br
+\fIenv\fP the environment variables that gopts will use 
+.br
+\fIparentKey\fP the parent key that gopts will use 
+.br
+\fIgoptsConfig\fP the config \fBKeySet\fP used for mounting gopts 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fIIllegalArgumentException\fP if any of the arguments are
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.br
+\fIKeySetReleasedException\fP if
+.PP
+.nf
+contract 
+
+.fi
+.PP
+ or
+.PP
+.nf
+goptsConfig 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+parentKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if any of the specified parameters is 
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+
+.SS "static \fBKeySet\fP org\&.libelektra\&.KDB\&.goptsContract (String[] args, String[] env, \fBKey\fP parentKey, \fBKeySet\fP goptsConfig)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Creates a \fBcontract\fP for use with \fBKDB#open(KeySet, Key)\fP that mounts and configures the\&. 
+.PP
+.nf
+gopts 
+
+.fi
+.PP
+ plugin
+.PP
+\fBParameters\fP
+.RS 4
+\fIargs\fP the arguments that will be converted into argc and argv for gopts 
+.br
+\fIenv\fP the environment variables that gopts will use 
+.br
+\fIparentKey\fP the parent key that gopts will use 
+.br
+\fIgoptsConfig\fP the config \fBKeySet\fP used for mounting gopts 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+new \fBKeySet\fP containing the contract 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fIIllegalArgumentException\fP if any of the arguments are
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.br
+\fIKeySetReleasedException\fP if
+.PP
+.nf
+goptsConfig 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+parentKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if any of the specified parameters is 
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBKeySet::release()\fP 
+.RE
+.PP
+
+.SS "static \fBKDB\fP org\&.libelektra\&.KDB\&.open () throws \fBKDBException\fP\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Opens a new \fBKDB\fP session\&. 
+.PP
+\fBReturns\fP
+.RS 4
+New \fBKDB\fP session 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if opening the session fails - see specialization of \fBKDBException\fP 
+.RE
+.PP
+
+.SS "static \fBKDB\fP org\&.libelektra\&.KDB\&.open (\fBKey\fP errorKey) throws \fBKDBException\fP\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Opens a new \fBKDB\fP session using the specified\&. 
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ to store possible warnings and error information
+.PP
+\fBParameters\fP
+.RS 4
+\fIerrorKey\fP Used to store warnings and error information 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+New \fBKDB\fP session 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if opening the session fails - see specialization of \fBKDBException\fP 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ is
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBKey::createNameless()\fP 
+.RE
+.PP
+
+.SS "static \fBKDB\fP org\&.libelektra\&.KDB\&.open (\fBKeySet\fP contract) throws \fBKDBException\fP\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Opens \fBKDB\fP session using the specified\&. 
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ to store possible warnings and error information
+.PP
+\fBParameters\fP
+.RS 4
+\fIcontract\fP Contract that will be ensured by \fBElektra#kdbOpen(Pointer, Pointer)\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+New \fBKDB\fP session 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if opening the session fails - see specialization of \fBKDBException\fP 
+.br
+\fIKeySetReleasedException\fP if
+.PP
+.nf
+contract 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if
+.PP
+.nf
+contract 
+
+.fi
+.PP
+ or
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ is 
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+
+.SS "static \fBKDB\fP org\&.libelektra\&.KDB\&.open (\fBKeySet\fP contract, \fBKey\fP errorKey) throws \fBKDBException\fP\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Opens \fBKDB\fP session using the specified\&. 
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ to store possible warnings and error information
+.PP
+\fBParameters\fP
+.RS 4
+\fIcontract\fP Contract that will be ensured by \fBElektra#kdbOpen(Pointer, Pointer)\fP 
+.br
+\fIerrorKey\fP Used to store warnings and error information 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+New \fBKDB\fP session 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if opening the session fails - see specialization of \fBKDBException\fP 
+.br
+\fIKeySetReleasedException\fP if
+.PP
+.nf
+contract 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIIllegalArgumentException\fP if
+.PP
+.nf
+contract 
+
+.fi
+.PP
+ or
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ is 
+.PP
+.nf
+null 
+
+.fi
+.PP
+ 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBKey::createNameless()\fP 
+.RE
+.PP
+
+.SS "\fBKDB\fP org\&.libelektra\&.KDB\&.set (\fBKeySet\fP keySet, \fBKey\fP errorKey) throws \fBKDBException\fP\fC [inline]\fP"
+
+.PP
+Will update changed keys of the given key set in the backend\&. \fBget()\fP has to be called before this function may be executed\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkeySet\fP \fBKeySet\fP which contains keys to be updated in the backend 
+.br
+\fIerrorKey\fP Used to store warnings and error information 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+This \fBKDB\fP session, enabling a fluent interface 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fI\fBKDBException\fP\fP if storing keys fails - see specialization of \fBKDBException\fP 
+.br
+\fIKDBClosedException\fP if this session has already been closed 
+.br
+\fIKeySetReleasedException\fP if
+.PP
+.nf
+keySet 
+
+.fi
+.PP
+ has already been released 
+.br
+\fIKeyReleasedException\fP if
+.PP
+.nf
+errorKey 
+
+.fi
+.PP
+ has already been released 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBKey::createNameless()\fP 
+.RE
+.PP
+
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

@@ -1,0 +1,69 @@
+\label{doc_help_elektra-key-names_md_md_doc_help_elektra_key_names}%
+\Hypertarget{doc_help_elektra-key-names_md_md_doc_help_elektra_key_names}%
+ Every {\ttfamily Key} object with the same name will receive the very same information from the global key database. The name locates a {\bfseries{unique key}} in the key database. Key names are always absolute; so no parent or other information is needed. That makes a {\ttfamily Key} self-\/contained and independent both in memory and storage.
+
+Every key name starts with a \mbox{\hyperlink{doc_help_elektra-namespaces_md}{namespace}}, for example {\ttfamily user} or {\ttfamily system}. These prefixes spawn key hierarchies each.
+
+The shared {\itshape system configuration} is identical for every user. It contains, for example, information about system daemons, network related preferences and default settings for software. These keys are created when software is installed, and removed when software is purged. Only the administrator can change system configuration.
+
+Examples of valid system key names\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/}
+\DoxyCodeLine{system:/hosts/hostname}
+\DoxyCodeLine{system:/sw/apache/httpd/\#0/current/num\_processes}
+\DoxyCodeLine{system:/sw/apps/abc/\#0/current/default-\/setting}
+
+\end{DoxyCode}
+
+
+user configuration is empty until the user changes some preferences. User configuration affects only a single user. The user\textquotesingle{}s settings can contain information about the user\textquotesingle{}s environment, preferred applications and anything not useful for the rest of the system.
+
+Examples of valid user key names\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/}
+\DoxyCodeLine{user:/env/\#1/LD\_LIBRARY\_PATH}
+\DoxyCodeLine{user:/sw/apps/abc/\#0/current/default-\/setting}
+\DoxyCodeLine{user:/sw/kde/kicker/\#0/current/preferred\_applications/\#0}
+
+\end{DoxyCode}
+
+
+The slash ({\ttfamily /}) separates key names and structures them hierarchically. If two keys start with the same key names, but one key name continues after a slash, this key is {\bfseries{below}} the other and is called a {\itshape subkey}. For example {\ttfamily user\+:/sw/apps/abc/current} is a subkey of the key {\ttfamily user\+:/sw/apps}. The key is not directly below but, for example, {\ttfamily user\+:/sw/apps/abc} is. Various functions in {\ttfamily keytest} implement ways to determine the relationship between two keys.\hypertarget{doc_help_elektra-key-names_md_autotoc_md2277}{}\doxysection{Conventions}\label{doc_help_elektra-key-names_md_autotoc_md2277}
+For computers Elektra would work without any conventions, because it is possible to rename keys with plugins and link and transform any key-\/value to any other key-\/value. Obviously, for humans such chaos would be confusing and harder to use, thus we encourage everyone to use the following conventions\+:\hypertarget{doc_help_elektra-key-names_md_autotoc_md2278}{}\doxysubsection{Arrays}\label{doc_help_elektra-key-names_md_autotoc_md2278}
+If you want to denote an array, i.\+e. many unnamed subkeys, use the syntax {\ttfamily \#0}, ..., {\ttfamily \#\+\_\+10}. Then simple string comparisons will yield correct results and the names are still very compact.\hypertarget{doc_help_elektra-key-names_md_autotoc_md2279}{}\doxysubsection{Application Base Name}\label{doc_help_elektra-key-names_md_autotoc_md2279}
+As decided \href{https://github.com/ElektraInitiative/libelektra/issues/302}{\texttt{ here}}, the key names of software-\/applications should always start with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/sw/org/myapp/\#0/current/name/full}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item {\ttfamily sw} is for software, {\ttfamily hw} for hardware, {\ttfamily elektra} for internals
+\item {\ttfamily org} is a URL/organization name to avoid name clashes with other application names. Use only one part of the URL/organization, so e.\+g. {\ttfamily kde} is enough.
+\item {\ttfamily myapp} is the name of the most specific component that has its own configuration
+\item {\ttfamily \#0} is the major version number of the configuration (to be incremented if you need to introduce incompatible changes). (Rationale\+: it is possible to start the old version of the app, using {\ttfamily /sw/org/myapp/\#X}, where {\ttfamily X} refers to the previous version number.)
+\item {\ttfamily current} is the profile to be used. This is needed by administrators if they want to start up multiple applications with different configurations.
+\end{DoxyItemize}\hypertarget{doc_help_elektra-key-names_md_autotoc_md2280}{}\doxysection{Further Recommendations}\label{doc_help_elektra-key-names_md_autotoc_md2280}
+
+\begin{DoxyItemize}
+\item Avoid to have your applications root right under {\ttfamily system} or {\ttfamily user}. (rationale\+: it would make the hierarchy too flat.) See {\bfseries{Application Base Name}} above.
+\item Avoid the usage of characters other than {\ttfamily /}, a-\/z and 0-\/9. (rationale\+: it would allow too many similar, confusing names.) (exceptions\+: if the user or a technology, decide about parts of the key name, this restriction does not apply, e.\+g. if the wlan essid is used as part of the key name)
+\item The only way to separate names is using {\ttfamily /} (no A-\/Z, no {\ttfamily \+\_\+}, no whitespaces) (rationale\+: there are many different opinions about this topic and having a choice which separator to choose will certainly lead to inconsistencies)
+\item It is suggested to make your application look for default keys under {\ttfamily /sw/org/myapp/\#/\%/} where {\ttfamily \#} is a major version number, e.\+g. {\ttfamily \#3} for the 4th version and {\ttfamily \%} is a profile ({\ttfamily \%} for default profile). This way, from a sysadmin perspective, it will be possible to copy the {\ttfamily system\+:/sw/myapp/\#3/\%/} tree to something like {\ttfamily system\+:/sw/myapp/\#3/old/} and keep system clean and organized.
+\end{DoxyItemize}\hypertarget{doc_help_elektra-key-names_md_autotoc_md2281}{}\doxysection{SEE ALSO}\label{doc_help_elektra-key-names_md_autotoc_md2281}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_tutorials_application-integration_md}{see application integration tutorial}}
+\item \mbox{\hyperlink{doc_tutorials_namespaces_md}{see namespaces tutorial}}
+\item \href{/home/jenkins/workspace/libelektra-release/src/libs/elektra/keyname.c}{\texttt{ key name source file}} or \href{https://doc.libelektra.org/api/master/html/group__keyname.html\#details}{\texttt{ its rendered API documentation}}
+\item \mbox{\hyperlink{doc_help_elektra-namespaces_md}{elektra-\/namespaces(7)}}
+\item \mbox{\hyperlink{doc_help_elektra-cascading_md}{elektra-\/cascading(7)}} 
+\end{DoxyItemize}

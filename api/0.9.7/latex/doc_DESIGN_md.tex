@@ -1,0 +1,268 @@
+\label{doc_DESIGN_md_md_doc_DESIGN}%
+\Hypertarget{doc_DESIGN_md_md_doc_DESIGN}%
+ This document describes the design of Elektra\textquotesingle{}s C-\/\+API and provides hints for binding writers. It is not aimed at plugin writers, since it does not talk about the implementation details of Elektra.
+
+Elektra \mbox{\hyperlink{doc_GOALS_md}{aims}} at following design principles\+:
+
+
+\begin{DoxyEnumerate}
+\item To make the API futureproof so that it can remain compatible and stable over a long period of time,
+\item to make it hard to use the API the wrong way by making it simple\&robust, and
+\item to make the API easy to use for programmers reading and writing configuration.
+\end{DoxyEnumerate}
+
+The C-\/\+API is suitable to be reimplemented, also in non-\/\+C-\/languages, like Rust. Elektra provides a full blown architecture to support configuring systems, and the C-\/\+API is the core of this endeavour.\hypertarget{doc_DESIGN_md_autotoc_md2091}{}\doxysection{Data Structures}\label{doc_DESIGN_md_autotoc_md2091}
+The {\ttfamily Key}, {\ttfamily Key\+Set} and {\ttfamily KDB} data structures are defined in {\ttfamily \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}} to allow ABI compatibility. This means, it is not possible to put one of Elektra’s data structures on the stack. You must use the memory management facilities mentioned in the next section.\hypertarget{doc_DESIGN_md_autotoc_md2092}{}\doxysection{Memory Management}\label{doc_DESIGN_md_autotoc_md2092}
+Elektra provides functions that create and free data. For example after you call\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB * \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}}();}
+
+\end{DoxyCode}
+
+
+you need to use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}}(KDB *handle);}
+
+\end{DoxyCode}
+
+
+to get rid of the resources again. The second function may also shut down connections. Therefore it must be called before the end of a program.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key *\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}, ...);}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}}(Key *key);}
+\DoxyCodeLine{}
+\DoxyCodeLine{KeySet *\mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(\textcolor{keywordtype}{int} alloc, ...);}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}}(KeySet *ks);}
+
+\end{DoxyCode}
+
+
+In the above pairs, the first function reserves the necessary amount of memory. The second function frees the allocated data segment. There are more allocations happening but they are invisible to the user of the API and happen implicitly within any of these 3 classes\+: {\ttfamily KDB}, {\ttfamily Key} and {\ttfamily Key\+Set}.
+
+Key names and values cannot be handled as easy, because Elektra does not provide a string library. There are 2 ways to access the mentioned attributes. The function
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+
+
+returns a string. You are not allowed to change the returned string. The function
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{keyGetValueSize}}(\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+
+
+shows how long the string is for the specified key. The returned value also specifies the minimum buffer size that {\ttfamily key\+Get\+String} will reserve for the copy of the key.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{keyGetString}}(\textcolor{keyword}{const} Key *key, \textcolor{keywordtype}{char} *returnedValue, \textcolor{keywordtype}{size\_t} maxSize);}
+
+\end{DoxyCode}
+
+
+writes the comment in a buffer maintained by you.\hypertarget{doc_DESIGN_md_autotoc_md2093}{}\doxysection{Variable Arguments}\label{doc_DESIGN_md_autotoc_md2093}
+The constructors for {\ttfamily Key} and {\ttfamily Key\+Set} take a variable sized list of arguments. They can be used as an alternatives to the various {\ttfamily key\+Set$\ast$} methods and {\ttfamily ks\+Append\+Key}. With them you are able to generate any {\ttfamily Key} or {\ttfamily Key\+Set} with a single C-\/statement. This can be done programmatically by the plugin {\ttfamily c}.
+
+To just retrieve a key, use
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key *k = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+
+\end{DoxyCode}
+
+
+To obtain a {\ttfamily keyset}, use
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet *k = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+
+\end{DoxyCode}
+
+
+Alternatively pass a list as described in the documentation. The idea of these variable arguments is, that one function call can create any {\ttfamily Key\+Set}. For binding writers {\ttfamily key\+VNew} might be useful.\hypertarget{doc_DESIGN_md_autotoc_md2094}{}\doxysection{Off-\/by-\/one}\label{doc_DESIGN_md_autotoc_md2094}
+We avoid off-\/by-\/one errors by starting all indices with 0, as usual in C. The size returned by the {\ttfamily $\ast$\+Get\+Size} functions ({\ttfamily key\+Get\+Value\+Size}, {\ttfamily key\+Get\+Comment\+Size} and {\ttfamily key\+Get\+Owner\+Size}) is exactly the size you need to allocate. So if you add 1 to it, too much space is allocated, but no error will occur.
+
+The same is true for {\ttfamily elektra\+Str\+Len} which also already has the null byte included.\hypertarget{doc_DESIGN_md_autotoc_md2095}{}\doxysection{Minimal Set}\label{doc_DESIGN_md_autotoc_md2095}
+{\ttfamily kdb.\+h} contains a minimal set of functions to fully work with a key database. The functions are implemented in {\ttfamily src/libs/elektra} in ANSI C.
+
+Useful extensions are available in \mbox{\hyperlink{src_libs_README_md}{further libraries}}.\hypertarget{doc_DESIGN_md_autotoc_md2096}{}\doxysection{Value, String or Binary}\label{doc_DESIGN_md_autotoc_md2096}
+Sometimes people confuse the terms “value”, “string” and “binary”\+:
+
+
+\begin{DoxyItemize}
+\item Value is just a name which does not specify if data is stored as string or in binary form.
+\item A string is a char array, with a terminating `'\textbackslash{}0\textquotesingle{}\`{}.
+\item Binary data is stored in an array of type void, and not terminated by `'\textbackslash{}0\textquotesingle{}\`{}.
+\end{DoxyItemize}
+
+See also \mbox{\hyperlink{doc_help_elektra-glossary_md}{the glossary}} for further terminology.
+
+In Elektra {\ttfamily char$\ast$} are used as null-\/terminated strings, while {\ttfamily void$\ast$} might contain {\ttfamily 0}-\/bytes\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{void} *\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+
+
+does not specify whether the returned value is binary or a string. The function just returns the pointer to the value. When {\ttfamily key} is a string (check with {\ttfamily key\+Is\+String}) at least {\ttfamily \char`\"{}\char`\"{}} will be returned. See section “\+Return Values” to learn more about common values returned by Elektra’s functions. For binary data a {\ttfamily NULL} pointer is also possible to distinguish between no data and `'\textbackslash{}0\textquotesingle{}\`{}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{keyGetValueSize}}(\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+
+
+does not specify whether the key type is binary or string. The function just returns the size which can be passed to {\ttfamily elektra\+Malloc} to hold the entire value.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{keyGetString}}(\textcolor{keyword}{const} Key *key, \textcolor{keywordtype}{char} *returnedString, \textcolor{keywordtype}{size\_t} maxSize);}
+
+\end{DoxyCode}
+
+
+stores the string into a buffer maintained by you.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}}(Key *key, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *newString);}
+
+\end{DoxyCode}
+
+
+sets the null terminated string value for a certain key.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{keyGetBinary}}(\textcolor{keyword}{const} Key *key, \textcolor{keywordtype}{void} *returnedBinary, \textcolor{keywordtype}{size\_t} maxSize);}
+
+\end{DoxyCode}
+
+
+retrieves binary data which might contain `'\textbackslash{}0\textquotesingle{}\`{}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{keySetBinary}}(Key *key, \textcolor{keyword}{const} \textcolor{keywordtype}{void} *newBinary, \textcolor{keywordtype}{size\_t} dataSize);}
+
+\end{DoxyCode}
+
+
+sets the binary data which might contain `'\textbackslash{}0\textquotesingle{}{\ttfamily . The length is given by}data\+Size\`{}.\hypertarget{doc_DESIGN_md_autotoc_md2097}{}\doxysection{Return Values}\label{doc_DESIGN_md_autotoc_md2097}
+Elektra’s function share common error codes. Every function must return {\ttfamily -\/1} on error, if its return type is integer (like {\ttfamily int}, {\ttfamily ssize\+\_\+t}). If the function returns a pointer, {\ttfamily 0} ({\ttfamily NULL}) will indicate an error.
+
+Elektra uses integers for the length of C strings, reference counting, {\ttfamily Key\+Set} length and internal {\ttfamily Key\+Set} allocations.
+
+The interface always accepts {\ttfamily ssize\+\_\+t} and internally uses {\ttfamily size\+\_\+t}, which is able to store larger numbers than {\ttfamily ssize\+\_\+t}.
+
+The real size of C strings and buffers is limited to {\ttfamily SSIZE\+\_\+\+MAX}. When a string exceeds that limit {\ttfamily -\/1} or a {\ttfamily NULL} pointer (see above) must be returned.
+
+The following functions return an internal string\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(\textcolor{keyword}{const} Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyname_gaaff35e7ca8af5560c47e662ceb9465f5}{keyBaseName}}(\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+
+
+and in the case that {\ttfamily key\+Is\+Binary(key)==0}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{void} *\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+
+
+does so, too. If in any of the functions above {\ttfamily key} is a {\ttfamily NULL} pointer, then they also return {\ttfamily NULL}.
+
+If there is no string you will get back {\ttfamily \char`\"{}\char`\"{}}, that is a pointer to the value `'\textbackslash{}0\textquotesingle{}{\ttfamily . The function to determine the size will return}1\`{} in that case. That means that an empty string – nothing except the NULL terminator – has size {\ttfamily 1}.
+
+This is not true for {\ttfamily key\+Value} in the case of binary data, because the value `'\textbackslash{}0\textquotesingle{}{\ttfamily in the first byte is perfectly legal binary data. }key\+Get\+Value\+Size{\ttfamily may also return}0\`{} for that reason.\hypertarget{doc_DESIGN_md_autotoc_md2098}{}\doxysection{Error Handling}\label{doc_DESIGN_md_autotoc_md2098}
+For {\ttfamily KDB} functions the user does not only get the return value but also a more elaborate error information, including an error message, in the metadata of the {\ttfamily parent\+Key} or {\ttfamily error\+Key}. Furthermore, it is also possible to get warnings, even if the calls succeeded.
+
+Using different error categories, the user of the API can have suitable reactions on specific error situations. Additional information about error handling is available \mbox{\hyperlink{doc_dev_error-handling_md}{here}}.
+
+Elektra does not set {\ttfamily errno}. If a function you call sets {\ttfamily errno}, make sure to set it back to the old value again.\hypertarget{doc_DESIGN_md_autotoc_md2099}{}\doxysection{Naming}\label{doc_DESIGN_md_autotoc_md2099}
+All function names begin with their class name, e.\+g. {\ttfamily kdb}, {\ttfamily ks} or {\ttfamily key}. We use capital letters to separate single words (Camel\+Case). This leads to short names, but might be not as readable as separating names by other means.
+
+{\itshape Get} and {\itshape Set} are used for getters/and setters. We use {\itshape Is} to ask about a flag or state and {\itshape Needs} to ask about state related to databases. For allocation/deallocation we use C++ styled names (e.\+g {\ttfamily $\ast$\+New}, {\ttfamily $\ast$\+Del}).
+
+Macros and Enums are written in capital letters. Flags start with {\ttfamily KDB\+\_\+}, namespaces with {\ttfamily KEY\+\_\+\+NS\+\_\+} and macros with {\ttfamily ELEKTRA\+\_\+}.
+
+Data structures start with a capital letter for every part of the word\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily KDB} ... Key Data Base Handle
+\item {\ttfamily Key\+Set} ... Key Set
+\item {\ttfamily Key} ... Key
+\end{DoxyItemize}
+
+We use singular for all names.
+
+Function names not belonging to one of the three classes use the prefix {\ttfamily elektra$\ast$}.\hypertarget{doc_DESIGN_md_autotoc_md2100}{}\doxysection{const}\label{doc_DESIGN_md_autotoc_md2100}
+Wherever possible functions should use the keyword {\ttfamily const} for parameters. The API uses this keyword for parameters, to show that a function does not modify a {\ttfamily Key} or a {\ttfamily Key\+Set}, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(\textcolor{keyword}{const} Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyname_gaaff35e7ca8af5560c47e662ceb9465f5}{keyBaseName}}(\textcolor{keyword}{const} Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{void} *\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(\textcolor{keyword}{const} Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(\textcolor{keyword}{const} Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} Key  *\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}}(\textcolor{keyword}{const} Key *key, \textcolor{keyword}{const} \textcolor{keywordtype}{char}* metaName);}
+
+\end{DoxyCode}
+
+
+The reason behind this is, that the above functions – as their name suggest – only retrieve values. The returned value must not be modified directly.\hypertarget{doc_DESIGN_md_autotoc_md2101}{}\doxysection{Design Guidelines Checklist}\label{doc_DESIGN_md_autotoc_md2101}
+On potential changes of the API/\+ABI as detected by the \href{https://build.libelektra.org/job/libelektra/job/master/}{\texttt{ {\ttfamily build server}}}, please make sure the API has been reviewed according to the following 2 checklists\+:\hypertarget{doc_DESIGN_md_autotoc_md2102}{}\doxysection{Checklist for overall API}\label{doc_DESIGN_md_autotoc_md2102}
+\hypertarget{doc_DESIGN_md_autotoc_md2103}{}\doxysubsection{Consistency}\label{doc_DESIGN_md_autotoc_md2103}
+
+\begin{DoxyItemize}
+\item \mbox{[} \mbox{]} Consistent naming schemes for enums, macros, typedefs and functions
+\item \mbox{[} \mbox{]} Same things are named the same and included in \mbox{\hyperlink{doc_help_elektra-glossary_md}{Glossary}}
+\item \mbox{[} \mbox{]} Different things are named differently
+\item \mbox{[} \mbox{]} The order of arguments should be consistent across similar functions
+\end{DoxyItemize}\hypertarget{doc_DESIGN_md_autotoc_md2104}{}\doxysubsection{Structural Clarity}\label{doc_DESIGN_md_autotoc_md2104}
+
+\begin{DoxyItemize}
+\item \mbox{[} \mbox{]} Functions with similar functionality have the same prefix
+\end{DoxyItemize}\hypertarget{doc_DESIGN_md_autotoc_md2105}{}\doxysubsection{Compatibility}\label{doc_DESIGN_md_autotoc_md2105}
+
+\begin{DoxyItemize}
+\item \mbox{[} \mbox{]} All bindings have been updated to reflect the new API and work properly
+\end{DoxyItemize}\hypertarget{doc_DESIGN_md_autotoc_md2106}{}\doxysubsection{Extensibility}\label{doc_DESIGN_md_autotoc_md2106}
+
+\begin{DoxyItemize}
+\item \mbox{[} \mbox{]} New API is easily extensible with additional functionality
+\item \mbox{[} \mbox{]} Components only depend on each other if needed
+\end{DoxyItemize}\hypertarget{doc_DESIGN_md_autotoc_md2107}{}\doxysection{Checklist for each function}\label{doc_DESIGN_md_autotoc_md2107}
+There are several checklists for functions, depending on the language in which the function is written\+:
+
+
+\begin{DoxyItemize}
+\item C
+\item Rust
+\item Java 
+\end{DoxyItemize}

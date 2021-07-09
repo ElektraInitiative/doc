@@ -1,0 +1,167 @@
+\label{index_doc_API_md}%
+\Hypertarget{index_doc_API_md}%
+ Elektra serves as a universal and secure framework to access configuration parameters in a global, hierarchical key database and provides a mature, consistent and easily comprehensible API. Its modularity effectively avoids code duplication across applications and tools regarding configuration tasks. Elektra abstracts from cross-\/platform-\/related issues and allows applications to be aware of other applications\textquotesingle{} configurations, leveraging easy application integration.
+
+See the \mbox{\hyperlink{README_md}{readme}} for more introduction. See the \mbox{\hyperlink{doc_help_elektra-glossary_md}{glossary}} for the used terminology.\hypertarget{index_autotoc_md636}{}\doxysection{API Docu}\label{index_autotoc_md636}
+This document\textquotesingle{}s main goal is to describe the API. It covers\+:
+
+
+\begin{DoxyItemize}
+\item external C-\/\+API (see Modules above), which are the essential core parts
+\item C++-\/\+API (see Data Structures above) from a direct binding to high-\/level functionality, such as mounting functionality
+\item plugins API, see Plugins
+\item all other documentation of Elektra (see Related Pages next to Main Page)
+\end{DoxyItemize}
+
+On the one hand it gives an overview and an introduction for developers using Elektra, on the other hand it gives an informal description what methods must and may provide to allow an alternative implementation of the API.
+
+The latest released version (for stable releases) of this document can be found at \href{https://doc.libelektra.org/api/latest/html}{\texttt{ https\+://doc.\+libelektra.\+org/api/latest/html}}
+
+The git master version of this document can be found at \href{https://doc.libelektra.org/api/master/html}{\texttt{ https\+://doc.\+libelektra.\+org/api/master/html}}
+
+{\bfseries{Important\+:}} On Git\+Hub links to API functions are broken, so it is recommended that you continue reading in one of these links above.\hypertarget{index_autotoc_md637}{}\doxysection{Using the Elektra Library}\label{index_autotoc_md637}
+A C or C++ source file that wants to use Elektra should include\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <kdb.h>}}
+
+\end{DoxyCode}
+
+
+To link an executable with the Elektra library, one way is to use the {\ttfamily pkg-\/config} tool\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{gcc -\/o application `pkg-\/config -\/-\/cflags -\/-\/libs elektra` application.c}
+
+\end{DoxyCode}
+
+
+Another way is to use CMake\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{find\_package(Elektra REQUIRED)}
+\DoxyCodeLine{include\_directories (\$\{ELEKTRA\_INCLUDE\_DIR\})}
+\DoxyCodeLine{target\_link\_libraries (application \$\{ELEKTRA\_LIBRARIES\})}
+
+\end{DoxyCode}
+
+
+Read about \mbox{\hyperlink{doc_COMPILE_md}{compiling elektra}}.\hypertarget{index_autotoc_md638}{}\doxysubsection{Tutorials}\label{index_autotoc_md638}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_tutorials_application-integration_md}{Application Integration}}
+\item \mbox{\hyperlink{doc_tutorials_compilation-variants_md}{Compilation Variants}}
+\item \mbox{\hyperlink{doc_tutorials_export_md}{Export}}
+\item \mbox{\hyperlink{doc_tutorials_import_md}{Import}}
+\item \mbox{\hyperlink{doc_tutorials_merge_md}{Merge}}
+\item \mbox{\hyperlink{doc_tutorials_namespaces_md}{Namespaces}}
+\item \mbox{\hyperlink{doc_tutorials_plugins_md}{Plugins}}
+\item \mbox{\hyperlink{doc_tutorials_java-plugins_md}{Java Plugins}}
+\end{DoxyItemize}
+
+\mbox{\hyperlink{src_plugins_README_md}{List of all available Plugins}} and get started by developing your own plugins \mbox{\hyperlink{group__plugin}{Plugins}}.\hypertarget{index_autotoc_md639}{}\doxysection{Elektra API}\label{index_autotoc_md639}
+The API was written in pure C because Elektra was designed to be useful even for the most basic system programs.
+
+The API follows an object-\/oriented design, and there are 3 main classes as shown by the figure\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{classes.png}%Elektra Classes
+\end{DoxyInlineImage}
+
+
+Some general things you can do with each class are\+:
+
+\mbox{\hyperlink{group__kdb}{KDB (Key Database)}}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{Open}} and \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{Close}} the Key Database
+\item \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{Get}} and \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{Set}} \mbox{\hyperlink{group__keyset}{Key\+Set}} in the Key Database
+\item See \mbox{\hyperlink{group__kdb}{class documentation}} for more
+\end{DoxyItemize}
+
+\mbox{\hyperlink{group__key}{Key}}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{Create}} and \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{Delete}}
+\item Get and Set key the \mbox{\hyperlink{group__keyname_ga7699091610e7f3f43d2949514a4b35d9}{name}}
+\item Get and Set \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{string}} or \mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{binary}} values
+\item Get and Set \mbox{\hyperlink{group__keymeta}{Meta Data}}
+\item See \mbox{\hyperlink{group__key}{class documentation}} for more
+\end{DoxyItemize}
+
+\mbox{\hyperlink{group__keyset}{Key\+Set}}
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{Create}} and \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{Delete}}
+\item Append \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{a single key}} or an entire \mbox{\hyperlink{group__keyset_ga21eb9c3a14a604ee3a8bdc779232e7b7}{Key\+Set}}
+\item \mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{Lookup keys}}
+\item Pop \mbox{\hyperlink{group__keyset_gae42530b04defb772059de0600159cf69}{the last key}}, \mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{a key by name}}, or \mbox{\hyperlink{group__keyset_gaba1f1dbea191f4d7e7eb3e4296ae7d5e}{every key}}
+\item \mbox{\hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{Work with}} its \mbox{\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{internal cursor}}
+\item See \mbox{\hyperlink{group__keyset}{class documentation}} for more
+\end{DoxyItemize}
+
+\mbox{\hyperlink{doc_dev_classes_md}{More background information about the classes}}\hypertarget{index_autotoc_md640}{}\doxysection{Namespaces}\label{index_autotoc_md640}
+There are 5 trees (=namespaces) of keys\+: {\ttfamily spec}, {\ttfamily proc}, {\ttfamily dir}, {\ttfamily user} and {\ttfamily system} that are all unified (in the given order) in one cascading tree starting with {\ttfamily /}.
+
+The cascading tree is the logical tree to be used in applications. The other trees are the physical ones that stem from configuration sources. When using cascading key the best key will be searched at run-\/time, which appears like a tree on its own. See cascading in the documentation of \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ks\+Lookup\+By\+Name()}} on how the selection of keys works.
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily spec} tree
+
+This tree specifies how the lookup should take place and also allows us to define defaults or document a key. The metadata of a key contains this information\+:
+\begin{DoxyItemize}
+\item {\ttfamily override/\#}\+: use these keys {\itshape in favor} of the key itself (note that {\ttfamily \#} is the syntax for arrays, e.\+g. {\ttfamily \#0} for the first element, {\ttfamily \#10} for the 11th and so on)
+\item {\ttfamily namespace/\#}\+: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+\item {\ttfamily fallback/\#}\+: when no key was found in any of the (specified) namespaces the {\ttfamily fallback}-\/keys will be searched
+\item {\ttfamily default}\+: this value will be used if nothing else was found
+\end{DoxyItemize}
+\item The {\ttfamily proc} tree
+
+Is the only read-\/only tree. The configuration does not stem from the \mbox{\hyperlink{group__kdb}{KDB (Key Database)}}, but any other source, e.\+g. command-\/line arguments or environment.
+\item The {\ttfamily dir} tree
+
+Allows us to have a per-\/directory overwrite of configuration files, e.\+g. for project specific settings.
+\item The {\ttfamily user} tree
+
+Used to store user-\/specific configurations, like the personal settings of a user to certain programs. The user subtree will always be favored if present (except for security concerns the user subtree may not be considered).
+\item The {\ttfamily system} tree
+
+It is provided to store system-\/wide configuration keys, that is, the last fallback for applications but the only resort for daemons and system services.
+\end{DoxyItemize}
+
+Read more about \mbox{\hyperlink{doc_help_elektra-namespaces_md}{namespaces}} and a tutorial for \mbox{\hyperlink{doc_tutorials_namespaces_md}{namespaces}}.\hypertarget{index_autotoc_md641}{}\doxysection{Rules for Key Names}\label{index_autotoc_md641}
+When using Elektra to store your application\textquotesingle{}s configuration and state, please keep in mind the following rules\+:
+
+
+\begin{DoxyItemize}
+\item You are not allowed to create keys right under the root. They are reserved for more generic purposes.
+\item The keys for your application, called say {\itshape myapp}, should be created under {\ttfamily /sw/org/myapp/\#0/current}
+\begin{DoxyItemize}
+\item sw is for software
+\item org is the organization. For uniqueness a full reverse url encoded with \textquotesingle{}/\textquotesingle{} instead of \textquotesingle{}.\textquotesingle{} is useful.
+\item {\ttfamily \#0} is the major version of the configuration
+\item current is the default configuration profile.
+\item That means you just need to \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} {\ttfamily /sw/org/myapp/\#0/profile} and then \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ks\+Lookup\+By\+Name()}} in {\ttfamily /sw/org/myapp/\#0/profile/key} where profile is from command-\/line arguments and defaults to current.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+Read more about \mbox{\hyperlink{doc_help_elektra-key-names_md}{key names}}\hypertarget{index_autotoc_md642}{}\doxysection{Backend Overview}\label{index_autotoc_md642}
+The core of Elektra does not store configuration itself to the hard disk. Instead this work is delegated to backends.
+
+If you want to develop a backend, you should already have some experience with Elektra from the user point of view. You should be familiar with the data structures\+: \mbox{\hyperlink{group__key}{Key}} and \mbox{\hyperlink{group__keyset}{Key\+Set}} Then you can start reading about Backends that are composed out of \mbox{\hyperlink{group__plugin}{Plugins}}. To get started with writing plugins, first read our \mbox{\hyperlink{doc_tutorials_plugins_md}{plugin tutorial}} and then lookup details in the API description in \mbox{\hyperlink{group__plugin}{Plugins}}.
+
+Read more about \mbox{\hyperlink{doc_help_elektra-mounting_md}{mounting}}\hypertarget{index_autotoc_md643}{}\doxysection{See Also}\label{index_autotoc_md643}
+
+\begin{DoxyItemize}
+\item See \mbox{\hyperlink{doc_help_elektra-glossary_md}{elektra-\/glossary(7)}}
+\item More information about \mbox{\hyperlink{doc_help_elektra-backends_md}{elektra-\/backends(7)}}
+\item More information about \mbox{\hyperlink{doc_dev_plugins-framework_md}{plugins-\/framework}} 
+\end{DoxyItemize}

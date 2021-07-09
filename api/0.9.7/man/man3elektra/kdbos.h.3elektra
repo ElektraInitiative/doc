@@ -1,0 +1,92 @@
+.TH "kdbos.h" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbos.h \- Operating system specific workarounds\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <limits\&.h>\fP
+.br
+\fC#include <inttypes\&.h>\fP
+.br
+\fC#include <sys/types\&.h>\fP
+.br
+\fC#include <stdarg\&.h>\fP
+.br
+
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBELEKTRA_MAX_ARRAY_SIZE\fP   (1 + 19 + 20 + 1)"
+.br
+.RI "The buffer size needed for an array name\&. "
+.ti -1c
+.RI "#define \fBKDB_FILE_MODE\fP   0600"
+.br
+.RI "Default Mode\&. "
+.ti -1c
+.RI "#define \fBKDB_DIR_MODE\fP   0100"
+.br
+.RI "Default directory mode\&. "
+.ti -1c
+.RI "#define \fBKDB_MAX_PATH_LENGTH\fP   _POSIX_PATH_MAX"
+.br
+.RI "KDB_MAX_PATH_LENGTH will be the value for longest possible filenames on the system\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Operating system specific workarounds\&. 
+
+Integer Types must be at least 32bit:
+.PP
+Type Purpose Limits int Integral Fast Type INT_MIN, INT_MAX size_t size of array or string 0, SIZE_MAX ssize_t size with error cond\&. -1, SSIZE_MAX(<SIZE_MAX) time_t Seconds since 1970 0,\&.\&. recommended: 64 bit
+.PP
+Following constants must be defined:
+.PP
+KDB_FILE_MODE the standard mode for keys KDB_DIR_MODE the mode to add (|=) for key directories
+.PP
+Following limits must be defined:
+.PP
+KDB_MAX_PATH_LENGTH the maximum length for a pathname
+.PP
+In addition to the types the \&.\&.\&. or va_list must be supported, this is ISO C and should happen by including <stdarg\&.h>\&.
+.PP
+Go ahead and write a #ifdef block for your operating system when the POSIX defaults are not ok
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define ELEKTRA_MAX_ARRAY_SIZE   (1 + 19 + 20 + 1)"
+
+.PP
+The buffer size needed for an array name\&. The size of the buffer so that the buffer can contain:
+.IP "\(bu" 2
+(1) a # in the beginning
+.IP "\(bu" 2
+(9) up to 19 underscores are needed as prefix
+.IP "\(bu" 2
+(20) a 64bit number has a maximum of 20 digits
+.IP "\(bu" 2
+(1) one byte for null termination
+.PP
+.PP
+E\&.g\&. #___________________18446744073709551615\\0 
+.SS "#define KDB_DIR_MODE   0100"
+
+.PP
+Default directory mode\&. This mode will be used for new directories\&. Will be ORed together with KDB_FILE_MODE to get the permissions of an directory\&. 
+.SS "#define KDB_FILE_MODE   0600"
+
+.PP
+Default Mode\&. This mode will be used for new files 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

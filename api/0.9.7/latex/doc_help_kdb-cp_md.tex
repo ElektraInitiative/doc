@@ -1,0 +1,77 @@
+\label{doc_help_kdb-cp_md_md_doc_help_kdb_cp}%
+\Hypertarget{doc_help_kdb-cp_md_md_doc_help_kdb_cp}%
+ \hypertarget{doc_help_kdb-cp_md_autotoc_md2350}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-cp_md_autotoc_md2350}
+{\ttfamily kdb cp $<$source$>$ $<$dest$>$}\hypertarget{doc_help_kdb-cp_md_autotoc_md2351}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-cp_md_autotoc_md2351}
+This command copies key(s) in the Key database. You can copy keys to another directory within the database or even below another key. Note that you cannot copy a key below itself.
+
+Where {\ttfamily source} is the path of the key(s) you want to copy and {\ttfamily dest} is the path where you would like to copy the key(s) to. Note that when using the {\ttfamily -\/r} flag, {\ttfamily source} as well as all of the keys below it will be copied.\hypertarget{doc_help_kdb-cp_md_autotoc_md2352}{}\doxysection{LIMITATIONS}\label{doc_help_kdb-cp_md_autotoc_md2352}
+Neither {\ttfamily source} nor {\ttfamily dest} can be a cascading key. (Start with {\ttfamily /}). Make sure to select a namespace.\hypertarget{doc_help_kdb-cp_md_autotoc_md2353}{}\doxysection{RETURN VALUES}\label{doc_help_kdb-cp_md_autotoc_md2353}
+This command will return the following values as an exit status\+:
+
+
+\begin{DoxyItemize}
+\item 0\+: No errors.
+\item 1-\/10\+: standard exit codes, see \mbox{\hyperlink{doc_help_kdb_md}{kdb(1)}}
+\item 11\+: No key to copy found.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-cp_md_autotoc_md2354}{}\doxysection{OPTIONS}\label{doc_help_kdb-cp_md_autotoc_md2354}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/r}, {\ttfamily -\/-\/recursive}\+: Recursively copy keys.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional debug information in case of errors/warnings.
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: Force overwriting the keys.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-cp_md_autotoc_md2355}{}\doxysection{EXAMPLES}\label{doc_help_kdb-cp_md_autotoc_md2355}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: user:/tests/cp/examples}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create the keys we use for the examples}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/key key1}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/key/first key}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/key/second key}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/cpkey key1}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/cpkey/first key}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/cpkey/second key}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/cpkeyerror/first key}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/cpkeyerror/second anotherValue}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/another/key one}
+\DoxyCodeLine{kdb set user:/tests/cp/examples/kdb-\/cp/another/value two}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To copy a single key:}
+\DoxyCodeLine{kdb cp user:/tests/cp/examples/kdb-\/cp/key user:/tests/cp/examples/kdb-\/cp/key2}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To copy multiple keys:}
+\DoxyCodeLine{kdb cp -\/r user:/tests/cp/examples/kdb-\/cp/key user:/tests/cp/examples/kdb-\/cp/copied}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# If the target-\/key already exists and has a different value, cp fails:}
+\DoxyCodeLine{kdb cp -\/r user:/tests/cp/examples/kdb-\/cp/key user:/tests/cp/examples/kdb-\/cp/cpkeyerror}
+\DoxyCodeLine{\# RET: 11}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# If the target-\/key already exists and has the same value as the source, everything is fine:}
+\DoxyCodeLine{kdb cp -\/r user:/tests/cp/examples/kdb-\/cp/key user:/tests/cp/examples/kdb-\/cp/cpkey}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To force the copy of keys:}
+\DoxyCodeLine{kdb cp -\/rf user:/tests/cp/examples/kdb-\/cp/key user:/tests/cp/examples/kdb-\/cp/cpkeyerror}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Now the key-\/values of /cpkeyerror are overwritten:}
+\DoxyCodeLine{kdb export user:/tests/cp/examples/kdb-\/cp/cpkeyerror mini}
+\DoxyCodeLine{\#> =key1}
+\DoxyCodeLine{\#> first=key}
+\DoxyCodeLine{\#> second=key}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To copy keys below an existing key:}
+\DoxyCodeLine{kdb cp -\/r user:/tests/cp/examples/kdb-\/cp/another user:/tests/cp/examples/kdb-\/cp/another/key}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests/cp/examples/kdb-\/cp/}
+
+\end{DoxyCode}
+ 

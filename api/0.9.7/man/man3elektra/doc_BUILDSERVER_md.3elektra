@@ -1,0 +1,375 @@
+.TH "doc_BUILDSERVER_md" 3elektra "Fri Jul 9 2021" "Version 0.9.7" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_BUILDSERVER_md \- Buildserver 
+ The \fCElektra buildserver\fP handles a variety of tasks that reaches from testing Pull Requests (PRs) to deploying new versions of the \fCElektra website\fP\&.
+.PP
+We reworked our build system to use a more modern Jenkinsfile approach with benefits such as
+.PP
+.IP "\(bu" 2
+tracking modifications to our build process in SCM
+.IP "\(bu" 2
+tracking changes to the build environment
+.IP "\(bu" 2
+speeding up builds
+.PP
+.SH "Setup"
+.PP
+This section aims to give an introduction into this setup\&.
+.SS "Multibranch Pipeline Jobs (libelektra)"
+We use the Jenkins Job type called \fCMultibranch Pipeline\fP provided by the \fCPipeline Multibranch Plugin\fP for our CI tests called \fClibelektra\fP\&.
+.PP
+Simplified a multibranch pipeline job acts as an umbrella job that spawns child jobs for different branches (hence multibranch)\&. The main purpose of the libelektra job is to scan the repository for changes to existing branches or to find new ones (for example branches that are used in PR's)\&. It also contains the information on how to build the jobs in the form of a path that points to a Jenkinsfile containing more detailed instructions\&. The job also takes care of handling build artifacts that are archived and cleaning them out once the PR's are closed and a grace period has expired\&.
+.PP
+Summarized libelektra's job purpose is to combine the where (our GIT repository), with a when (tracking changes via polling or webhooks) with a how (pointing to the Jenkinsfile + configuration)\&.
+.SS "Jenkins Shared Library"
+We use a \fCshared library\fP to share common functionalities across multiple pipelines\&. This shared library contains all docker related functionalities, code to publish artifacts and various other directives and helper functions\&. After integrating this shared library with:
+.PP
+.PP
+.nf
+@Library('libelektra-shared') _
+
+pipelineConfig {
+  now = new Date()
+}
+.fi
+.PP
+.PP
+we can use any function that is declared in the shared library\&.
+.PP
+It is available in the \fCfollowing repository\fP\&. For more detailed usage instruction or instructions on how to integrate this shared library into Jenkins, see its \fCREADME\&.md\fP\&.
+.SS "Jenkinsfiles"
+Jenkinsfiles describe what actions the build system should execute on which build slave\&. Currently Elektra uses four different files\&.
+.SS "Jenkinsfile\&.daily"
+.IP "\(bu" 2
+\fBJenkinsfile\&.daily\fP contains daily maintenance tasks, like cleaning up build servers\&.
+.IP "\(bu" 2
+\fCBuildjob: libelektra-daily\fP
+.IP "\(bu" 2
+\fCJenkinsfile\&.daily\fP
+.PP
+.SS "Jenkinsfile\&.monthly"
+.IP "\(bu" 2
+\fBJenkinsfile\&.monthly\fP contains monthly triggering of libelektra job on master\&.
+.IP "\(bu" 2
+\fCBuildjob: libelektra-monthly\fP
+.IP "\(bu" 2
+\fCJenkinsfile\&.monthly\fP
+.PP
+.SS "Jenkinsfile\&.release"
+.IP "\(bu" 2
+Triggered manually with optional arguments\&. It is used for automated releasing a new version of Elektra\&.
+.IP "\(bu" 2
+\fBJenkinsfile\&.release\fP contains description how to release a new version of Elektra\&.
+.IP "\(bu" 2
+\fCBuildjob: libelektra-release\fP
+.IP "\(bu" 2
+\fCJenkinsfile\&.release\fP
+.PP
+.SS "Jenkinsfile"
+.IP "\(bu" 2
+Triggered on code changes and is for testing changes to the codebase\&.
+.IP "\(bu" 2
+\fBJenkinsfile\fP contains descriptions how to build, test and deploy Elektra\&.
+.IP "\(bu" 2
+\fCBuildjob: libelektra\fP
+.IP "\(bu" 2
+\fCJenkinsfile\fP
+.PP
+.SS "DSL"
+The language used is a groovy based DSL described in the \fCJenkinsfile book\fP\&. Most groovy syntax is allowed to describe pipelines in a Jenkinsfile, but it is executed in a sandbox which might block certain calls\&.
+.PP
+Since plugins might extend the pool of available commands or variables a full list of currently available syntax can be seen in \fCpipeline syntax\fP after a login to the build server\&. Some functionality is not covered by this page when the responsible plugin is not implementing it\&. Usually an approach similar to what is described on \fCstackoverflow\fP can be used to track down the responsible code inside the providing plugins source code\&.
+.PP
+We also provide a number of helper functions in our Jenkinsfiles that are documented at the function head\&. Most common use cases, for example adding a new build with certain cmake flags, are easy to add because of them\&. For example, the configuration that is responsible for the \fCdebian-stable-full\fP stage is generated completely by a single helper function called \fCbuildAndTest\fP:
+.PP
+.PP
+.nf
+tasks << buildAndTest(
+  "debian-stable-full",
+  DOCKER_IMAGES\&.stretch,
+  CMAKE_FLAGS_BUILD_ALL +
+    CMAKE_FLAGS_BUILD_FULL +
+    CMAKE_FLAGS_BUILD_STATIC +
+    CMAKE_FLAGS_COVERAGE
+  ,
+  [TEST\&.ALL, TEST\&.MEM, TEST\&.NOKDB, TEST\&.INSTALL]
+)
+.fi
+.PP
+.PP
+When adding new stages to the build chain it is generally a good idea to look up an existing stage which does something similar and adapt it to the new use case\&.
+.SS "Security"
+Since a malicious PR could easily destroy the build server and slaves or expose credentials some restrictions are introduced\&. Only PR authors that have the right to push to libelektra can modify the Jenkinsfile and have those changes be respected for the respective branch\&.
+.SS "Test Environments"
+We use Docker containers to provide the various test environments\&.
+.PP
+They are described \fCin the repository\fP and the Jenkinsfile describes how to build them\&. If a rebuild of the images is needed is determined by the hash of the Dockerfile used to describe it\&. If it has not changed the build step will be skipped\&. In the case that an image needed a build it will afterwards be uploaded into a private Docker image registry (on a7) and thus is shared between all Docker capable build slaves\&.
+.SH "Jenkinsfile (Main CI Pipeline)"
+.PP
+.SS "Tests"
+We will use the Docker images build as described earlier to run compilations and tests for Elektra\&. This allows us to run tests independent of which nodes are available (as the environment is portable)\&.
+.PP
+The Jenkinsfile describes the steps used to run tests\&. Helper functions for easily adding new tests are available (\fCbuildAndTest\fP, \fCBuildAndTestAsan\fP, \&.\&.\&.)\&.
+.PP
+The \fCwithDockerEnv\fP helper, that is available in the shared library, makes sure to print the following information at the start of a test branch:
+.PP
+.IP "\(bu" 2
+branch name
+.IP "\(bu" 2
+build machine
+.IP "\(bu" 2
+docker image id
+.PP
+.PP
+Coverage reports are generated automatically when using the \fCbuildAndTest\fP helper and the appropriate CMake flags for coverage generation have been set\&. They are uploaded to https://doc.libelektra.org/coverage/\&.
+.PP
+Artifacts from \fCctest\fP are also preserved automatically when using \fCbuildAndTest\fP\&. The function also takes care of providing a stage name based path so multiple tests can not overwrite files that share the same name\&.
+.PP
+Tests are executed in order dictated by the Jenkinsfile\&. In general new tests should be added to the 'full build stage' that will only run after a standard full test run succeeded\&. This saves execution time on the build server for the most common errors\&.
+.PP
+Since there is no strict way to enforce the way tests are added we encourage you to read the existing configuration and modify existing tests so they suite your needs\&.
+.SS "Deployment"
+For runs of the build job that are run in the master branch we also execute deployment steps after all tests pass\&. We use these steps to build Debian and Fedora packages and move them into the repositories hosted on the community node\&.
+.PP
+Additionally we recompile the homepage and deploy it on the community node\&.
+.SH "Jenkinsfile\&.release (Release Pipeline)"
+.PP
+.SS "Release Builds"
+The \fCbuildRelease\fP function runs various test suites and collects and archives debug information\&. It also generates source-packages and packages for Debian based distributions and Fedora\&.
+.PP
+The generated packages are additionally installed and tested on a clean Docker image\&.
+.SS "Manual approval"
+In order to verify the correct behavior and results of the previous steps and their generated artifacts, we use the \fCInput Step\fP to pause the pipeline\&. After manually verifying the correctness, the pipeline run can be resumed\&.
+.SS "Publishing"
+The previously generated packages are published to the repositories, as described above in \fIJenkinsfile (Main CI Pipeline)\fP\&. The API documentation and source packages get published to the relevant git repositories\&. Finally the Alpine release image is published to Docker Hub\&.
+.SH "Jenkins Setup"
+.PP
+This section describes how to replicate the current Jenkins configuration\&.
+.SS "Jenkins libelektra Configuration"
+The \fClibelektra\fP build job is a multibranch pipeline job\&. It is easiest to add via the BlueOcean interface\&.
+.PP
+Most of the default settings should be ok, however some settings need to be verified or added to build Elektra correctly:
+.PP
+.IP "\(bu" 2
+\fCAdvanced clone behaviors\fP should be added and the path to the git mirror needs to be specified: \fC/home/jenkins/git_mirrors/libelektra\fP\&. This reference repository is created and maintained by our \fCdaily buildjob\fP\&.
+.IP "\(bu" 2
+Under Property strategy you can add \fCTrigger build on pull request comment\fP\&. \fCjenkins build (libelektra|all) please\fP is a good starting point\&. This functionality is provided by the \fCGitHub PR Comment Build Plugin\fP\&.
+.IP "\(bu" 2
+For Build Configuration you want to specify \fCby Jenkinsfile\fP and add the script path: \fCscripts/jenkins/Jenkinsfile\fP\&.
+.PP
+.SS "Jenkins libelektra-release Configuration"
+The \fClibelektra-release\fP job is a normal pipeline job\&.
+.PP
+Most of the default settings can be used\&.
+.PP
+.IP "\(bu" 2
+Under General you need to enable \fCPermission to Copy Artifact\fP and set the field to \fC*\fP\&.
+.IP "\(bu" 2
+For Build Configuration you want to specify \fCby Jenkinsfile\fP and add the script path: \fCscripts/jenkins/Jenkinsfile\&.release\fP\&.
+.PP
+.SS "General Set-Up of a New Pipeline"
+We will cover how to set-up a pipeline that uses a different git repository than this \fClibelektra\fP repository\&.
+.PP
+Most of the default settings can be used\&.
+.PP
+.IP "\(bu" 2
+If a private repository were to be used with a GitHub type job, a credentials pair of \fCelektrabot\fP must be selected to access this repository\&.
+.IP "\(bu" 2
+For Build Configuration you want to specify \fCby Jenkinsfile\fP and add the script path to the Jenkinsfile\&.
+.PP
+.PP
+We first start by including the shared library as described above in \fIJenkins Shared Library\fP\&. Then we declare in a Jenkinsfile an empty map that will contain all Docker images we will use in this pipeline:
+.PP
+.PP
+.nf
+DOCKER_IMAGES = [:]
+.fi
+.PP
+.PP
+This map will later be populated in a function\&. For a Docker image with Ubuntu Focal and the Dockerfile located at \fC\&./ci/Dockerfile\fP this function would need to look as follows:
+.PP
+.PP
+.nf
+def dockerInit() {
+  node('master') {
+    checkout scm
+
+    DOCKER_IMAGES\&.focal = dockerUtils\&.createDockerImageDesc(
+      'ubuntu-focal', dockerUtils\&.&idTesting,
+      '\&./ci/',
+      '\&./ci/Dockerfile'
+    )
+    // more docker images \&.\&.\&.
+  }
+}
+.fi
+.PP
+.PP
+We can now begin to create the stages that initialize, pull and if necessary also build these Docker images:
+.PP
+.PP
+.nf
+stage('Init docker images') {
+  dockerInit()
+}
+
+stage('Pull docker images') {
+  parallel dockerUtils\&.generateDockerPullStages(DOCKER_IMAGES)
+}
+
+maybeStage('Build docker images', DOCKER_IMAGES\&.any { img -> !img\&.value\&.exists }) {
+  lock('docker-images') {
+        parallel dockerUtils\&.generateDockerBuildStages(DOCKER_IMAGES)
+  }
+}
+.fi
+.PP
+.PP
+Now the actual stages that contain our CI/CD code can be created\&.
+.PP
+To allow parallel execution of stages we create generator functions that return a map of stages that can be executed in parallel\&. For example the following generator function would create a map of two tasks that could be run in parallel\&.
+.PP
+.PP
+.nf
+def generateTestStages() {
+  def tasks = [:]
+
+  tasks << test(
+    'ubuntu-focal-test',
+    DOCKER_IMAGES\&.focal
+  )
+
+  tasks << test(
+    'ubuntu-bionic-test',
+    DOCKER_IMAGES\&.bionic
+  )
+
+  return tasks
+}
+.fi
+.PP
+.PP
+Suppose we have a bash script \fCtest\&.sh\fP in the root of our git repository\&. This script can be executed inside one of our Docker images by using the \fCwithDockerEnv\fP function:
+.PP
+.PP
+.nf
+def test(stageName, image) {
+  return [(stageName): {
+    stage(stageName) {
+      withDockerEnv(image) {
+        sh "\&./test\&.sh"
+      }
+    }
+  }]
+}
+.fi
+.PP
+.PP
+We can now call the generator function \fCgenerateTestStages\fP in a new stage:
+.PP
+.PP
+.nf
+stage('Testing') {
+  parallel generateTestStages()
+}
+.fi
+.PP
+.SS "Adding a Jenkins Node"
+A node needs to have a JRE (Java Runtime Environment) installed\&. Further it should run an SSH (Secure SHell) server\&. Docker need to be installed as well\&.
+.PP
+A \fCjenkins\fP user with 47110:47110 ids should be created as this is what is expected in Docker images\&. \fCuseradd -u 47110 jenkins\fP Additionally a public key authentication should be set up so the jenkins master can establish an ssh connection with the node\&. If the node should be able to interact with Docker the jenkins user should be added to the \fCdocker\fP group\&.
+.PP
+Nodes should be set to only build jobs matching their labels and to be online as much as possible\&. As for labels \fCgitmirror\fP should be if you want to cache repositories on this node\&. If Docker is available the \fCdocker\fP label should be set\&.
+.PP
+All files and folders in the Node under \fC/home/jenkins\fP should be owned by user \fCjenkins\fP\&.
+.SH "Understanding Jenkins Output"
+.PP
+Our Jenkins build uses parallel steps inside a single build job to do most of the work\&. To reliable determine which stages failed it is best to look over the build results in the Jenkins Blue Ocean view\&. It is the default View opened when accessing the build results from GitHub\&. For libelektra the URLs are https://build.libelektra.org/job/libelektra/ and https://build.libelektra.org/blue/organizations/jenkins/libelektra/branches/ Failed stages are marked in red\&. On selecting a stage you can further expand all steps in the stage\&. Of interest should be one of the first steps which echos out the Docker image used to run the stage\&. You also want to look for whatever failed (which should be in a step also marked red to indicate failure)\&.
+.SH "Reproducing Build Server Errors Locally"
+.PP
+First you have to determine which image is used\&. This is described above in \fIUnderstanding Jenkins output\fP\&.
+.PP
+Afterwards you can download it from our registry via \fCdocker pull\fP\&. Pay attention that you have to use \fBhub-public\&.libelektra\&.org\fP as this subdomain does not require authentication for GET operations used by the Docker client\&. As an example:
+.PP
+.PP
+.nf
+docker pull hub-public\&.libelektra\&.org/build-elektra-alpine:201809-791f9f388cbdff0db544e02277c882ad6e8220fe280cda67e6ea6358767a065e
+.fi
+.PP
+.PP
+You can also rebuild the images locally, which is useful if you want to test changes you made to the Dockerfiles themselves\&. Locate which Dockerfile you need by looking up the reference the stage that used it in the Jenkinsfile\&. For \fIalpine\fP this would be \fCDOCKER_IMAGES\&.alpine\fP\&. You can search for this entry in the Jenkinsfile to find that this image is build from the context \fC\&./scripts/docker/alpine/*\fP and uses \fC\&./scripts/docker/alpine/*/Dockerfile\fP as a Dockerfile\&. Now you can build the image as described in \fCscripts/docker/README\&.md\fP\&.
+.PP
+You can find more information on how to use our images in \fCscripts/docker/README\&.md\fP\&.
+.PP
+Alternatively, you can follow the \fBtutorial\fP\&.
+.SH "Modify Test Environments"
+.PP
+You can also modify the test environments (update a dependency, install a new dependency, \&.\&.\&.) by editing the Dockerfiles checked into SCM\&. Determine which ones you need to modify by tracing which images are used for what stages via the \fCDOCKER_IMAGES\fP map used in our Jenkinsfile\&. The \fCdockerInit\fP function should be a good start point\&.
+.PP
+Following docker best practises you should try to minimize layer count when possible\&. Our docker images are quite large and hence take a long time to build so make sure to test any modifications locally first\&.
+.SH "Triggers"
+.PP
+All Triggers are described in the configuration of the respective build jobs\&.
+.PP
+The \fClibelektra\fP build is triggered for all branches of the libelektra repository except for \fCdebian\fP\&. Additionally all open branches in forks targeting libelektra's repository via PRs are going to be build\&. Pushes to any of those branches will trigger a new build automatically\&.
+.PP
+The \fCdaily build\fP and \fCmonthly build\fP are executed according to a cron schedule\&.
+.PP
+The \fCrelease pipeline\fP is triggered manually with optional arguments\&.
+.PP
+The following phrases can be used as comments to manually trigger a specific build:
+.PP
+.IP "\(bu" 2
+jenkins build \fClibelektra\fP please
+.IP "\(bu" 2
+jenkins build \fCdaily\fP please
+.IP "\(bu" 2
+jenkins build \fCmonthly\fP please
+.PP
+.PP
+Additionally \fCjenkins build all please\fP can be used to trigger all build jobs relevant for PR's\&. This is not necessary anymore as all relevant tests have been moved into the libelektra job\&.
+.SH "Authorization"
+.PP
+If you are not yet authorized, the following question will be asked (by user @markus2330): 
+.PP
+.nf
+Can one of the admins verify if this patch should be build?
+
+.fi
+.PP
+ Then one of the admins (sorted by activity):
+.PP
+.IP "\(bu" 2
+@sanssecours
+.IP "\(bu" 2
+@markus2330
+.IP "\(bu" 2
+@beku
+.IP "\(bu" 2
+@BernhardDenner
+.IP "\(bu" 2
+@fberlakovich
+.IP "\(bu" 2
+@manuelm
+.PP
+.PP
+need to confirm by saying: 
+.PP
+.nf
+.*add\W+to\W+whitelist.*
+
+.fi
+.PP
+ or if just the pull request should be checked: 
+.PP
+.nf
+.*build\W+allow.*
+
+.fi
+.PP
+ 
+.SH "Issues with the Build Environment"
+.PP
+If you have issues that are related to the build system you can open a normal issue and tag it with \fCbuild\fP and \fCquestion\fP\&. If you feel like your inquiry does not warrant an issue on its own, please use \fCour buildserver issue\fP\&. 
