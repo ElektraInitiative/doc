@@ -2,7 +2,7 @@
 \Hypertarget{doc_tutorials_highlevel-bindings_md_md_doc_tutorials_highlevel_bindings}%
  This document describes how and when to write a language binding for the high-\/level API.
 
-Writing bindings for high-\/level API is different from writing bindings for other parts of Elektra. This is mainly because the high-\/level API has different goals.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3544}{}\doxysection{Goals}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3544}
+Writing bindings for high-\/level API is different from writing bindings for other parts of Elektra. This is mainly because the high-\/level API has different goals.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3582}{}\doxysection{Goals}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3582}
 The goals of any high-\/level API (or binding to the C high-\/level API) for Elektra should be\+:
 
 
@@ -14,18 +14,18 @@ The goals of any high-\/level API (or binding to the C high-\/level API) for Ele
  There is an exception to this rule. Some target languages have a standard error concept, which not only forces the user to handle arising errors, but also does so in a simple and concise way. An example of this is Rust. Its {\ttfamily Result} type forces the user to handle errors and the {\ttfamily ?} operator allows to do this in a concise way. ~\newline
  However, we still recommend to avoid errors as far as possible.
 \item {\bfseries{Idiomatic Code\+:}} If the target language has a concept of \char`\"{}idiomatic code\char`\"{}, the API should fall into that category.
-\end{DoxyItemize}\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3545}{}\doxysection{When to write Bindings}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3545}
+\end{DoxyItemize}\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3583}{}\doxysection{When to write Bindings}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3583}
 Based on the goals above, you should decide, whether it is possible to write a binding for the C high-\/level API while preserving the goals.
 
 If you decide to write a binding, proceed with this tutorial.
 
-If not, designing an API to meet our goals is up to you. While designing the API you should keep in mind that you can always use code-\/generator ({\ttfamily kdb gen}) templates like the C API does.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3546}{}\doxysection{How to write Bindings}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3546}
-Since the C high-\/level API consists of a shared library API and a code-\/generated part, your binding will also have these two parts.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3547}{}\doxysubsection{Bindings for the $<$tt$>$highlevel$<$/tt$>$ Library}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3547}
+If not, designing an API to meet our goals is up to you. While designing the API you should keep in mind that you can always use code-\/generator ({\ttfamily kdb gen}) templates like the C API does.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3584}{}\doxysection{How to write Bindings}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3584}
+Since the C high-\/level API consists of a shared library API and a code-\/generated part, your binding will also have these two parts.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3585}{}\doxysubsection{Bindings for the $<$tt$>$highlevel$<$/tt$>$ Library}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3585}
 Writing the binding for the {\ttfamily highlevel} library works the same way as writing a language binding for any part of Elektra. The only additional challenge is that the binding should still meet the same goals and (as far as possible) fulfill the same guarantees as the C API.
 
 Some languages like to split bindings into two parts. One version that maps the C API one-\/to-\/one and another part that builds on the first one. The second part then uses the languages additional features. Since our API isn\textquotesingle{}t intended to be used directly, but through generated code, it might not be necessary to write the second part. It may be sufficient to write (or generate) a one-\/to-\/one mirror of the C API and use that in the code-\/generator template.
 
-The generated code should still be understandable. So if writing a more idiomatic API on top of the direct mapping, significantly simplifies the generated code (and maybe also the template), you should write such an API.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3548}{}\doxysubsection{Bindings for the $<$tt$>$lowlevel$<$/tt$>$ Library}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3548}
+The generated code should still be understandable. So if writing a more idiomatic API on top of the direct mapping, significantly simplifies the generated code (and maybe also the template), you should write such an API.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3586}{}\doxysubsection{Bindings for the $<$tt$>$lowlevel$<$/tt$>$ Library}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3586}
 Your programming language of choice must provide a way to call into C code (like \href{https://golang.org/cmd/cgo/}{\texttt{ cgo}}).
 
 In general we prefer (in this order)\+:
@@ -51,7 +51,7 @@ For garbage collected (GC) languages freeing memory by hand is not something you
 
 If you decide on mapping the functionality of kdb.h 1\+:1 it is pretty straightforward -\/ whereas if you want to adapt or enhance some API\textquotesingle{}s to leverage language features like iterators or operator overloading feel free to do so. The less “alien” the binding feels to its users the better.
 
-Remember that Elektra has internal iterators (for metadata+keysets) but in general we prefer external iterators by either copying the Key\+Set per iterator or using {\ttfamily ks\+At\+Cursor}.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3549}{}\doxysubsection{Variadic Functions}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3549}
+Remember that Elektra has internal iterators (for metadata+keysets) but in general we prefer external iterators by either copying the Key\+Set per iterator or using {\ttfamily ks\+At\+Cursor}.\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3587}{}\doxysubsection{Variadic Functions}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3587}
 Some languages for example cannot call variadic functions because in C the amount of parameters has to be known at compile-\/time. In Go for example this is not the case since it supports variable length arguments at runtime with the {\ttfamily ...} operator.
 
 This is unfortunate because the low-\/level bindings rely heavily on variadic functions. It is possible to work around this problem by either
@@ -60,7 +60,7 @@ This is unfortunate because the low-\/level bindings rely heavily on variadic fu
 \begin{DoxyEnumerate}
 \item Writing helper functions in C that call these variadic functions with a fixed amount of parameters or
 \item Imitating the behavior of a function e.\+g. {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}} by calling multiple functions\+: {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}} and {\ttfamily \mbox{\hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()}}} for every metakey/value that was passed.
-\end{DoxyEnumerate}\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3550}{}\doxysubsection{Creating the Code-\/\+Generator Template}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3550}
+\end{DoxyEnumerate}\hypertarget{doc_tutorials_highlevel-bindings_md_autotoc_md3588}{}\doxysubsection{Creating the Code-\/\+Generator Template}\label{doc_tutorials_highlevel-bindings_md_autotoc_md3588}
 How to create a template for {\ttfamily kdb gen} is detailed in \mbox{\hyperlink{doc_tutorials_code-generator_md}{this tutorial}}.
 
 The created template should support the same input keysets (and parent keys) as the {\ttfamily highlevel} template. If and how exactly you implement the advanced features (structs, unions, ...) is up to you. Note\+: enums should always be supported (if your language has them) as they are one of the {\ttfamily type} plugins types.

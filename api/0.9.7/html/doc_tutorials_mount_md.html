@@ -48,7 +48,7 @@ $(function() {
 <p>A simpler form of integration is to let Elektra directly use configuration files as they are present on the system. Thus applications can read the configuration files and changes in the key database will be picked up by applications.</p>
 <p>The heart of the approach is the so called <em>mounting</em> of configuration files into the key database.</p>
 <p>Let us start with a motivating example first:</p>
-<h1><a class="anchor" id="autotoc_md3618"></a>
+<h1><a class="anchor" id="autotoc_md3656"></a>
 Mount the Lookup Table for Hostnames</h1>
 <p>We mount the lookup table with the following command:</p>
 <div class="fragment"><div class="line">sudo kdb mount --with-recommends /etc/hosts system:/hosts hosts</div>
@@ -89,7 +89,7 @@ Mount the Lookup Table for Hostnames</h1>
 <div class="fragment"><div class="line">kdb file system:/elektra/mountpoints</div>
 <div class="line">#&gt; /etc/kdb/elektra.ecf</div>
 </div><!-- fragment --><p>Because of that only root can mount files.</p>
-<h1><a class="anchor" id="autotoc_md3619"></a>
+<h1><a class="anchor" id="autotoc_md3657"></a>
 Resolver</h1>
 <p>The configuration file path you supplied to <code>kdb mount</code> above is actually not an absolute or relative path in your file system, but gets resolved to one by Elektra. The plugin that is responsible for this is the <a class="el" href="md_src_plugins_resolver_README.html#src_plugins_resolver_README_md">_Resolver_</a>.</p>
 <p>When you mount a configuration file the resolver first looks at the namespace of your mount point. Based on that namespace and if the supplied path was relative or absolute the resolver then resolves the supplied path to a path in the file system. The resolving happens dynamically for every <code>kdb</code> invocation.</p>
@@ -123,7 +123,7 @@ Resolver</h1>
 <p>If this differs on your system, the resolver has a different configuration. Type <code>kdb plugin-info resolver</code> for more information about the resolvers.</p>
 <p>There are different resolvers. For instance on non-POSIX systems paths must be resolved differently. In this case one might want to use the <a class="el" href="md_src_plugins_wresolver_README.html#src_plugins_wresolver_README_md">wresolver</a> plugin. Another useful resolver is the <a class="el" href="md_src_plugins_blockresolver_README.html#src_plugins_blockresolver_README_md">blockresolver</a>, which integrates only a block of a configuration file into Elektra.</p>
 <p>But resolvers are not the only plugins Elektra uses:</p>
-<h1><a class="anchor" id="autotoc_md3620"></a>
+<h1><a class="anchor" id="autotoc_md3658"></a>
 Plugins</h1>
 <p>Configuration files can have many different formats (<code>ini</code>, <code>json</code>, <code>yaml</code>, <code>xml</code>, <code>csv</code>, ... to name but a few).</p>
 <p>One of the goals of Elektra is to provide users with a unified interface to all those formats. Elektra accomplishes this task with <em>storage plugins</em>.</p>
@@ -131,7 +131,7 @@ Plugins</h1>
 <p>In Elektra <a class="el" href="doc_tutorials_plugins_md.html">Plugins</a> are the units that encapsulate functionality. There are not only plugins that handle storage of data, but also plugins that modify your values (<a class="el" href="md_src_plugins_iconv_README.html#src_plugins_iconv_README_md">iconv</a>). Furthermore there are plugins that validate your values (<a class="el" href="md_src_plugins_validation_README.html#src_plugins_validation_README_md">validation</a>, <a class="el" href="md_src_plugins_mathcheck_README.html#src_plugins_mathcheck_README_md">mathcheck</a>, ...), log changes in the key set (<a class="el" href="md_src_plugins_logchange_README.html#src_plugins_logchange_README_md">logchange</a>) or do things like executing commands on the shell (<a class="el" href="md_src_plugins_shell_README.html#src_plugins_shell_README_md">shell</a>). You can get a complete list of all available plugins with <code>kdb plugin-list</code>. Although an individual plugin does not provide much functionality, plugins are powerful because they are designed to be used together. </p>
 </blockquote>
 <p>When you mount a file you can tell Elektra which plugins it should use for reading and writing to configuration files.</p>
-<h3><a class="anchor" id="autotoc_md3621"></a>
+<h3><a class="anchor" id="autotoc_md3659"></a>
 Meta Data</h3>
 <p>Elektra is able to store <a class="el" href="doc_help_elektra-metadata_md.html">metadata</a> of keys. The <a class="el" href="md_src_plugins_ni_README.html#src_plugins_ni_README_md">ni</a> plugin and the <a class="el" href="md_src_plugins_dump_README.html#src_plugins_dump_README_md">dump</a> plugin, among others, support this feature.</p>
 <p>Meta data comes in handy if we use other plugins, than just the ones that store and retrieve data. I chose the <code>ni</code> plugin for this demonstration, because it supports metadata and is human readable. So let us have a look at the <a class="el" href="md_src_plugins_type_README.html#src_plugins_type_README_md">type</a> and <a class="el" href="md_src_plugins_mathcheck_README.html#src_plugins_mathcheck_README_md">mathcheck</a> plugins.</p>
@@ -165,10 +165,10 @@ Meta Data</h3>
 <li>Encode metadata in its own <code>spec</code> namespace, completely separate to the configuration files the application will see</li>
 </ol>
 <p>If you want to find out more about validation I recommend reading <a class="el" href="doc_tutorials_validation_md.html">this</a> tutorial next.</p>
-<h3><a class="anchor" id="autotoc_md3622"></a>
+<h3><a class="anchor" id="autotoc_md3660"></a>
 Backends</h3>
 <p>The plugins together with the configuration file form a <em>backend</em>. The backend determines how Elektra stores data below a mount point. You can examine every mount points backend by looking at the configuration below <code>system:/elektra/mountpoints/&lt;mount point&gt;/</code>.</p>
-<h1><a class="anchor" id="autotoc_md3623"></a>
+<h1><a class="anchor" id="autotoc_md3661"></a>
 Limitations</h1>
 <p>One drawback of this approach is, that an application can bypass Elektra and change configuration files directly. If for example Elektra is configured to <a class="el" href="doc_tutorials_validation_md.html">validate</a> new configuration values before updating them, this is something you do not want to happen.</p>
 <p>Another drawback is that mounting is static. In a previous example we mounted the <code>/.git/config</code> file into <code>dir:/git</code>. Now the <code>dir</code> namespace of every directory stores the configuration below <code>dir:/git</code> in this directories <code>/.git/config</code> file. And this mount point is the same for all users and all directories. So you can't have different configuration files for the same mount points in other directories. Because of the same reason you cannot have different configuration file names or syntax for the same mount point in the <code>user</code> namespace.</p>

@@ -44,32 +44,32 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_doc_tutorials_specification"></a> </p>
-<h1><a class="anchor" id="autotoc_md3695"></a>
+<h1><a class="anchor" id="autotoc_md3733"></a>
 Overview</h1>
-<h2><a class="anchor" id="autotoc_md3696"></a>
+<h2><a class="anchor" id="autotoc_md3734"></a>
 Introduction</h2>
 <p>In this tutorial you will learn how to interactively use the <code>SpecElektra</code> specification language and <code>kdb</code> to write a configuration specification for an example application.</p>
-<h2><a class="anchor" id="autotoc_md3697"></a>
+<h2><a class="anchor" id="autotoc_md3735"></a>
 What you should already know</h2>
 <ul>
 <li>how to install Elektra</li>
 <li>basic Elektra commands and concepts (kdb get, kdb set, kdb ls)</li>
 <li>how to open and use a terminal</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md3698"></a>
+<h2><a class="anchor" id="autotoc_md3736"></a>
 What you’ll Learn</h2>
 <ul>
 <li>how to create and mount a specification using <code>kdb</code></li>
 <li>how to add keys with different types, defaults and examples to your specification and how to validate them</li>
 <li>the benefits of using <code>kdb</code> to generate a specification, instead of writing one by hand</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md3699"></a>
+<h2><a class="anchor" id="autotoc_md3737"></a>
 What you'll do</h2>
 <ul>
 <li>use <code>kdb</code> to create and mount a specification for an example CRUD (Create, Read, Update, Delete) application</li>
 <li>define defaults, examples and checks for keys in the validation</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3700"></a>
+<h1><a class="anchor" id="autotoc_md3738"></a>
 Example App Overview</h1>
 <p>For this tutorial you will write a specification for a simple CRUD backend application. You need to configure a <code>port</code> and a <code>secure</code> property, that toggles SSL usage, for the REST server. An <code>ip</code> and a SQL <code>dialect</code> for the database server the app will connect to and finally a <code>date</code> where all the data will be saved to a backup.</p>
 <p>So the application will need the following configuration options:</p>
@@ -80,7 +80,7 @@ Example App Overview</h1>
 <li>a database dialect</li>
 <li>a backup date</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3701"></a>
+<h1><a class="anchor" id="autotoc_md3739"></a>
 Getting Started</h1>
 <p>Make sure you have <code>Elektra</code> installed on your local machine:</p>
 <div class="fragment"><div class="line">kdb --version</div>
@@ -88,9 +88,9 @@ Getting Started</h1>
 <div class="line">KDB_VERSION: 0.9.6</div>
 <div class="line">SO_VERSION: 5</div>
 </div><!-- fragment --><p>Otherwise refer to the <a href="https://www.libelektra.org/getstarted/guide">getting started guide</a> to install it.</p>
-<h1><a class="anchor" id="autotoc_md3702"></a>
+<h1><a class="anchor" id="autotoc_md3740"></a>
 Mounting the Specification</h1>
-<h2><a class="anchor" id="autotoc_md3703"></a>
+<h2><a class="anchor" id="autotoc_md3741"></a>
 Step 1: Mount a Specification File</h2>
 <p>First you need to mount a specification file, in this case <code>spec.ni</code> to the <code>spec:/</code> namespace. You can define the path inside the <code>spec:/</code> namespace as <code>/sw/org/app/#0/current</code>, refer to <a href="https://www.libelektra.org/tutorials/integration-of-your-c-application">the documentation</a> to find out more about constructing the name.</p>
 <p>You will also be using the profile <code>current</code>, you can find out more about profiles in <a href="https://www.libelektra.org/plugins/profile">the documentation</a> aswell.</p>
@@ -98,7 +98,7 @@ Step 1: Mount a Specification File</h2>
 <div class="fragment"><div class="line">sudo kdb mount `pwd`/spec.ni spec:/sw/org/app/\#0/current ni</div>
 </div><!-- fragment --><p>Using the command below you can list the directory of the concrete file that is used by Elektra.</p>
 <div class="fragment"><div class="line">kdb file spec:/sw/org/app/\#0/current</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3704"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3742"></a>
 Step 2: Define a mountpoint</h2>
 <p>Next you can define, that this specification defines a specific mountpoint for a concrete application configuration. So you can say the concrete configuraion should be written to <code>app.ni</code>.</p>
 <div class="fragment"><div class="line">kdb meta-set spec:/sw/org/app/\#0/current mountpoint app.ni</div>
@@ -112,13 +112,13 @@ Step 2: Define a mountpoint</h2>
 <div class="line"> </div>
 <div class="line">[]</div>
 <div class="line"> meta:/mountpoint = app.ni</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3705"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3743"></a>
 Step 3: Do a specification mount</h2>
 <div class="fragment"><div class="line">kdb spec-mount /sw/org/app/\#0/current ni</div>
 </div><!-- fragment --><p>This specification mount makes sure that the paths where the concrete configuration should be, in this case <code>app.ni</code>, are ready to fulfill or specification, in this case <code>spec.ni</code>.</p>
-<h1><a class="anchor" id="autotoc_md3706"></a>
+<h1><a class="anchor" id="autotoc_md3744"></a>
 Adding your first key to the specification</h1>
-<h2><a class="anchor" id="autotoc_md3707"></a>
+<h2><a class="anchor" id="autotoc_md3745"></a>
 Step 1: Adding the server port</h2>
 <p>The first key you will add to our specification will be the port of the server. You add it using the following command below.</p>
 <div class="fragment"><div class="line">kdb meta-set spec:/sw/org/app/\#0/current/server/port type short</div>
@@ -138,7 +138,7 @@ Step 1: Adding the server port</h2>
 <div class="line"> </div>
 <div class="line">[server/port]</div>
 <div class="line"> meta:/type = short</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3708"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3746"></a>
 Step 2: Adding more metadata</h2>
 <p>So with your first key added, you of course want to specify more information for the port. There surely is more information to a port than just the type. What about a <code>default</code>, or what about an <code>example</code> for a usable port? Maybe a <code>description</code> what the port really is for? Let's add that next!</p>
 <div class="fragment"><div class="line">kdb meta-set spec:/sw/org/app/\#0/current/server/port default 8080</div>
@@ -175,7 +175,7 @@ Step 2: Adding more metadata</h2>
 <div class="fragment"><div class="line">kdb set /sw/org/app/\#0/current/server/port 123456</div>
 <div class="line"># STDERR: Port 123456 on key /server/port was not within 0 - 65535</div>
 </div><!-- fragment --><p>Did it work? I hope not. The validation plugin you specified will now correctly validate the port you enter and give you an error.</p>
-<h2><a class="anchor" id="autotoc_md3709"></a>
+<h2><a class="anchor" id="autotoc_md3747"></a>
 Step 3: Adding boolean keys</h2>
 <p>Next up you will configure the <code>secure</code> property of our server. This boolean key will toggle if your server encrypts the communication via SSL or not.</p>
 <p>So we will add the key and some metadata for it:</p>
@@ -185,9 +185,9 @@ Step 3: Adding boolean keys</h2>
 <div class="line">kdb meta-set spec:/sw/org/app/\#0/current/server/secure description &quot;describes if the REST server uses SSL for communication or not&quot;</div>
 </div><!-- fragment --><p>By default the <code>type</code> plugin will normalize boolean values when setting them, before storing them. This only works for the concrete config, so when setting the values for the spec you have to use the unnormalized values. In the case it uses <code>1</code> for boolean <code>true</code> and <code>0</code> for boolean <code>false</code>.</p>
 <p>You can read more about this in the documentation for the <a href="https://www.libelektra.org/plugins/type#normalization">type plugin</a>.</p>
-<h1><a class="anchor" id="autotoc_md3710"></a>
+<h1><a class="anchor" id="autotoc_md3748"></a>
 Adding the database keys to the specification</h1>
-<h2><a class="anchor" id="autotoc_md3711"></a>
+<h2><a class="anchor" id="autotoc_md3749"></a>
 Step 1: Adding the database ip</h2>
 <p>Next up you will add a key for the database <code>ip</code> address. Like with the key before, you will add a <code>type</code>, <code>default</code>, <code>example</code> and a <code>description</code> so that the configuration will be easily usable.</p>
 <p>Don't forget the most important rule of configurations: <b>Always add sensible defaults!</b></p>
@@ -232,7 +232,7 @@ Step 1: Adding the database ip</h2>
 <div class="line">kdb meta-set spec:/sw/org/app/\#0/current/database/ip example 127.0.0.1</div>
 <div class="line">kdb meta-set spec:/sw/org/app/\#0/current/database/ip description &quot;ip address of the database server, that the application will connect to&quot;</div>
 <div class="line">kdb meta-set spec:/sw/org/app/\#0/current/database/ip check/ipaddr &#39;&#39;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3712"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3750"></a>
 Step 2: Adding the database dialect</h2>
 <p>Next up you will add a key for the SQL <code>dialect</code> the database will use. Since there are only a few databases your application will support, you can define the possible dialects via an <a href="https://www.libelektra.org/plugins/type#enums">enum</a> type. This allows us to prohibit all other possible dialects that are not SQL.</p>
 <p>First you define the size of the <code>enum</code> type, and then you can add the different <code>enum</code> values.</p>
@@ -293,7 +293,7 @@ Step 2: Adding the database dialect</h2>
 <div class="line"> meta:/check/enum/#3 = mariadb</div>
 <div class="line"> meta:/default = mssql</div>
 <div class="line"> meta:/check/enum = #4</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3713"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3751"></a>
 Adding the backup date</h1>
 <p>The last key you will add to our application is a <code>date</code> key for the annual backup and restart (this should probably not be annually in a real application). Here you use the <a href="https://www.libelektra.org/plugins/date">check/date</a> plugin with the <code>ISO8601</code> format. You also specify a <code>check/date/format</code>. You can find all possible date formats on the <a href="https://www.libelektra.org/plugins/date">plugin page</a>. For this you can use the following commands:</p>
 <div class="fragment"><div class="line">kdb meta-set spec:/sw/org/app/\#0/current/backup/date type string</div>
@@ -358,7 +358,7 @@ Adding the backup date</h1>
 <div class="line"> meta:/check/enum/#3 = mariadb</div>
 <div class="line"> meta:/default = mssql</div>
 <div class="line"> meta:/check/enum = #4</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3714"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3752"></a>
 Final specification code</h1>
 <p>After adding all the keys that are necessary for our application to the server, your specification should look something like this:</p>
 <div class="fragment"><div class="line">cat $(kdb file spec:/sw/org/app/\#0/current)</div>
@@ -415,7 +415,7 @@ Final specification code</h1>
 <div class="line"> meta:/check/enum/#3 = mariadb</div>
 <div class="line"> meta:/default = mssql</div>
 <div class="line"> meta:/check/enum = #4</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3715"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3753"></a>
 Summary</h1>
 <ul>
 <li>You setup and mounted a specification using <code>kdb mount</code> and <code>kdb spec-mount</code></li>
@@ -425,7 +425,7 @@ Summary</h1>
 <li><code>You added default parameters, examples and descriptions with</code>example<code>,</code>default<code>,</code>description<code></code></li>
 <li><code>You also added validation checks using different plugins, like</code>check/port<code>or</code>check/ipaddr`</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3716"></a>
+<h1><a class="anchor" id="autotoc_md3754"></a>
 Learn more</h1>
 <p>Tutorials on the Elektra homepage:</p>
 <ul>

@@ -44,10 +44,10 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_doc_TESTING"></a> </p>
-<h1><a class="anchor" id="autotoc_md3419"></a>
+<h1><a class="anchor" id="autotoc_md3457"></a>
 Introduction</h1>
 <p>Libraries need pervasive testing for continuous improvement. Any problem found and behavior described must be written down as test so that it is assured that no new regressions will be added.</p>
-<h1><a class="anchor" id="autotoc_md3420"></a>
+<h1><a class="anchor" id="autotoc_md3458"></a>
 Running Tests</h1>
 <p>Running all tests in the build directory:</p>
 <div class="fragment"><div class="line">make run_all</div>
@@ -65,7 +65,7 @@ Running Tests</h1>
 <div class="fragment"><div class="line">ctest -T Test --output-on-failure -LE kdbtests -j 6</div>
 </div><!-- fragment --><p>To only run tests whose names match a regular expression, you can use:</p>
 <div class="fragment"><div class="line">ctest -V -R &lt;regex&gt;</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3421"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3459"></a>
 Required Environment</h1>
 <p>To run the tests successfully, the environment must fulfill:</p>
 <ul>
@@ -92,19 +92,19 @@ Required Environment</h1>
 <li>Compile Elektra so that system paths are not actual system paths, e.g. to write everything into the home directory (<code>~</code>) use cmake options: <code>-DKDB_DB_SYSTEM="~/.config/kdb/system" -DKDB_DB_SPEC="~/.config/kdb/spec"</code> (for an example of a full CMake invocation see <code>scripts/configure-home</code>)</li>
 <li>Use the XDG resolver (see <code>scripts/configure-xdg</code>) and set the environment variable <code>XDG_CONFIG_DIRS</code>, currently lacks <code>spec</code> namespaces, see #734.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md3422"></a>
+<h1><a class="anchor" id="autotoc_md3460"></a>
 Manual Testing</h1>
 <p>Running executables in the build directory needs some preparation. Here we assume that <code>build</code> is the build directory and it is the top-level of Elektra's source code:</p>
 <div class="fragment"><div class="line">cd build</div>
 <div class="line">. ../scripts/dev/run_env</div>
 </div><!-- fragment --><p>After sourcing <code>run_env</code>, you can directly execute <code>kdb</code> and other binaries built with Elektra (such as the examples).</p>
 <p>Pay attention that sourcing depends on the operating system or rather the shell. For example on standard FreeBSD 11.3 you have to execute <code>sh</code> in the root of the repository first. Then do <em>not</em> use the <code>source</code> command but the point <code>.</code> as explained above.</p>
-<h1><a class="anchor" id="autotoc_md3423"></a>
+<h1><a class="anchor" id="autotoc_md3461"></a>
 Using debuggers</h1>
 <p>You can use debuggers such as <code>gdb</code> to develop Elektra. This can be interesting if you write test cases and they fail at some unknown point. Many tests are put into the <code>/bin</code> folder in your build directory. As a consequence, you can <code>cd</code> into <code>/bin</code> and call, for example</p>
 <div class="fragment"><div class="line">gdb hello</div>
 </div><!-- fragment --><p>If you use <a class="el" href="doc_tutorials_run_all_tests_with_docker_md.html">Docker to run your tests</a> it makes sense to call the debugger in the same container. In this case you might be required to pass additional parameters to Docker. An example for this is passing <code>--security-opt seccomp=unconfined</code> to disable address space randomization.</p>
-<h1><a class="anchor" id="autotoc_md3424"></a>
+<h1><a class="anchor" id="autotoc_md3462"></a>
 Recommended Environment</h1>
 <p>The tests are designed to disable themselves if some necessary tools are missing or other environmental constraints are not met. To really run <em>all</em> tests (also those that are mostly designed for internal development) you need to fulfil:</p>
 <ul>
@@ -122,13 +122,13 @@ Recommended Environment</h1>
 <li>The <a href="https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper">Markdown Shell Recorder</a> requires POSIX utilities (<code>awk</code>, <code>grep</code>, …).</li>
 </ul>
 <p>You can also use Docker to set up such an environment. There is <a class="el" href="doc_tutorials_run_all_tests_with_docker_md.html">a tutorial</a> that guides you through the necessary steps.</p>
-<h1><a class="anchor" id="autotoc_md3425"></a>
+<h1><a class="anchor" id="autotoc_md3463"></a>
 Adding Tests</h1>
 <p>For plugins, adding <code>ADD_TEST</code> to <code>add_plugin</code> will execute the tests in <code>testmod_${pluginname}.c</code>. This is done by default for newly generated plugins.</p>
 <p>Add <code>CPP_TEST</code> if the test is written in C++. Then <code>testmod_${pluginname}.cpp</code> will be used. These tests use the <a href="https://github.com/google/googletest">gtest</a> test framework.</p>
 <p>If the tests should not always be executed, the CMake function <code>add_plugintest</code> can be used instead. See cmake/Modules/LibAddPlugin.cmake for more information.</p>
 <p>By using <code>TEST_README</code> in <code>add_plugin</code> (also enabled by default), <a href="https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper">Markdown Shell Recorder</a> are expected to be in the README.md of the plugin.</p>
-<h1><a class="anchor" id="autotoc_md3426"></a>
+<h1><a class="anchor" id="autotoc_md3464"></a>
 Conventions</h1>
 <ul>
 <li>All names of the test must start with test (needed by test driver for installed tests).</li>
@@ -152,26 +152,26 @@ Conventions</h1>
 <li>If your test modifies resources needed by other tests you also need to set <code>RUN_SERIAL</code>:</li>
 </ul>
 <div class="fragment"><div class="line">set_property(TEST testname PROPERTY RUN_SERIAL TRUE)</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3427"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3465"></a>
 Strategy</h1>
 <p>The testing must happen on every level of the software to achieve a maximum coverage with the available time. In the rest of the document we describe the different levels and where these tests are.</p>
-<h2><a class="anchor" id="autotoc_md3428"></a>
+<h2><a class="anchor" id="autotoc_md3466"></a>
 CFramework</h2>
 <p>This is basically a bunch of assertion macros and some output facilities. It is written in pure C and very lightweight.</p>
 <p>It is located here.</p>
-<h2><a class="anchor" id="autotoc_md3429"></a>
+<h2><a class="anchor" id="autotoc_md3467"></a>
 ABI Tests</h2>
 <p>C ABI Tests are written in plain C with the help of <code>cframework</code>.</p>
 <p>The main purpose of these tests are, that the binaries of old versions can be used against new versions as ABI tests.</p>
 <p>So lets say we compile Elektra 0.8.8 (at this version dedicated ABI tests were introduced) in the <code>-full</code> variant. But when we run the tests, we use <code>libelektra-full.so.0.8.9</code> (either by installing it or by setting <code>LD_LIBRARY_PATH</code>). You can check with <code>ldd</code> which version is used.</p>
 <p>The tests are located here.</p>
-<h2><a class="anchor" id="autotoc_md3430"></a>
+<h2><a class="anchor" id="autotoc_md3468"></a>
 C Unit Tests</h2>
 <p>C Unit Tests are written in plain C with the help of <code>cframework</code>.</p>
 <p>It is used to test internal data structures of libelektra that are not ABI relevant.</p>
 <p>ABI tests can be done on theses tests, too. But by nature from time to time these tests will fail.</p>
 <p>They are located here.</p>
-<h3><a class="anchor" id="autotoc_md3431"></a>
+<h3><a class="anchor" id="autotoc_md3469"></a>
 Internal Functions</h3>
 <p>According to <code>src/libs/elektra/libelektra-symbols.map</code>, all functions starting with:</p>
 <ul>
@@ -182,15 +182,15 @@ Internal Functions</h3>
 <li><code>ks</code></li>
 </ul>
 <p>get exported. Functions not starting with this prefix are internal only and therefore not visible in the test cases. Test internal functionality by including the corresponding C file.</p>
-<h2><a class="anchor" id="autotoc_md3432"></a>
+<h2><a class="anchor" id="autotoc_md3470"></a>
 Module Tests</h2>
 <p>The modules, which are typically used as plugins in Elektra (but can also be available statically or in the <code>-full</code> variant), should have their own tests.</p>
 <p>Use the CMake macro <code>add_plugintest</code> for adding these tests.</p>
-<h2><a class="anchor" id="autotoc_md3433"></a>
+<h2><a class="anchor" id="autotoc_md3471"></a>
 C++ Unit Tests</h2>
 <p>C++ Unit tests are done using the Google Test framework. See <a class="el" href="doc_decisions_unit_testing_md.html">architectural decision</a>.</p>
 <p>Use the CMake macro <code>add_gtest</code> for adding these tests.</p>
-<h2><a class="anchor" id="autotoc_md3434"></a>
+<h2><a class="anchor" id="autotoc_md3472"></a>
 Script Tests</h2>
 <p>Tests which need scripts are done using shell recorder or directly with POSIX shell commands. See <a class="el" href="doc_decisions_script_testing_md.html">architectural decision</a>.</p>
 <p>The script tests have different purposes:</p>
@@ -201,11 +201,11 @@ Script Tests</h2>
 <li>Meta Test Suites (run other test suites)</li>
 </ul>
 <p>See here.</p>
-<h2><a class="anchor" id="autotoc_md3435"></a>
+<h2><a class="anchor" id="autotoc_md3473"></a>
 Shell Recorder</h2>
 <p>The more elegant way to specify script tests are via the so called Shell Recorder using Markdown Syntax.</p>
 <p>See here.</p>
-<h2><a class="anchor" id="autotoc_md3436"></a>
+<h2><a class="anchor" id="autotoc_md3474"></a>
 Fuzz Testing</h2>
 <p>We assume that your current working directory is a newly created build directory. First compile Elektra with afl (~e is source-dir of Elektra):</p>
 <div class="fragment"><div class="line">~e/scripts/dev/configure-debian -DCMAKE_C_COMPILER=/usr/src/afl/AFL-2.57b/afl-gcc -DCMAKE_CXX_COMPILER=/usr/src/afl/AFL-2.57b/afl-g++ ~e</div>
@@ -217,7 +217,7 @@ Fuzz Testing</h2>
 <div class="fragment"><div class="line">LD_LIBRARY_PATH=`pwd`/lib /usr/src/afl/AFL-2.57b/afl-fuzz -i testcase_dir -o findings_dir bin/kdb import user:/tests toml</div>
 </div><!-- fragment --><p>Check if something is happening with:</p>
 <div class="fragment"><div class="line">watch kdb export user:/tests</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3437"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3475"></a>
 ASAN</h2>
 <p>To enable sanitize checks use <code>ENABLE_ASAN</code> via cmake.</p>
 <p>Then, to use ASAN, run <code>run_asan</code> in the build directory, which simply does:</p>
@@ -226,7 +226,7 @@ ASAN</h2>
 <div class="fragment"><div class="line">LD_PRELOAD=/usr/lib/clang/3.8.0/lib/linux/libclang_rt.asan-x86_64.so run_asan</div>
 </div><!-- fragment --><p>or on Debian:</p>
 <div class="fragment"><div class="line">LD_PRELOAD=/usr/lib/llvm-3.8/lib/clang/3.8.1/lib/linux/libclang_rt.asan-x86_64.so run_asan</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md3438"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md3476"></a>
 macOS</h3>
 <p>If you use macOS you might want to use the <code>clang</code> versions provided by Homebrew, since it supports the <a href="https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer">LeakSanitizer</a>. To use Homebrew’s version of <code>clang</code> you need to first install LLVM:</p>
 <div class="fragment"><div class="line">brew install llvm</div>
@@ -235,13 +235,13 @@ macOS</h3>
 <div class="line">export CXX=/usr/local/opt/llvm/bin/clang++</div>
 </div><!-- fragment --><p>. Now run CMake and build Elektra just like you normally would. To enable the Leak Sanitizer you need to also set the variable <code>ASAN_OPTIONS</code> before you run a test:</p>
 <div class="fragment"><div class="line">export ASAN_OPTIONS=detect_leaks=1</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3439"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3477"></a>
 CBMC</h2>
 <p>For bounded model checking tests, see <code>scripts/cbmc</code>.</p>
-<h2><a class="anchor" id="autotoc_md3440"></a>
+<h2><a class="anchor" id="autotoc_md3478"></a>
 Static Code Checkers</h2>
 <p>There is a number of static code checkers available for all kind of programming languages. The following section show how the most common ones can be used with <code>libelektra</code>.</p>
-<h3><a class="anchor" id="autotoc_md3441"></a>
+<h3><a class="anchor" id="autotoc_md3479"></a>
 Cppcheck</h3>
 <p><a href="http://cppcheck.sourceforge.net/">Cppcheck</a> can be used directly on a C or C++ source file by calling it with <code>cppcheck --enable=all &lt;sourcefile&gt;</code>. This way it might miss some header files though and thus doesn't detect all possible issues, but still gives useful hints in general.</p>
 <p>To analyze the whole project, use it in conjunction with <code>cmake</code> by calling <code>cmake</code> with the parameter <code>-DCMAKE_EXPORT_COMPILE_COMMANDS=ON</code>. This way <code>cmake</code> creates a file called <code>compile_commands.json</code> in the build directory. Afterwards, call <code>cppcheck</code> with the cmake settings and store the output as xml:</p>
@@ -249,7 +249,7 @@ Cppcheck</h3>
 </div><!-- fragment --><p>Since the XML file is difficult to read directly, the best way is to convert it to an HTML report. Cppcheck already includes a tool for that, call it with the XML report:</p>
 <div class="fragment"><div class="line">cppcheck-htmlreport --file=cppcheck_result.xml --report-dir=cppcheck_report --source-dir=.</div>
 </div><!-- fragment --><p>Now you can view the html report by opening <code>index.html</code> in the specified folder to get an overview of the issues found in the whole project.</p>
-<h3><a class="anchor" id="autotoc_md3442"></a>
+<h3><a class="anchor" id="autotoc_md3480"></a>
 OCLint</h3>
 <p><a href="http://oclint.org/">OCLint</a> is a static code analyzer for C, C++ and Objective C. To use this tool enable the CMake option <code>CMAKE_EXPORT_COMPILE_COMMANDS</code>. The steps below show a step-by-step guide on how to analyze files with OCLint.</p>
 <ol type="1">
@@ -270,7 +270,7 @@ OCLint</h3>
 </ol>
 <div class="fragment"><div class="line">cd ..</div>
 <div class="line">oclint -p build -no-analytics -enable-global-analysis -enable-clang-static-analyzer src/plugins/toml/*.c</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md3443"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md3481"></a>
 scan-build</h3>
 <p><a href="http://clang-analyzer.llvm.org/scan-build.html">scan-build</a> is a tool that is usually bundled along with LLVM/Clang and is also primarily intended for C and C++ code. On macOS you have to install the package <code>llvm</code> with homebrew, then you'll find the tool in the folder <code>/usr/local/opt/llvm/bin/</code>.</p>
 <p>To use it, change the C compiler and the C++ compiler to the LLVM analyzer. To do this, you can configure the project from scratch and prefix the cmake command with <code>scan-build</code>. Alternatively, set the c compiler to <code>ccc-analyzer</code> and the C++ compiler to <code>c++-analyzer</code> (bundled with LLVM/Clang).</p>
@@ -279,13 +279,13 @@ scan-build</h3>
 </div><!-- fragment --><p>Afterwards, the report can be viewed by using the tool <code>scan-view</code>, also found in the llvm folder. The report is created in the folder specified above, along with the current date of the analyzation, for instance:</p>
 <div class="fragment"><div class="line">scan-view &lt;path specified above&gt;/2017-06-18-171027-27108-1</div>
 </div><!-- fragment --><p>Alternatively, you can also open the <code>index.html</code> file in the aforementioned folder, but using the tool the report is enriched with further information.</p>
-<h3><a class="anchor" id="autotoc_md3444"></a>
+<h3><a class="anchor" id="autotoc_md3482"></a>
 SonarLint</h3>
 <p><a href="http://www.sonarlint.org/">SonarLint</a> is a static code checker primarily intended for Java. It is usually used by installing the corresponding plugin for the used IDE, then there is no further configuration required.</p>
-<h2><a class="anchor" id="autotoc_md3445"></a>
+<h2><a class="anchor" id="autotoc_md3483"></a>
 Randoop</h2>
 <p>For using the unit test generator randoop with the jna bindings, see <code>scripts/randoop/randoop</code>.</p>
-<h2><a class="anchor" id="autotoc_md3446"></a>
+<h2><a class="anchor" id="autotoc_md3484"></a>
 Code Coverage</h2>
 <p>Run:</p>
 <div class="fragment"><div class="line">make coverage-start</div>
@@ -294,7 +294,7 @@ Code Coverage</h2>
 <div class="line">make coverage-stop</div>
 <div class="line">make coverage-genhtml</div>
 </div><!-- fragment --><p>The HTML files can be found in the build directory in the folder <code>coverage</code>.</p>
-<h1><a class="anchor" id="autotoc_md3447"></a>
+<h1><a class="anchor" id="autotoc_md3485"></a>
 See Also</h1>
 <ul>
 <li><a class="el" href="doc_COMPILE_md.html">COMPILE</a>.</li>

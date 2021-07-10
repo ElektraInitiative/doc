@@ -53,7 +53,7 @@ $(function() {
 <li><code>crypto</code>, and</li>
 <li><code>fcrypt</code>.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md3531"></a>
+<h1><a class="anchor" id="autotoc_md3569"></a>
 Prerequisites - GnuPG</h1>
 <p>For the rest of this tutorial we assume that you are somewhat familiar with GnuPG (GPG). The documentation of GnuPG can be found <a href="https://gnupg.org/documentation/index.html">here</a>.</p>
 <p>In order to find your GPG private key(s) you can use:</p>
@@ -67,7 +67,7 @@ Prerequisites - GnuPG</h1>
 <p>A GPG private key is mandatory for the plugins to work. If you have no GPG private key available, you can generate one by entering the following command:</p>
 <div class="fragment"><div class="line">gpg2 --generate-key</div>
 </div><!-- fragment --><p>The <code>fcrypt</code> plugin and the <code>crypto</code> plugin support both versions (version 1 and version 2) of GPG.</p>
-<h1><a class="anchor" id="autotoc_md3532"></a>
+<h1><a class="anchor" id="autotoc_md3570"></a>
 Introduction</h1>
 <p>In this tutorial we explain the use of the <code>crypto</code> plugin and the <code>fcrypt</code> plugin by a simple example: We want to protect a password that is contained in an INI-file.</p>
 <p>The following example demonstrates how the INI-file is mounted without encryption enabled. We create the password at <code>user:/tests/password</code> and display the contents of <code>test.ini</code>.</p>
@@ -86,7 +86,7 @@ Introduction</h1>
 <li>with the <code>crypto</code> plugin, which allows the encryption of specific key values only.</li>
 </ol>
 <p>We also show how to approach integrity with the signature features of the <code>fcrypt</code> plugin.</p>
-<h1><a class="anchor" id="autotoc_md3533"></a>
+<h1><a class="anchor" id="autotoc_md3571"></a>
 Configuration File Encryption/Decryption</h1>
 <p>The <code>fcrypt</code> plugin enables the encryption and decryption of entire configuration files, thus protecting the confidentiality of the configuration keys and values. <code>fcrypt</code> utilizes GPG for all cryptographic operations. The GPG key, which is used for encryption and decryption, is specified in the backend configuration under <code>encrypt/key</code>.</p>
 <div class="fragment"><div class="line">sudo kdb mount test.ini user:/tests fcrypt &quot;encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D&quot; ini</div>
@@ -102,7 +102,7 @@ Configuration File Encryption/Decryption</h1>
 </div><!-- fragment --><p>To clean up the environment we run:</p>
 <div class="fragment"><div class="line">kdb rm user:/tests/password</div>
 <div class="line">kdb umount user:/tests</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3534"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3572"></a>
 Configuration File Signatures</h1>
 <p><code>fcrypt</code> also offers the option to sign and verify configuration files, thus protecting the integrity of the configuration values. If <code>sign/key</code> is specified in the backend configuration, <code>fcrypt</code> will forward the key ID for signing the configuration file.</p>
 <p>An example backend configuration is given as follows:</p>
@@ -117,7 +117,7 @@ Configuration File Signatures</h1>
 </div><!-- fragment --><p>To clean up the environment we run:</p>
 <div class="fragment"><div class="line">kdb rm user:/tests/password</div>
 <div class="line">kdb umount user:/tests</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3535"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3573"></a>
 Combining Signatures and Encryption</h2>
 <p>The options <code>sign/key</code> and <code>encrypt/key</code> can be combined together, resulting in configuration files, that are signed and encrypted.</p>
 <p>Mounting <code>test.ini</code> with signatures and encryption enabled can be done like this:</p>
@@ -129,7 +129,7 @@ Combining Signatures and Encryption</h2>
 </div><!-- fragment --><p>To clean up the environment we run:</p>
 <div class="fragment"><div class="line">kdb rm user:/tests/password</div>
 <div class="line">kdb umount user:/tests</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3536"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md3574"></a>
 Configuration Value Encryption/Decryption</h1>
 <p>So far we learned how to encrypt and decrypt entry configuration files. Sometimes we only want to protect a smaller subset of configuration values in a bigger configuration setting. For this reason the <code>crypto</code> plugin was developed.</p>
 <p>The <code>crypto</code> plugin uses <code>libgcrypt</code> as provider of cryptographic functions.</p>
@@ -137,7 +137,7 @@ Configuration Value Encryption/Decryption</h1>
 <p>To follow our example of an encrypted password in <code>test.ini</code>, we first mount the INI-file with the <code>crypto</code> plugin enabled, like this:</p>
 <div class="fragment"><div class="line">sudo kdb mount test.ini user:/tests crypto &quot;crypto/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D&quot; base64 ini</div>
 </div><!-- fragment --><p>We recommend adding the <code>base64</code> plugin to the backend, because <code>crypto</code> will output binary data. Having binary data in configuration files is hardly ever feasible. <code>base64</code> encodes all binary values within a configuration file and transforms them into Base64 strings.</p>
-<h2><a class="anchor" id="autotoc_md3537"></a>
+<h2><a class="anchor" id="autotoc_md3575"></a>
 Marking Keys For Encryption</h2>
 <p>To tell the <code>crypto</code> plugin which Keys it should process, the metakey <code>crypto/encrypt</code> is used. The <code>crypto</code> plugin searches for the metakey <code>crypto/encrypt</code>. If the value is equal to <code>1</code>, the value of the Key will be encrypted.</p>
 <p>We want to protect the password, that is stored under <code>user:/test/password</code>. So we set the metakey as follows:</p>
@@ -150,11 +150,11 @@ Marking Keys For Encryption</h2>
 </div><!-- fragment --><p>You can access the password as usual with <code>kdb get</code>:</p>
 <div class="fragment"><div class="line">kdb get user:/tests/password</div>
 </div><!-- fragment --><p>As a result you get "1234".</p>
-<h2><a class="anchor" id="autotoc_md3538"></a>
+<h2><a class="anchor" id="autotoc_md3576"></a>
 Disabling Encryption</h2>
 <p>You can disable the encryption by setting <code>crypto/encrypt</code> to a value other than <code>1</code>, for example:</p>
 <div class="fragment"><div class="line">kdb meta-set user:/tests/password crypto/encrypt 0</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3539"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3577"></a>
 Complete Example</h2>
 <p>The complete example looks like this:</p>
 <div class="fragment"><div class="line">kdb mount test.ini user:/tests crypto &quot;crypto/key=$(kdb gen-gpg-testkey)&quot; base64 ini</div>

@@ -76,7 +76,7 @@ $(function() {
 <li>The parsing result is guaranteed to be the same because the same parser will be used.</li>
 <li>Other applications can use your configuration as override or as fallback (see below)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3448"></a>
+<h1><a class="anchor" id="autotoc_md3486"></a>
 Elektrify</h1>
 <p>We call the process of making applications aware of other's configuration "to elektrify". This tutorial is suited both for new and existing applications.</p>
 <p>As first step, locate places where configuration is parsed or generated. Afterwards, use Elektra’s data structures instead at these locations. Before we are going to describe how to do this, we will describe some possibilities to keep all advantages your previous configuration system had.</p>
@@ -84,7 +84,7 @@ Elektrify</h1>
 <p>If you do not have the code or want to get rid of it, you can use a variety of <a class="el" href="src_plugins_README_md.html">already implemented plugins</a> to extend the functionality of the configuration system. There are plenty of plugins that parse and generate configuration files in different formats, do syntactic checks, do notifications (e.g. via dbus), and write out events in their log files.</p>
 <p>New applications do not have the burden to stay compatible with the configuration system they had to before. So they will prefer to use more standard plugins and contribute to make them flawless. But they can also use self-written plugins for adding needed behavior or cross-cutting concerns.</p>
 <p>To sum up, if a developer wants to <b>elektrify</b> software, he or she can do that without any need for changes to the outside world regarding the format and semantics of the configuration. In the interconnected world it is a matter of time until other software also wants to access the configuration, and with elektrified software it is possible for every application to do so.</p>
-<h1><a class="anchor" id="autotoc_md3449"></a>
+<h1><a class="anchor" id="autotoc_md3487"></a>
 Get Started</h1>
 <p>As first step in a C-application you need to create an in-memory <code>Key</code>. Such a <code>Key</code> is Elektra’s atomic unit and consists of:</p>
 <ul>
@@ -129,7 +129,7 @@ Get Started</h1>
 <div class="fragment"><div class="line"><a class="code" href="group__kdb.html#ga28e385fd9cb7ccfe0b2f1ed2f62453a1">kdbGet</a>(repo, conf, parentKey);</div>
 <div class="ttc" id="agroup__kdb_html_ga28e385fd9cb7ccfe0b2f1ed2f62453a1"><div class="ttname"><a href="group__kdb.html#ga28e385fd9cb7ccfe0b2f1ed2f62453a1">kdbGet</a></div><div class="ttdeci">int kdbGet(KDB *handle, KeySet *ks, Key *parentKey)</div><div class="ttdoc">Retrieve Keys from a Key database in an atomic and universal way.</div><div class="ttdef"><b>Definition:</b> kdb.c:1191</div></div>
 </div><!-- fragment --><p>Note it is important for applications that the parentKey starts with a slash <code>/</code>. This ensures pulling in all keys of the so-called <a class="el" href="doc_help_elektra-namespaces_md.html">namespace</a>. Such a name cannot physically exist in configuration files, but they are the most important key names to actually work with configuration within applications as we will see when introducing <code>ksLookup</code>.</p>
-<h1><a class="anchor" id="autotoc_md3450"></a>
+<h1><a class="anchor" id="autotoc_md3488"></a>
 Lookup</h1>
 <p>To lookup a key, we use:</p>
 <div class="fragment"><div class="line">Key *k = <a class="code" href="group__keyset.html#gad65d2cdcbb5381194a1688e169af8a83">ksLookupByName</a>(conf,</div>
@@ -152,12 +152,12 @@ Lookup</h1>
 </ul>
 <p>So (larger) applications should not directly use <code>KeySet</code>, but instead use code generation to provide a type-safe frontend.</p>
 <p>For more information about that, continue reading <a href="https://master.libelektra.org/src/tools/pythongen">here</a>.</p>
-<h1><a class="anchor" id="autotoc_md3451"></a>
+<h1><a class="anchor" id="autotoc_md3489"></a>
 Specification</h1>
 <p>Now, we have a fully working configuration system without any hard coded information (such as configuration files). We already gained something. But, we did not discuss how we can actually achieve application integration, the goal of Elektra.</p>
 <p>Elektra 0.8.11 introduces the so called specification for the application's configuration, located below its own <a class="el" href="doc_help_elektra-namespaces_md.html">namespace</a> <code>spec</code>. The specification itself also consists of (meta) key-value pairs.</p>
 <p>Keys in <code>spec</code> allow us to specify which keys the application reads, which fallback they might have and which is the default value using metadata.</p>
-<h2><a class="anchor" id="autotoc_md3452"></a>
+<h2><a class="anchor" id="autotoc_md3490"></a>
 Links</h2>
 <p>The implementation of links are in <code>ksLookup</code>. When using cascading keys (those starting with <code>/</code>), the following features are now available (in the metadata of respective <code>spec</code>-keys):</p>
 <ul>
@@ -180,7 +180,7 @@ Links</h2>
 </div><!-- fragment --><p>Voila, we have done a system integration between <code>myapp</code> and <code>otherapp</code>!</p>
 <p>Note that the fallback, override and cascading works on <em>key level</em>, and not like most other systems have implemented, on configuration <em>file level</em>.</p>
 <p>To make this work within your application make sure to always call <code>ksLookup</code> before using a value from Elektra.</p>
-<h2><a class="anchor" id="autotoc_md3453"></a>
+<h2><a class="anchor" id="autotoc_md3491"></a>
 Specfiles</h2>
 <p>We call the files, that contain a complete schema for configuration below a specific path in form of metadata, <em>Specfiles</em>.</p>
 <p>Particularly a <em>Specfile</em> contains metadata that defines</p>
@@ -207,10 +207,10 @@ Specfiles</h2>
 <div class="fragment"><div class="line">kdb spec-mount /sw/org/myapp/#0/current</div>
 </div><!-- fragment --><p>Then the configuration of our application will be in my-config-file.ini (because of <code>mountpoint</code> in the specification) and it will use the INI format (because of <code>infos/plugins</code> in the specification). <code>section/subsection/key</code> contains the specification of what we already specified imperatively before.</p>
 <p>For a description which metadata is available, have a look in <a href="/home/jenkins/workspace/libelektra-release/doc/METADATA.ini">METADATA.ini</a>.</p>
-<h1><a class="anchor" id="autotoc_md3454"></a>
+<h1><a class="anchor" id="autotoc_md3492"></a>
 Conclusion</h1>
 <p>Elektra does not hard code any configuration data in your application. Using the <code>default</code> specification, we even can startup applications without any configuration file <em>at all</em> and still do not have anything hard coded in the applications binary. Furthermore, by using cascading keys for <code><a class="el" href="group__kdb.html#ga28e385fd9cb7ccfe0b2f1ed2f62453a1" title="Retrieve Keys from a Key database in an atomic and universal way.">kdbGet()</a></code> and <code><a class="el" href="group__keyset.html#ga60f1ddcf23272f2b29b90e92ebe9b56f" title="Look for a Key contained in ks that matches the name of the key.">ksLookup()</a></code> Elektra gives you the possibility to specify how to retrieve configuration data. In this specification you can define to consider or prefer configuration data from other applications or shared places. Doing so, we can achieve configuration integration.</p>
-<h1><a class="anchor" id="autotoc_md3455"></a>
+<h1><a class="anchor" id="autotoc_md3493"></a>
 See Also</h1>
 <ul>
 <li><a class="el" href="doc_tutorials_validation_md.html">how to validate configuration with the specification</a> </li>

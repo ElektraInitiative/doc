@@ -1,6 +1,6 @@
 \label{doc_tutorials_code-generator_md_md_doc_tutorials_code_generator}%
 \Hypertarget{doc_tutorials_code-generator_md_md_doc_tutorials_code_generator}%
- This guide focuses on writing new templates for the code-\/generator. For using the code generator take a look at the man-\/page \mbox{\hyperlink{doc_help_kdb-gen_md}{\`{}kdb-\/gen(1)\`{}}}. For specifically using the code-\/generator for the high-\/level API you may want to follow \mbox{\hyperlink{doc_tutorials_highlevel_md}{this guide}}.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3480}{}\doxysection{Basics}\label{doc_tutorials_code-generator_md_autotoc_md3480}
+ This guide focuses on writing new templates for the code-\/generator. For using the code generator take a look at the man-\/page \mbox{\hyperlink{doc_help_kdb-gen_md}{\`{}kdb-\/gen(1)\`{}}}. For specifically using the code-\/generator for the high-\/level API you may want to follow \mbox{\hyperlink{doc_tutorials_highlevel_md}{this guide}}.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3518}{}\doxysection{Basics}\label{doc_tutorials_code-generator_md_autotoc_md3518}
 The underlying framework of {\ttfamily kdb gen} is quite flexible. It is based on the \href{https://mustache.github.io/}{\texttt{ mustache templating system}}. Concretely we use \href{https://github.com/kainjow/Mustache}{\texttt{ this C++ library}} as a basis.
 
 To distinguish the user facing parts of {\ttfamily kdb gen} from the internal layer interfacing {\ttfamily kdb gen} to the mustache library, we will call the internal layer the {\itshape framework}.
@@ -20,7 +20,7 @@ First we need to define a few terms\+:
 \item {\itshape part suffix}\+: Parts are identified by there part suffix. This suffix is appended to the template base name to obtain the name of the mustache file corresponding to the part. Similarly it is appended to the output name to obtain the output file for this part. The empty string {\ttfamily \char`\"{}\char`\"{}} is a valid part suffix, although it is only recommend for templates with a single output file.
 \end{DoxyItemize}
 
-All templates consist of two pieces. The set of mustache files (on for each part) and an accompanying C++ class to supply the mustache rendering engine with data from the input keyset.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3481}{}\doxysection{Creating a new template}\label{doc_tutorials_code-generator_md_autotoc_md3481}
+All templates consist of two pieces. The set of mustache files (on for each part) and an accompanying C++ class to supply the mustache rendering engine with data from the input keyset.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3519}{}\doxysection{Creating a new template}\label{doc_tutorials_code-generator_md_autotoc_md3519}
 In this guide we will create a basic template, that generates a single file containing a simple list of all keys in our input keyset. An example output from running {\ttfamily kdb gen} with our to-\/be-\/developed template would be\+:
 
 
@@ -34,7 +34,7 @@ In this guide we will create a basic template, that generates a single file cont
 \end{DoxyCode}
 
 
-As you can see, the result matches that of redirecting the stdout of {\ttfamily kdb ls} into a file.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3482}{}\doxysubsection{Creating the mustache template}\label{doc_tutorials_code-generator_md_autotoc_md3482}
+As you can see, the result matches that of redirecting the stdout of {\ttfamily kdb ls} into a file.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3520}{}\doxysubsection{Creating the mustache template}\label{doc_tutorials_code-generator_md_autotoc_md3520}
 The first thing we need to create is a mustache template. You will need (at least) one template file for each output file. If you make use of partials (see \href{\#using-partials}{\texttt{ below}}), you of course have to write multiple files.
 
 All template files must be located in the \`{}src/tools/kdb/gen/templates\`{} folder and must be named according to the scheme {\ttfamily $<$template base name$>$.$<$part suffix$>$.mustache}.
@@ -54,7 +54,7 @@ Note\+: we will not go into detail on how mustache templates work, for more info
 
 Our CMake script will collect all {\ttfamily .mustache} files in {\ttfamily src/tools/kdb/gen/templates} into a header containing a {\ttfamily static const char $\ast$} field for each file and a {\ttfamily std\+::unordered\+\_\+map} containing references to all the fields. The naming scheme is needed so that the other C++ code can access the files contents via the map. This approach was chosen to allow executing the code-\/generator without first running the install script.
 
-When you create a new {\ttfamily .mustache} file (either for a new part or a new partial), you need to invoke {\ttfamily cmake} again, so that all the files are collected.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3483}{}\doxysubsection{Creating the supporting class}\label{doc_tutorials_code-generator_md_autotoc_md3483}
+When you create a new {\ttfamily .mustache} file (either for a new part or a new partial), you need to invoke {\ttfamily cmake} again, so that all the files are collected.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3521}{}\doxysubsection{Creating the supporting class}\label{doc_tutorials_code-generator_md_autotoc_md3521}
 Since we need to some way of supplying data to our template, we have to create a subclass of {\ttfamily Gen\+Template}.
 
 First we create a new directory for our template class in {\ttfamily src/tools/kdb/gen}, for our template it should be {\ttfamily src/tools/kdb/gen/example}. In this directory we then create {\ttfamily example.\+cpp} and {\ttfamily example.\+hpp}. If your template class becomes sufficiently complex, it may make sense to split the code into multiple classes and into multiple files, for this reason we recommend creating a new directory for each template. The CMake script will also automatically recognize your files, if you put them directly into {\ttfamily src/tools/kdb/gen}, but using additional subdirectories (beyond the one matching your template name) like {\ttfamily src/tools/kdb/gen/example/src} would require modifying \`{}src/tools/kdb/\+CMake\+Lists.txt\`{}.
@@ -132,7 +132,7 @@ For our example we will use this implementation\+:
 
 The framework will invoke {\ttfamily get\+Template\+Data} for each part of our template with the {\ttfamily output\+Name} and {\ttfamily parent\+Key} as given on the command line, as well as the current part suffix ({\ttfamily part}) and the input keyset {\ttfamily ks}. All keys of the input keyset are guaranteed to be below {\ttfamily parent\+Key}.
 
-The code above simply iterates over the input Key\+Set and for each key creates an object {\ttfamily \{ name\+: \$key\+Name \}}. All those objects are collected into a list, which is then stored under the key {\ttfamily keys} in the global object.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3484}{}\doxysubsection{Adding the class to $<$tt$>$\+Gen\+Template\+List$<$/tt$>$}\label{doc_tutorials_code-generator_md_autotoc_md3484}
+The code above simply iterates over the input Key\+Set and for each key creates an object {\ttfamily \{ name\+: \$key\+Name \}}. All those objects are collected into a list, which is then stored under the key {\ttfamily keys} in the global object.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3522}{}\doxysubsection{Adding the class to $<$tt$>$\+Gen\+Template\+List$<$/tt$>$}\label{doc_tutorials_code-generator_md_autotoc_md3522}
 To make the framework aware of our class (and by extension our template), we have to then add it to {\ttfamily Gen\+Template\+List}. This is simply done by adding a line to the implementation of {\ttfamily Gen\+Template\+List\+::\+Gen\+Template\+List ()} in \href{/home/jenkins/workspace/libelektra-release/src/tools/kdb/gen/template.cpp}{\texttt{ {\ttfamily template.\+cpp}}}.
 
 For our example that is\+:
@@ -153,7 +153,7 @@ You also need to add the appropriate {\ttfamily \#include} at the top of the fil
 \DoxyCodeLine{\textcolor{preprocessor}{\#include "{}example/example.hpp"{}}}
 
 \end{DoxyCode}
-\hypertarget{doc_tutorials_code-generator_md_autotoc_md3485}{}\doxysection{Using the new template}\label{doc_tutorials_code-generator_md_autotoc_md3485}
+\hypertarget{doc_tutorials_code-generator_md_autotoc_md3523}{}\doxysection{Using the new template}\label{doc_tutorials_code-generator_md_autotoc_md3523}
 Now you should be able to use the new template by running (after compiling/installing Elektra again)\+:
 
 
@@ -163,9 +163,9 @@ Now you should be able to use the new template by running (after compiling/insta
 \end{DoxyCode}
 
 
-This should produce the file {\ttfamily userkeys.\+txt}. The file should be the same, as if we had called {\ttfamily kdb ls user\+:/ $>$ userkeys.\+txt}.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3486}{}\doxysection{Advanced concepts}\label{doc_tutorials_code-generator_md_autotoc_md3486}
-Lastly, we will discuss a few more advanced concepts.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3487}{}\doxysubsection{Switching delimiters}\label{doc_tutorials_code-generator_md_autotoc_md3487}
-Switching the delimiters is fully supported and already in use in the high-\/level API template to allow for easier formatting.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3488}{}\doxysubsection{Parameters}\label{doc_tutorials_code-generator_md_autotoc_md3488}
+This should produce the file {\ttfamily userkeys.\+txt}. The file should be the same, as if we had called {\ttfamily kdb ls user\+:/ $>$ userkeys.\+txt}.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3524}{}\doxysection{Advanced concepts}\label{doc_tutorials_code-generator_md_autotoc_md3524}
+Lastly, we will discuss a few more advanced concepts.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3525}{}\doxysubsection{Switching delimiters}\label{doc_tutorials_code-generator_md_autotoc_md3525}
+Switching the delimiters is fully supported and already in use in the high-\/level API template to allow for easier formatting.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3526}{}\doxysubsection{Parameters}\label{doc_tutorials_code-generator_md_autotoc_md3526}
 Sometimes you want to incorporate user input beyond the contents of the input keyset into the code-\/generation. For example, if you generate a web page, you may need to now where it is going to be hosted, so that you can generate correct links. Another example would be letting the user choose the name of a generated function, when generating C code.
 
 The first case would be required parameter. Without the domain name, we cannot generate the links. The second example meanwhile may be an optional parameter. We could just use a sensible default name for the function, since it doesn\textquotesingle{}t matter much which function the user will call in their own code.
@@ -194,7 +194,7 @@ Since {\ttfamily function\+\_\+name} is optional in our other example (called {\
 \DoxyCodeLine{kdb gen ccode <parentKey> <outputName> function\_name=foo}
 
 \end{DoxyCode}
-\hypertarget{doc_tutorials_code-generator_md_autotoc_md3489}{}\doxysubsection{Using partials}\label{doc_tutorials_code-generator_md_autotoc_md3489}
+\hypertarget{doc_tutorials_code-generator_md_autotoc_md3527}{}\doxysubsection{Using partials}\label{doc_tutorials_code-generator_md_autotoc_md3527}
 The use of partials is bit more involved than in other mustache frameworks. All the partial files for template {\ttfamily X} must be placed in the folder {\ttfamily src/tools/kdb/gen/templates/X} and must use the file extension {\ttfamily .mustache}. Apart from the the filename can be chosen arbitrarily.
 
 To use the partial named {\ttfamily Y} (i.\+e. the file {\ttfamily src/tools/kdb/gen/templates/\+X/\+Y.\+mustache}) you must use this mustache command\+:
@@ -206,11 +206,11 @@ To use the partial named {\ttfamily Y} (i.\+e. the file {\ttfamily src/tools/kdb
 \end{DoxyCode}
 
 
-The prefix {\ttfamily partial.} is required by the framework, if you omit it, there will be an error.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3490}{}\doxysubsection{Custom escape functions}\label{doc_tutorials_code-generator_md_autotoc_md3490}
-By default mustache escapes values for use in HTML (unless {\ttfamily \{\{\{ name \}\}\}} or {\ttfamily \{\{\& name \}\}} is used). Since most of our templates are not HTML, the escape function can be customised. You simply have to override {\ttfamily Gen\+Template\+::escape\+Function}. For an example see {\ttfamily Highlevel\+Gen\+Template\+::escape\+Function} in \href{/home/jenkins/workspace/libelektra-release/src/tools/kdb/gen/highlevel/highlevel.hpp}{\texttt{ {\ttfamily src/tools/kdb/gen/highlevel/highlevel.\+hpp}}}, it is designed for C code instead of HTML.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3491}{}\doxysubsection{Dynamic list of parts}\label{doc_tutorials_code-generator_md_autotoc_md3491}
+The prefix {\ttfamily partial.} is required by the framework, if you omit it, there will be an error.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3528}{}\doxysubsection{Custom escape functions}\label{doc_tutorials_code-generator_md_autotoc_md3528}
+By default mustache escapes values for use in HTML (unless {\ttfamily \{\{\{ name \}\}\}} or {\ttfamily \{\{\& name \}\}} is used). Since most of our templates are not HTML, the escape function can be customised. You simply have to override {\ttfamily Gen\+Template\+::escape\+Function}. For an example see {\ttfamily Highlevel\+Gen\+Template\+::escape\+Function} in \href{/home/jenkins/workspace/libelektra-release/src/tools/kdb/gen/highlevel/highlevel.hpp}{\texttt{ {\ttfamily src/tools/kdb/gen/highlevel/highlevel.\+hpp}}}, it is designed for C code instead of HTML.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3529}{}\doxysubsection{Dynamic list of parts}\label{doc_tutorials_code-generator_md_autotoc_md3529}
 For some templates it might be necessary to switch which parts are produced based on the given parameters. This can be done by overriding {\ttfamily get\+Parts()} in your template class.
 
-To achieve a dynamic parts list, simply pass {\itshape all possible} parts in the constructor invocation. Then in your override of {\ttfamily get\+Parts()} you simply inspect the given parameters and remove any parts that should not be generated.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3492}{}\doxysubsection{Non-\/\+Mustache parts}\label{doc_tutorials_code-generator_md_autotoc_md3492}
+To achieve a dynamic parts list, simply pass {\itshape all possible} parts in the constructor invocation. Then in your override of {\ttfamily get\+Parts()} you simply inspect the given parameters and remove any parts that should not be generated.\hypertarget{doc_tutorials_code-generator_md_autotoc_md3530}{}\doxysubsection{Non-\/\+Mustache parts}\label{doc_tutorials_code-generator_md_autotoc_md3530}
 It may also be useful to generate some output files without a mustache template. You could of course just write a template that renders as its string input data, but that won\textquotesingle{}t work for binary files.
 
 The proper way to achieve non-\/mustache-\/based parts is to inspect the {\ttfamily part} value passed to {\ttfamily get\+Template\+Data()}. When you detect a non-\/mustache-\/based part you write to the file named {\ttfamily output\+Name + part} and once you are done you return {\ttfamily kainjow\+::mustache\+::data(false)}. This tells the render function to not invoke mustache for this part and instead continue with the next part. 
