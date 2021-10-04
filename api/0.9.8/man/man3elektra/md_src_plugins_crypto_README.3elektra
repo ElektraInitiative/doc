@@ -1,0 +1,189 @@
+.TH "md_src_plugins_crypto_README" 3elektra "Mon Oct 4 2021" "Version 0.9.8" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_crypto_README \- Plugin: crypto 
+
+.IP "\(bu" 2
+infos = Information about crypto plugin is in keys below
+.IP "\(bu" 2
+infos/author = Peter Nirschl peter.nirschl@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = crypto
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = unittest configurable memleak unfinished discouraged
+.IP "\(bu" 2
+infos/metadata = crypto/encrypt
+.IP "\(bu" 2
+infos/description = Cryptographic operations
+.PP
+.SH "Introduction"
+.PP
+This plugin is a filter plugin allowing Elektra to encrypt values before they are persisted and to decrypt values after they have been read from a backend\&.
+.PP
+The idea is to provide protection of sensible values before they are persisted\&. This means the value of a key needs to be encrypted before it is written to a file or a database\&. It also needs to be decrypted whenever an admissible access (read) is being performed\&.
+.PP
+The users of Elektra should not be bothered too much with the internals of the cryptographic operations\&. Also the cryptographic keys must never be exposed to the outside of the crypto module\&.
+.PP
+The crypto plugin uses libgcrypt as provider of cryptographic operations\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-crypto\fP\&.
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibgcrypt20-dev\fP or \fClibgcrypt-devel\fP
+.PP
+.SS "GnuPG (GPG)"
+GPG is a run-time dependency of the crypto plugin\&. Either the \fCgpg\fP or the \fCgpg2\fP binary must be installed when using the plugin\&. Note that \fCgpg2\fP will be preferred if both versions are available\&. The GPG binary can be configured in the plugin configuration as \fC/gpg/bin\fP (see \fIGPG Configuration\fP below)\&. If no such configuration is provided, the plugin will look at the PATH environment variable to find the GPG binaries\&.
+.SH "How to compile"
+.PP
+Add 'crypto' to the \fCPLUGINS\fP variable in \fCCMakeCache\&.txt\fP and re-run \fCcmake\fP\&.
+.PP
+An example \fCCMakeCache\&.txt\fP may contain the following variable:
+.PP
+.PP
+.nf
+PLUGINS=crypto
+.fi
+.PP
+.SS "macOS"
+The crypto plugin works under macOS Sierra (Version 10\&.12\&.3 (16D32))\&.
+.PP
+To set up the build environment on macOS Sierra we recommend using \fCHomebrew\fP\&. Follow these steps to get everything up and running:
+.PP
+.PP
+.nf
+brew install libgcrypt pkg-config cmake
+.fi
+.PP
+.PP
+Also a GPG installation is required\&. The \fCGPG Tools\fP work fine for us\&.
+.SH "Restrictions"
+.PP
+At the moment the plugin will only run on Unix/Linux-like systems, that provide implementations for \fCfork ()\fP and \fCexecv ()\fP\&.
+.SH "Examples"
+.PP
+To mount a backend with the crypto plugin that uses the GPG key 9CCC3B514E196C6308CCD230666260C14A525406, use:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf user:/t crypto "crypto/key=9CCC3B514E196C6308CCD230666260C14A525406"
+.fi
+.PP
+.PP
+Now you can specify a key \fCuser:/t/a\fP and protect its content by using:
+.PP
+.PP
+.nf
+kdb set user:/t/a
+kdb meta-set user:/t/a crypto/encrypt 1
+kdb set user:/t/a "secret"
+.fi
+.PP
+.PP
+The value of \fCuser:/t/a\fP will be stored encrypted\&. But you can still access the original value using \fCkdb get\fP:
+.PP
+.PP
+.nf
+kdb get user:/t/a
+.fi
+.PP
+.SH "Configuration"
+.PP
+.SS "GPG Configuration"
+The path to the gpg binary can be specified in
+.PP
+.PP
+.nf
+/gpg/bin
+.fi
+.PP
+.PP
+The GPG recipient keys can be specified as \fCencrypt/key\fP directly\&. If you want to use more than one key, just enumerate like:
+.PP
+.PP
+.nf
+encrypt/key/#0
+encrypt/key/#1
+.fi
+.PP
+.PP
+If more than one key is defined, every owner of the corresponding private key can decrypt the values of the backend\&. This might be useful if applications run with their own user but the administrator has to update the configuration\&. The administrator then only needs the public key of the application user in her keyring, set the values and the application will be able to decrypt the values\&.
+.PP
+If you are not sure which keys are available to you, the \fCkdb\fP program will give you suggestions in the error description\&. For example you can type:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf user:/t crypto
+.fi
+.PP
+.PP
+In the error description you should see something like:
+.PP
+.PP
+.nf
+The command \&./bin/kdb mount terminated unsuccessfully with the info:
+The provided plugin configuration is not valid!
+Errors/Warnings during the check were:
+Sorry, module crypto issued the error C01310:
+Failed to create handle\&. Reason: Missing GPG key (specified as encrypt/key) in plugin configuration\&. Available key IDs are: B815F1334CF4F830187A784256CFA3A5C54DF8E4,847378ABCF0A552B48082A80C52E8E92F785163F
+Please report the issue at https://issues\&.libelektra\&.org/
+.fi
+.PP
+.PP
+This means that the following keys are available:
+.PP
+.IP "\(bu" 2
+B815F1334CF4F830187A784256CFA3A5C54DF8E4
+.IP "\(bu" 2
+847378ABCF0A552B48082A80C52E8E92F785163F
+.PP
+.PP
+So the full mount command could look like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf user:/t crypto "crypto/key=847378ABCF0A552B48082A80C52E8E92F785163F"
+.fi
+.PP
+.SS "Cryptographic Operations"
+Please note that these options are meant for experts only\&. If you do not provide these configuration options, secure defaults are being used\&.
+.PP
+The length of the master password that protects all the other keys can be set in:
+.PP
+.PP
+.nf
+/crypto/masterpasswordlength
+.fi
+.PP
+.PP
+The number of iterations that are to be performed in the PBKDF2 call can be set in:
+.PP
+.PP
+.nf
+/crypto/iterations
+.fi
+.PP
+.SS "Library Shutdown"
+The following key must be set to \fC'1'\fP within the plugin configuration, if the plugin should shut down the crypto library:
+.PP
+.PP
+.nf
+/shutdown
+.fi
+.PP
+.PP
+Per default shutdown is disabled to prevent applications like the qt-gui from crashing\&. Shutdown is enabled in the unit tests to prevent memory leaks\&.
+.SH "Technical Details"
+.PP
+.SS "Ciphers and Mode of Operation"
+The crypto plugin uses the Advanced Encryption Standard (AES) in Cipher Block Chaining Mode (CBC) with a key size of 256 bit\&. 

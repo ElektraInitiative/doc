@@ -1,0 +1,164 @@
+.TH "md_src_plugins_jni_README" 3elektra "Mon Oct 4 2021" "Version 0.9.8" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_jni_README \- Plugin: jni 
+
+.IP "\(bu" 2
+infos = Information about the jni plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest configurable global memleak experimental
+.IP "\(bu" 2
+infos/description = generic Java plugin
+.PP
+.SH "Introduction"
+.PP
+Allows you to write plugins in Java\&.
+.PP
+This plugin needs the JNA bindings to work\&. Furthermore, it requires Java 11 or later\&.
+.PP
+While the plugin internally uses JNI (thus the name), the Java binding for your Java plugin may use something different, e\&.g\&. JNA\&. The requirements for the Java bindings are:
+.PP
+.IP "\(bu" 2
+needs to have the classes \fCelektra/Key\fP and \fCelektra/KeySet\fP with
+.IP "  \(bu" 4
+a constructor that takes a C-Pointer as long (J)
+.IP "  \(bu" 4
+a method 'release' that gives up ownership (set internal pointer to NULL)
+.PP
+
+.PP
+.PP
+The Java plugin itself needs to have the following methods:
+.PP
+.IP "\(bu" 2
+constructor without arguments (i\&.e\&. default constructor)
+.IP "\(bu" 2
+open with argument \fCelektra/KeySet\fP (the plugin's conf) and \fCelektra/Key\fP
+.IP "\(bu" 2
+close with argument \fCelektra/Key\fP
+.IP "\(bu" 2
+get with arguments \fCelektra/KeySet\fP and \fCelektra/Key\fP
+.IP "\(bu" 2
+set with arguments \fCelektra/KeySet\fP and \fCelektra/Key\fP
+.IP "\(bu" 2
+error with arguments \fCelektra/KeySet\fP and \fCelektra/Key\fP
+.PP
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-java\fP\&. To actually mount plugins, you will additionally need \fCjava-elektra\fP\&. Furthermore, at least JNA version 5\&.5 is required\&.
+.SH "Plugin Config"
+.PP
+You need to pass :
+.PP
+.IP "\(bu" 2
+classname the classname to use as plugin, e\&.g\&. \fCelektra/plugin/Echo\fP
+.IP "\(bu" 2
+classpath the classpath where to find JNA, the package elektra and other classes needed
+.PP
+.PP
+Additionally, you can set:
+.PP
+.IP "\(bu" 2
+option allows you to pass an option to the jvm, default: \fC-verbose:gc,class,jni\fP
+.IP "\(bu" 2
+ignore allows you to ignore broken options, default: \fCfalse\fP
+.IP "\(bu" 2
+print allows you to print java exceptions for debugging purposes
+.PP
+.PP
+If Elektra and a recent jna\&.jar (adapt path below) is already installed, following should output some debug logs and this README:
+.PP
+.PP
+.nf
+kdb plugin-info -c classname=org/libelektra/plugin/Echo,classpath=\&.:/usr/share/java/jna\&.jar:/usr/share/java/libelektra\&.jar,print= jni
+.fi
+.PP
+.PP
+.RS 4
+Note: The Java implementation of the plugin can request any other additional plugin configuration, read about it in the end of the output of plugin-info\&. Plugins dynamically append text after the end of this page\&. 
+.RE
+.PP
+You can also mount plugins (see \fCopen issues\fP):
+.PP
+.PP
+.nf
+kdb mount -c classname=org/libelektra/plugin/PropertiesStorage,classpath=\&.:/usr/share/java/jna\&.jar:/usr/share/java/libelektra\&.jar,print= file\&.properties /jni jni classname=org/libelektra/plugin/PropertiesStorage,classpath=\&.:/usr/share/java/jna\&.jar:/usr/share/java/libelektra\&.jar,print=
+.fi
+.PP
+.SH "Compiling"
+.PP
+If you do not want to use pre-compiled versions, you can compile the plugin yourself\&. Start by enabling the plugin using (\fCALL;-EXPERIMENTAL\fP is default):
+.PP
+.PP
+.nf
+cmake -DPLUGINS="ALL;-EXPERIMENTAL;jni" /path/to/libelektra
+.fi
+.PP
+.SS "on Debian 10 / Ubuntu 20\&.04 LTS"
+Install package \fCopenjdk-11-jdk\fP and make sure that no older Java versions are present in \fC/usr/lib/jvm\fP\&.
+.PP
+If you have manually installed Java, you might get errors related to \fCCould NOT find JNI\fP during \fCcmake\fP\&. In this case, please consider setting your \fCJAVA_HOME\fP environment variable accordingly\&.
+.SS "on macOS"
+Older macOS include an old apple specific version of Java, based on 1\&.6\&. However, for the jni plugin JDK version 11 is required, so either the openjdk or the oracle jdk has to be installed\&.
+.PP
+For example, install oracle's jdk11 via their provided installer\&. After that, you have to set the JAVA_HOME environment variable to the folder where the jdk is installed, usually like
+.PP
+.PP
+.nf
+export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-11\&.jdk/Contents/Home/"
+.fi
+.PP
+.PP
+As macOS handles linked libraries differently, there is no ldconfig command\&. Instead you can export an environment variable to tell Elektra the location of Java's dynamic libraries\&.
+.PP
+.PP
+.nf
+export DYLD_FALLBACK_LIBRARY_PATH="/Library/Java/JavaVirtualMachines/jdk-11\&.jdk/Contents/Home/jre/lib:/Library/Java/JavaVirtualMachines/jdk-11\&.jdk/Contents/Home/jre/lib/server/"
+.fi
+.PP
+.PP
+Afterwards, the jni plugin should be included in the build and compile successfully\&.
+.SS "Running the JNI test"
+Make sure to run the test after compiling the plugin\&. Change to your Elektra's build folder and execute the following command for running the JNI plugin test and verify it works:
+.PP
+.PP
+.nf
+ctest -V -R testmod_jni
+.fi
+.PP
+.SS "Troubleshooting"
+If it should still not find the correct jni version, or says the jni version is not 11, then it most likely still searches in the wrong directory for the jni header file\&. It has been experienced that if the project has been built already without this environment variable set, the Java location is cached\&. As a result, it will be resolved wrong in future builds, even though the environment variable is set\&. To resolve this, it should be enough to delete the CMakeCache\&.txt file in the build directory and reconfigure the build\&.
+.SH "Development"
+.PP
+To know how the methods of your class are called, use:
+.PP
+.PP
+.nf
+javap -s YourClass
+.fi
+.PP
+.PP
+Also explained \fChere\fP
+.PP
+\fCJNI Functions\fP \fCInvocation\fP
+.SH "Open Issues"
+.PP
+.IP "\(bu" 2
+Only a single Java plugin can be loaded
+.IP "\(bu" 2
+Java plugins cannot be used from an Java application
+.IP "\(bu" 2
+If this plugin is enabled, valgrind detects memory problems even if the plugin is not mounted\&. 
+.PP
+

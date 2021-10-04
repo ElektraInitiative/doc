@@ -1,0 +1,75 @@
+\hypertarget{hash_8c}{}\doxysection{hash.\+c File Reference}
+\label{hash_8c}\index{hash.c@{hash.c}}
+
+
+Provides functions to hash Elektra data structures.  
+
+
+{\ttfamily \#include $<$kdb.\+h$>$}\newline
+{\ttfamily \#include $<$kdbease.\+h$>$}\newline
+{\ttfamily \#include $<$kdberrors.\+h$>$}\newline
+{\ttfamily \#include $<$kdbtypes.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}sha-\/256.\+h\char`\"{}}\newline
+Include dependency graph for hash.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{hash_8c__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+kdb\+\_\+boolean\+\_\+t \mbox{\hyperlink{hash_8c_afa109ca991d46575e5ab906bc75a5519}{calculate\+Specification\+Token}} (char hash\+\_\+string\mbox{[}65\mbox{]}, Key\+Set $\ast$ks, Key $\ast$parent\+Key)
+\begin{DoxyCompactList}\small\item\em Calculate a specification token for the Key\+Set of an application. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Provides functions to hash Elektra data structures. 
+
+\begin{DoxyCopyright}{Copyright}
+BSD License (see LICENSE.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{hash_8c_afa109ca991d46575e5ab906bc75a5519}\label{hash_8c_afa109ca991d46575e5ab906bc75a5519}} 
+\index{hash.c@{hash.c}!calculateSpecificationToken@{calculateSpecificationToken}}
+\index{calculateSpecificationToken@{calculateSpecificationToken}!hash.c@{hash.c}}
+\doxysubsubsection{\texorpdfstring{calculateSpecificationToken()}{calculateSpecificationToken()}}
+{\footnotesize\ttfamily kdb\+\_\+boolean\+\_\+t calculate\+Specification\+Token (\begin{DoxyParamCaption}\item[{char}]{hash\+\_\+string\mbox{[}65\mbox{]},  }\item[{Key\+Set $\ast$}]{ks,  }\item[{Key $\ast$}]{parent\+Key }\end{DoxyParamCaption})}
+
+
+
+Calculate a specification token for the Key\+Set of an application. 
+
+The Key\+Set of an application is identified as all keys below the applications root key.
+
+\begin{DoxyPrecond}{Precondition}
+The parent\+Key must have the correct namespace. E.\+g. If only keys from the spec\+:/ should be considered for the token calculation, pass a key with KEY\+\_\+\+NS\+\_\+\+SPEC.
+\end{DoxyPrecond}
+\begin{DoxyNote}{Note}
+Array parent key\textquotesingle{}s (e.\+g., {\ttfamily /format/\#}) are ignored for the token. See inline documentation below for rationale.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em hash\+\_\+string} & A string. After successful execution this will contain the hash as hex-\/string. \\
+\hline
+{\em ks} & The Key\+Set for the application. \\
+\hline
+{\em parent\+Key} & The Key below which all the relevant keys are. Keys that are not below {\ttfamily parent\+Key} are ignored. The key\textquotesingle{}s namespace is important (see preconditions) \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em false} & If an error occurred. \\
+\hline
+{\em true} & If the computation was successful. \\
+\hline
+\end{DoxyRetVals}
+Loop through all keys relevant for token calculation.
+
+Ignore array parents for token calculation. Rationale\+: There is a bug in the spec plugin that is triggered on changing the size of an array. It leads to array parents vanishing from the spec namespace and thus a different token. See \href{https://github.com/ElektraInitiative/libelektra/issues/4061}{\texttt{ https\+://github.\+com/\+Elektra\+Initiative/libelektra/issues/4061}}

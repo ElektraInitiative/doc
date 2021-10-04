@@ -1,0 +1,107 @@
+.TH "md_src_plugins_blacklist_README" 3elektra "Mon Oct 4 2021" "Version 0.9.8" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_blacklist_README \- Plugin: blacklist 
+
+.IP "\(bu" 2
+infos = Information about the blacklist plugin is in keys below
+.IP "\(bu" 2
+infos/author = Robert Sowula robert@sowula.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep
+.IP "\(bu" 2
+infos/metadata = check/blacklist/#
+.IP "\(bu" 2
+infos/description = blacklisting key values
+.PP
+.SH "Introduction"
+.PP
+This plugin is a blacklist plugin that blocks the assignment of specific values to a key\&.
+.SH "Usage"
+.PP
+The plugin looks for the metadata array \fCcheck/blacklist/#\fP and reject all matching key values\&.
+.PP
+For example:
+.PP
+.PP
+.nf
+check/blacklist = #2
+check/blacklist/#0 = water
+check/blacklist/#1 = fire
+check/blacklist/#2 = air
+.fi
+.PP
+.PP
+All values in the array will be rejected\&. The array indices don't have to be continuous, using e\&.g\&. only \fC#1\fP, \fC#2\fP and \fC#4\fP is also allowed\&. Just make sure \fCcheck/blacklist\fP is set to the largest index in the array\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-extra\fP\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+sudo kdb mount blacklist\&.ecf /tests/blacklist blacklist
+
+# valid initial value + setup valid blacklist list
+kdb set user:/tests/blacklist ""
+kdb set user:/tests/blacklist/value water
+kdb meta-set spec:/tests/blacklist/value check/blacklist '#2'
+kdb meta-set spec:/tests/blacklist/value check/blacklist/#0 fire
+kdb meta-set spec:/tests/blacklist/value check/blacklist/#1 air
+kdb meta-set spec:/tests/blacklist/value check/blacklist/#2 cold/water
+
+# should succeed
+kdb set user:/tests/blacklist/value earth
+
+# should fail
+kdb set user:/tests/blacklist/value fire
+# RET:5
+# ERROR:C03200
+
+# should fail
+kdb set user:/tests/blacklist/value air
+# RET:5
+# ERROR:C03200
+
+# should fail
+kdb set user:/tests/blacklist/value cold/water
+# RET:5
+# ERROR:C03200
+.fi
+.PP
+.PP
+It is also possible to blacklist empty values:
+.PP
+.PP
+.nf
+kdb set user:/tests/blacklist/empty water
+kdb meta-set spec:/tests/blacklist/empty check/blacklist '#0'
+kdb meta-set spec:/tests/blacklist/empty check/blacklist/#0 ''
+
+# should succeed
+kdb set user:/tests/blacklist/empty earth
+
+# should fail
+kdb set user:/tests/blacklist/empty ''
+# RET:5
+# ERROR:C03200
+
+# Undo changes
+kdb rm -r spec:/tests/blacklist
+kdb rm -r user:/tests/blacklist || kdb rm -r system:/tests/blacklist
+# sudo kdb umount spec:/tests/blacklist
+sudo kdb umount /tests/blacklist
+.fi
+.PP
+ 

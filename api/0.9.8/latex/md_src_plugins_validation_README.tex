@@ -1,0 +1,26 @@
+
+\begin{DoxyItemize}
+\item infos = Information about validation plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = check
+\item infos/needs =
+\item infos/placements = presetstorage
+\item infos/status = maintained unittest nodep libc
+\item infos/metadata = check/validation check/validation/message check/validation/ignorecase check/validation/match check/validation/invert check/validation/type
+\item infos/description = Validates key values using regular expressions
+\end{DoxyItemize}\hypertarget{md_src_plugins_validation_README_src_plugins_validation_README_md}{}\doxysection{Introduction}\label{md_src_plugins_validation_README_src_plugins_validation_README_md}
+This plugin is a check plugin which checks string values of Keys using regular expressions.\hypertarget{md_src_plugins_validation_README_autotoc_md577}{}\doxysection{Usage}\label{md_src_plugins_validation_README_autotoc_md577}
+The validation plugin looks for two metakeys. {\ttfamily check/validation} gives a regular expression to check against. If it is present, {\ttfamily check/validation/message} may contain an optional humanly readable message that will be passed with the error information.
+
+Important\+: To validate against the whole string, you have to start the regular expression with {\ttfamily $^\wedge$} and end it with {\ttfamily \$}. Otherwise expressions that e.\+g. match the empty string, always return true. Alternatively, you can use {\ttfamily check/validation/match=LINE}.\hypertarget{md_src_plugins_validation_README_autotoc_md578}{}\doxysection{Configuration}\label{md_src_plugins_validation_README_autotoc_md578}
+Metadata can be supplied to configure the validation\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily check/validation/match}\+: You can check against {\ttfamily LINE}, {\ttfamily WORD} or {\ttfamily ANY}
+\item {\ttfamily check/validation/ignorecase}\+: If you want to ignore case.
+\item {\ttfamily check/validation/invert}\+: If you want to invert match.
+\end{DoxyItemize}\hypertarget{md_src_plugins_validation_README_autotoc_md579}{}\doxysection{Implementation}\label{md_src_plugins_validation_README_autotoc_md579}
+The implementation consists of a loop checking for every key if it has the mentioned metakey. The check itself is done by the POSIX regular expression library with the interface {\ttfamily regcomp}, {\ttfamily regexec}, {\ttfamily regerror} and {\ttfamily regfree}. The flag {\ttfamily REG\+\_\+\+EXTENDED} is passed so that the regular expression will be compiled as an extended regular expression. {\ttfamily REG\+\_\+\+NOSUB} gives a better performance and subexpressions cannot be used in this setup anyway.\hypertarget{md_src_plugins_validation_README_autotoc_md580}{}\doxysection{Exported Methods}\label{md_src_plugins_validation_README_autotoc_md580}
+The plugin also exports the function {\ttfamily ks\+Lookup\+RE()} that does a lookup in a Key\+Set using a regular expression. It starts from the current cursor of the Key\+Set and stops when the first value matches. Finally, this key is returned. 

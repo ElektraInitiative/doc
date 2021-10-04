@@ -1,0 +1,176 @@
+
+\begin{DoxyItemize}
+\item infos = All information you want to know is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@markus-raab.org}{\texttt{ elektra@markus-\/raab.\+org}}
+\item infos/licence = BSD
+\item infos/provides = resolver
+\item infos/needs =
+\item infos/placements = rollback getresolver setresolver commit
+\item infos/status = productive maintained specific unittest tested libc nodep configurable
+\item infos/description = system independent resolver
+\end{DoxyItemize}\hypertarget{md_src_plugins_resolver_README_src_plugins_resolver_README_md}{}\doxysection{Introduction}\label{md_src_plugins_resolver_README_src_plugins_resolver_README_md}
+The {\ttfamily @PLUGIN\+\_\+\+SHORT\+\_\+\+NAME@} handles operating system dependent tasks. One task is the resolving of the filenames for user and system (hence its name).
+
+Use following command to see to which file is resolved to\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file <Elektra path you are interested in>}
+
+\end{DoxyCode}
+
+
+See the constants of this plugin for further information, they are\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/ELEKTRA\_VARIANT\_SYSTEM}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/ELEKTRA\_VARIANT\_USER}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_HOME}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_SYSTEM}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_USER}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_SPEC}
+\DoxyCodeLine{system:/elektra/modules/@PLUGIN\_SHORT\_NAME@/constants/KDB\_DB\_DIR}
+
+\end{DoxyCode}
+
+
+The built-\/in resolving considers following cases\+:
+
+
+\begin{DoxyItemize}
+\item for spec with absolute path\+: path
+\item for spec with relative path\+: {\ttfamily KDB\+\_\+\+DB\+\_\+\+SPEC} + path
+\item for dir with absolute path\+: {\ttfamily pwd} + path (or above when path is found)
+\item for dir with relative path\+: {\ttfamily pwd} + {\ttfamily KDB\+\_\+\+DB\+\_\+\+DIR} + path (or above when path is found)
+\item for user with absolute path\+: {\ttfamily $\sim$} + path
+\item for user with relative path\+: {\ttfamily $\sim$} + {\ttfamily KDB\+\_\+\+DB\+\_\+\+USER} + path
+\item for system with absolute path\+: path
+\item for system with relative path\+: {\ttfamily KDB\+\_\+\+DB\+\_\+\+SYSTEM} + path
+\end{DoxyItemize}
+
+($\sim$ and {\ttfamily pwd} are resolved from system)\hypertarget{md_src_plugins_resolver_README_autotoc_md477}{}\doxysection{Example}\label{md_src_plugins_resolver_README_autotoc_md477}
+For an absolute path {\ttfamily /example.ini}, you might get following values\+:
+
+
+\begin{DoxyItemize}
+\item for spec\+: {\ttfamily /example.ini}
+\item for dir\+: {\ttfamily \$\+PWD/example.ini}
+\item for user\+: {\ttfamily $\sim$/example.ini}
+\item for system\+: {\ttfamily /example.ini}
+\end{DoxyItemize}
+
+For an relative path example.\+ini, you might get following values\+:
+
+
+\begin{DoxyItemize}
+\item for spec\+: {\ttfamily /usr/share/elektra/specification/example.ini}
+\item for dir\+: {\ttfamily \$\+PWD/.dir/example.\+ini}
+\item for user\+: {\ttfamily $\sim$/.config/example.\+ini}
+\item for system\+: {\ttfamily /etc/kdb/example.ini}
+\end{DoxyItemize}
+
+See \mbox{\hyperlink{doc_tutorials_mount_md}{the mount tutorial}} for more examples.\hypertarget{md_src_plugins_resolver_README_autotoc_md478}{}\doxysection{Variants}\label{md_src_plugins_resolver_README_autotoc_md478}
+Many variants exist that additionally influence the resolving process, typically by using environment variables.
+
+Environment variables are very simple for one-\/time usage but their maintenance in start-\/up scripts is problematic. Additionally, they are controlled by the user, so they cannot be trusted. So it is not recommended to use environment variables.
+
+Note that the file permissions apply, so it might be possible for non-\/root to modify keys in {\ttfamily system}.
+
+See \mbox{\hyperlink{doc_COMPILE_md}{COMPILE.md}} for a documentation of possible variants.\hypertarget{md_src_plugins_resolver_README_autotoc_md479}{}\doxysection{Installation}\label{md_src_plugins_resolver_README_autotoc_md479}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The default variant of this plugin {\ttfamily resolver\+\_\+fm\+\_\+hpu\+\_\+b} is part of the {\ttfamily libelektra5} package. All other variants are part of the {\ttfamily libelektra5-\/extra} package.\hypertarget{md_src_plugins_resolver_README_autotoc_md480}{}\doxysubsection{XDG Compatibility}\label{md_src_plugins_resolver_README_autotoc_md480}
+The resolver is fully \href{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html}{\texttt{ XDG compatible}} if configured with the variant\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily xp}, {\ttfamily xh} or {\ttfamily xu} for user (either using {\ttfamily passwd}, {\ttfamily HOME} or {\ttfamily USER} as fallback or any combination of these fallbacks)
+\item {\ttfamily x} for system, no fallback necessary
+\end{DoxyItemize}
+
+Additionally {\ttfamily KDB\+\_\+\+DB\+\_\+\+USER} needs to be left unchanged as {\ttfamily .config}.
+
+{\ttfamily XDG\+\_\+\+CONFIG\+\_\+\+DIRS} will be used to resolve system paths the following way\+:
+
+
+\begin{DoxyItemize}
+\item if unset or empty {\ttfamily /etc/xdg} will be used instead
+\item all elements are searched in order of importance
+\item if a file was found, the search process is stopped
+\item if no file was found, the least important element will be used for potential write attempts.
+\end{DoxyItemize}\hypertarget{md_src_plugins_resolver_README_autotoc_md481}{}\doxysection{Reading Configuration}\label{md_src_plugins_resolver_README_autotoc_md481}
+
+\begin{DoxyEnumerate}
+\item If no update needed (unchanged modification time)\+: quit successfully
+\item Otherwise call (storage) plugin(s) to read configuration
+\item remember the last stat time (last update)
+\end{DoxyEnumerate}\hypertarget{md_src_plugins_resolver_README_autotoc_md482}{}\doxysection{Writing Configuration}\label{md_src_plugins_resolver_README_autotoc_md482}
+
+\begin{DoxyEnumerate}
+\item On unchanged configuration\+: quit successfully
+\item On empty configuration\+: remove the configuration file and quit successfully
+\item Otherwise, open the configuration file If not available recursively create directories and retry.
+\end{DoxyEnumerate}
+
+\#ifdef ELEKTRA\+\_\+\+LOCK\+\_\+\+MUTEX
+
+
+\begin{DoxyEnumerate}
+\item Try to lock a global mutex, if not possible -\/$>$ conflict
+\end{DoxyEnumerate}
+
+\#endif
+
+\#ifdef ELEKTRA\+\_\+\+LOCK\+\_\+\+FILE
+
+
+\begin{DoxyEnumerate}
+\item Try to lock the configuration file, if not possible -\/$>$ conflict
+\end{DoxyEnumerate}
+
+\#endif
+
+
+\begin{DoxyEnumerate}
+\item Check the update time -\/$>$ might lead to conflict
+\item Update the update time (in order to not self-\/conflict)
+\end{DoxyEnumerate}
+
+We have an optimistic approach. Locking is only used to detect concurrent cooperative processes in the short moment between prepare and commit. A conflict will be raised in that situation. When processes do not lock the file it might be overwritten. This is, however, very unlikely on file systems with nanosecond precision.\hypertarget{md_src_plugins_resolver_README_autotoc_md483}{}\doxysection{Exported Functions and Data}\label{md_src_plugins_resolver_README_autotoc_md483}
+The resolver provides 2 functions for other plugins to use.\hypertarget{md_src_plugins_resolver_README_autotoc_md484}{}\doxysubsection{filename}\label{md_src_plugins_resolver_README_autotoc_md484}
+resolves {\ttfamily path} in with namespace {\ttfamily namespace}, creates a temporary file to work on and returns a struct containing the resolved data.
+
+Signature\+: {\ttfamily Elektra\+Resolved $\ast$ filename (elektra\+Namespace namespace, const char $\ast$ path, Elektra\+Resolve\+Tempfile temp\+File, Key $\ast$ warnings\+Key)}
+
+{\ttfamily Elektra\+Resolved} and {\ttfamily Elektra\+Resolve\+Tempfile} are both defined in \href{/home/jenkins/workspace/libelektra-release/src/plugins/resolver/shared.h}{\texttt{ shared.\+h}}.
+
+{\ttfamily Elektra\+Resolved} is a struct with the following members\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily rel\+Path}\+: contains the path relative to the namespace.
+\item {\ttfamily dirname}\+: contains the parent directory of the resolved file.
+\item {\ttfamily full\+Path}\+: contains the full path of the resolved file.
+\item {\ttfamily tmp\+File}\+: contains the full path of the created temporary file.
+\end{DoxyItemize}
+
+{\ttfamily Elektra\+Resolve\+Tempfile} dictates if and where a temporary file should be created. Possible values\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily ELEKTRA\+\_\+\+RESOLVER\+\_\+\+TEMPFILE\+\_\+\+NONE}\+: don\textquotesingle{}t create a temporary file.
+\item {\ttfamily ELEKTRA\+\_\+\+RESOLVER\+\_\+\+TEMPFILE\+\_\+\+SAMEDIR}\+: create a temporary file in the same directory as the resolved file.
+\item {\ttfamily ELEKTRA\+\_\+\+RESOLVER\+\_\+\+TEMPFILE\+\_\+\+TMPDIR}\+: create a temporary file in {\ttfamily /tmp}.
+\end{DoxyItemize}\hypertarget{md_src_plugins_resolver_README_autotoc_md485}{}\doxysubsection{free\+Handle}\label{md_src_plugins_resolver_README_autotoc_md485}
+frees the handle returned by {\ttfamily filename}.
+
+Signature\+: {\ttfamily void $\ast$ free\+Handle (Elektra\+Resolved $\ast$ handle)}
+
+where {\ttfamily handle} is the handle returned by {\ttfamily filename}.\hypertarget{md_src_plugins_resolver_README_autotoc_md486}{}\doxysection{Limitations}\label{md_src_plugins_resolver_README_autotoc_md486}
+
+\begin{DoxyItemize}
+\item If none of the resolving techniques work, the resolver will fail during {\ttfamily kdb\+Open}. This happens, for example, with the default resolver (ELEKTRA\+\_\+\+VARIANT\+\_\+\+USER {\ttfamily hpu}) if neither\+: {\ttfamily \$\+HOME}, {\ttfamily \$\+USER}, nor any home directory in {\ttfamily /etc/passwd} is set.
+\item Conflicts with removed files are not handled.
+\item Links are not handled.
+\item uid/gid from files are not restored. 
+\end{DoxyItemize}

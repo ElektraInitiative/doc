@@ -1,0 +1,55 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the ipaddr plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = check
+\item infos/recommends =
+\item infos/placements = presetstorage
+\item infos/status = maintained unittest nodep
+\item infos/metadata = check/ipaddr
+\item infos/description = Validation for IP addresses
+\end{DoxyItemize}\hypertarget{md_src_plugins_ipaddr_README_src_plugins_ipaddr_README_md}{}\doxysection{IP Address Validation}\label{md_src_plugins_ipaddr_README_src_plugins_ipaddr_README_md}
+\hypertarget{md_src_plugins_ipaddr_README_autotoc_md267}{}\doxysubsection{Introduction}\label{md_src_plugins_ipaddr_README_autotoc_md267}
+This plugin validates IP addresses using regular expressions.\hypertarget{md_src_plugins_ipaddr_README_autotoc_md268}{}\doxysubsection{Installation}\label{md_src_plugins_ipaddr_README_autotoc_md268}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_ipaddr_README_autotoc_md269}{}\doxysubsection{Usage}\label{md_src_plugins_ipaddr_README_autotoc_md269}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount `ipaddr` plugin to cascading namespace `/tests/ipaddr`}
+\DoxyCodeLine{kdb mount config.dump /tests/ipaddr dump ipaddr}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the validity of the IP stored in `system:/tests/ipaddr/ipv4`}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/ipaddr/ipv4 check/ipaddr ipv4}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set an incorrect IP address}
+\DoxyCodeLine{kdb set system:/tests/ipaddr/ipv4 127.0.0.1337}
+\DoxyCodeLine{\# STDERR: .*Validation Semantic.*}
+\DoxyCodeLine{\# ERROR:  C03200}
+\DoxyCodeLine{\# RET:    5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set a correct IPv4 address}
+\DoxyCodeLine{kdb set system:/tests/ipaddr/ipv4 127.0.0.1}
+\DoxyCodeLine{kdb get system:/tests/ipaddr/ipv4}
+\DoxyCodeLine{\#> 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# By default the plugin allows both IPv4 and IPv6 addresses}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/ipaddr/address check/ipaddr "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set correct IP addresses}
+\DoxyCodeLine{kdb set system:/tests/ipaddr/address 1.2.3.4}
+\DoxyCodeLine{kdb set system:/tests/ipaddr/address ::1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set incorrect addresses}
+\DoxyCodeLine{kdb set system:/tests/ipaddr/address bad::ip}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{kdb set system:/tests/ipaddr/address 1.2.-\/3.4}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r /tests/ipaddr}
+\DoxyCodeLine{kdb umount /tests/ipaddr}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_ipaddr_README_autotoc_md270}{}\doxysubsection{Limitations}\label{md_src_plugins_ipaddr_README_autotoc_md270}
+The plugin only checks IP addresses for validity. It is not able to resolve hostnames. If you are looking for a plugin that supports hostnames, check out the network plugin. 

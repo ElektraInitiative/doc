@@ -1,0 +1,688 @@
+\label{doc_COMPILE_md_md_doc_COMPILE}%
+\Hypertarget{doc_COMPILE_md_md_doc_COMPILE}%
+ \hypertarget{doc_COMPILE_md_autotoc_md1612}{}\doxysection{Dependencies}\label{doc_COMPILE_md_autotoc_md1612}
+For the base system you only need \href{https://cmake.org/cmake/help/v3.0/}{\texttt{ cmake3}}, \href{https://git-scm.com/}{\texttt{ git}}, a C99 compiler and essential build tools (make and some standard Unix tools; alternatively ninja and clang are also supported but not described here)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo apt-\/get install cmake git build-\/essential}
+
+\end{DoxyCode}
+
+
+Or on RPM based systems (Cent\+OS)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo dnf install -\/y cmake git gcc-\/c++ make}
+
+\end{DoxyCode}
+
+
+Or on mac\+OS, most of the build tools can be obtained by installing Xcode (from the App Store). Other required tools may be installed using \href{http://brew.sh/}{\texttt{ brew}}. First install brew as described on their website. Then issue the following command to get cmake to complete the basic requirements\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install cmake git}
+
+\end{DoxyCode}
+\hypertarget{doc_COMPILE_md_autotoc_md1613}{}\doxysection{Quick Guide}\label{doc_COMPILE_md_autotoc_md1613}
+Run the following commands to compile Elektra with non-\/experimental parts where your system happens to fulfil the dependences (continue reading the rest of the document for details about these steps)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git clone https://github.com/ElektraInitiative/libelektra.git}
+\DoxyCodeLine{cd libelektra}
+\DoxyCodeLine{mkdir build}
+\DoxyCodeLine{cd build}
+\DoxyCodeLine{cmake ..  \# watch output to see if everything needed is included}
+\DoxyCodeLine{ccmake .. \# optional: overview of the available build settings (needs cmake-\/curses-\/gui)}
+\DoxyCodeLine{cmake -\/-\/build build -\/-\/ -\/j5}
+\DoxyCodeLine{cmake -\/-\/build build -\/-\/target run\_nokdbtests \# optional: run tests}
+
+\end{DoxyCode}
+
+
+The last line only runs tests not writing into your system. See \mbox{\hyperlink{doc_TESTING_md}{TESTING}} for how to run more tests. Afterwards you can use {\ttfamily sudo make install \&\& sudo ldconfig} to install Elektra. See \mbox{\hyperlink{doc_INSTALL_md}{INSTALL}} for more information about installation of self-\/compiled Elektra (such as how to uninstall it).\hypertarget{doc_COMPILE_md_autotoc_md1614}{}\doxysection{Optional Dependencies}\label{doc_COMPILE_md_autotoc_md1614}
+\begin{quote}
+Note\+: You do not need to install the dependencies listed here. If they are not available, some of the functionality gets disabled automatically. The core of Elektra never depends on other libraries. \end{quote}
+To build documentation you need doxygen (we recommend 1.\+8.\+8+), graphviz and \href{https://github.com/apjanke/ronn-ng/blob/master/INSTALLING.md}{\texttt{ ronn-\/ng}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apt-\/get install doxygen graphviz}
+\DoxyCodeLine{gem install ronn-\/ng -\/v 0.10.1.pre1}
+
+\end{DoxyCode}
+
+
+Or on RPM based systems\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo yum install -\/y doxygen docbook-\/style-\/xsl graphviz ruby}
+\DoxyCodeLine{gem install ronn-\/ng -\/v 0.10.1.pre1}
+
+\end{DoxyCode}
+
+
+Or on mac\+OS using brew\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install doxygen graphviz}
+\DoxyCodeLine{brew install ruby \# in case ruby is not already installed}
+\DoxyCodeLine{gem install ronn-\/ng -\/v 0.10.1.pre1}
+
+\end{DoxyCode}
+
+
+To build PDF documentation you need {\ttfamily pdflatex} with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apt-\/get install pdflatex \(\backslash\)}
+\DoxyCodeLine{        texlive-\/fonts-\/recommended texlive-\/fonts-\/extra \(\backslash\)}
+\DoxyCodeLine{        texlive-\/latex-\/recommended texlive-\/latex-\/extra \(\backslash\)}
+\DoxyCodeLine{        texlive-\/math-\/extra}
+
+\end{DoxyCode}
+
+
+For dependencies of plugins, please refer to the \href{https://www.libelektra.org/plugins/readme}{\texttt{ README.\+md}} of the respective plugin.
+
+A small subset of build dependencies to get you started\+:
+
+
+\begin{DoxyItemize}
+\item for Cent\+OS\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo yum install -\/y libdb-\/devel GConf2-\/devel libxml2-\/devel yajl-\/devel   \(\backslash\)}
+\DoxyCodeLine{libcurl-\/devel augeas-\/devel libgit2-\/devel lua-\/devel swig python34-\/devel python-\/devel \(\backslash\)}
+\DoxyCodeLine{java-\/1.8.0-\/openjdk-\/devel jna ruby-\/devel byacc}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item for Ubuntu\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo apt install -\/y libxerces-\/c-\/dev libxml2-\/dev libyajl-\/dev \(\backslash\)}
+\DoxyCodeLine{libcurl4-\/gnutls-\/dev libaugeas-\/dev git git-\/buildpackage dh-\/lua liblua5.2-\/dev \(\backslash\)}
+\DoxyCodeLine{dh-\/python python3-\/all python3-\/dev default-\/jdk libjna-\/java ruby-\/dev flex bison}
+
+\end{DoxyCode}
+\hypertarget{doc_COMPILE_md_autotoc_md1615}{}\doxysection{Preparation}\label{doc_COMPILE_md_autotoc_md1615}
+Elektra uses \href{https://cmake.org/cmake/help/v3.0/}{\texttt{ cmake3}}. Tested are cmake version 3.\+0.\+2 and 3.\+7.\+2 among others.
+
+To configure Elektra graphically (with curses) run ({\ttfamily ..} belongs to command)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir build \&\& cd build \&\& ccmake ..}
+
+\end{DoxyCode}
+
+
+and press {\ttfamily c} to configure the cache (might be necessary multiple times, and once on the first time in case you don‘t see any settings). After applying the desired settings, press {\ttfamily g} to generate the make file.
+
+All options described here, can also be used with {\ttfamily cmake} rather than {\ttfamily ccmake} ({\ttfamily ..} does also here belong to the command)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir build \&\& cd build \&\& cmake -\/D<OPTION1>=<VAR1> -\/D<OPTION2>=<VAR2> ..}
+
+\end{DoxyCode}
+
+
+For information what you can use as {\ttfamily OPTION1} and {\ttfamily OPTION2}, see above. Note\+: You have to enclose a value with quotes {\ttfamily \char`\"{}\char`\"{}} if it contains a semicolon ({\ttfamily ;}). E.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DPLUGINS="{}dump;resolver;yajl;list;spec"{} ..}
+
+\end{DoxyCode}
+
+
+Some scripts in the folder of the same name may help you running cmake.\hypertarget{doc_COMPILE_md_autotoc_md1616}{}\doxysubsection{Compilers}\label{doc_COMPILE_md_autotoc_md1616}
+You should be able to compile Elektra with any C99 compiler. For a list of compilers we test with have a look at\+:
+
+
+\begin{DoxyItemize}
+\item our Docker containers orchestrated by our Jenkinsfile being built on \href{https://build.libelektra.org/}{\texttt{ our build server}}
+\item Cirrus
+\item Git\+Hub Actions
+\end{DoxyItemize}
+
+Here is an additional list of compilers used by developers (for build servers, see links above)\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Compiler   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Version   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Target    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Compiler   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Version   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Target    }\\\cline{1-3}
+\endhead
+gcc   &gcc (Debian 8.\+3.\+0-\/6) 8.\+3.\+0   &x86\+\_\+64-\/linux-\/gnu    \\\cline{1-3}
+gcc   &gcc (GCC) 11.\+1.\+1 20210531 (Red Hat 11.\+1.\+1-\/3)   &x86\+\_\+64-\/redhat-\/linux    \\\cline{1-3}
+gcc   &gcc-\/11 (Homebrew GCC 11.\+1.\+0\+\_\+1) 11.\+1.\+0   &x86\+\_\+64-\/apple-\/darwin20    \\\cline{1-3}
+clang   &clang version 12.\+0.\+0 (Fedora 12.\+0.\+0-\/0.\+3.\+rc1.\+fc34)   &x86\+\_\+64-\/unknown-\/linux-\/gnu    \\\cline{1-3}
+clang   &Apple clang version 12.\+0.\+5 (clang-\/1205.\+0.\+22.\+9)   &x86\+\_\+64-\/apple-\/darwin20.\+5.\+0   \\\cline{1-3}
+\end{longtabu}
+
+
+\begin{quote}
+(¹) Open\+BSD ships an old version of GCC per default, which can not compile Elektra. A manual installation of egcc/eg++ is required. Note that not every Open\+BSD mirror provides the eg++ package. Elektra builds are confirmed with egcc/eg++ 4.\+9.\+4 in Open\+BSD 6.\+3. The packages are called gcc and g++. Compile with {\ttfamily CC=/usr/local/bin/egcc CXX=/usr/local/bin/eg++}. \end{quote}
+To change the compiler, use cmake settings {\ttfamily CMAKE\+\_\+\+C\+\_\+\+COMPILER} and {\ttfamily CMAKE\+\_\+\+CXX\+\_\+\+COMPILER}.
+
+To use gcc-\/4.\+3 for example
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DCMAKE\_C\_COMPILER=gcc-\/4.3 -\/DCMAKE\_CXX\_COMPILER=g++-\/4.3 ..}
+
+\end{DoxyCode}
+
+
+To change the compiler with {\ttfamily ccmake}, you may need to toggle advanced options (key {\ttfamily t}).\hypertarget{doc_COMPILE_md_autotoc_md1617}{}\doxysubsection{Options}\label{doc_COMPILE_md_autotoc_md1617}
+Some options, i.\+e. {\ttfamily PLUGINS}, {\ttfamily BINDINGS} and {\ttfamily TOOLS} are either\+:
+
+
+\begin{DoxyItemize}
+\item a list of elements separated with a semicolon ({\ttfamily ;}) (note that shells typically need {\ttfamily ;} to be escaped)
+\item a special uppercase element that gets replaced by a list of elements, that are\+:
+\begin{DoxyItemize}
+\item {\ttfamily ALL} to include all elements (except elements with unfulfilled dependencies)
+\item {\ttfamily NODEP} to include all elements without dependencies
+\end{DoxyItemize}
+\item elements prefixed with a minus symbol ({\ttfamily -\/}) to exclude an element
+\end{DoxyItemize}
+
+Examples for this are especially in the subsection {\ttfamily PLUGINS} below, but they work in the same fashion for {\ttfamily BINDINGS} and {\ttfamily TOOLS}.\hypertarget{doc_COMPILE_md_autotoc_md1618}{}\doxysubsubsection{Plugins}\label{doc_COMPILE_md_autotoc_md1618}
+Read about available plugins here.
+
+Because the core of elektra is minimal, plugins are needed to actually read and write to configuration files ({\itshape storage plugins}), commit the changes ({\itshape resolver plugins}, also takes care about how the configuration files are named) and also do many other tasks related to configuration.
+
+The minimal set of plugins you should add\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_dump_README_src_plugins_dump_README_md}{dump}} is the default storage. If you remove it, make sure you add another one and set {\ttfamily KDB\+\_\+\+DEFAULT\+\_\+\+STORAGE} to it.
+\item \mbox{\hyperlink{md_src_plugins_resolver_README_src_plugins_resolver_README_md}{resolver}} is the default resolver. If you remove it, make sure you add another one and set {\ttfamily KDB\+\_\+\+DEFAULT\+\_\+\+RESOLVER} to it.
+\item \mbox{\hyperlink{md_src_plugins_list_README_src_plugins_list_README_md}{list}} delegates work to a list of plugins. Needed for tests. (Required with {\ttfamily ENABLE\+\_\+\+TESTING}.)
+\item \mbox{\hyperlink{md_src_plugins_spec_README_src_plugins_spec_README_md}{spec}} copies metadata from spec namespace to other namespaces. Needed for tests. (Required with {\ttfamily ENABLE\+\_\+\+TESTING}, except on mingw.)
+\item \mbox{\hyperlink{md_src_plugins_sync_README_src_plugins_sync_README_md}{sync}} is very useful to not lose any data. If you do not want to include it, make sure to set {\ttfamily /sw/elektra/kdb/\#0/current/plugins} to a value not containing sync (e.\+g. an empty value). See \mbox{\hyperlink{doc_help_kdb-mount_md}{kdb-\/mount(1)}}.
+\end{DoxyItemize}
+
+By default CMake adds nearly all plugins if the dependencies are present. Only experimental plugins will be omitted by default\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}ALL;-\/EXPERIMENTAL"{}}
+
+\end{DoxyCode}
+
+
+To add also experimental plugins, you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS=ALL}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+Note that plugins are only built if their dependencies are satisfied. So make sure to install all dependencies you need before you run {\ttfamily cmake}. For example, to include the plugin {\ttfamily yajl}, make sure {\ttfamily libyajl-\/dev} is installed. \end{quote}
+To add all plugins except some plugins you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}ALL;-\/plugin1;-\/plugin2"{}}
+
+\end{DoxyCode}
+
+
+For example, if you want all plugins except the jni plugin you would use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}ALL;-\/jni"{}}
+
+\end{DoxyCode}
+
+
+To add all plugins not having additional dependencies (they need only POSIX), you can use
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS=NODEP}
+
+\end{DoxyCode}
+
+
+Note, that every {\ttfamily infos/provides} and {\ttfamily infos/status} field written uppercase can be used to select plugins that way (see README of \mbox{\hyperlink{src_plugins_README_md}{individual plugins}}). You also can combine any of these fields and add/remove other plugins to/from it, e.\+g. to include all plugins without deps, that provide storage (except {\ttfamily yajl}) and are maintained, but not include all plugins that are experimental, you would use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}NODEP;STORAGE;-\/yajl;MAINTAINED;-\/EXPERIMENTAL"{}}
+
+\end{DoxyCode}
+
+
+The inclusion is determined by following preferences\+:
+
+
+\begin{DoxyEnumerate}
+\item if the plugin is explicit excluded with {\ttfamily -\/plugin}
+\item if the plugin is explicit included with {\ttfamily plugin}
+\item if the plugin is excluded via a category {\ttfamily -\/CATEGORY}
+\item if the plugin is included via a category {\ttfamily CATEGORY}
+\item plugins are excluded if they are not mentioned at all (neither by category nor by name)
+\end{DoxyEnumerate}
+
+Note, that changing {\ttfamily PLUGINS} will not modify the defaults used after Elektra was installed. For this endeavour you need to change\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DKDB\_DEFAULT\_RESOLVER=resolver}
+
+\end{DoxyCode}
+
+
+and
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DKDB\_DEFAULT\_STORAGE=dump}
+
+\end{DoxyCode}
+
+
+The default resolver and storage will write to {\ttfamily KDB\+\_\+\+DB\+\_\+\+FILE} and {\ttfamily KDB\+\_\+\+DB\+\_\+\+INIT} (\mbox{\hyperlink{doc_help_elektra-bootstrapping_md}{for bootstrapping}}).
+
+Obviously, you can pass the exact list of plugins you want, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}resolver;sync;dump"{}}
+
+\end{DoxyCode}
+
+
+Some plugins are compile-\/time configurable. Then you can choose which features are compiled in or out. This is especially important in the bootstrapping phase, because then only the compiled in configuration applies. To compile-\/time-\/configure a plugin, you just pass a underscore ({\ttfamily \+\_\+}) and flags after the name of the plugin.
+
+The resolver for example distinguish between 3 different kind of flags\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}resolver\_baseflags\_userflags\_systemflags"{}}
+
+\end{DoxyCode}
+
+
+Following baseflags are available\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily c} for debugging conflicts
+\item {\ttfamily f} for enabling file locking
+\item {\ttfamily m} for enabling mutex locking
+\end{DoxyItemize}
+
+The user flags are (the order matters!)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily p} use passwd/ldap to lookup home directory using {\ttfamily getpwuid\+\_\+r}
+\item {\ttfamily h} use the environment variable HOME
+\item {\ttfamily u} use the environment variable USER
+\item {\ttfamily b} use the built-\/in default cmake variable {\ttfamily KDB\+\_\+\+DB\+\_\+\+HOME}
+\end{DoxyItemize}
+
+The system flags are (the order matters!)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily x} use the environment variable {\ttfamily XDG\+\_\+\+CONFIG\+\_\+\+DIRS} ({\ttfamily \+:} are interpreted as part of filename, no searching is done!) This option is not recommended (unless for testing), because it allows users to fake system configuration.
+\item {\ttfamily b} use the built-\/in default cmake variable {\ttfamily KDB\+\_\+\+DB\+\_\+\+SYSTEM}
+\item note\+: if a path that begins with a slash ({\ttfamily /}) is chosen, the system flags are irrelevant and the path is taken as-\/is.
+\end{DoxyItemize}
+
+For example, one may use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}resolver\_lm\_uhpb\_b"{}}
+
+\end{DoxyCode}
+
+
+To add {\ttfamily resolver\+\_\+l\+\_\+h\+\_\+b} you need to specify
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DPLUGINS="{}resolver;resolver\_l\_h\_b"{}}
+
+\end{DoxyCode}
+
+
+You can add resolver with any combination of the flags, even if they are not available in {\ttfamily ALL}.\hypertarget{doc_COMPILE_md_autotoc_md1619}{}\doxysubsubsection{Tools}\label{doc_COMPILE_md_autotoc_md1619}
+Tools are used to add extra functionality to Elektra. The flag used to specify which tools are compiled is {\ttfamily -\/DTOOLS}, thus flag works similarly to the {\ttfamily -\/DPLUGINS} flag, but is more limited in its functionality (which does not matter, because there are not so many tools).
+
+To add all non-\/experimental tools, you can use\+:\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DTOOLS=ALL}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+Note that the behavior is different to PLUGINS which includes all PLUGINS if ALL is used. \end{quote}
+To add all tools except of race, you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DTOOLS="{}ALL;-\/race"{}}
+
+\end{DoxyCode}
+
+
+To specify specific tools you can use, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DTOOLS=qt-\/gui;kdb}
+
+\end{DoxyCode}
+\hypertarget{doc_COMPILE_md_autotoc_md1620}{}\doxysubsubsection{Bindings}\label{doc_COMPILE_md_autotoc_md1620}
+Bindings are used in a like as {\ttfamily PLUGINS}. For example, to build all maintained bindings and exclude experimental bindings you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DBINDINGS=MAINTAINED;-\/EXPERIMENTAL}
+
+\end{DoxyCode}
+
+
+The SWIG executable may be specified with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DSWIG\_EXECUTABLE=/usr/bin/swig3.0}
+
+\end{DoxyCode}
+
+
+If this option is not used, cmake will find the first occurrence of {\ttfamily swig} in your environment\textquotesingle{}s path.
+
+Some bindings provide different APIs (and not a different language), e.\+g\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily gsettings}
+\item {\ttfamily INTERCEPT} with {\ttfamily intercept\+\_\+fs} and {\ttfamily intercept\+\_\+env}
+\item {\ttfamily IO} with {\ttfamily io\+\_\+uv}
+\end{DoxyItemize}
+
+To not add such APIs, but only {\ttfamily swig} bindings and {\ttfamily cpp}, you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DBINDINGS="{}SWIG;cpp"{}}
+
+\end{DoxyCode}
+
+
+For a list of available bindings see binding\textquotesingle{}s README.md.\hypertarget{doc_COMPILE_md_autotoc_md1621}{}\doxysubsubsection{$<$tt$>$\+CMAKE\+\_\+\+BUILD\+\_\+\+TYPE$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1621}
+{\ttfamily Debug}, {\ttfamily Release} or {\ttfamily Rel\+With\+Deb\+Info} See help bar at bottom of {\ttfamily ccmake} for that option or\+: \href{http://www.cmake.org/Wiki/CMake_Useful_Variables}{\texttt{ http\+://www.\+cmake.\+org/\+Wiki/\+CMake\+\_\+\+Useful\+\_\+\+Variables}}\hypertarget{doc_COMPILE_md_autotoc_md1622}{}\doxysubsection{$<$tt$>$\+BUILD\+\_\+\+SHARED BUILD\+\_\+\+FULL BUILD\+\_\+\+STATIC$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1622}
+{\ttfamily BUILD\+\_\+\+SHARED} is the typical build you want to have on systems that support {\ttfamily dlopen}. It can be used for desktop builds, but also embedded systems as long as they support {\ttfamily dlopen}, for example, {\ttfamily BUILD\+\_\+\+SHARED} is used on Open\+WRT with {\ttfamily musl}. Using {\ttfamily BUILD\+\_\+\+SHARED} every plugin is its own shared object.
+
+{\ttfamily BUILD\+\_\+\+FULL} links together all parts of Elektra as a single shared {\ttfamily .so} library. This is ideal if shared libraries are available, but you want to avoid {\ttfamily dlopen}. Some tests only work with {\ttfamily BUILD\+\_\+\+FULL}, so you might turn it on to get full coverage.
+
+{\ttfamily BUILD\+\_\+\+STATIC} also links together all parts but as static {\ttfamily .a} library. It is only useful for systems without {\ttfamily dlopen} or if the overhead of {\ttfamily dlopen} needs to be avoided.
+
+All three forms of builds can be intermixed freely.
+
+For example, to enable shared and full build, but disable static build, one would use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DBUILD\_SHARED=ON -\/DBUILD\_FULL=ON -\/DBUILD\_STATIC=OFF ..}
+
+\end{DoxyCode}
+\hypertarget{doc_COMPILE_md_autotoc_md1623}{}\doxysubsubsection{BUILD\+\_\+\+DOCUMENTATION}\label{doc_COMPILE_md_autotoc_md1623}
+Build documentation with doxygen (API) and ronn-\/ng (man pages).
+
+If ronn-\/ng is not found, already compiled man pages will be used instead.
+
+\begin{quote}
+Note\+: Turning off building the documentation, also turns off installing the documentation, see \href{https://issues.libelektra.org/2522}{\texttt{ https\+://issues.\+libelektra.\+org/2522}} Then no man pages are available. \end{quote}
+\hypertarget{doc_COMPILE_md_autotoc_md1624}{}\doxysubsubsection{Developer Options}\label{doc_COMPILE_md_autotoc_md1624}
+As developer you should enable {\ttfamily ENABLE\+\_\+\+DEBUG} and {\ttfamily ENABLE\+\_\+\+LOGGER}\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily ENABLE\+\_\+\+DEBUG}\+:
+\begin{DoxyItemize}
+\item enables assertions
+\item adds RTLD\+\_\+\+NODELETE so that debugger finds symbols even after dlclose
+\end{DoxyItemize}
+\item {\ttfamily ENABLE\+\_\+\+LOGGER}\+: enables logging By default no logging will take place, see \mbox{\hyperlink{doc_CODING_md}{CODING}} for how to get log messages.
+\end{DoxyItemize}
+
+Continue reading \mbox{\hyperlink{doc_TESTING_md}{testing}} for more information about testing.\hypertarget{doc_COMPILE_md_autotoc_md1625}{}\doxysubsubsection{$<$tt$>$\+CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1625}
+{\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX} defaults to {\ttfamily /usr/local}. So by default most files will installed below {\ttfamily /usr/local}. Exceptions to this are files handled by \href{\#install_system_files}{\texttt{ INSTALL\+\_\+\+SYSTEM\+\_\+\+FILES}}.
+
+Edit that cache entry to change that behavior. Also called system prefix within the documentation.
+
+If you want to create a package afterwards it is ok to use paths that you can write to (e.\+g. {\ttfamily -\/DCMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX=/home/username/})\hypertarget{doc_COMPILE_md_autotoc_md1626}{}\doxysubsubsection{$<$tt$>$\+LIB\+\_\+\+SUFFIX$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1626}
+Lets you install libraries into architecture specific folder. E.\+g. for 32/64 bit systems you might install libraries under {\ttfamily lib64}. Set {\ttfamily LIB\+\_\+\+SUFFIX} to {\ttfamily 64} to achieve exactly that. So the system library folder will be {\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX/lib64} then.\hypertarget{doc_COMPILE_md_autotoc_md1627}{}\doxysubsubsection{$<$tt$>$\+TARGET\+\_\+\+INCLUDE\+\_\+\+FOLDER$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1627}
+By default include folders will be installed below {\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX/include/elektra}. This entry let you change the elektra. If the entry is empty, the include files will be installed directly to {\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX/include}.\hypertarget{doc_COMPILE_md_autotoc_md1628}{}\doxysubsubsection{$<$tt$>$\+TARGET\+\_\+\+PLUGIN\+\_\+\+FOLDER$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1628}
+Similar to above, but with the plugins. Default is\+: {\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX/lib\$\{LIB\+\_\+\+SUFFIX\}/elektra} It can be also left empty to install plugins next to other libraries.\hypertarget{doc_COMPILE_md_autotoc_md1629}{}\doxysubsubsection{$<$tt$>$\+GTEST\+\_\+\+ROOT$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1629}
+This value specifies the root directory of a local copy of the \href{https://github.com/google/googletest}{\texttt{ Google Test}} framework.
+
+
+\begin{DoxyItemize}
+\item If it is empty ({\ttfamily \char`\"{}\char`\"{}}), then the build system will download a copy of \href{https://github.com/google/googletest}{\texttt{ Google Test}} into the build directory.
+\item Otherwise the build system will search for the file {\ttfamily CMake\+Lists.\+txt} in the top level directory of {\ttfamily GTEST\+\_\+\+ROOT}. If this file exists, then the build system will use the sources files at {\ttfamily GTEST\+\_\+\+ROOT} to translate tests that use \href{https://github.com/google/googletest}{\texttt{ Google Test}}.
+\end{DoxyItemize}
+
+It can be provided as CMake or environment variable. If both options are provided the value passed via CMake takes precedence.
+
+It is recommended that you browse through all of the options using {\ttfamily ccmake}. Afterwards press {\ttfamily c} again (maybe multiple times until all variables are resolved) and then {\ttfamily g} to generate. Finally press {\ttfamily e} to exit.\hypertarget{doc_COMPILE_md_autotoc_md1630}{}\doxysubsubsection{$<$tt$>$\+INSTALL\+\_\+\+BUILD\+\_\+\+TOOLS$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1630}
+Specifies that the build tools, i.\+e. {\ttfamily elektra-\/export-\/symbols} and {\ttfamily elektra-\/export-\/symbols} are installed (by default off). Is needed for cross-\/compilation.\hypertarget{doc_COMPILE_md_autotoc_md1631}{}\doxysubsubsection{$<$tt$>$\+INSTALL\+\_\+\+SYSTEM\+\_\+\+FILES$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1631}
+Some of Elektra’s targets require to be installed into specific folders in the file system hierarchy to work properly.
+
+This variable is disabled by default, since it requires the install target to have the rights to write into the corresponding folders. Set {\ttfamily -\/DINSTALL\+\_\+\+SYSTEM\+\_\+\+FILES=ON}, if you also want to install the files listed below.
+
+If you do not have root rights you can also copy the files manually to your user folder.
+
+Currently the installed system files are as following\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Module   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Description   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Install Path    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Module   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Description   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Install Path    }\\\cline{1-3}
+\endhead
+bash-\/completion   &bash tab auto completion file   &{\ttfamily completionsdir} from pkg-\/config (¹)    \\\cline{1-3}
+zsh-\/completion   &zsh tab auto completion file   &/usr/share/zsh/vendor-\/completions    \\\cline{1-3}
+GIR   &introspection file for bindings   &{\ttfamily INTROSPECTION\+\_\+\+GIRDIR} from pkg-\/config    \\\cline{1-3}
+GSettings   &GSettings backend module   &{\ttfamily GIO\+\_\+\+MODULE\+\_\+\+DIR} from pkg-\/config   \\\cline{1-3}
+\end{longtabu}
+
+
+\begin{quote}
+(¹) Or {\ttfamily /usr/share/bash-\/completion/completions} as fallback. \end{quote}
+\hypertarget{doc_COMPILE_md_autotoc_md1632}{}\doxysubsubsection{$<$tt$>$\+ENABLE\+\_\+\+OPTIMIZATIONS$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1632}
+In order to keep the binaries as small as possible this flag allows to trade memory for speed.\hypertarget{doc_COMPILE_md_autotoc_md1633}{}\doxysection{Building}\label{doc_COMPILE_md_autotoc_md1633}
+\hypertarget{doc_COMPILE_md_autotoc_md1634}{}\doxysubsection{Without IDE}\label{doc_COMPILE_md_autotoc_md1634}
+To build the source use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make}
+
+\end{DoxyCode}
+
+
+You can pass\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/j} for parallel builds
+\item {\ttfamily VERBOSE=1} to see the invocations of the compiler
+\end{DoxyItemize}
+
+Continue by reading \mbox{\hyperlink{doc_INSTALL_md}{INSTALL}}.\hypertarget{doc_COMPILE_md_autotoc_md1635}{}\doxysubsection{With Code\+Blocks}\label{doc_COMPILE_md_autotoc_md1635}
+You can build Elektra using Code\+::\+Blocks under Gentoo\+:
+
+Precondition\+: Make sure you have a compiler, xml2 (for kdb tool) and xsl (see later) installed. cmake configure will help you with that, it will make sure you don\textquotesingle{}t forget something essential.
+
+For Most Linux system all you have to do is open up a console and
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir build}
+\DoxyCodeLine{cd build}
+\DoxyCodeLine{cmake .. -\/G 'CodeBlocks -\/ Unix Makefiles'}
+\DoxyCodeLine{make package}
+
+\end{DoxyCode}
+
+
+{\bfseries{Note 1\+:}} You can use other editor if you like just type cmake at the console to get a list of option you can pass to cmake as long as well as a list of what code editor project cmake can create.
+
+{\bfseries{Note 2\+:}} For Unix if you have n\+Curses install you can run {\ttfamily ccmake} to set important option after running cmake like to enable debug symbol.
+
+{\bfseries{Note 3\+:}} for Gentoo is recommend to emerge sys-\/apps/lsb-\/release to name the package right even thou not required.\hypertarget{doc_COMPILE_md_autotoc_md1636}{}\doxysection{Maintainer\textquotesingle{}s Guide}\label{doc_COMPILE_md_autotoc_md1636}
+\hypertarget{doc_COMPILE_md_autotoc_md1637}{}\doxysubsection{Multiarch}\label{doc_COMPILE_md_autotoc_md1637}
+On multiarch (multiple architectures installed in one system), you need to set {\ttfamily LIB\+\_\+\+SUFFIX}. For example, if you want to have the binaries in {\ttfamily lib64} and {\ttfamily lib32}, you would use for the libraries to be installed in {\ttfamily \$\{CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX\}/lib64}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DLIB\_SUFFIX="{}64"{}}
+
+\end{DoxyCode}
+
+
+If there is a directory for different architectures, simply prepend an {\ttfamily /}. For example, for Debian\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DLIB\_SUFFIX="{}/\$(DEB\_HOST\_MULTIARCH)"{}}
+
+\end{DoxyCode}
+\hypertarget{doc_COMPILE_md_autotoc_md1638}{}\doxysubsection{$<$tt$>$\+RPATH$<$/tt$>$}\label{doc_COMPILE_md_autotoc_md1638}
+By default Elektra uses {\ttfamily RPATH} to hide its plugins. This makes it obvious that external applications should {\itshape not} link against plugins. Instead every application should use the {\ttfamily elektra\+Modules\+Load()} API to load Elektra’s modules.
+
+The folder where the plugins are located is a subdirectory of where the libraries are installed. The name of the subdirectory can be specified using {\ttfamily TARGET\+\_\+\+PLUGIN\+\_\+\+FOLDER} and is {\ttfamily elektra} by default. You might want to encode Elektra’s {\ttfamily SOVERSION} into the folders name, if you want different major versions of Elektra be co-\/installable.
+
+Elektra’s use case for {\ttfamily RPATH} is considered acceptable, so we recommend to use it because\+:
+
+
+\begin{DoxyItemize}
+\item plugins do not clutter the library folder nor the {\ttfamily ld.\+so.\+cache}
+\item it works well with multiarch ({\ttfamily LIB\+\_\+\+SUFFIX} is also honored for plugins)
+\item which plugins are used should be decided at mount-\/time and be globally available in the same way for every application. {\ttfamily RPATH} supports exactly that because it even overrides {\ttfamily LD\+\_\+\+LIBRARY\+\_\+\+PATH}.
+\end{DoxyItemize}
+
+Unfortunately, there are also drawbacks\+:
+
+
+\begin{DoxyItemize}
+\item it makes Elektra non-\/relocatable ({\ttfamily RPATH} is decided at compile-\/time, so you cannot simply move Elektra’s installations within the file system (e.\+g. from {\ttfamily /usr/local} to {\ttfamily /usr})
+\item it requires modern {\ttfamily ld.\+so} implementations that honor {\ttfamily RPATH} from libraries. This is the case for most {\ttfamily libc} implementations including Linux and mac\+OS, but not for, e.\+g., {\ttfamily musl}.
+\end{DoxyItemize}
+
+If you want Elektra to {\itshape not} use {\ttfamily RPATH}, you can add\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DTARGET\_PLUGIN\_FOLDER="{}"{} -\/DCMAKE\_SKIP\_INSTALL\_RPATH=ON}
+
+\end{DoxyCode}
+
+
+Then all plugins are directly installed to the library directory and loaded like other libraries (in any of {\ttfamily ld.\+so} paths).
+
+Alternatively, which gives you the advantage not to clutter the main library path, is to add the plugin folder in {\ttfamily /etc/ld.so.\+conf.\+d/elektra}. Note that it still allows applications to link against plugins.\hypertarget{doc_COMPILE_md_autotoc_md1639}{}\doxysection{Troubleshooting}\label{doc_COMPILE_md_autotoc_md1639}
+\hypertarget{doc_COMPILE_md_autotoc_md1640}{}\doxysubsection{Dependencies not Available for Cent OS}\label{doc_COMPILE_md_autotoc_md1640}
+Please enable EPEL \href{https://fedoraproject.org/wiki/EPEL}{\texttt{ https\+://fedoraproject.\+org/wiki/\+EPEL}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Install EPEL for RHEL 7}
+\DoxyCodeLine{curl -\/o epel-\/release-\/7-\/8.noarch.rpm \(\backslash\)}
+\DoxyCodeLine{  http://dl.fedoraproject.org/pub/epel/7/x86\_64/e/epel-\/release-\/7-\/8.noarch.rpm}
+\DoxyCodeLine{sudo rpm -\/ivh epel-\/release-\/7-\/8.noarch.rpm}
+\DoxyCodeLine{sudo yum update}
+
+\end{DoxyCode}
+
+
+For Bindings swig3 is recommended. swig2 only works on some distributions. E.\+g., for Debian Jessie the bindings will crash.
+
+At time of writing, no swig 3 was available, not even in EPEL. Thus you need to install swig3 manually\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{curl https://codeload.github.com/swig/swig/tar.gz/rel-\/3.0.10 | tar xz}
+\DoxyCodeLine{cd swig-\/rel-\/3.0.10 \&\& ./autogen.sh \&\& ./configure \&\& make}
+\DoxyCodeLine{sudo make install}
+\DoxyCodeLine{cd ..}
+
+\end{DoxyCode}
+
+
+Also, no ronn-\/ng was available, thus you need to do\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{gem install ronn-\/ng -\/v 0.10.1.pre1}
+
+\end{DoxyCode}
+\hypertarget{doc_COMPILE_md_autotoc_md1641}{}\doxysubsection{Cross Compiling}\label{doc_COMPILE_md_autotoc_md1641}
+In Elektra cross compiling needs two steps. If you get errors like {\ttfamily elektra-\/export-\/errors\+\_\+\+EXE\+\_\+\+LOC} not found, go on reading.
+
+In the first step, you need to compile Elektra for the host architecture and install the build tools\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DINSTALL\_BUILD\_TOOLS=ON \(\backslash\)}
+\DoxyCodeLine{      -\/DCMAKE\_PREFIX\_PATH=\$(STAGING\_DIR\_HOST) \(\backslash\)}
+\DoxyCodeLine{      ..}
+\DoxyCodeLine{cmake -\/-\/build . -\/-\/ -\/j5}
+\DoxyCodeLine{cmake -\/-\/build . -\/-\/target install}
+
+\end{DoxyCode}
+
+
+Where {\ttfamily } must be a directory to be found in the later build process. In particular, {\ttfamily /bin} must be in a directory found by a later {\ttfamily find\+\_\+program}.
+
+Then you need to compile Elektra again, but for the target architecture. Now, the build tools such as {\ttfamily elektra-\/export-\/errors} should be found in the {\ttfamily /bin} where they were installed before.
+
+For reference, you can look into the \href{https://github.com/openwrt/packages/blob/master/libs/elektra/Makefile}{\texttt{ Open\+WRT Elektra Makefile}} and the \href{https://github.com/openwrt/openwrt/blob/master/include/cmake.mk}{\texttt{ CMake in Open\+WRT}}.\hypertarget{doc_COMPILE_md_autotoc_md1642}{}\doxysection{See Also}\label{doc_COMPILE_md_autotoc_md1642}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_INSTALL_md}{INSTALL}}
+\item \mbox{\hyperlink{doc_TESTING_md}{TESTING}}
+\item \mbox{\hyperlink{doc_BUILDSERVER_md}{BUILDSERVER}} 
+\end{DoxyItemize}

@@ -1,0 +1,83 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mmapstorage plugin is in keys below
+\item infos/author = Mihael Pranjić \href{mailto:mpranj@limun.org}{\texttt{ mpranj@limun.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage/mmapstorage
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest shelltest specific
+\item infos/metadata =
+\item infos/description = high performance storage using memory mapped files
+\end{DoxyItemize}\hypertarget{md_src_plugins_mmapstorage_README_src_plugins_mmapstorage_README_md}{}\doxysection{Introduction}\label{md_src_plugins_mmapstorage_README_src_plugins_mmapstorage_README_md}
+This is a high performance storage plugin that supports full Elektra semantics.\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md338}{}\doxysection{Format}\label{md_src_plugins_mmapstorage_README_autotoc_md338}
+The storage format uses Elektra\textquotesingle{}s in-\/memory data layout and employs the {\ttfamily mmap()} system call to read/write data. The format is not portable across different architectures/platforms. The format can be seen as a memory dump of a keyset. Therefore, the files must not be edited by hand. Files written by mmapstorage are not intended to be human-\/readable.\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md339}{}\doxysection{Usage}\label{md_src_plugins_mmapstorage_README_autotoc_md339}
+Mount mmapstorage using {\ttfamily kdb mount}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount config.mmap user:/tests/mmapstorage mmapstorage}
+
+\end{DoxyCode}
+
+
+Unmount mmapstorage using {\ttfamily kdb umount}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount user:/tests/mmapstorage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md340}{}\doxysection{Compiling}\label{md_src_plugins_mmapstorage_README_autotoc_md340}
+The mmapstorage has two compilation variants\+:
+
+
+\begin{DoxyEnumerate}
+\item mmapstorage
+\item mmapstorage\+\_\+crc
+\end{DoxyEnumerate}
+
+The {\ttfamily mmapstorage} will always be compiled on a supported system (see \href{\#dependencies}{\texttt{ Dependencies}}). When zlib is available, we will additionally compile the {\ttfamily mmapstorage\+\_\+crc} variant. The first variant does not do a CRC32 checksum of the critical data, while the second variant always checks the CRC32 checksum for additional security.\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md341}{}\doxysection{Installation}\label{md_src_plugins_mmapstorage_README_autotoc_md341}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The {\ttfamily mmapstorage} variant is part of the {\ttfamily libelektra5} package and the {\ttfamily mmapstorage\+\_\+crc} is part of the {\ttfamily libelektra5-\/extra} package.\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md342}{}\doxysection{Dependencies}\label{md_src_plugins_mmapstorage_README_autotoc_md342}
+POSIX compliant system (including XSI extensions).
+
+Additionally, zlib is needed for the {\ttfamily mmapstorage\+\_\+crc} compilation variant\+: {\ttfamily zlib1g-\/dev} or {\ttfamily zlib-\/devel}.\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md343}{}\doxysection{Examples}\label{md_src_plugins_mmapstorage_README_autotoc_md343}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount mmapstorage to `user:/tests/mmapstorage`}
+\DoxyCodeLine{sudo kdb mount config.mmap user:/tests/mmapstorage mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add some values via `kdb set`}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage 'Some root key'}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/dir 'Directory within the hierarchy.'}
+\DoxyCodeLine{kdb set user:/tests/mmapstorage/dir/leaf 'A leaf node holding some valuable data.'}
+\DoxyCodeLine{kdb meta-\/set  user:/tests/mmapstorage/dir/leaf superMetaKey 'Metadata is supported too.'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# List the configuration tree below `user:/tests/mmapstorage`}
+\DoxyCodeLine{kdb ls user:/tests/mmapstorage}
+\DoxyCodeLine{\#> user:/tests/mmapstorage}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/dir}
+\DoxyCodeLine{\#> user:/tests/mmapstorage/dir/leaf}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new values}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage}
+\DoxyCodeLine{\#> Some root key}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/dir}
+\DoxyCodeLine{\#> Directory within the hierarchy.}
+\DoxyCodeLine{kdb get user:/tests/mmapstorage/dir/leaf}
+\DoxyCodeLine{\#> A leaf node holding some valuable data.}
+\DoxyCodeLine{kdb meta-\/get  user:/tests/mmapstorage/dir/leaf superMetaKey}
+\DoxyCodeLine{\#> Metadata is supported too.}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mmapstorage}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Unmount mmapstorage}
+\DoxyCodeLine{sudo kdb umount user:/tests/mmapstorage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_mmapstorage_README_autotoc_md344}{}\doxysection{Limitations}\label{md_src_plugins_mmapstorage_README_autotoc_md344}
+Mapped files shall not be altered, otherwise the behavior is undefined.
+
+The {\ttfamily mmap()} system call only supports regular files and so does the mmapstorage plugin with one notable exception\+: The plugin detects when it is called with the files {\ttfamily /dev/stdin} and {\ttfamily /dev/stdout} and makes an internal copy. This makes the plugin compatible with {\ttfamily kdb import} and {\ttfamily kdb export}. 

@@ -1,0 +1,515 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the toml plugin is in keys below
+\item infos/author = Jakob Fischer \href{mailto:jakobfischer93@gmail.com}{\texttt{ jakobfischer93@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/provides = storage/toml
+\item infos/needs = base64
+\item infos/recommends = type
+\item infos/placements = getstorage setstorage
+\item infos/status = experimental unfinished
+\item infos/metadata = order comment/\# comment/\#/start comment/\#/space type tomltype origvalue
+\item infos/description = This storage plugin reads and writes TOML files using Flex and Bison.
+\end{DoxyItemize}\hypertarget{md_src_plugins_toml_README_src_plugins_toml_README_md}{}\doxysection{Introduction}\label{md_src_plugins_toml_README_src_plugins_toml_README_md}
+This plugin is a storage plugin for reading and writing TOML files. The plugin retains most of the file structure of a read TOML file such as comments, empty lines and TOML tables. It supports all kinds of TOML specific types and tables, including nested inline tables and multiline strings.\hypertarget{md_src_plugins_toml_README_autotoc_md539}{}\doxysection{Requirements}\label{md_src_plugins_toml_README_autotoc_md539}
+The plugin needs Flex ($>$=2.\+6.\+2) and Bison ($>$=3) for parsing TOML files.\hypertarget{md_src_plugins_toml_README_autotoc_md540}{}\doxysection{Types}\label{md_src_plugins_toml_README_autotoc_md540}
+\hypertarget{md_src_plugins_toml_README_autotoc_md541}{}\doxysubsection{Reading}\label{md_src_plugins_toml_README_autotoc_md541}
+On reading, the plugin will set the {\ttfamily type} metakey for strings, integers, floats and boolean values, if applicable. For decimal integers, the metakey is set to {\ttfamily long\+\_\+long}. For binary/octal/hexadecimal integers, the metakey is set to {\ttfamily unsigned\+\_\+long\+\_\+long}. For floats, the metakey will be set to {\ttfamily double}. These types are chosen to conform with the TOML format as stated on the offical \href{https://toml.io/en/v1.0.0-rc.1}{\texttt{ TOML}} page.
+
+On reading, non-\/decimal integers will get converted to decimal. The non-\/decimal representation will be stored in the {\ttfamily origvalue} metakey of the key. When writing a key, the value of that metakey will be written instead, in order to retain the original format. Note that the {\ttfamily origvalue} metakey gets removed if the value of the key changes.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.toml user:/tests/storage/types toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create a TOML file with 4 keys}
+\DoxyCodeLine{mkdir -\/p \$(dirname \$(kdb file user:/tests/storage/types))}
+\DoxyCodeLine{echo 'plain\_decimal = 1000' >> `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{echo 'file\_permissions = 0o777' >> `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{echo 'pi = 3.1415' >> `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{echo 'division\_gone\_wrong = -\/inf' >> `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the toml file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{\# > plain\_decimal = 1000}
+\DoxyCodeLine{\# > file\_permissions = 0o777}
+\DoxyCodeLine{\# > pi = 3.1415}
+\DoxyCodeLine{\# > division\_gone\_wrong = -\/inf}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print types and values of the keys with `kdb`}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/types/plain\_decimal' 'type'}
+\DoxyCodeLine{\# > long\_long}
+\DoxyCodeLine{kdb get 'user:/tests/storage/types/plain\_decimal'}
+\DoxyCodeLine{\# > 1000}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/types/file\_permissions' 'type'}
+\DoxyCodeLine{\# > unsigned\_long\_long}
+\DoxyCodeLine{\# The octal value will be converted to decimal}
+\DoxyCodeLine{kdb get 'user:/tests/storage/types/file\_permissions'}
+\DoxyCodeLine{\# > 511}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/types/pi' 'type'}
+\DoxyCodeLine{\# > double}
+\DoxyCodeLine{kdb get 'user:/tests/storage/types/pi'}
+\DoxyCodeLine{\# > 3.1415}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/types/division\_gone\_wrong' 'type'}
+\DoxyCodeLine{\# > double}
+\DoxyCodeLine{kdb get 'user:/tests/storage/types/division\_gone\_wrong'}
+\DoxyCodeLine{\# > -\/inf}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage/types}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage/types}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md542}{}\doxysubsection{Writing}\label{md_src_plugins_toml_README_autotoc_md542}
+On writing, for most values, the plugin will infer the appropriate type and will write them accordingly. This means, values, that match a TOML float, integer or date will be written without any quotes around them. If a value does not match any of these types, it will be written as a string.
+
+The plugin uses an existing {\ttfamily type} metakey only to check if it should write a value as a {\ttfamily string} or a {\ttfamily boolean}.
+
+With this functionality, numbers can be written as a string to the file, if wanted.
+
+To write a boolean value, the {\ttfamily type} metakey must be set to {\ttfamily boolean} for the key. Otherwise, no conversion to the TOML boolean values will take place. Per default, Elektra uses 0/1 to represent boolean values.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.toml user:/tests/storage/types toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create a key, which may be a integer, boolean or string}
+\DoxyCodeLine{kdb set 'user:/tests/storage/types/value' '1'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The plugin infers `long\_long` for this value}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/types/value' 'type'}
+\DoxyCodeLine{\# > long\_long}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The value is written as an integer}
+\DoxyCodeLine{cat `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{\# > value = 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Manually set the `type` metakey to boolean}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/types/value' 'type' 'boolean'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The value is written as a boolean}
+\DoxyCodeLine{cat `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{\# > value = true}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Manually set the `type` metakey to string}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/types/value' 'type' 'string'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The value is written as a string}
+\DoxyCodeLine{cat `kdb file user:/tests/storage/types`}
+\DoxyCodeLine{\# > value = "{}1"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage/types}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage/types}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md543}{}\doxysection{Numbers}\label{md_src_plugins_toml_README_autotoc_md543}
+The plugin supports reading and writing of any kind of number supported by the TOML format, such as floating point numbers and binary/octal/decimal/hexadecimal integers. To write a non-\/decimal integer, add the corresponding prefix to the number ({\ttfamily 0b} for binary, {\ttfamily 0o} for octal, {\ttfamily 0x} for hexadecimal). The value will be written in the given base to the file, but converted to decimal within Elektra (see \href{\#\#reading}{\texttt{ Reading}}). Note that the plugin doesn\textquotesingle{}t warn about invalid prefix/digit combinations. If the combination is not valid, it will be written as a string instead.
+
+If the {\ttfamily type} plugin is enabled and you want to change the value of an existing number key which needs conversion (all keys which have a {\ttfamily origvalue}), you have to change the value of {\ttfamily origvalue} instead of the key value. Otherwise the {\ttfamily type} plugin will give an error.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount a new TOML file}
+\DoxyCodeLine{sudo kdb mount test.toml user:/tests/storage/numbers toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Write an octal value}
+\DoxyCodeLine{kdb set 'user:/tests/storage/numbers/a' '0o777'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Get the converted decimal value}
+\DoxyCodeLine{kdb get 'user:/tests/storage/numbers/a'}
+\DoxyCodeLine{\# > 511}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Get the original octal value}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/numbers/a' 'origvalue'}
+\DoxyCodeLine{\# > 0o777}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Get the type of the number; since it's originally octal, we get `unsigned\_long\_long`}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/numbers/a' 'type'}
+\DoxyCodeLine{\# > unsigned\_long\_long}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Change the value by changing the `origvalue` metakey}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/numbers/a' 'origvalue' '0o666'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Get the new value as decimal}
+\DoxyCodeLine{kdb get 'user:/tests/storage/numbers/a'}
+\DoxyCodeLine{\# > 438}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Change the value to an invalid octal value.}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/numbers/a' 'origvalue' '0o888'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The key value is no longer considered a number}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/numbers/a' 'type'}
+\DoxyCodeLine{\# > string}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage/numbers}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage/numbers}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md544}{}\doxysection{Strings}\label{md_src_plugins_toml_README_autotoc_md544}
+The plugin can read any kind of TOML string\+: basic, literal, basic multiline and literal multiline.
+
+Similar to the TOML-\/specific values (table, array) discussed below, we use the {\ttfamily tomltype} metakey to store the kind of string. The values used are\+: {\ttfamily string\+\_\+basic}, {\ttfamily string\+\_\+literal}, {\ttfamily string\+\_\+ml\+\_\+basic} and {\ttfamily string\+\_\+ml\+\_\+literal}.
+
+When writing a file, the value of {\ttfamily tomltype} will be respected. The plugin will therefore preserve the kind of string throughout a kdb\+Get/kdb\+Set cycle. You can also set {\ttfamily tomltype} manually to transform the string into a different type. If {\ttfamily tomltype} is set to a kind of string that is incompatible with the current value of the key, the plugin will report an error.
+
+If {\ttfamily tomltype} is not set, the plugin defaults to a basic string, or if there are at least two {\ttfamily \textbackslash{}n} to a basic multiline string. This way a {\ttfamily kdb set} will always work correctly, as long as the given string is valid UTF-\/8.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_strings.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# setting a string containing a newline escape sequence}
+\DoxyCodeLine{kdb set 'user:/tests/storage/string' 'I am a basic string\(\backslash\)not a literal one.'}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get 'user:/tests/storage/string'}
+\DoxyCodeLine{\# > I am a basic string}
+\DoxyCodeLine{\# > ot a literal one}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# setting the string again, but escape the backslash with another backslash}
+\DoxyCodeLine{kdb set 'user:/tests/storage/string' 'I am a basic string\(\backslash\)\(\backslash\)not a literal one.'}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get 'user:/tests/storage/string'}
+\DoxyCodeLine{\# > I am a basic string\(\backslash\)not a literal one}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+
+
+The plugin supports all kinds of escape sequences used by TOML in basic and basic multiline strings, like {\ttfamily \textbackslash{}n}, {\ttfamily \textbackslash{}r}, {\ttfamily \textbackslash{}t} and even {\ttfamily \textbackslash{}u}/{\ttfamily \textbackslash{}U} for Unicode escape sequences. When reading a file, all these escape sequences will be translated into valid UTF-\/8 byte sequences that will be used as the key values.
+
+When writing a file, the plugin uses the escape sequences, whenever a part of the key value cannot be placed literally into the file. If a key contains a non-\/\+UTF-\/8 string value, the plugin replaces any invalid sections with the Replacement Character U+\+FFFD and reports a warning.
+
+Finally, the plugin also uses {\ttfamily origvalue} to remember the original formatting of the string. This is particularly useful for escape sequences. Without this mechanism, a {\ttfamily \textbackslash{}u} escape sequence would always be written literally (not as an escape sequence), because when reading the file it is translated into UTF-\/8 bytes. For multiline strings {\ttfamily origvalue} also includes any leading or escaped newlines.\hypertarget{md_src_plugins_toml_README_autotoc_md545}{}\doxysection{Binary/\+NULL values}\label{md_src_plugins_toml_README_autotoc_md545}
+The plugin handles binary values by using the \mbox{\hyperlink{md_src_plugins_base64_README_src_plugins_base64_README_md}{base64}} plugin. As a result, binary values get written as base64 encoded strings, which start with the special prefix {\ttfamily @BASE64}. {\ttfamily NULL} key values are written as special strings of value {\ttfamily @NULL}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_binary.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Creating a key with a NULL value}
+\DoxyCodeLine{kdb set 'user:/tests/storage/nullkey'}
+\DoxyCodeLine{\# > Create a new key user:/test/nullkey with null value}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print file content}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\# > nullkey = '@NULL'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Write base64 encoded data to the file}
+\DoxyCodeLine{echo "{}base64 = '@BASE64SSBhbSBiYXNlIDY0IGVuY29kZWQgZm9yIG5vIHJlYXNvbi4='"{} > `kdb file user:/test`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the value of the key, which is a binary value}
+\DoxyCodeLine{kdb get 'user:/test/base64'}
+\DoxyCodeLine{\#> \(\backslash\)x49\(\backslash\)x20\(\backslash\)x61\(\backslash\)x6d\(\backslash\)x20\(\backslash\)x62\(\backslash\)x61\(\backslash\)x73\(\backslash\)x65\(\backslash\)x20\(\backslash\)x36\(\backslash\)x34\(\backslash\)x20\(\backslash\)x65\(\backslash\)x6e\(\backslash\)x63\(\backslash\)x6f\(\backslash\)x64\(\backslash\)x65\(\backslash\)x64\(\backslash\)x20\(\backslash\)x66\(\backslash\)x6f\(\backslash\)x72\(\backslash\)x20\(\backslash\)x6e\(\backslash\)x6f\(\backslash\)x20\(\backslash\)x72\(\backslash\)x65\(\backslash\)x61\(\backslash\)x73\(\backslash\)x6f\(\backslash\)x6e\(\backslash\)x2e}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the value again, but apply the escape codes}
+\DoxyCodeLine{echo -\/e `kdb get 'user:/test/base64'`}
+\DoxyCodeLine{\#> I am base 64 encoded for no reason.}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md546}{}\doxysection{TOML specific structures}\label{md_src_plugins_toml_README_autotoc_md546}
+TOML specific structures are represented by the metakey {\ttfamily tomltype} on a certain key. It will be set when the TOML plugin reads a TOML structure from a file. Additionally, this metakey can be set by the user, if they want a certain TOML structure to be written. No automatic inference of this metakey is done on writing.\hypertarget{md_src_plugins_toml_README_autotoc_md547}{}\doxysubsection{Simple Tables}\label{md_src_plugins_toml_README_autotoc_md547}
+TOML\textquotesingle{}s simple tables are represented by setting the {\ttfamily tomltype} metakey to {\ttfamily simpletable}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_table.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create three keys, which are all a subkey of 'common',}
+\DoxyCodeLine{\# but we have no 'common' simple table key yet}
+\DoxyCodeLine{kdb set 'user:/tests/storage/common/a' '0'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/common/b' '1'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/common/c' '2'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> common.a = 0}
+\DoxyCodeLine{\#> common.b = 1}
+\DoxyCodeLine{\#> common.c = 2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create a simple table key}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/common' 'tomltype' 'simpletable'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> [common]}
+\DoxyCodeLine{\#> a = 0}
+\DoxyCodeLine{\#> b = 1}
+\DoxyCodeLine{\#> c = 2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md548}{}\doxysubsection{Table Arrays}\label{md_src_plugins_toml_README_autotoc_md548}
+Table arrays are represented by setting the {\ttfamily tomltype} metakey to {\ttfamily tablearray}. It is not required to also set the array metakey, since the plugin will set the metakey, if it is missing.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_table\_array.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create a table array containing two entries, each with a key 'a' and 'b'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/tablearray' 'tomltype' 'tablearray'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/tablearray/\#0/a' '1'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/tablearray/\#0/b' '2'}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set 'user:/tests/storage/tablearray/\#1/a' '3'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/tablearray/\#1/b' '4'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the highest index of the table array}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/tablearray' 'array'}
+\DoxyCodeLine{\#> \#1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> [[tablearray]]}
+\DoxyCodeLine{\#> a = 1}
+\DoxyCodeLine{\#> b = 2}
+\DoxyCodeLine{\#> [[tablearray]]}
+\DoxyCodeLine{\#> a = 3}
+\DoxyCodeLine{\#> b = 4}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md549}{}\doxysubsection{Inline Tables}\label{md_src_plugins_toml_README_autotoc_md549}
+Inline tables are represented by setting the {\ttfamily tomltype} metakey to {\ttfamily inlinetable}. The plugin also supports reading/writing nested inline tables.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_inline\_table.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create a table array containing two entries, each with a key 'a' and 'b'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/inlinetable' 'tomltype' 'inlinetable'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/inlinetable/a' '1'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/inlinetable/b' '2'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/inlinetable/nested' 'tomltype' 'inlinetable'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/inlinetable/nested/x' '3'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/inlinetable/nested/y' '4'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> inlinetable = \{ a = 1, b = 2, nested = \{ x = 3, y = 4 \} \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md550}{}\doxysubsection{Arrays}\label{md_src_plugins_toml_README_autotoc_md550}
+Arrays are recognized by the {\ttfamily array} metakey. On writing, the plugin will detect arrays automatically and set the appropriate metakey if it is missing.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_array.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create array elements}
+\DoxyCodeLine{kdb set 'user:/tests/storage/array/\#0' '1'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/array/\#1' '2'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/array/\#2' '3'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the highest index of the array}
+\DoxyCodeLine{kdb meta-\/get 'user:/tests/storage/array' 'array'}
+\DoxyCodeLine{\#> \#2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> array = [1, 2, 3]}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md551}{}\doxysection{Comments and Empty Lines}\label{md_src_plugins_toml_README_autotoc_md551}
+The plugin preserves all comments with only one limitation for arrays. The whitespace in front of a comment is also saved.
+
+Comments can also be created by assigning meta keys to a key. The meta keys must be of the form {\ttfamily comment/\#n}, where {\ttfamily n} is a positive number, indicating the position of the comment relative to the key. An index of 0 is always the inline comment of the key. Indices greater than zero are for comments preceding the given key, where 1 is the top-\/most comment and the highest index comment is right above the key.
+
+Preceding whitespace can be added to a comment by creating a {\ttfamily comment/\#n/space} metakey. This metakey can contain any number of space or tab characters, which will be placed before the {\ttfamily \#} starting the comment. Any whitespace {\itshape after} the {\ttfamily \#} is considered part of the comment and will therefore be part of {\ttfamily comment/\#n}.
+
+File ending comments must be assigned to the file root key.
+
+Empty lines in front of a key can be created by adding an empty {\ttfamily comment/\#n/start} entry to it. In this case, no {\ttfamily comment/\#n} key is needed.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_comments.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# create a key-\/value pair, ready for comment decoration}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set 'user:/tests/storage/key' '1'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# add an inline comment with 4 leading spaces}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/key' 'comment/\#0' ' This value is very interesting'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/key' 'comment/\#0/space' '    '}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# add some comments preceding the key}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/key' 'comment/\#1' ' I am the top-\/most comment relative to my key.'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/key' 'comment/\#2' ' I am in the middle. Just boring.'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/key' 'comment/\#3' ' I am in the line right above my key.'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# add file ending comments and empty lines}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage' 'comment/\#1' ' First file-\/ending comment'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage' 'comment/\#2/start' ''}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage' 'comment/\#3' ' Second file-\/ending comment. I am the last line of the file.'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> \# I am the top-\/most comment relative to my key.}
+\DoxyCodeLine{\#> \# I am in the middle. Just boring.}
+\DoxyCodeLine{\#> \# I am in the line right above my key.}
+\DoxyCodeLine{\#> key = 1    \# This value is very interesting}
+\DoxyCodeLine{\#> \# First file-\/ending comment}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#> \# Second file-\/ending comment. I am the last line of the file.}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md552}{}\doxysubsection{Comments in Arrays}\label{md_src_plugins_toml_README_autotoc_md552}
+Any amount of comments can be placed between array elements or between the first element and the opening brackets.
+
+However, only one comment -\/ an inline comment -\/ can be placed after the last element and the closing brackets. On reading, the plugin discards any non-\/inline comments between the last element and the closing brackets.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_array\_comments.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create array elements}
+\DoxyCodeLine{kdb set 'user:/tests/storage/array/\#0' '1'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/array/\#1' '2'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/array/\#2' '3'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add inline comment after the array}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array' 'comment/\#0' ' Inline comment after the array'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array' 'comment/\#0/start' '\#'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array' 'comment/\#0/space' '     '}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add comments for array elements}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#0' ' Inline comment of first element'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#0/start' '\#'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#0/space' '    '}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#1' ' Comment preceding the first element'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#1/space' '    '}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#2' ' Another comment preceding the first element'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#0' 'comment/\#2/space' '      '}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#1' 'comment/\#0' ' Inline comment of second element'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#1' 'comment/\#0/space' '    '}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#1' 'comment/\#1' ' Comment preceding the second element'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#1' 'comment/\#1/space' '      '}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#2' 'comment/\#0' ' Inline comment of the last element'}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/array/\#2' 'comment/\#0/space' '     '}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> array = [    \# Comment preceding the first element}
+\DoxyCodeLine{\#>       \# Another comment preceding the first element}
+\DoxyCodeLine{\#> 1,    \# Inline comment of first element}
+\DoxyCodeLine{\#>       \# Comment preceding the second element}
+\DoxyCodeLine{\#> 2,    \# Inline comment of second element}
+\DoxyCodeLine{\#> 3     \# Inline comment of the last element}
+\DoxyCodeLine{\#> ]     \# Inline comment after the array}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_toml_README_autotoc_md553}{}\doxysection{Order}\label{md_src_plugins_toml_README_autotoc_md553}
+The plugin preserves the file order by the usage of the metakey {\ttfamily order}. When reading a file, the order metakey will be set according to the order as read in the file. If new keys are added, eg. via {\ttfamily kdb set}, the order of the set key will be set to the next-\/to-\/highest order value present in the existing key set.
+
+However, the order is only relevant between elements with the same TOML-\/parent. For example keys of a simple table are only sorted with respect to each other, not with any keys outside that table. If that table has it\textquotesingle{}s order changed and moves to another position in the file, so will it\textquotesingle{}s subkeys.
+
+When sorting elements under the same TOML-\/parent, tables (simple and array) will always be sorted after non-\/table elements, regardless of their order. With this limitation, we prevent that a newly set key, that is not part of a certain table array/simple table, would be placed after the table declaration, making it a member of that table on a subsequent read.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount TOML file}
+\DoxyCodeLine{sudo kdb mount test\_order.toml user:/tests/storage toml type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create three keys in reverse alphabetical order under the subkey common}
+\DoxyCodeLine{\# Additionally, create one key not in the common subkey space}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set 'user:/tests/storage/common/c' '0'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/common/b' '1'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/common/a' '2'}
+\DoxyCodeLine{kdb set 'user:/tests/storage/d' '3'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{\# The keys are ordered as they were set}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> common.c = 0}
+\DoxyCodeLine{\#> common.b = 1}
+\DoxyCodeLine{\#> common.a = 2}
+\DoxyCodeLine{\#> d = 3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create a simple table for the three keys under `common`}
+\DoxyCodeLine{kdb meta-\/set 'user:/tests/storage/common' 'tomltype' 'simpletable'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print the content of the resulting TOML file}
+\DoxyCodeLine{cat `kdb file user:/tests/storage`}
+\DoxyCodeLine{\#> d = 3}
+\DoxyCodeLine{\#> [common]}
+\DoxyCodeLine{\#> c = 0}
+\DoxyCodeLine{\#> b = 1}
+\DoxyCodeLine{\#> a = 2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+
+
+In this example, {\ttfamily d} and {\ttfamily common} have the same parent, the file root. This means, they need to be sorted with each other. {\ttfamily d} would be placed before {\ttfamily common} by it\textquotesingle{}s order, since it was set before, and thus, has lesser order. However, their order never gets compared, since {\ttfamily common} is a simple table and {\ttfamily d} is not, so {\ttfamily d} will get sorted before the table regardless of order.\hypertarget{md_src_plugins_toml_README_autotoc_md554}{}\doxysection{Limitations}\label{md_src_plugins_toml_README_autotoc_md554}
+While the plugin has good capabilities in handling the TOML file format, it currently lacks some features possible with Elektra\+:
+
+
+\begin{DoxyItemize}
+\item Sparse arrays are not preserved on writing, they get a continuous array without index holes.
+\item Values on non-\/leaf keys are currently not supported, they get discarded. This applies especially to the parent key of the mountpoint.
+\item Custom metakeys cannot be written by the plugin, so they get discarded.
+\end{DoxyItemize}
+
+Additionally, there are some minor limitations related to the TOML file format, mostly related to the preservation of the original file structure\+:
+
+
+\begin{DoxyItemize}
+\item On writing, each string is written as a TOML basic string (single or multiline). See \href{\#Strings}{\texttt{ Strings}}
+\item Comments and newlines between the last array element and closing brackets are discarded.
+\item Trailing commas in arrays and inline tables are discarded
+\item Only spaces in front of comments are preserved. 
+\end{DoxyItemize}

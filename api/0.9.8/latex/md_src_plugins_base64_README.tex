@@ -1,0 +1,140 @@
+
+\begin{DoxyItemize}
+\item infos = Information about base64 plugin is in keys below
+\item infos/author = Peter Nirschl \href{mailto:peter.nirschl@gmail.com}{\texttt{ peter.\+nirschl@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/provides = binary
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep libc final configurable
+\item infos/metadata =
+\item infos/description = Base64 Encoding
+\end{DoxyItemize}\hypertarget{md_src_plugins_base64_README_src_plugins_base64_README_md}{}\doxysection{Base64}\label{md_src_plugins_base64_README_src_plugins_base64_README_md}
+\hypertarget{md_src_plugins_base64_README_autotoc_md52}{}\doxysubsection{Introduction}\label{md_src_plugins_base64_README_autotoc_md52}
+The Base64 Encoding (specified in \href{https://www.ietf.org/rfc/rfc4648.txt}{\texttt{ RFC4648}}) is used to encode arbitrary binary data to ASCII strings.
+
+This is useful for configuration files that must contain ASCII strings only.
+
+The {\ttfamily base64} plugin encodes binary values before {\ttfamily kdb set} writes the configuration to the file. The values are decoded back to their original value after {\ttfamily kdb get} has read from the configuration file.\hypertarget{md_src_plugins_base64_README_autotoc_md53}{}\doxysubsection{Usage}\label{md_src_plugins_base64_README_autotoc_md53}
+To mount a simple backend that uses the Base64 encoding, you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.ecf /tests/base64/test base64}
+
+\end{DoxyCode}
+
+
+. To unmount the plugin use the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount /tests/base64/test}
+
+\end{DoxyCode}
+
+
+. All encoded binary values will look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{@BASE64SGVsbG8gV29ybGQhCg==}
+
+\end{DoxyCode}
+
+
+. And for a null-\/key it will be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{@BASE64}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_base64_README_autotoc_md54}{}\doxysubsection{Modes}\label{md_src_plugins_base64_README_autotoc_md54}
+The plugin supports two different modes\+:
+
+
+\begin{DoxyEnumerate}
+\item Escaping Mode
+\item Meta Mode
+\end{DoxyEnumerate}
+
+. By default the plugin uses escaping mode which has the advantage that a storage plugin does not have to change its behavior at all to work in conjunction with Base64.\hypertarget{md_src_plugins_base64_README_autotoc_md55}{}\doxysubsubsection{Escaping Mode}\label{md_src_plugins_base64_README_autotoc_md55}
+In order to identify the base64 encoded content, the values are marked with the prefix {\ttfamily @BASE64}. To distinguish between the {\ttfamily @} as character and {\ttfamily @} as Base64 marker, all strings starting with {\ttfamily @} will be modified so that they begin with {\ttfamily @@}.\hypertarget{md_src_plugins_base64_README_autotoc_md56}{}\doxyparagraph{Example}\label{md_src_plugins_base64_README_autotoc_md56}
+The following example shows how you can use this plugin together with the TOML plugin to store binary data.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount the TOML and Base64 plugin}
+\DoxyCodeLine{kdb mount test\_config.toml user:/tests/base64 toml base64}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Copy binary data}
+\DoxyCodeLine{kdb cp system:/elektra/modules/base64/exports/get user:/tests/base64/binary}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Print binary data}
+\DoxyCodeLine{kdb get user:/tests/base64/binary}
+\DoxyCodeLine{\# STDOUT-\/REGEX: \string^(\(\backslash\)\(\backslash\)x[0-\/9a-\/f]\{1,2\})+\$}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The value inside the configuration file is encoded by the Base64 plugin}
+\DoxyCodeLine{kdb file user:/tests/base64 | xargs cat}
+\DoxyCodeLine{\# STDOUT-\/REGEX: binary.*=.*"{}@BASE64[a-\/zA-\/Z0-\/9+/]+=\{0,2\}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -\/r user:/tests/base64}
+\DoxyCodeLine{kdb umount user:/tests/base64}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_base64_README_autotoc_md57}{}\doxysubsubsection{Meta Mode}\label{md_src_plugins_base64_README_autotoc_md57}
+Some file formats such as \href{http://yaml.org}{\texttt{ YAML}} already support Base64 encoded data. In YAML \href{http://yaml.org/type/binary.html}{\texttt{ binary data}} starts with the tag {\ttfamily !!binary} followed by a Base64 encoded scalar\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{!!binary SGVsbG8sIFlBTUwh \# “Hello, YAML!”}
+
+\end{DoxyCode}
+
+
+. For YAML it would not make sense to use the format of the escaping mode\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Another YAML implementation will not be able to decode this data}
+\DoxyCodeLine{\# because of the prefix `@BASE64`!}
+\DoxyCodeLine{!!binary "{}@BASE64SGVsbG8sIFlBTUwh"{}}
+
+\end{DoxyCode}
+
+
+. Base64 supports another mode called “meta mode”. In this mode the Base64 plugin encodes the value, but does not add a prefix. To use the escaping mode a plugin must add the configuration key {\ttfamily /binary/meta}. Afterwards the Base64 plugin encodes and decodes all data that contains the metakey {\ttfamily type} with the value {\ttfamily binary}.
+
+The diagram below shows how the Base64 conversion process works in conjunction with the YAML CPP plugin.
+
+\hypertarget{md_src_plugins_base64_README_autotoc_md58}{}\doxyparagraph{Example}\label{md_src_plugins_base64_README_autotoc_md58}
+The following example shows you how you can use the TOML plugin together with Base64’s meta mode.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount ni and Base64 plugin (provides `binary`) with the configuration key `binary/meta`}
+\DoxyCodeLine{kdb mount test\_config.ni user:/tests/base64 ni base64 binary/meta=}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Save base64 encoded data `"{}value"{}` (`0x76616c7565`)}
+\DoxyCodeLine{kdb set user:/tests/base64/encoded dmFsdWUA}
+\DoxyCodeLine{kdb file user:/tests/base64/encoded | xargs cat | grep encoded}
+\DoxyCodeLine{\#> encoded = dmFsdWUA}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Tell Base64 plugin to decode and encode key value}
+\DoxyCodeLine{kdb meta-\/set user:/tests/base64/encoded type binary}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Receive key data (the `\(\backslash\)x0` at the end marks the end of the string)}
+\DoxyCodeLine{kdb get user:/tests/base64/encoded}
+\DoxyCodeLine{\#> \(\backslash\)x76\(\backslash\)x61\(\backslash\)x6c\(\backslash\)x75\(\backslash\)x65\(\backslash\)x0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -\/r user:/tests/base64}
+\DoxyCodeLine{kdb umount user:/tests/base64}
+
+\end{DoxyCode}
+
+
+For another usage example, please take a look at the Read\+Me of the \mbox{\hyperlink{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}{YAML CPP plugin}}. 

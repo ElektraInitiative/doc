@@ -1,0 +1,55 @@
+.TH "doc_decisions_base_name_md" 3elektra "Mon Oct 4 2021" "Version 0.9.8" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_base_name_md \- Base Name 
+ 
+.SH "Problem"
+.PP
+A key name is made out of a sequence of key part names, and can be constructed with \fCkeyAddBaseName/keySetBaseName\fP\&. Both applications and configuration file formats might need arbitrary strings to be encoded within a key name part\&.
+.PP
+For example:
+.PP
+.IP "\(bu" 2
+an application uses names of internal components as sections within the configuration\&.
+.IP "\(bu" 2
+a parser reads an empty string, to be encoded as base name\&.
+.PP
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+\fCkeySetBaseName (key, keyBaseName (key))\fP should be a NOP, which is needed for round-trips: If a storage plugin serializes what it gets with \fCkeyBaseName\fP; \fCkeySetBaseName\fP must lead to the same key\&.
+.IP "\(bu" 2
+support any configuration file format (i\&.e\&., any valid file of some format can be transformed to a KeySet, e\&.g\&. TOML supports empty key part names)\&.
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+restrict what \fCkeyAddBaseName/keySetBaseName\fP can accept: has the downside that applications would suddenly fail when trying to set some key base names
+.IP "\(bu" 2
+have additional \fCkeySetBaseName*\fP functions that make strings safe to be accepted in \fCkeyAddBaseName/keySetBaseName\fP: seems to be a too big change in the storage plugins
+.PP
+.SH "Decision"
+.PP
+\fCkeyAddBaseName/keySetBaseName\fP never fail with any argument, so any character sequence can be escaped except of NULL bytes\&. The argument goes unmodified to the unescaped key name\&.
+.PP
+For arrays there is no escaping needed because an array is only an array if the metadata \fCarray\fP is appended to the direct parent key\&. See \fBarray\fP\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+hard to use it wrong API: having only the functions \fCkeyAddBaseName/keySetBaseName\fP, without any size argument
+.IP "\(bu" 2
+applications and storage plugins can pass any c-string to \fCkeyAddBaseName/keySetBaseName\fP without any further consideration
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBArray\fP
+.PP
+.SH "Notes"
+.PP
+

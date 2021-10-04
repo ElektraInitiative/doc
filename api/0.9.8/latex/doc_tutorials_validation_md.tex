@@ -1,0 +1,263 @@
+\label{doc_tutorials_validation_md_md_doc_tutorials_validation}%
+\Hypertarget{doc_tutorials_validation_md_md_doc_tutorials_validation}%
+ \hypertarget{doc_tutorials_validation_md_autotoc_md3769}{}\doxysection{Introduction}\label{doc_tutorials_validation_md_autotoc_md3769}
+Configuration in $<$abbr title=\char`\"{}\+Free/\+Libre and Open Source Software\char`\"{}$>$FLOSS$<$/abbr$>$ unfortunately is often stored completely without validation. Notable exceptions are sudo ({\ttfamily visudo}), or user accounts ({\ttfamily adduser}) but in most cases you only get feedback of non-\/validating configuration when the application fails to start.
+
+Elektra provides a generic way to validate any configuration before it is written to disc.\hypertarget{doc_tutorials_validation_md_autotoc_md3770}{}\doxysection{User Interfaces}\label{doc_tutorials_validation_md_autotoc_md3770}
+Any of Elektra\textquotesingle{}s user interfaces will work with the technique described in this tutorial, e.\+g.\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily kdb qt-\/gui}\+: graphical user interface
+\item {\ttfamily kdb editor}\+: starts up your favorite text editor and allows you to edit configuration in any syntax. (generalization of {\ttfamily visudo})
+\item {\ttfamily kdb set}\+: manipulate or add individual configuration entries. (generalization of {\ttfamily adduser})
+\item Any other tool using Elektra to store configuration (e.\+g. if the application itself has capabilities to modify its configuration)
+\end{DoxyEnumerate}\hypertarget{doc_tutorials_validation_md_autotoc_md3771}{}\doxysection{Metadata Together With Keys}\label{doc_tutorials_validation_md_autotoc_md3771}
+The most direct way to validate keys is
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set user:/tests/together/test check/validation "{}[1-\/9][0-\/9]*"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/together/test check/validation/match LINE}
+\DoxyCodeLine{kdb meta-\/set user:/tests/together/test check/validation/message "{}Not a number"{}}
+\DoxyCodeLine{kdb set user:/tests/together/test 123}
+\DoxyCodeLine{\#> Set string to "{}123"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -\/r user:/tests/together}
+
+\end{DoxyCode}
+
+
+The approach is not limited to validation via regular expressions, but any values-\/validation plugin can be used, e.\+g. \mbox{\hyperlink{md_src_plugins_type_README_src_plugins_type_README_md}{type}}. For a full list refer to the section \char`\"{}\+Value Validation\char`\"{} in the \mbox{\hyperlink{src_plugins_README_md}{list of all plugins}}.
+
+Note that it also easy \mbox{\hyperlink{doc_tutorials_plugins_md}{to write your own (value validation) plugin}}.
+
+The drawbacks of this approach are\+:
+
+
+\begin{DoxyItemize}
+\item The administrator needs to take care that the validation plugins are available where needed.
+\item Some metadata (in this case {\ttfamily check/validation}) needs to be stored next to the key which won\textquotesingle{}t work with most configuration files. This is the reason why we explicitly used {\ttfamily dump} as storage in {\ttfamily kdb mount}.
+\item After the key is removed, the validation information is gone, too.
+\item You cannot validate structure of which keys must be present or absent.
+\end{DoxyItemize}\hypertarget{doc_tutorials_validation_md_autotoc_md3772}{}\doxysection{Get Started with $<$tt$>$spec$<$/tt$>$}\label{doc_tutorials_validation_md_autotoc_md3772}
+These issues are resolved straightforward by separating the configuration from its configuration specification (often called schemata in XML or JSON). The purpose of the \mbox{\hyperlink{doc_tutorials_namespaces_md}{spec namespace}} is to hold the configuration specification, i.\+e., the description of how to validate the keys of all other namespaces.
+
+To make this work, we need a plugin that applies all metadata found in the {\ttfamily spec}-\/namespace to all other namespaces. This plugin is called {\ttfamily spec} and needs to be mounted globally (will be added by default and also with any {\ttfamily kdb global-\/mount} call).
+
+Before we start, let us make a backup of the current data in the spec and user namespace\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system:/tests/specbackup \$(mktemp)}
+\DoxyCodeLine{kdb set system:/tests/userbackup \$(mktemp)}
+\DoxyCodeLine{kdb export spec:/ dump > \$(kdb get system:/tests/specbackup)}
+\DoxyCodeLine{kdb export user:/ dump > \$(kdb get system:/tests/userbackup)}
+
+\end{DoxyCode}
+
+
+We write metadata to the namespace {\ttfamily spec} and the plugin {\ttfamily spec} applies it to every cascading key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/spec/test hello world}
+\DoxyCodeLine{kdb set user:/tests/spec/test value}
+\DoxyCodeLine{kdb meta-\/ls spec:/tests/spec/test | grep -\/v '\string^internal/ini'}
+\DoxyCodeLine{\#> hello}
+\DoxyCodeLine{kdb meta-\/ls /tests/spec/test | grep -\/v '\string^internal/ini'}
+\DoxyCodeLine{\#> hello}
+\DoxyCodeLine{kdb meta-\/get /tests/spec/test hello}
+\DoxyCodeLine{\#> world}
+
+\end{DoxyCode}
+
+
+But it also supports globbing ({\ttfamily \+\_\+} for any key, {\ttfamily ?} for any char, {\ttfamily \mbox{[}\mbox{]}} for character classes)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set "{}spec:/tests/spec/\_"{} new metaval}
+\DoxyCodeLine{kdb set user:/tests/spec/test value}
+\DoxyCodeLine{kdb meta-\/ls /tests/spec/test | grep -\/v '\string^internal/ini'}
+\DoxyCodeLine{\#> hello}
+\DoxyCodeLine{\#> new}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Remove keys and metadata from the commands above}
+\DoxyCodeLine{kdb rm -\/r spec:/tests/spec}
+\DoxyCodeLine{kdb rm -\/r user:/tests/spec || kdb rm -\/r system:/tests/spec}
+
+\end{DoxyCode}
+
+
+So let us combine this functionality with validation plugins. So we would specify\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/spec/test check/validation "{}[1-\/9][0-\/9]*"{}}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/spec/test check/validation/match LINE}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/spec/test check/validation/message "{}Not a number"{}}
+
+\end{DoxyCode}
+
+
+If we now set a new key with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/spec/test "{}not a number"{}}
+
+\end{DoxyCode}
+
+
+this key has adopted all metadata from the spec namespace\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/ls /tests/spec/test | grep -\/v '\string^internal/ini'}
+\DoxyCodeLine{\#> check/validation}
+\DoxyCodeLine{\#> check/validation/match}
+\DoxyCodeLine{\#> check/validation/message}
+
+\end{DoxyCode}
+
+
+Note that this key should not have passed the validation that we defined in the spec namespace. Nonetheless we were able to set this key, because the validation plugin was not active for this key. On that behalf we have to make sure that the validation plugin is loaded for this key with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount tutorial.dump /tests/spec dump validation}
+
+\end{DoxyCode}
+
+
+This \mbox{\hyperlink{doc_tutorials_mount_md}{mounts}} the backend {\ttfamily tutorial.\+dump} to the mount point $\ast$$\ast$/tests/spec$\ast$$\ast$ and activates the validation plugin for the keys below the mount point. The validation plugin now uses the metadata of the keys below $\ast$$\ast$/tests/spec$\ast$$\ast$ to validate values before storing them in {\ttfamily tutorial.\+dump}.
+
+Although this is better than defining metadata in the same place as the data itself, we can still do better. The reason for that is that one of the aims of Elektra is to remove the trouble of validation and finding the files that hold your configuration from the users. At the moment a user still has to know which files should hold the configuration and which plugins must be loaded when he mounts configuration files.
+
+This problem can be addressed by recognizing that the location of the configuration files and the plugins that must be loaded is part of the {\itshape schema} of our configuration and therefore should be stored in the spec namespace.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{kdb rm -\/r spec:/tests/spec/test}
+\DoxyCodeLine{kdb rm -\/r user:/tests/spec || kdb rm -\/r system:/tests/spec}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_validation_md_autotoc_md3773}{}\doxysubsection{Specfiles}\label{doc_tutorials_validation_md_autotoc_md3773}
+We call the files, that contain a complete schema for configuration below a specific path in form of metadata, {\itshape Specfiles}.
+
+A {\itshape Specfile} contains metadata, among others, that defines how the configuration settings should be validated.
+
+Let us create an example {\itshape Specfile} in the dump format, which supports metadata. Although the specfile is stored in the dump format, we can still create it using the human readable \mbox{\hyperlink{md_src_plugins_ni_README_src_plugins_ni_README_md}{ni format}} by using {\ttfamily kdb import} (note that the {\ttfamily \textbackslash{}\textbackslash{}} are due to \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}}, do not copy them to your shell)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount tutorial.dump spec:/tests/tutorial dump}
+\DoxyCodeLine{cat << HERE | kdb import spec:/tests/tutorial ni  \(\backslash\)}
+\DoxyCodeLine{[]                                         \(\backslash\)}
+\DoxyCodeLine{ mountpoint=tutorial.dump                \(\backslash\)}
+\DoxyCodeLine{ infos/plugins=dump validation           \(\backslash\)}
+\DoxyCodeLine{                                           \(\backslash\)}
+\DoxyCodeLine{[/links/\_]                                 \(\backslash\)}
+\DoxyCodeLine{check/validation=https?://.*\(\backslash\)..*         \(\backslash\)}
+\DoxyCodeLine{check/validation/match=LINE              \(\backslash\)}
+\DoxyCodeLine{check/validation/message=not a valid URL \(\backslash\)}
+\DoxyCodeLine{description=A link to some website       \(\backslash\)}
+\DoxyCodeLine{HERE}
+\DoxyCodeLine{kdb meta-\/ls spec:/tests/tutorial}
+\DoxyCodeLine{\#> infos/plugins}
+\DoxyCodeLine{\#> mountpoint}
+
+\end{DoxyCode}
+
+
+We now have all the metadata that we need to mount and validate the data below {\ttfamily /tutorial} in one file.
+
+For a description which metadata is available, have a look in \href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ METADATA.\+ini}}.
+
+Now we apply this {\itshape Specfile} to the key database to all keys below {\ttfamily tests/tutorial}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb spec-\/mount /tests/tutorial}
+
+\end{DoxyCode}
+
+
+This command automatically mounts {\ttfamily /tests/tutorial} to the backend {\ttfamily tutorial.\+dump}. Furthermore it adds all plugins necessary for all metadata within the specification. So in this example the validation plugin will be loaded automatically for us. {\ttfamily spec-\/mount} basically does a normal mount except that it automatically selects plugins. As a result there is no {\ttfamily spec-\/umount} command since the normal {\ttfamily umount} is sufficient.
+
+Please be aware that if you require many plugins for the same mount point, you can run into \href{https://github.com/ElektraInitiative/libelektra/issues/2133}{\texttt{ this}} error.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/tutorial/links/url "{}invalid url"{}}
+\DoxyCodeLine{\# STDERR: .*Validation Syntactic.*not a valid URL.*}
+\DoxyCodeLine{\# ERROR:  C03100}
+\DoxyCodeLine{\# RET:    5}
+
+\end{DoxyCode}
+
+
+Note that the backend {\ttfamily tutorial.\+dump} is mounted for all namespaces\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file user:/tests/tutorial}
+\DoxyCodeLine{\# STDOUT-\/REGEX: /.*/tutorial\(\backslash\).dump}
+\DoxyCodeLine{kdb file system:/tests/tutorial}
+\DoxyCodeLine{\# STDOUT-\/REGEX: /.*/tutorial\(\backslash\).dump}
+\DoxyCodeLine{kdb file dir:/tests/tutorial}
+\DoxyCodeLine{\# STDOUT-\/REGEX: /.*/tutorial\(\backslash\).dump}
+
+\end{DoxyCode}
+
+
+If you want to go without validation, you can work around that by setting the keys with the {\ttfamily -\/f} ({\ttfamily -\/-\/force}) option\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set -\/f system:/tests/tutorial/links/elektra "{}invalid url"{}}
+\DoxyCodeLine{\#> Create a new key system:/tests/tutorial/links/elektra with string "{}invalid url"{}}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_validation_md_autotoc_md3774}{}\doxysection{Rejecting Configuration Keys}\label{doc_tutorials_validation_md_autotoc_md3774}
+Up to now we only discussed how to reject keys that have unwanted values. Sometimes, however, applications require the presence or absence of keys. There are many ways to do so directly supported by \mbox{\hyperlink{md_src_plugins_spec_README_src_plugins_spec_README_md}{the spec plugin}}. Another way is to trigger errors with the \mbox{\hyperlink{md_src_plugins_error_README_src_plugins_error_README_md}{error plugin}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/tutorial/spec/should\_not\_be\_here trigger/error C03200}
+\DoxyCodeLine{kdb spec-\/mount /tests/tutorial}
+\DoxyCodeLine{kdb set user:/tests/tutorial/spec/should\_not\_be\_here abc}
+\DoxyCodeLine{\# RET:    5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{kdb get /tests/tutorial/spec/should\_not\_be\_here}
+\DoxyCodeLine{\# RET: 11}
+\DoxyCodeLine{\# STDERR: Did not find key '/tests/tutorial/spec/should\_not\_be\_here'}
+
+\end{DoxyCode}
+
+
+If we want to reject every optional key (and only want to allow required keys) we can use the plugin {\ttfamily required} as further discussed below.
+
+Before we look further let us undo the modifications to the key database.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb rm -\/r spec:/tests/tutorial}
+\DoxyCodeLine{kdb rm -\/r system:/tests/tutorial}
+\DoxyCodeLine{kdb rm -\/rf user:/tests/tutorial}
+\DoxyCodeLine{kdb umount spec:/tests/tutorial}
+\DoxyCodeLine{kdb umount /tests/tutorial}
+\DoxyCodeLine{kdb rm -\/rf spec:/}
+\DoxyCodeLine{kdb rm -\/rf user:/}
+\DoxyCodeLine{kdb import spec:/ dump < \$(kdb get system:/tests/specbackup)}
+\DoxyCodeLine{kdb import user:/ dump < \$(kdb get system:/tests/userbackup)}
+\DoxyCodeLine{rm \$(kdb get system:/tests/specbackup)}
+\DoxyCodeLine{rm \$(kdb get system:/tests/userbackup)}
+\DoxyCodeLine{kdb rm system:/tests/specbackup}
+\DoxyCodeLine{kdb rm system:/tests/userbackup}
+
+\end{DoxyCode}
+ 

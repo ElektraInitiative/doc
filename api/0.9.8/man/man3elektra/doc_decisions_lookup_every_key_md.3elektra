@@ -1,0 +1,48 @@
+.TH "doc_decisions_lookup_every_key_md" 3elektra "Mon Oct 4 2021" "Version 0.9.8" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_lookup_every_key_md \- Lookup Every Key 
+ 
+.SH "Problem"
+.PP
+On structures like maps or \fBarrays\fP there are different possibilities which keys are looked up in the KeySet and which are simply iterated\&.
+.PP
+Without any guidelines, applications would provide arbitrary inconsistent behavior\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Applications that have good reasons to ignore the guidelines (e\&.g\&. they only read from one namespace), are allowed to do so\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+only lookup the roots and then iterate over the next keys
+.IP "\(bu" 2
+let the applications do what they want without any guideline
+.PP
+.SH "Decision"
+.PP
+Every key that an application wants to use, must be looked up with \fCksLookup\fP using a cascading lookup key\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+very simple rule, easy to understand, easy to follow
+.IP "\(bu" 2
+provides consistent behavior (\fCspec\fP is always honored)
+.IP "\(bu" 2
+\fCksLookup\fP is quite cheap as it has only a few simple loops, only one allocation and less then 10% of CPU time in profiling, even in very simple applications with many lookups\&.
+.PP
+.SH "Implications"
+.PP
+Needs some helper functions or support in bindings as it is a bit tricky to implement e\&.g\&. for arrays\&.
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBArrays\fP
+.PP
+.SH "Notes"
+.PP
+

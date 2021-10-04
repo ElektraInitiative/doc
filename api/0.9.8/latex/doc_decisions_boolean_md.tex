@@ -1,0 +1,50 @@
+\label{doc_decisions_boolean_md_md_doc_decisions_boolean}%
+\Hypertarget{doc_decisions_boolean_md_md_doc_decisions_boolean}%
+ \hypertarget{doc_decisions_boolean_md_autotoc_md1661}{}\doxysection{Problem}\label{doc_decisions_boolean_md_autotoc_md1661}
+Inconsistent use of booleans in various parts of Elektra.\hypertarget{doc_decisions_boolean_md_autotoc_md1662}{}\doxysection{Constraints}\label{doc_decisions_boolean_md_autotoc_md1662}
+
+\begin{DoxyItemize}
+\item needs to be string
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1663}{}\doxysection{Assumptions}\label{doc_decisions_boolean_md_autotoc_md1663}
+\hypertarget{doc_decisions_boolean_md_autotoc_md1664}{}\doxysection{Considered Alternatives}\label{doc_decisions_boolean_md_autotoc_md1664}
+
+\begin{DoxyItemize}
+\item only check presence or absence (no cascading override of already present key possible)
+\item use booleans as in CMake, which allows on/off, true/false, ... (would need convenience across the code)
+\item do not accept a specification with {\ttfamily type = boolean} without a default
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1665}{}\doxysection{Decision}\label{doc_decisions_boolean_md_autotoc_md1665}
+Only the strings {\ttfamily 0} and {\ttfamily 1} are allowed in the {\ttfamily Key\+Set} for {\ttfamily type = boolean}, for both values and defaults. Everything else should lead to errors in checkers (in {\ttfamily kdb\+Set}).
+
+A spec with {\ttfamily type = boolean} without a specified default should be interpreted as {\ttfamily default = 0}.
+
+Example for an implementation in C in an application\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (k != NULL \&\& strcmp(\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(k), \textcolor{stringliteral}{"{}1"{}}) == 0) \{\textcolor{comment}{/*true*/}\} \textcolor{keywordflow}{else} \{\textcolor{comment}{/*false*/}\}}
+
+\end{DoxyCode}
+
+
+Storage plugins are allowed any representation as suitable, e.\+g., a JSON plugin might render {\ttfamily 1} as {\ttfamily true}.
+
+The type checker plugin should allow
+
+
+\begin{DoxyItemize}
+\item non-\/presence
+\item the string \char`\"{}0\char`\"{}
+\item the string \char`\"{}1\char`\"{}
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1666}{}\doxysection{Rationale}\label{doc_decisions_boolean_md_autotoc_md1666}
+
+\begin{DoxyItemize}
+\item most easy to implement
+\item allows non-\/presence to be false
+\item plugins allow us to convert to any other behavior
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1667}{}\doxysection{Implications}\label{doc_decisions_boolean_md_autotoc_md1667}
+
+\begin{DoxyItemize}
+\item Storage plugins are only allowed to emit {\ttfamily 0} or {\ttfamily 1} as key values
+\item Applications either get {\ttfamily 0} or {\ttfamily 1}, or (without a key) can safely assume that false is meant
+\end{DoxyItemize}\hypertarget{doc_decisions_boolean_md_autotoc_md1668}{}\doxysection{Related Decisions}\label{doc_decisions_boolean_md_autotoc_md1668}
+\hypertarget{doc_decisions_boolean_md_autotoc_md1669}{}\doxysection{Notes}\label{doc_decisions_boolean_md_autotoc_md1669}

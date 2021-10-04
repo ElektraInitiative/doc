@@ -1,0 +1,69 @@
+.TH "doc_decisions_internal_cache_md" 3elektra "Mon Oct 4 2021" "Version 0.9.8" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_internal_cache_md \- Internal KeySet Cache 
+ 
+.SH "Problem"
+.PP
+When doing \fBkdbGet()\fP possible more keys are returned which might be confusing\&. When doing a second \fBkdbGet()\fP with a new keyset no keys might be returned, because it is up-to-date\&.
+.PP
+When doing \fBkdbSet()\fP a deep duplication is needed\&.
+.PP
+Idea: keep a duplicated keyset internally\&. Return (non-deep?) duplications exactly of the parts as requested\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+no cache (current situation)
+.IP "\(bu" 2
+flat cache with COW
+.IP "\(bu" 2
+deep duplicated cache
+.IP "\(bu" 2
+Use global plugin to implement internal cache\&.
+.IP "\(bu" 2
+Use global mmap plugin and make \fBkdbGet()\fP to always retrieve everything\&.
+.PP
+.SH "Decision"
+.PP
+Not yet decided\&.
+.SH "Rationale"
+.PP
+Semantics can be provided without additional code or overhead in the core\&.
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBGlobal Validation\fP
+.PP
+.SH "Notes"
+.PP
+internal caches lead to duplication of memory consumption (most of it is avoided by reference counting, though)
+.PP
+in some cases caches cannot be avoided? -> filesys, databases?
+.SS "Cache Discussion"
+\fBPros:\fP
+.PP
+.IP "\(bu" 2
+not more keys than needed
+.IP "\(bu" 2
+kdbGet avoids IO even if done somewhere else
+.IP "\(bu" 2
+KDB handles could be more locally
+.PP
+.PP
+\fBCons:\fP
+.PP
+.IP "\(bu" 2
+not possible to access cache with current architecture, KDB high level API
+.IP "\(bu" 2
+implementation overhead
+.IP "\(bu" 2
+where should the caches be 
+.PP
+
