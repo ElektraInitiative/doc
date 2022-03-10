@@ -1,0 +1,319 @@
+.TH "doc_tutorials_merge_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_merge_md \- How-To: kdb merge 
+ 
+.SH "Introduction"
+.PP
+The kdb tool allows users to access and perform functions on the Elektra Key Database from the command line\&. We added a new command to this very useful tool, the \fCmerge\fP command\&. This command allows a user to perform a three-way merge of KeySets from the \fCkdb\fP tool\&.
+.PP
+The command to use this tool is:
+.PP
+.PP
+.nf
+kdb merge [options] ourpath theirpath basepath resultpath
+# RET: 7
+.fi
+.PP
+.PP
+The standard naming scheme for a three-way merge consists of \fCours\fP, \fCtheirs\fP, and \fCbase\fP:
+.PP
+.IP "\(bu" 2
+\fCours\fP refers to the local copy of a file
+.IP "\(bu" 2
+\fCtheirs\fP refers to a remote copy
+.IP "\(bu" 2
+\fCbase\fP refers to their common ancestor\&.
+.PP
+.PP
+This works very similarly for KeySets, especially ones that consist of mounted configuration files\&.
+.PP
+For mounted configuration files:
+.PP
+.IP "\(bu" 2
+\fCours\fP should be the user's copy
+.IP "\(bu" 2
+\fCtheirs\fP would be the maintainers copy,
+.IP "\(bu" 2
+\fCbase\fP would be the previous version of the maintainer's copy\&.
+.PP
+.PP
+If the user is just trying to accomplish a three-way merge using any two arbitrary keysets that share a base, it doesn't matter which ones are defined as \fCours\fP or \fCtheirs\fP as long as they use the correct base KeySet\&. In \fCkdb merge\fP, \fCourpath\fP, \fCtheirpath\fP, and \fCbasepath\fP work just like \fCours\fP, \fCtheirs\fP, and \fCbase\fP except each one represents the root of a KeySet\&. The argument \fCresultpath\fP is pretty self-explanatory, it is just where you want the result of the merge to be saved under\&. It's worth noting, \fCresultpath\fP should be empty before attempting a merge, otherwise there can be unintended consequences\&.
+.SH "Options"
+.PP
+As for the options, there are two basic options:
+.PP
+.IP "\(bu" 2
+\fC-i\fP, \fC--interactive\fP: which attempts the merge in an interactive way
+.IP "\(bu" 2
+\fC-f\fP, \fC--force\fP: which overwrites any Keys in \fCresultpath\fP
+.PP
+.SS "Strategies"
+Additionally, there is an option to specify a merge strategy, which is very important\&.
+.PP
+The option for strategy is:
+.PP
+.IP "\(bu" 2
+\fC-s <name>\fP, \fC--strategy <name>\fP: which is used to specify a strategy to use in case of a conflict
+.PP
+.PP
+The current list of strategies are:
+.PP
+.IP "\(bu" 2
+\fCpreserve\fP: the merge will fail if a conflict is detected
+.IP "\(bu" 2
+\fCours\fP: the merge will use our version during a conflict
+.IP "\(bu" 2
+\fCtheirs\fP: the merge will use their version during a conflict
+.IP "\(bu" 2
+\fCcut\fP: Removes existing keys below the resultpath and replaces them with the merged keyset\&.
+.IP "\(bu" 2
+\fCimport\fP: (DEPRECATED, avoid using it!) Preserves existing keys in the resultpath if they do not exist in the merged keyset\&. If the key does exist in the merged keyset, it will be overwritten\&.
+.PP
+.PP
+If no strategy is specified, the merge will default to the preserve strategy as to not risk making the wrong decision\&. If any of the other strategies are specified, when a conflict is detected, merge will use the Key specified by the strategy (\fCours\fP, \fCtheirs\fP, \fCcut\fP or \fCimport\fP) for the resulting Key\&.
+.SH "Basic Example"
+.PP
+Basic Usage:
+.PP
+.PP
+.nf
+kdb merge system:/hosts/ours system:/hosts/theirs system:/hosts/base system:/hosts/result
+.fi
+.PP
+.SH "Examples Using Strategies"
+.PP
+Here are examples of the same KeySets being merged using different strategies\&. The KeySets are mounted using a property format, the left side of '=' is the name of the Key, the right side is its string value\&.
+.PP
+We start with the base KeySet, \fCsystem:/base\fP:
+.PP
+.PP
+.nf
+key1=1
+key2=2
+key3=3
+key4=4
+key5=5
+.fi
+.PP
+.PP
+Here is our KeySet, \fCsystem:/ours\fP:
+.PP
+.PP
+.nf
+key1=apple
+key2=2
+key3=3
+key5=fish
+.fi
+.PP
+.PP
+Here is their KeySet, \fCsystem:/theirs\fP:
+.PP
+.PP
+.nf
+key1=1
+key2=pie
+key4=banana
+key5=5
+.fi
+.PP
+.PP
+To add the keys to the key database, execute the following commands:
+.PP
+.PP
+.nf
+kdb set user:/tests/base/key1 1
+#> Create a new key user:/tests/base/key1 with string "1"
+
+kdb set user:/tests/base/key2 2
+#> Create a new key user:/tests/base/key2 with string "2"
+
+kdb set user:/tests/base/key3 3
+#> Create a new key user:/tests/base/key3 with string "3"
+
+kdb set user:/tests/base/key4 4
+#> Create a new key user:/tests/base/key4 with string "4"
+
+kdb set user:/tests/base/key5 5
+#> Create a new key user:/tests/base/key5 with string "5"
+
+
+kdb set user:/tests/ours/key1 apple
+#> Create a new key user:/tests/ours/key1 with string "apple"
+
+kdb set user:/tests/ours/key2 2
+#> Create a new key user:/tests/ours/key2 with string "2"
+
+kdb set user:/tests/ours/key3 3
+#> Create a new key user:/tests/ours/key3 with string "3"
+
+kdb set user:/tests/ours/key5 fish
+#> Create a new key user:/tests/ours/key5 with string "fish"
+
+
+kdb set user:/tests/theirs/key1 1
+#> Create a new key user:/tests/theirs/key1 with string "1"
+
+kdb set user:/tests/theirs/key2 pie
+#> Create a new key user:/tests/theirs/key2 with string "pie"
+
+kdb set user:/tests/theirs/key4 banana
+#> Create a new key user:/tests/theirs/key4 with string "banana"
+
+kdb set user:/tests/theirs/key5 5
+#> Create a new key user:/tests/theirs/key5 with string "5"
+.fi
+.PP
+.PP
+Now we will examine the result KeySet with the different strategies\&.
+.SS "Preserve"
+.PP
+.nf
+kdb merge -s preserve user:/tests/ours user:/tests/theirs user:/tests/base user:/tests/result
+# RET: 255
+# STDERR: 1 conflicts were detected that could not be resolved automatically:⏎user:/tests/result/key4⏎ours: CONFLICT_DELETE, theirs: CONFLICT_MODIFY⏎⏎Merge unsuccessful\&.
+.fi
+.PP
+.PP
+The merge will fail because of a conflict for \fCkey4\fP since \fCkey4\fP was deleted in our KeySet and edited in their KeySet\&. Since we used preserve, the merge fails and the result KeySet is not saved\&.
+.SS "Ours"
+.PP
+.nf
+kdb merge -s ours user:/tests/ours user:/tests/theirs user:/tests/base user:/tests/result
+.fi
+.PP
+.PP
+The result KeySet, \fCuser:/tests/result\fP will be:
+.PP
+.PP
+.nf
+kdb ls user:/tests/result
+#> user:/tests/result/key1
+#> user:/tests/result/key2
+#> user:/tests/result/key5
+.fi
+.PP
+.PP
+The values of the keys are:
+.PP
+.PP
+.nf
+kdb get user:/tests/result/key1
+#> apple
+
+kdb get user:/tests/result/key2
+#> pie
+
+kdb get user:/tests/result/key5
+#> fish
+.fi
+.PP
+.PP
+The conflict of \fCkey4\fP (it was deleted in \fCours\fP but changed in \fCtheirs\fP) is solved by using our copy, thus deleting the key\&.
+.PP
+Now we delete the result keys and try the next merging strategy\&.
+.PP
+.PP
+.nf
+kdb rm user:/tests/result/key1
+kdb rm user:/tests/result/key2
+kdb rm user:/tests/result/key5
+.fi
+.PP
+.SS "Theirs"
+.PP
+.nf
+kdb merge -s theirs user:/tests/ours user:/tests/theirs user:/tests/base user:/tests/result
+.fi
+.PP
+.PP
+The result KeySet, \fCuser:/tests/result\fP will be:
+.PP
+.PP
+.nf
+kdb ls user:/tests/result
+#> user:/tests/result/key1
+#> user:/tests/result/key2
+#> user:/tests/result/key4
+#> user:/tests/result/key5
+.fi
+.PP
+.PP
+The values of the keys are:
+.PP
+.PP
+.nf
+kdb get user:/tests/result/key1
+#> apple
+
+kdb get user:/tests/result/key2
+#> pie
+
+kdb get user:/tests/result/key4
+#> banana
+
+kdb get user:/tests/result/key5
+#> fish
+.fi
+.PP
+.PP
+Here, the conflict of \fCkey4\fP is solved by using their copy, thus \fCkey4=banana\fP\&.
+.PP
+We delete the result keys again and finally try the \fCcut\fP merging strategy\&.
+.PP
+.PP
+.nf
+kdb rm user:/tests/result/key1
+kdb rm user:/tests/result/key2
+kdb rm user:/tests/result/key4
+kdb rm user:/tests/result/key5
+.fi
+.PP
+.SS "Cut"
+.PP
+.nf
+kdb merge -s cut user:/tests/ours user:/tests/theirs user:/tests/base user:/tests/result
+.fi
+.PP
+.PP
+The result KeySet, \fCuser:/tests/result\fP will be:
+.PP
+.PP
+.nf
+kdb ls user:/tests/result
+#> user:/tests/result/key1
+#> user:/tests/result/key2
+#> user:/tests/result/key4
+#> user:/tests/result/key5
+.fi
+.PP
+.PP
+The values of the keys are:
+.PP
+.PP
+.nf
+kdb get user:/tests/result/key1
+#> 1
+
+kdb get user:/tests/result/key2
+#> pie
+
+kdb get user:/tests/result/key4
+#> banana
+
+kdb get user:/tests/result/key5
+#> 5
+.fi
+.PP
+.PP
+Here the state of theirs is simply copied to the \fCresultpath\fP\&.
+.SH "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBkdb-merge(1)\fP
+.IP "\(bu" 2
+\fBelektra-merge-strategy(7)\fP 
+.PP
+

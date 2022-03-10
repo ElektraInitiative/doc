@@ -1,0 +1,133 @@
+\label{doc_news_2016-09-17_0_8_18_md_md_doc_news_2016_09_17_0_8_18}%
+\Hypertarget{doc_news_2016-09-17_0_8_18_md_md_doc_news_2016_09_17_0_8_18}%
+
+\begin{DoxyItemize}
+\item guid\+: 190576e0-\/9fef-\/486e-\/b8da-\/c4e75be08329
+\item author\+: Markus Raab
+\item pub\+Date\+: Fri, 16 Sep 2016 23\+:31\+:27 +0200
+\item short\+Desc\+: adds intercept open, crypto plugins \& improved git-\/resolver
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2941}{}\doxysection{What is Elektra?}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2941}
+Elektra serves as a universal and secure framework to access configuration parameters in a global, hierarchical key database. For a small demo see here\+:
+
+\href{https://asciinema.org/a/cantr04assr4jkv8v34uz9b8r}{\texttt{ }}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2942}{}\doxysection{Highlights}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2942}
+
+\begin{DoxyItemize}
+\item Intercept open syscalls which allows Elektra to dynamically generate config files from Elektra’s database
+\item Experimental version of cryptographic plugins
+\item A new zsh completion file (next to the bash completion file)
+\item Gitresolver allows to directly read and write config files from git instead of files present in the file system.
+\item Survey completed successfully (and debts paid), we are now preparing raw data.
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2943}{}\doxysubsection{Crypto Plugin}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2943}
+Gpg is now used to decrypt a master password, which is used by the individual crypto backends. So all necessary parts for encryption of decryption of individual keys is present.
+
+Furthermore, a new \href{https://botan.randombit.net}{\texttt{ botan}} backend was implemented.
+
+\href{https://master.libelektra.org/src/plugins/crypto}{\texttt{ See here}}
+
+Thanks to Peter Nirschl.\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2944}{}\doxysubsection{Open Interception}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2944}
+When Elektra directly modifies config files which are on the disc, and applications read the config files without Elektra, Elektra has no control over the access, e.\+g. we cannot dynamically calculate values. To avoid this, we wrote a library that intercepts the {\ttfamily open}-\/call.
+
+Together with the {\ttfamily mozprefs} plugin, we got control over the configuration of Firefox and can dynamically change config values with all possibilities Elektra provides.
+
+For easy setup, we implemented the script {\ttfamily configure-\/firefox}.
+
+\href{https://master.libelektra.org/src/bindings/intercept}{\texttt{ See here}}
+
+Thanks to Thomas Waser.\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2945}{}\doxysubsection{Resolver}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2945}
+Resolvers in Elektra are the code that are responsible to determine where content should be read from and stored to. They are independent of the actual configuration file syntax.
+
+The \href{https://master.libelektra.org/src/plugins/gitresolver}{\texttt{ gitresolver}} allows you to get/store config data in git.
+
+The \href{https://master.libelektra.org/src/plugins/blockresolver}{\texttt{ blockresolver}} allows Elektra to take control of parts of the configuration file. This is useful for config files such as vim or zsh, which contain program code. The plugin allows you to split config files with special markers into parts containing code and others controlled by Elektra.\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2946}{}\doxysubsection{zsh completion}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2946}
+Added zsh completion file, and a script ({\ttfamily kdb install-\/sh-\/completion}) that installs bash+zsh completion when the default installation places do not work (e.\+g. for mac\+OS).
+
+Thanks to Sebastian Bachmann.\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2947}{}\doxysection{Documentation}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2947}
+
+\begin{DoxyItemize}
+\item fix {\ttfamily kdb-\/import} man page, thanks to Kurt Micheli
+\item mark {\ttfamily key\+Is\+System}/{\ttfamily key\+Is\+User} as internal
+\item fix doxygen reference to example
+\item better document that {\ttfamily global-\/mount} or {\ttfamily gmount} will overwrite previously mounted global plugins
+\item fix spelling mistake, thanks to René Schwaiger
+\item Wrote tutorial how to use Elektra-\/python bindings, thanks to Ulrike Schäfer
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2948}{}\doxysection{Quality}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2948}
+
+\begin{DoxyItemize}
+\item shell recorder test cases now run during {\ttfamily make test}, thanks to Kurt Micheli and René Schwaiger (Warning\+: might remove present keys when it conflicts with their mountpoints)
+\item find-\/tools now is pep and pyflakes happy, thanks to Kurt Micheli
+\item fix bashism, thanks to Thomas Waser and Kurt Micheli
+\item better error message for conditionals plugin, thanks to Thomas Waser
+\item better error message for augeas plugin, thanks to Felix Berlakovich
+\item Many compilation warnings fixed, thanks to Gabriel Rauter, Thomas Waser
+\item GSettings\+: fix double free, thanks to Gabriel Rauter
+\item Fix external links and implement an external link checker, thanks to Kurt Micheli
+\item Fix openwrt/musl warnings with wrong printf format, thanks to Thomas Waser
+\item Fix NODEP metadata, allows you to build all plugins that do not have dependencies.
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2949}{}\doxysection{Compatibility}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2949}
+As always, the ABI and API of kdb.\+h is fully compatible, i.\+e. programs compiled against an older 0.\+8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API).\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2950}{}\doxysubsection{Libtools}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2950}
+Libtools got a new major version (SOVERSION 0 -\/$>$ 1)\+:
+
+
+\begin{DoxyItemize}
+\item backend/plugin configs are now validated by plugins (needed by gpg plugin, which checks if wrong key IDs are supplied during mount)
+\item resolve\+Recommends was never implemented and was now removed
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2951}{}\doxysubsection{Plugins}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2951}
+The plugins conditionals and mathcheck are incompatible in some cases because of changes in syntax.\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2952}{}\doxysubsection{Proposal}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2952}
+New API\+: {\ttfamily key\+Rel2} which differs from {\ttfamily key\+Rel} by allowing you to specify which relation should be checked.\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2953}{}\doxysection{Development}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2953}
+
+\begin{DoxyItemize}
+\item github descriptions+workflow (displayed by github when creating PRs and issues)
+\item new trigger phases for github, see \href{https://master.libelektra.org/doc/GIT.md}{\texttt{ doc/\+GIT}} thanks to Mihael Pranjić
+\item valgrind suppressions are great again, thanks to Peter Nirschl
+\item Plugins get a new namespace {\ttfamily internal} which can be used for meta-\/data that is not relevant for other plugins.
+\item \mbox{\hyperlink{kdberrors_8h}{kdberrors.\+h}} is only generated once, which allows us to use other build systems, thanks to René Schwaiger
+\item {\ttfamily INCLUDE\+\_\+\+SYSTEM\+\_\+\+DIRECTORIES} in add\+\_\+plugin allows you to add an include path where warnings are suppressed (useful for boost).
+\item {\ttfamily infos/provides} now allows multiple entries
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2954}{}\doxysection{Packaging}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2954}
+
+\begin{DoxyItemize}
+\item Plugin-\/provider {\ttfamily CRYPTO} can be used to enable/disable all crypto plugin variants (not enabled by default because its experimental).
+\item Config option {\ttfamily ENABLE\+\_\+\+OPTIMIZATIONS}, enable by default\+: trade more memory for speed (can be turned off on embedded systems)
+\item {\ttfamily INSTALL\+\_\+\+SYSTEM\+\_\+\+FILES} is now off by default on mac\+OS.
+\item bash-\/completion is installed to where pkg-\/config tells us, thanks to Gabriel Rauter (fallback is now {\ttfamily /usr/share/bash-\/completion/completions/kdb}) was {\ttfamily /etc/bash\+\_\+completion.d/kdb} (removed)
+\item zsh is now installed to {\ttfamily /usr/share/zsh/vendor-\/completions/\+\_\+kdb} (except for Darwin, where {\ttfamily /usr/local/share/zsh/site-\/functions} is used)
+\item removed {\ttfamily /etc/profile.d/kdb.\+sh}\+: the script {\ttfamily elektraenv.\+sh} was removed (and is no longer installed), superseded by {\ttfamily elektrify-\/getenv}
+\item added scripts install-\/sh-\/completion configure-\/firefox elektrify-\/open
+\item added plugins libelektra-\/blockresolver.\+so libelektra-\/boolean.\+so libelektra-\/crypto\+\_\+botan.\+so libelektra-\/crypto\+\_\+openssl.\+so libelektra-\/desktop.\+so libelektra-\/mozprefs.\+so libelektra-\/passwd.\+so
+\item added tests testmod\+\_\+blockresolver testmod\+\_\+boolean testmod\+\_\+crypto\+\_\+botan testmod\+\_\+crypto gcrypt testmod\+\_\+crypto\+\_\+openssl testmod\+\_\+mozprefs testmod\+\_\+passwd test\+\_\+opmphm\+\_\+vheap test\+\_\+opmphm\+\_\+vstack
+\item added test data blockresolver mozprefs passwd
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2955}{}\doxysection{Other}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2955}
+
+\begin{DoxyItemize}
+\item Conditionals and mathcheck plugins got support to specify relative keys, thanks to Thomas Waser
+\item {\ttfamily kdb} command-\/list\+: commands are written in bold
+\item GSettings backend can be build standalone, thanks to Gabriel Rauter
+\item first data structures for order preserving minimal perfect hash map, thanks to Kurt Micheli
+\item added a new passwd plugin, thanks to Thomas Waser
+\item boolean plugin to normalize boolean values, thanks to Thomas Waser
+\item \href{https://master.libelektra.org/src/plugins/desktop}{\texttt{ desktop}} plugin to detect which desktop currently is running (supports kde, gnome, tde, unity or any other XDG conformant desktop)
+\item {\ttfamily doc/paper} contains some info for \href{https://github.com/openjournals/joss}{\texttt{ joss}}
+\end{DoxyItemize}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2956}{}\doxysection{Get It!}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2956}
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.18.tar.gz}{\texttt{ here}} and also \href{https://github.com/ElektraInitiative/ftp/tree/master/releases/elektra-0.8.18.tar.gz}{\texttt{ here on github}}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+18.\+tar.\+gz
+\item size\+: 2582183
+\item md5sum\+: 62fe0fbf9ee57ffaa58a982f602f596a
+\item sha1\+: 743484e16b102a00cd58956a49f0c558939d56a8
+\item sha256\+: 9ee65895ba5cba6736c13c264637664c1410b25f4aaaeac8f1f83712ff93d53b
+\end{DoxyItemize}
+
+This release tarball now is also available \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.18.tar.gz.gpg}{\texttt{ signed by me using gpg}}
+
+already built API-\/\+Docu can be found \href{https://doc.libelektra.org/api/0.8.18/html/}{\texttt{ here}}\hypertarget{doc_news_2016-09-17_0_8_18_md_autotoc_md2957}{}\doxysection{Stay tuned!}\label{doc_news_2016-09-17_0_8_18_md_autotoc_md2957}
+Subscribe to the \href{https://doc.libelektra.org/news/feed.rss}{\texttt{ RSS feed}} to always get the release notifications.
+
+For any questions and comments, please contact the \href{https://lists.sourceforge.net/lists/listinfo/registry-list}{\texttt{ Mailing List}} the issue tracker \href{https://git.libelektra.org/issues}{\texttt{ on github}} or by email \href{mailto:elektra@markus-raab.org}{\texttt{ elektra@markus-\/raab.\+org}}.
+
+\href{https://doc.libelektra.org/news/190576e0-9fef-486e-b8da-c4e75be08329.html}{\texttt{ Permalink to this NEWS entry}}
+
+For more information, see \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}
+
+Best regards, Markus 

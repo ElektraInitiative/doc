@@ -1,0 +1,62 @@
+\label{doc_decisions_deferred_plugin_calls_md_md_doc_decisions_deferred_plugin_calls}%
+\Hypertarget{doc_decisions_deferred_plugin_calls_md_md_doc_decisions_deferred_plugin_calls}%
+ \hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1753}{}\doxysection{Issue}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1753}
+Calling exported functions is a primary way for coordinating plugins in Elektra. Since some plugins encapsulate other plugins, exported functions from encapsulated plugins become unavailable.
+
+Since encapsulating plugins cannot implement and forward calls for every function exported by encapsulated plugins a generic mechanism for function calls to these encapsulated plugins is needed.
+
+Since some plugins also lazy-\/load encapsulated plugins the call mechanism is required to be able to defer these calls until the plugins are loaded.
+
+For example when setting I/O bindings with {\ttfamily elektra\+Io\+Set\+Binding()} the exported function {\ttfamily set\+Io\+Binding} is called for all globally mounted plugins. Since global mounting is implemented using the \char`\"{}list\char`\"{} plugin which uses lazy-\/loading for its plugins the exported functions from the plugins are unavailable.
+
+Other examples are the \char`\"{}dini\char`\"{} and \char`\"{}multifile\char`\"{} plugins which use multiple plugins to support different file formats. These plugins also \char`\"{}hide\char`\"{} functions exported by encapsulated plugins.\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1754}{}\doxysection{Constraints}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1754}
+
+\begin{DoxyEnumerate}
+\item Plugins encapsulating other plugins shall be able to lazy-\/load them.
+\item Callers shall not be entangled in encapsulating plugin details.
+\item The encapsulation of the plugins shall not be broken.
+\item The mechanism shall be generic.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1755}{}\doxysection{Assumptions}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1755}
+
+\begin{DoxyEnumerate}
+\item The called functions do not return a value (e.\+g. {\ttfamily set}, {\ttfamily open}, {\ttfamily close}, ...). Callbacks can be used as return channel (see \char`\"{}\+Implications\char`\"{})
+\end{DoxyEnumerate}\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1756}{}\doxysection{Considered Alternatives}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1756}
+
+\begin{DoxyItemize}
+\item Encapsulating plugins export a function called {\ttfamily get\+Encapsulated\+Plugins}. This would break encapsulation and break lazy-\/loading since to return the encapsulated plugin handles they have to be loaded.
+\item Compatible plugins export a function called {\ttfamily get\+Interfaces}. It returns a Key\+Set with well-\/known interface names like \char`\"{}notification\char`\"{} or \char`\"{}io\+Binding\char`\"{} and the required functions (e.\+g. {\ttfamily open} \& {\ttfamily close} for \char`\"{}notification\char`\"{} or {\ttfamily set} for \char`\"{}io\+Binding\char`\"{}). While normal plugins simply return their interfaces, encapsulating plugins collect interfaces from its plugins and combine them into a single Key\+Set.
+
+The example below shows a Key\+Set from a plugin encapsulating two plugins \char`\"{}\+A\char`\"{} and \char`\"{}\+B\char`\"{}. Both plugins implement the \char`\"{}notification\char`\"{} interface, plugin \char`\"{}\+B\char`\"{} also implements the \char`\"{}io\+Binding\char`\"{} interface.
+\begin{DoxyItemize}
+\item {\ttfamily /notification/\#0/open}\+: address of {\ttfamily open\+Notification} of plugin \char`\"{}\+A\char`\"{}
+\item {\ttfamily /notification/\#0/close}\+: address of {\ttfamily close\+Notification} of plugin \char`\"{}\+A\char`\"{}
+\item {\ttfamily /notification/\#1/open}\+: address of {\ttfamily open\+Notification} of plugin \char`\"{}\+B\char`\"{}
+\item {\ttfamily /notification/\#1/close}\+: address of {\ttfamily close\+Notification} of plugin \char`\"{}\+B\char`\"{}
+\item {\ttfamily /io\+Binding/\#0/set}\+: address of {\ttfamily set\+Io\+Binding} of plugin \char`\"{}\+B\char`\"{}
+\end{DoxyItemize}
+
+The upside of this approach is that it makes encapsulating plugins transparent to the caller -\/ it does not know whether the plugin encapsulates other plugins. This approach breaks lazy-\/loading since for combining all interfaces the plugins have to be loaded and their {\ttfamily get\+Interfaces} functions have to be called.
+\end{DoxyItemize}\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1757}{}\doxysection{Decision}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1757}
+Encapsulating plugins export a function called {\ttfamily deferred\+Call} with the declaration {\ttfamily void elektra\+Deferred\+Call (Plugin $\ast$ plugin, char $\ast$ name, Key\+Set $\ast$ parameters)}. Encapsulating plugins shall save multiple deferred calls and call the exported functions specified by {\ttfamily name} passing the {\ttfamily parameters} Key\+Set when a plugin is initialized in the same order as received.
+
+Plugins that support deferred calls shall have the following declaration for their functions {\ttfamily void some\+Plugin\+Function (Plugin $\ast$ plugin, Key\+Set $\ast$ parameters)}. The calling developer is responsible for ensuring that the called functions have a compatible declaration. Encapsulated plugins that do not export a specified function name are omitted.\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1758}{}\doxysection{Argument}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1758}
+The solution allows changing encapsulating plugin implementations without breaking callers.\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1759}{}\doxysection{Implications}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1759}
+The called function receive their parameters via a Key\+Set.
+
+While called functions could return data using the {\ttfamily parameters} Key\+Set (or a separate Key\+Set) there is no defined moment when the data can be collected. Defining such a moment would break the lazy-\/loading constraint. It is recommended to use callbacks passed as {\ttfamily parameters}. Callback function declarations are not limited by this decision.\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1760}{}\doxysection{Related Decisions}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1760}
+
+\begin{DoxyItemize}
+\item Elektra\textquotesingle{}s invoke functionality will be extended to also allow us to use deferred calls with new functions\+:
+\item {\ttfamily int elektra\+Invoke\+Function\+Deferred (Elektra\+Invoke\+Handle $\ast$ handle, const char $\ast$ elektra\+Plugin\+Function\+Name, Key\+Set $\ast$ ks)} which defers a call if the plugin exports {\ttfamily deferred\+Call}.
+\item {\ttfamily void elektra\+Invoke\+Execute\+Deferred\+Calls (Elektra\+Invoke\+Handle $\ast$ handle, Elektra\+Deferred\+Call\+List $\ast$ list)} which executes deferred calls for an encapsulated plugin loaded with invoke.
+\item Functions supporting deferred calls should allow for multiple calls (i.\+e. they should be idempotent). This leaves state at affected plugins and does avoid duplicating state (e.\+g. \char`\"{}was this function called for this plugin before?\char`\"{}) in encapsulating plugins.
+\end{DoxyItemize}\hypertarget{doc_decisions_deferred_plugin_calls_md_autotoc_md1761}{}\doxysection{Notes}\label{doc_decisions_deferred_plugin_calls_md_autotoc_md1761}
+Utility functions that help with managing deferred calls would be nice\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily Elektra\+Deferred\+Call\+List $\ast$ elektra\+Deferred\+Call\+Create\+List (void)}
+\item {\ttfamily void elektra\+Deferred\+Call\+Delete\+List (Elektra\+Deferred\+Call\+List $\ast$ list)}
+\item {\ttfamily int elektra\+Deferred\+Call\+Add (Elektra\+Deferred\+Call\+List $\ast$ list, char $\ast$ name, Key\+Set $\ast$ parameters)}
+\item {\ttfamily void elektra\+Deferred\+Calls\+Execute (Plugin $\ast$ plugin, Elektra\+Deferred\+Call\+List $\ast$ list)} 
+\end{DoxyItemize}

@@ -1,0 +1,44 @@
+.TH "doc_decisions_multiple_file_backends_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_multiple_file_backends_md \- Multiple File Backends 
+ Usually, a backend refers to exactly one file per namespace\&. This file can be returned using \fCkdb file\fP\&.
+.SH "Problem"
+.PP
+In some situations a single mountpoint refers to more than one file per namespace:
+.PP
+.IP "\(bu" 2
+For XDG in the \fCsystem\fP namespace may contain several files (XDG_CONFIG_DIRS)\&.
+.IP "\(bu" 2
+A fallback file if some data cannot be stored in some format (Idea from @kodebach: writing the same content to several files, merging when reading)
+.PP
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.SH "Decision"
+.PP
+Multiple File Backends are not supported for now in the case of writing files\&.
+.PP
+Multiple sources in one namespace only work, if the fallback KeySet is part of the mountpoint config\&. That way any change to the fallback KeySet would essentially make the whole thing a different mountpoint and thereby invalidate all guarantees\&.
+.SH "Rationale"
+.PP
+Writeable multiple file backends would:
+.PP
+.IP "\(bu" 2
+make it impossible for admins to modify content of all files using Elektra
+.IP "\(bu" 2
+do not work atomically (a journal would be needed)
+.IP "\(bu" 2
+do not work together with mmap (as it only checks one file for cache misses)
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

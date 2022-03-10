@@ -1,0 +1,73 @@
+\label{doc_help_kdb-mount_md_md_doc_help_kdb_mount}%
+\Hypertarget{doc_help_kdb-mount_md_md_doc_help_kdb_mount}%
+ \hypertarget{doc_help_kdb-mount_md_autotoc_md2605}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-mount_md_autotoc_md2605}
+{\ttfamily kdb mount \mbox{[}$<$path$>$ $<$mount point$>$\mbox{]} \mbox{[}$<$plugin$>$ \mbox{[}$<$config$>$\mbox{]} \mbox{[}..\mbox{]}\mbox{]}}~\newline
+
+
+
+\begin{DoxyItemize}
+\item Where {\ttfamily path} is the path to the file the user wants to mount. See {\ttfamily kdb plugin-\/info resolver} for details what an absolute and relative path means. See also IMPORTANT below.
+\item {\ttfamily mountpoint} is where in the key database the new backend should be mounted. For a cascading mount point, {\ttfamily mountpoint} should start with {\ttfamily /}. See also IMPORTANT below.
+\item A list of such plugins with a configuration for each of them can be given\+:
+\begin{DoxyItemize}
+\item {\ttfamily plugin} should be an Elektra plugin.
+\item Plugins may be followed by a {\ttfamily ,} separated list of {\ttfamily keys=values} pairs which will be used as plugin configuration.
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_help_kdb-mount_md_autotoc_md2606}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-mount_md_autotoc_md2606}
+This command allows a user to persistently mount a new {\itshape backend}. Mounting in Elektra allows the user to mount a file into the current key database like a user may mount a partition into the current file system. This functionality is key to Elektra as it allows users to build a global key database comprised of many different configuration files.
+
+A backend acts as a worker to allow Elektra to interpret configuration files as keys in the central key database such that any edits to the keys are reflected in the file and vice versa. Additionally, the user can use this command to list the currently mounted backends by running the command with no arguments. More about mounting is explained in \mbox{\hyperlink{doc_help_elektra-mounting_md}{elektra-\/mounting(7)}}.\hypertarget{doc_help_kdb-mount_md_autotoc_md2607}{}\doxysection{IMPORTANT}\label{doc_help_kdb-mount_md_autotoc_md2607}
+This command writes into the {\ttfamily /etc} directory to make the mounting persistent. As such it requires root permissions. Use {\ttfamily kdb file system\+:/elektra/mountpoints} to find out where exactly it will write to.
+
+Absolute paths are still relative to their namespace (see {\ttfamily kdb plugin-\/info resolver}). Only system+spec mount points are actually absolute. Read \mbox{\hyperlink{doc_help_elektra-namespaces_md}{elektra-\/namespaces(7)}} for further information.
+
+For cascading mount points (starting with {\ttfamily /}) a mount point for the namespace {\ttfamily dir}, {\ttfamily user} and {\ttfamily system} is created. Each of this mount point uses a different configuration file, either below current directory, below home directory or anywhere in the system. Use {\ttfamily kdb file $<$path$>$} to determine where the file(s) are.\hypertarget{doc_help_kdb-mount_md_autotoc_md2608}{}\doxysection{OPTIONS}\label{doc_help_kdb-mount_md_autotoc_md2608}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information or ask debug questions (in interactive mode). Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/q}, {\ttfamily -\/-\/quiet}\+: Suppress non-\/error messages.
+\item {\ttfamily -\/i}, {\ttfamily -\/-\/interactive}\+: Instead of passing all mounting information by parameters ask the user interactively.
+\item {\ttfamily -\/s}, {\ttfamily -\/-\/strategy}\+: (experimental, use with care) By default mounting is rejected if the mountpoint already exists. With the strategy {\itshape unchanged} you can change the behavior to be successful if {\itshape exactly} the same config would be written (see \#1306 why this does not always work correctly).
+\item {\ttfamily -\/R}, {\ttfamily -\/-\/resolver $<$resolver$>$} Specify the resolver plugin to use if no resolver is given, the default resolver is used. See also \href{\#KDB}{\texttt{ below in KDB}}.
+\item {\ttfamily -\/0}, {\ttfamily -\/-\/null}\+: Use binary 0 termination.
+\item {\ttfamily -\/1}, {\ttfamily -\/-\/first}\+: Suppress the first column.
+\item {\ttfamily -\/2}, {\ttfamily -\/-\/second}\+: Suppress the second column.
+\item {\ttfamily -\/c}, {\ttfamily -\/-\/plugins-\/config $<$plugins-\/config$>$}\+: Add a plugin configuration for all plugins.
+\item {\ttfamily -\/W}, {\ttfamily -\/-\/with-\/recommends}\+: Also add recommended plugins and warn if they are not available.
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: Unmount before mounting\+: Does not fail on already existing mount points.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-mount_md_autotoc_md2609}{}\doxysection{KDB}\label{doc_help_kdb-mount_md_autotoc_md2609}
+
+\begin{DoxyItemize}
+\item {\ttfamily /sw/elektra/kdb/\#0/current/quiet}\+: Same as {\ttfamily -\/q}\+: Suppress default messages.
+\item {\ttfamily /sw/elektra/kdb/\#0/current/resolver}\+: The resolver that will be added automatically, if {\ttfamily -\/R} is not given.
+\item {\ttfamily /sw/elektra/kdb/\#0/current/plugins}\+: It contains a space-\/separated list of plugins and their configs which are added automatically (by default sync). The plugin-\/configuration syntax is as described above in the \href{\#SYNOPSIS}{\texttt{ synopsis}}.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-mount_md_autotoc_md2610}{}\doxysection{EXAMPLES}\label{doc_help_kdb-mount_md_autotoc_md2610}
+To list the currently mounted backends\+:~\newline
+ {\ttfamily kdb mount}
+
+To mount a system configuration file using the ini format\+:~\newline
+ {\ttfamily kdb mount /etc/configuration.ini system\+:/example ini}
+
+Print a null-\/terminated output of paths and backend names\+:~\newline
+ {\ttfamily kdb mount -\/02 $\vert$ xargs -\/0n 2 echo}
+
+To mount the /etc/file system file with two plugins with a respective configuration option each\+:~\newline
+ {\ttfamily kdb mount /etc/file system\+:/file plugin1 plugin1config=config1 plugin2 plugin2config=config2}
+
+To mount the /etc/file system file with two plugins and setting both to be verbose\+:~\newline
+ {\ttfamily kdb mount -\/c verbose=1 /etc/file system\+:/file plugin1 plugin2}
+
+To recode and rename a configuration file using Elektra\+:~\newline
+ {\ttfamily kdb mount recode.\+txt dir\+:/recode ni rename cut=path iconv to=utf8,from=latin1}\hypertarget{doc_help_kdb-mount_md_autotoc_md2611}{}\doxysection{SEE ALSO}\label{doc_help_kdb-mount_md_autotoc_md2611}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_elektra-glossary_md}{elektra-\/glossary(7)}}.
+\item \mbox{\hyperlink{doc_help_kdb-spec-mount_md}{kdb-\/spec-\/mount(1)}}.
+\item \mbox{\hyperlink{doc_help_kdb-umount_md}{kdb-\/umount(1)}}.
+\item \mbox{\hyperlink{doc_help_elektra-mounting_md}{elektra-\/mounting(7)}}. 
+\end{DoxyItemize}

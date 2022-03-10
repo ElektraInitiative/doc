@@ -1,0 +1,131 @@
+.TH "doc_GIT_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_GIT_md \- GIT 
+ 
+.SH "Basic GIT Commands"
+.PP
+.PP
+.nf
+git add readme\&.md   # adds the changes of the file `readme\&.md` to the staging area
+git add \&.           # adds all changes of files in the current directory (recursively) to the staging area
+git add --all       # adds all changes of files in the repository to the staging area
+git commit -a       # executes a commit that automatically stages all changed and deleted files before
+.fi
+.PP
+.SH "Basic Configuration"
+.PP
+make sure to do:
+.PP
+.PP
+.nf
+git config --global merge\&.ff false
+git config merge\&.ff false
+.fi
+.PP
+.SH "The Commit Message"
+.PP
+A commit message should have the following syntax: \fCcomponent: short change description\fP
+.PP
+For a clean and meaningful log the commit message should fulfil the following:
+.PP
+.IP "\(bu" 2
+use imperative in the subject line
+.IP "\(bu" 2
+the subject line should not be longer than 50 characters
+.IP "\(bu" 2
+start the subject line with the module name (e\&.g\&. resolver:, cpp bindings:)
+.IP "\(bu" 2
+separate subject from body with a blank line
+.IP "\(bu" 2
+in the body describe in detail what you did, and possibly why
+.IP "\(bu" 2
+metadata like 'Fixes #123' should be kept at the bottom of the commit message and definitely not in the title
+.PP
+.PP
+Most commits should have a longer description in the body\&.
+.SH "Remote Branches"
+.PP
+To list all remote branches use:
+.PP
+.PP
+.nf
+git branch -a
+.fi
+.PP
+.PP
+To checkout a remote branch initially use:
+.PP
+.PP
+.nf
+git checkout -b <branchname> origin/<branchname>
+.fi
+.PP
+.PP
+Once you have done this, it will be a local branch, too\&. Following remote branches should exist: 
+.PP
+.nf
+master
+
+.fi
+.PP
+ This is the development branch\&. Please try to not work directly on it, but instead you should use feature branches\&. So the only commits on master should be non-fastforward merges from features branches\&. Commits on master should always compile and all test cases should pass successfully\&. (see config option above)
+.SH "Local Branches"
+.PP
+You should always make your own feature branch with:
+.PP
+.PP
+.nf
+git checkout -b <feature-branch-name>
+.fi
+.PP
+.PP
+On this branch it is not so important that every commit compiles or all test cases run\&.
+.PP
+To merge a branch use (no-fastforward):
+.PP
+.PP
+.nf
+git merge --no-ff <branchname>
+.fi
+.PP
+.PP
+If you already did some commits, but want them in a branch, you can do:
+.PP
+.PP
+.nf
+git branch foo
+git reset HEAD^^  # for 2 commits back
+git reset origin/master
+
+git-ref-log # recover
+.fi
+.PP
+.SH "Working with forks"
+.PP
+We recommend you use your own fork of the main \fClibelektra\fP repository, if you want to contribute\&. For more information on creating a fork, please take a look at \fCGitHub's tutorial\fP\&.
+.PP
+Once you have set up and cloned your fork, you need to keep it in sync with the main repository\&. To do that, we recommend you never directly commit anything to your fork's \fCmaster\fP branch\&. You also need to add a remote for the main repository:
+.PP
+.PP
+.nf
+# We assume the remote for your fork is called `origin` (the default)\&.
+git remote add upstream https://github\&.com/ElektraInitiative/libelektra\&.git
+.fi
+.PP
+.PP
+When you want to sync changes from the main repository into your fork, you can use these commands:
+.PP
+.PP
+.nf
+git fetch upstream master:master
+git push orign master:master
+.fi
+.PP
+.PP
+.RS 4
+\fBNote\fP: These commands work with any branch checked out\&. You don't need to switch to the \fCmaster\fP branch first\&. However, this only works, if you have not modified your \fCmaster\fP branch, i\&.e\&. the latest commit in your forked \fCmaster\fP branch was once the latest commit in the main \fCmaster\fP branch\&. 
+.RE
+.PP
+

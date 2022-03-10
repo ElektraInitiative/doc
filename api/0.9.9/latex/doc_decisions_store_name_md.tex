@@ -1,0 +1,45 @@
+\label{doc_decisions_store_name_md_md_doc_decisions_store_name}%
+\Hypertarget{doc_decisions_store_name_md_md_doc_decisions_store_name}%
+ \hypertarget{doc_decisions_store_name_md_autotoc_md2151}{}\doxysection{Problem}\label{doc_decisions_store_name_md_autotoc_md2151}
+Memory Consumption in Elektra is quite high as the key names are long and stored twice in memory.\hypertarget{doc_decisions_store_name_md_autotoc_md2152}{}\doxysection{Constraints}\label{doc_decisions_store_name_md_autotoc_md2152}
+
+\begin{DoxyItemize}
+\item comparing of keys and thus searching in key sets must be possible with memcmp
+\end{DoxyItemize}\hypertarget{doc_decisions_store_name_md_autotoc_md2153}{}\doxysection{Assumptions}\label{doc_decisions_store_name_md_autotoc_md2153}
+
+\begin{DoxyItemize}
+\item printing the escaped key name is not so much used in typical applications and in tooling doing extra escaping does not matter
+\end{DoxyItemize}\hypertarget{doc_decisions_store_name_md_autotoc_md2154}{}\doxysection{Considered Alternatives}\label{doc_decisions_store_name_md_autotoc_md2154}
+
+\begin{DoxyItemize}
+\item store both
+\item store both but in one memory block (previous implementation)
+\item only store escaped name
+\end{DoxyItemize}\hypertarget{doc_decisions_store_name_md_autotoc_md2155}{}\doxysection{Decision}\label{doc_decisions_store_name_md_autotoc_md2155}
+Only store the unescaped key name, suitable for comparing/searching/iterating over name, i.\+e.\+:
+
+
+\begin{DoxyItemize}
+\item Remove the escaped name from {\ttfamily struct \+\_\+\+Key} and use it only when necessary.
+\item Clarify and reduce \mbox{\hyperlink{doc_help_elektra-glossary_md}{terminology}}.
+\item API Changes\+:
+\begin{DoxyItemize}
+\item {\ttfamily key\+New (const char$\ast$, size\+\_\+t)}
+\item {\ttfamily key\+Name} returns the unescaped name
+\item remove {\ttfamily key\+Unescaped\+Name}, {\ttfamily key\+Get\+Unescaped\+Name\+Size}.
+\item reverse terminology\+: with \char`\"{}key name\char`\"{} we will refer to the unescaped (base) name, the escaped name will be explicitly called \char`\"{}escaped key name\char`\"{}.
+\item escaped name will be outside the core for tooling
+\item {\ttfamily key\+Dup(.., int)} with options to filter which parts are copied (to allow copy of keys where only the key name is copied)
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_decisions_store_name_md_autotoc_md2156}{}\doxysection{Rationale}\label{doc_decisions_store_name_md_autotoc_md2156}
+
+\begin{DoxyItemize}
+\item saves memory
+\item reduces API ({\ttfamily key\+Unescaped\+Name$\ast$})
+\end{DoxyItemize}\hypertarget{doc_decisions_store_name_md_autotoc_md2157}{}\doxysection{Implications}\label{doc_decisions_store_name_md_autotoc_md2157}
+
+\begin{DoxyItemize}
+\item users should use compare functions, .. instead of {\ttfamily key\+Name}
+\item modifications in key\+New needed
+\end{DoxyItemize}\hypertarget{doc_decisions_store_name_md_autotoc_md2158}{}\doxysection{Related Decisions}\label{doc_decisions_store_name_md_autotoc_md2158}
+\hypertarget{doc_decisions_store_name_md_autotoc_md2159}{}\doxysection{Notes}\label{doc_decisions_store_name_md_autotoc_md2159}

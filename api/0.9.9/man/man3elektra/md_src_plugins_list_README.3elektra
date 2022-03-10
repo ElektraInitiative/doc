@@ -1,0 +1,110 @@
+.TH "md_src_plugins_list_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_list_README \- Plugin: list 
+
+.IP "\(bu" 2
+infos = Information about the list plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/placements = pregetstorage procgetstorage postgetstorage postgetcleanup presetstorage presetcleanup precommit postcommit prerollback postrollback
+.IP "\(bu" 2
+infos/status = unittest nodep libc configurable global
+.IP "\(bu" 2
+infos/description = delegates work to a list of plugins
+.PP
+.SH "Introduction"
+.PP
+The List plugin can be used everywhere a list of plugins is required\&. It takes a list of plugins + configurations for every placement it's placed in and loads them\&.
+.SH "Configuration"
+.PP
+\fCplacements/set\fP
+.PP
+Specifies the set-placements for the list plugin, e\&.g\&. 'presetstorage precommit'
+.PP
+\fCplacements/get\fP
+.PP
+Specifies the get-placements for the list plugin\&.
+.PP
+\fCplacements/error\fP
+.PP
+Specifies the error-placements for the list plugin\&.
+.PP
+\fCconfig/\fP
+.PP
+Common config for all plugins\&.
+.PP
+\fCplugins/#\fP
+.PP
+The name of the plugin to load\&.
+.PP
+\fCplugins/#/handle\fP
+.PP
+Internal handle of already loaded plugin\&. Useful when loading plugins at run-time with \fC\fBelektraPluginOpen()\fP\fP\&. Do not set permanently (e\&.g\&. with \fCkdb set\fP)\&.
+.PP
+\fCplugins/#/placements/set\fP
+.PP
+A list of set-placements for the plugin\&. Same for 'get' and 'error'
+.PP
+\fCplugins/#/config/\fP
+.PP
+Plugin specific config\&.
+.SH "Exported Functions"
+.PP
+The plugin exports a few useful functions:
+.PP
+.PP
+.nf
+int elektraListMountPlugin (Plugin * handle, const char * pluginName, KeySet * pluginConfig, Key * errorKey)
+int elektraListUnmountPlugin (Plugin * handle, const char * pluginName, Key * errorKey)
+Plugin * elektraListFindPlugin (Plugin * handle, const char * pluginName)
+.fi
+.PP
+.PP
+\fCelektraListMountPlugin\fP can be used to add a new plugin to the config\&. The placement will be queried from the plugin itself (from its \fCinfos/placements\fP metadata)\&. If the plugin is added already nothing happens, otherwise \fCpluginConfig\fP is used to open the plugin\&.
+.PP
+\fCelektraListUnmountPlugin\fP is the opposite, it is used to remove a plugin from the config\&.
+.PP
+Finally, \fCelektraListFindPlugin\fP looks for a plugin in the config, and if found returns its handle\&.
+.SH "Example"
+.PP
+.PP
+.nf
+placements/get = "postgetstorage"
+config/cut = "will/be/overridden/for/plugin/#0"
+plugins/#0 = "rename"
+plugins/#0/placements   plugin placements
+plugins/#0/placements/get = "postgetstorage"
+plugins/#0/config   pluginconfig goes here
+plugins/#0/config/cut = "will/be/stripped"
+plugins/#1 = "keytometa"
+plugins/#1/placements
+plugins/#1/placements/get = "postgetstorage"
+plugins/#2 = "enum"
+plugins/#2/placements
+plugins/#2/placements/get = "postgetstorage"
+.fi
+.PP
+.PP
+would have the callstack:
+.PP
+.IP "1." 4
+\fClist->kdbGet\fP
+.IP "  1." 6
+\fCrename->kdbGet\fP
+.IP "  2." 6
+\fCkeytometa->kdbGet\fP
+.IP "  3." 6
+\fCenum->kdbGet\fP 
+.PP
+
+.PP
+

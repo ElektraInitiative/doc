@@ -1,0 +1,205 @@
+.TH "keyhelper.hpp" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keyhelper.hpp \- Key helper functions\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdb\&.hpp>\fP
+.br
+\fC#include <string>\fP
+.br
+\fC#include <toolexcept\&.hpp>\fP
+.br
+
+.SS "Namespaces"
+
+.in +1c
+.ti -1c
+.RI " \fBkdb\fP"
+.br
+.RI "This is the main namespace for the C++ binding and libraries\&. "
+.ti -1c
+.RI " \fBkdb::tools\fP"
+.br
+.RI "This namespace is for the libtool library\&. "
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Key \fBkdb::tools::helper::rebaseKey\fP (const Key &key, const Key &oldParent, const Key &newParent)"
+.br
+.RI "Rebases the supplied key from the old parent to the new parent\&. "
+.ti -1c
+.RI "std::string \fBkdb::tools::helper::rebasePath\fP (const Key &key, const Key &oldParent, const Key &newParent)"
+.br
+.RI "Rebases the relative path of the passed key from the old parent to the new parent and returns the new path\&. "
+.ti -1c
+.RI "void \fBkdb::tools::helper::removeNamespace\fP (Key &key)"
+.br
+.RI "Removes the namespace\&. "
+.ti -1c
+.RI "Key \fBkdb::tools::helper::prependNamespace\fP (Key const &root, std::string const &ns)"
+.br
+.RI "Prepends the namespace to the key\&. "
+.ti -1c
+.RI "KeySet \fBkdb::tools::helper::prependNamespace\fP (KeySet const &resultKeys, std::string const &ns)"
+.br
+.RI "Prepends the namespace to each key of the key set\&. "
+.ti -1c
+.RI "void \fBkdb::tools::helper::copyAllMeta\fP (KeySet &to, KeySet const &from)"
+.br
+.RI "Copies all metadata of each key in from to their pendant in to\&. "
+.ti -1c
+.RI "Key \fBkdb::tools::helper::commonKeyName\fP (Key key1, Key key2)"
+.br
+.RI "Find common name between two keys\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Key helper functions\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "Key kdb::tools::helper::commonKeyName (\fBKey\fP key1, \fBKey\fP key2)"
+
+.PP
+Find common name between two keys\&. 
+.PP
+\fBReturns\fP
+.RS 4
+the longest common name found 
+.RE
+.PP
+
+.SS "void kdb::tools::helper::copyAllMeta (\fBKeySet\fP & to, \fBKeySet\fP const & from)"
+
+.PP
+Copies all metadata of each key in from to their pendant in to\&. The pendant is determined by ksLookup\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIto\fP metadata is copied to keys in this key set 
+.br
+\fIfrom\fP metadata is copied from keys in this key set 
+.RE
+.PP
+
+.SS "Key kdb::tools::helper::prependNamespace (\fBKey\fP const & root, std::string const & ns)"
+
+.PP
+Prepends the namespace to the key\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIroot\fP is the key where the namespace will be prepended 
+.br
+\fIns\fP is the namespace to be prepended 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a duplicate of root with the new namespace 
+.RE
+.PP
+
+.SS "KeySet kdb::tools::helper::prependNamespace (\fBKeySet\fP const & resultKeys, std::string const & ns)"
+
+.PP
+Prepends the namespace to each key of the key set\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIresultKeys\fP which keys to prepend the namepsace to 
+.br
+\fIns\fP is the namespace to be prepended to each key 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a keyset where each key has the new namespace 
+.RE
+.PP
+
+.SS "Key kdb::tools::helper::rebaseKey (const \fBKey\fP & key, const \fBKey\fP & oldParent, const \fBKey\fP & newParent)"
+
+.PP
+Rebases the supplied key from the old parent to the new parent\&. 
+.PP
+\fBSee also\fP
+.RS 4
+ThreeWayMerge::rebasePath 
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key to be rebased 
+.br
+\fIoldParent\fP the old parent of the key 
+.br
+\fInewParent\fP the new parent of the key 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a rebased copy of the supplied key 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fIInvalidRebaseException\fP if the key is not below the old parent 
+.RE
+.PP
+
+.SS "string kdb::tools::helper::rebasePath (const \fBKey\fP & key, const \fBKey\fP & oldParent, const \fBKey\fP & newParent)"
+
+.PP
+Rebases the relative path of the passed key from the old parent to the new parent and returns the new path\&. For example a key /user/example/config/key1 with the oldparent /user/example and the new parent /user/newexample/newpath would result in /user/newexample/newpath/config/key1
+.PP
+If any of the parent keys is a cascading key the namespace of the key to be rebased is assumed instead\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key whose path should be rebased 
+.br
+\fIoldParent\fP the old parent of the key 
+.br
+\fInewParent\fP the new parent of the key 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the rebased path 
+.RE
+.PP
+\fBExceptions\fP
+.RS 4
+\fIInvalidRebaseException\fP if the key is not below the old parent 
+.RE
+.PP
+
+.SS "void kdb::tools::helper::removeNamespace (\fBKey\fP & key)"
+
+.PP
+Removes the namespace\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP will be made to a cascading key 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

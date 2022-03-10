@@ -1,0 +1,153 @@
+.TH "keyset.c" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keyset.c \- Methods for key sets\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'kdbprivate\&.h'\fP
+.br
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+\fC#include 'kdbinternal\&.h'\fP
+.br
+\fC#include <kdbassert\&.h>\fP
+.br
+\fC#include <kdbrand\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "KeySet * \fBksNew\fP (size_t alloc,\&.\&.\&.)"
+.br
+.RI "Allocate, initialize and return a new KeySet object\&. "
+.ti -1c
+.RI "KeySet * \fBksVNew\fP (size_t alloc, va_list va)"
+.br
+.RI "Allocate, initialize and return a new KeySet object\&. "
+.ti -1c
+.RI "KeySet * \fBksDup\fP (const KeySet *source)"
+.br
+.RI "Return a duplicate of a KeySet\&. "
+.ti -1c
+.RI "int \fBksCopy\fP (KeySet *dest, const KeySet *source)"
+.br
+.RI "Replace the content of a KeySet with another one\&. "
+.ti -1c
+.RI "int \fBksDel\fP (KeySet *ks)"
+.br
+.RI "A destructor for KeySet objects\&. "
+.ti -1c
+.RI "int \fBksClear\fP (KeySet *ks)"
+.br
+.RI "Empties a KeySet\&. "
+.ti -1c
+.RI "uint16_t \fBksIncRef\fP (KeySet *ks)"
+.br
+.RI "Increment the reference counter of a KeySet object\&. "
+.ti -1c
+.RI "uint16_t \fBksDecRef\fP (KeySet *ks)"
+.br
+.RI "Decrement the reference counter of a KeySet object\&. "
+.ti -1c
+.RI "uint16_t \fBksGetRef\fP (const KeySet *ks)"
+.br
+.RI "Return the current reference counter value of a KeySet object\&. "
+.ti -1c
+.RI "int \fBkeyCmp\fP (const Key *k1, const Key *k2)"
+.br
+.RI "Compare the name of two Keys\&. "
+.ti -1c
+.RI "ssize_t \fBksGetSize\fP (const KeySet *ks)"
+.br
+.RI "Return the number of Keys that \fCks\fP contains\&. "
+.ti -1c
+.RI "ssize_t \fBksSearch\fP (const KeySet *ks, const Key *key)"
+.br
+.RI "Search in a key set, either yielding the actual index of the key, if the ley has been found within the key set, or a negative value indicating the insertion index of the key, if the key would be inserted\&. "
+.ti -1c
+.RI "ssize_t \fBksAppendKey\fP (KeySet *ks, Key *toAppend)"
+.br
+.RI "Appends a Key to the end of \fCks\fP\&. "
+.ti -1c
+.RI "ssize_t \fBksAppend\fP (KeySet *ks, const KeySet *toAppend)"
+.br
+.RI "Append all Keys in \fCtoAppend\fP to the end of the KeySet \fCks\fP\&. "
+.ti -1c
+.RI "ssize_t \fBksRename\fP (KeySet *ks, const Key *root, const Key *newRoot)"
+.br
+.RI "Moves all keys below \fCroot\fP to below \fCnewRoot\fP\&. "
+.ti -1c
+.RI "elektraCursor \fBksFindHierarchy\fP (const KeySet *ks, const Key *root, elektraCursor *end)"
+.br
+.RI "Searches for the start and optionally end of the key hierachy rooted at \fCroot\fP in \fCks\fP\&. "
+.ti -1c
+.RI "KeySet * \fBksCut\fP (KeySet *ks, const Key *cutpoint)"
+.br
+.RI "Cuts out all Keys from KeySet \fCks\fP that are below or at \fCcutpoint\fP\&. "
+.ti -1c
+.RI "Key * \fBksPop\fP (KeySet *ks)"
+.br
+.RI "Remove and return the last Key of \fCks\fP\&. "
+.ti -1c
+.RI "int \fBksRewind\fP (KeySet *ks)"
+.br
+.RI "Rewinds the KeySet internal cursor\&. "
+.ti -1c
+.RI "Key * \fBksNext\fP (KeySet *ks)"
+.br
+.RI "Returns the next Key in a KeySet\&. "
+.ti -1c
+.RI "Key * \fBksCurrent\fP (const KeySet *ks)"
+.br
+.RI "Return the current Key\&. "
+.ti -1c
+.RI "Key * \fBksHead\fP (const KeySet *ks)"
+.br
+.RI "Return the first Key in the KeySet\&. "
+.ti -1c
+.RI "Key * \fBksTail\fP (const KeySet *ks)"
+.br
+.RI "Return the last Key in the KeySet\&. "
+.ti -1c
+.RI "elektraCursor \fBksGetCursor\fP (const KeySet *ks)"
+.br
+.RI "Get the internal cursor of the KeySet\&. "
+.ti -1c
+.RI "Key * \fBksAtCursor\fP (KeySet *ks, elektraCursor pos)"
+.br
+.RI "Return Key at given position \fCpos\fP\&. "
+.ti -1c
+.RI "int \fBksSetCursor\fP (KeySet *ks, elektraCursor cursor)"
+.br
+.RI "Set the KeySet internal cursor to \fCcursor\fP\&. "
+.ti -1c
+.RI "Key * \fBksLookup\fP (KeySet *ks, Key *key, \fBelektraLookupFlags\fP options)"
+.br
+.RI "Look for a Key contained in \fCks\fP that matches the name of the \fCkey\fP\&. "
+.ti -1c
+.RI "Key * \fBksLookupByName\fP (KeySet *ks, const char *name, \fBelektraLookupFlags\fP options)"
+.br
+.RI "Convenience method to look for a Key contained in \fCks\fP with name \fCname\fP\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods for key sets\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

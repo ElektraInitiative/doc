@@ -1,0 +1,99 @@
+.TH "doc_dev_symbol-versioning_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_symbol-versioning_md \- Symbol Versioning 
+ To enable backwards compatibility, while allowing the API to evolve, we use symbol versioning\&. This document focuses on the setup Elektra uses\&. For an explanation of symbol versioning itself, you may start \fChere\fP\&.
+.SH "Infrastructure"
+.PP
+The setup used is based on the one used by FreeBSD\&. The main script \fB`version_gen\&.awk`\fP is taken from their source (with small modifications to enable Alpine Linux compatibility)\&.
+.PP
+The main script, is called by CMake during the build process\&. It parses the \fCsymbols\&.map\fP files of all libraries (e\&.g\&. \fB`/src/libs/elektra/symbols\&.map`\fP) and combines them into a single file, which is then used by the compiler and the linker\&.
+.SS "<tt>versions\&.def</tt>"
+All versions of Elektra symbols have to be declared in \fB`versions\&.def`\fP\&. Only the versions declared in this file can be used in the \fCsymbols\&.map\fP files\&. No symbols should be declared in this file\&.
+.PP
+Each version corresponds to a release\&. After each release of Elektra, a new version must be added to \fCversions\&.def\fP\&. Only this version may be modified in the \fCsymbols\&.map\fP files\&. Released version MUST NOT change\&. The newest and therefore unreleased version may change at any point before its release\&.
+.PP
+The \fClibelektraprivate_1\&.0\fP is special\&. It MUST always declare the newest version (e\&.g\&. \fClibelektra_0\&.9\fP) as its base and it is the only private version (i\&.e\&. there is will be no \fClibelektraprivate_1\&.1\fP)\&. The purpose of the private version is to allow the use of internal symbols across compile units\&. For example \fCelektraAbort\fP is part of this version\&. It should be usable in all of Elektra's modules, but not outside\&. Currently there is no mechanism to enforce this, however, developers can manually check, if the use any of the symbols declared in \fClibelektraprivate_1\&.0\fP\&. Any of these symbols may change or removed at any time\&. No compatibility guarantee is given for these symbols\&.
+.SH "Exporting new symbols"
+.PP
+To add a new symbol (probably a function), simply add its name to the \fCsymbols\&.map\fP file of the relevant library\&. Make sure to always add the symbol to the newest version only\&. Only symbols listed in one of the \fCsymbols\&.map\fP files will be accessible by the linker\&. This means only these symbols can be used outside of their compilation unit\&. Only export symbols, if this is your intention\&.
+.PP
+For public API this is an obvious decision\&. All public API function should be added to newest version that exists at the time of their creation\&.
+.PP
+For internal API the question is not so obvious\&. If possible use static symbols\&. Static symbols cannot be exported via \fCsymbols\&.map\fP, so the question is trivial\&. If the symbol shall be used in different source files (and therefore cannot be static), but only inside a single compilation unit (°), you don't need to add the symbol\&. If you are unsure, first try it without adding the symbol to \fCsymbols\&.map\fP and only if it doesn't work add the symbol to \fClibelektraprivate_1\&.0\fP\&.
+.PP
+(°) compilation units mostly correspond to libraries
+.SH "Updating a symbol"
+.PP
+If a symbol is part of the public API (i\&.e\&. not in \fClibelektraprivate_1\&.0\fP) and you want to make changes that are ABI incompatible (e\&.g\&. changing the signature of a function), you have to update the symbol version\&.
+.PP
+To do this, simply add the symbol name to the newest version in \fCsymbols\&.map\fP and remove it from the version it is currently part of\&. Each symbol may only be defined in one version\&. If the symbol is already declared in the latest version, you don't need to do anything, unreleased version may be modified at any point in time\&.
+.PP
+For additional clarity, you may leave a comment in the old version noting where the symbols was moved to\&.
+.PP
+To actually implement symbol versioning, a few code changes are necessary\&. Explaining this is much easier, when using a concrete example\&.
+.PP
+We will use the function \fCint foo (Key * k)\fP and assume the new version will have the signature \fCint foo (Key * k, int x)\fP\&. The old version shall be called \fColdversion\fP and the new version shall be \fCnewversion\fP\&.
+.PP
+The old function declaration
+.PP
+.PP
+.nf
+int foo (Key * k);
+.fi
+.PP
+.PP
+has to be replaced with the new declarations
+.PP
+.PP
+.nf
+int foo (Key * k, int x);
+
+int ELEKTRA_SYMVER (foo, v1) (Key * k);
+.fi
+.PP
+.PP
+The second line declares an old version of \fCfoo\fP\&. Note: \fCv1\fP may be replaced by any string that is a valid identifier\&. It is simply their to make the symbol name unique\&.
+.PP
+In the source files containing the definition of our function, we change the old definition
+.PP
+.PP
+.nf
+int foo (Key * k)
+{
+    // old code \&.\&.\&.
+}
+.fi
+.PP
+.PP
+to use the compatibility symbol
+.PP
+.PP
+.nf
+int ELEKTRA_SYMVER (foo, v1) (Key * k)
+{
+    // old code \&.\&.\&.
+}
+
+ELEKTRA_SYMVER_DECLARE ("oldversion", foo, v1)
+.fi
+.PP
+.PP
+To actually enable backwards compatibility, we need to add some assembler \fC\&.symver\fP pseudo instructions\&. To make this easier, we have the helper macro \fCELEKTRA_SYMVER_DECLARE\fP\&. We add these lines after the function declaration\&. Note: there MUST NOT be a \fC;\fP after the \fCELEKTRA_SYMVER_DECLARE\fP otherwise there will be errors on systems that don't support symbol versioning
+.PP
+Then we simply write the definition for the new version, as if it was an entirely new function:
+.PP
+.PP
+.nf
+int foo (Key * k, int x)
+{
+    // new code \&.\&.\&.
+}
+.fi
+.PP
+.PP
+The current version of a symbol always uses the unversioned name of the symbol\&. That way we default to this version\&. Only older versions use a versioned name via \fCELEKTRA_SYMVER\fP\&.
+.SH "Removing a symbol"
+.PP
+If a symbol becomes deprecated, it should NOT be removed from the \fCsymbols\&.map\fP file\&. This would break backwards compatibility\&. Instead we remove the default implementation and only leave versions implemented via \fCELEKTRA_SYMVER\fP and \fCELEKTRA_SYMVER_DECLARE\fP\&. The existing default version must be converted into a versioned symbol for the last supported version\&. 

@@ -1,0 +1,77 @@
+.TH "md_src_plugins_shell_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_shell_README \- Plugin: shell 
+
+.IP "\(bu" 2
+infos = Information about the shell plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/placements = postgetstorage postcommit postrollback
+.IP "\(bu" 2
+infos/status = nodep configurable preview unfinished
+.IP "\(bu" 2
+infos/description = executes shell commands
+.PP
+.SH "Usage"
+.PP
+The shell plugin executes shell commandos after set, get or error\&.
+.PP
+The configuration keys
+.PP
+.IP "\(bu" 2
+\fCexecute/set\fP
+.IP "\(bu" 2
+\fCexecute/get\fP
+.IP "\(bu" 2
+\fCexecute/error\fP
+.PP
+.PP
+are used to store the shell commands\&.
+.PP
+The configuration keys
+.PP
+.IP "\(bu" 2
+\fCexecute/set/return\fP
+.IP "\(bu" 2
+\fCexecute/get/return\fP
+.IP "\(bu" 2
+\fCexecute/error/return\fP
+.PP
+.PP
+can be compared against the return values of the shell commandos\&.
+.SH "Example"
+.PP
+.PP
+.nf
+# Create temporary file
+kdb set system:/tests/tempfile $(mktemp)
+
+# Mount plugin and specify plugin configuration
+sudo kdb mount shell\&.ini system:/tests/shell ni array= shell execute/set="echo set >> $(kdb get system:/tests/tempfile)"
+
+cat $(kdb get system:/tests/tempfile)
+#>
+
+# Execute `set` command
+kdb set system:/tests/shell ""
+#> Create a new key system:/tests/shell with string ""
+
+cat $(kdb get system:/tests/tempfile)
+#> set
+
+# Undo modifications
+rm $(kdb get system:/tests/tempfile)
+kdb rm -r system:/tests/shell
+sudo kdb umount system:/tests/shell
+.fi
+.PP
+ 

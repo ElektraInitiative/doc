@@ -1,0 +1,66 @@
+.TH "md_src_plugins_zeromqrecv_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_zeromqrecv_README \- Plugin: zeromqrecv 
+
+.IP "\(bu" 2
+infos = Information about the zeromqrecv plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Wahringer waht@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = notification
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest libc global experimental
+.IP "\(bu" 2
+infos/description = Receives notifications using a ZeroMq subscriber socket
+.PP
+.SH "Introduction"
+.PP
+This plugin is a notification plugin, which receives notifications using ZeroMq subscribe (\fCZMQ_SUB\fP) sockets from the compatible zeromqsend plugin\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-zeromq\fP\&.
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibzmq3-dev\fP (ZeroMQ C bindings > 3\&.2)
+.PP
+.SH "Usage"
+.PP
+The recommended way is to globally mount the plugin together with the zeromqsend plugin: 
+.PP
+.nf
+kdb global-mount zeromqsend zeromqrecv
+
+.fi
+.PP
+ This plugin is designed to be used as a transport plugin for Elektra's notification feature\&. If notification is not enabled (i\&.e\&. in the tool \fCkdb\fP or in any other application that does not use \fCelektraNotifiationContract()\fP) this plugin does performs no operations\&.
+.PP
+Since ZeroMQ sockets only provide a 1:n mapping (i\&.e\&. one publisher with many subscribers or one subscriber and many publishers) the \fCzeromqsend\fP and \fCzeromqrecv\fP plugins require a XPUB/XSUB endpoint\&. The kdb tool \fC'hub-zeromq'\fP provides these endpoints\&.
+.SH "Transport Plugin"
+.PP
+Mount this plugin globally with default settings to use it as \fIreceiving\fP transport plugin for Elektra's notification feature:
+.PP
+.RS 4
+kdb global-mount zeromqrecv 
+.RE
+.PP
+.SH "Configuration"
+.PP
+This plugin supports the following configuration options when mounting:
+.PP
+.IP "\(bu" 2
+\fBendpoint\fP: ZeroMQ XPUB or PUB socket to connect to\&. The \fC\fCipc\fP\fP and \fC\fCtcp\fP\fP ZeroMQ transports are recommended\&. The default value is 'tcp://localhost:6001'\&.
+.PP
+.SH "Notification Format"
+.PP
+For the notification format please see \fCthe \fCzeromqsend\fP plugin documentation\fP\&. 

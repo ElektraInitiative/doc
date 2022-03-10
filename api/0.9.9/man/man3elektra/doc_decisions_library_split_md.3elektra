@@ -1,0 +1,52 @@
+.TH "doc_decisions_library_split_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_library_split_md \- Library Split 
+ 
+.SH "Problem"
+.PP
+Only libelektra-core is supposed to access private data but this contradicts the goal to keep the library minimal\&. \fC\fBkdbprivate\&.h\fP\fP was too generic, it contained many other parts next to the struct definitions of Key/KeySet\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+The \fCC99 standard, section 5\&.2\&.4\&.1\fP gives following limit: 4095 external identifiers in one translation unit
+.IP "\(bu" 2
+Some parts of Elektra, like \fCmmapstorage\fP need access to private data structure\&.
+.IP "\(bu" 2
+Elektra does not support several different struct definitions of Key/KeySet\&. Alternative implementations that want to coexist (e\&.g\&. \fCmmapstorage\fP should still work) must use the same struct definitions of Key/KeySet\&.
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+keep current situation
+.PP
+.SH "Decision"
+.PP
+Also allow \fClibelektra-operations\fP library to access private Key/KeySet\&. Put struct definitions of Key/KeySet in a separate header file, which gets included by parts that need it
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+allows various users (plugins, applications) to link to (more or less) exactly what they need
+.IP "\(bu" 2
+allows symbol versioning on different levels (for different evolving libraries)
+.IP "\(bu" 2
+allows alternative implementation of parts of Elektra, e\&.g\&. a libcore written in Rust
+.IP "\(bu" 2
+facilitates code reuse between plugins
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+we need to clearly communicate which plugins/libraries must be exactly in the version of the libelektra-core
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+none
+.PP
+.SH "Notes"
+.PP
+

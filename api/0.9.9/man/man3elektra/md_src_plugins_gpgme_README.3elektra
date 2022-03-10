@@ -1,0 +1,97 @@
+.TH "md_src_plugins_gpgme_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_gpgme_README \- Plugin: gpgme 
+
+.IP "\(bu" 2
+infos = Information about gpgme plugin is in keys below
+.IP "\(bu" 2
+infos/author = Peter Nirschl peter.nirschl@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = crypto
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = unittest configurable memleak experimental unfinished
+.IP "\(bu" 2
+infos/metadata = crypto/encrypt gpg/binary
+.IP "\(bu" 2
+infos/description = Cryptographic operations wit GnuPG Made Easy (GPGME)
+.PP
+.SH "Introduction"
+.PP
+The \fCgpgme\fP plugin is a filter plugin that enables users to encrypt values before they are persisted and to decrypt values after they have been read from a backend\&. The encryption and decryption is designed to work transparently\&.
+.PP
+The cryptographic operations are performed by GnuPG via the \fClibgpgme\fP library\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibgpgme11\fP version 1\&.10 or later
+.PP
+.SH "Build Information"
+.PP
+The plugin has been tested on Ubuntu 18\&.04 with \fClibgpgme\fP version 1\&.10\&.
+.SH "Examples"
+.PP
+You can mount the plugin like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf /t gpgme "encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D"
+.fi
+.PP
+.PP
+Now you can specify a key \fCuser:/t/a\fP and protect its content by using:
+.PP
+.PP
+.nf
+kdb set user:/t/a
+kdb meta-set user:/t/a crypt/encrypt 1
+kdb set user:/t/a "secret"
+.fi
+.PP
+.PP
+The value of \fCuser:/t/a\fP (for this example: 'secret') will be stored encrypted\&. You can still access the original value by using \fCkdb get\fP:
+.PP
+.PP
+.nf
+kdb get user:/t/a
+.fi
+.PP
+.SH "Configuration"
+.PP
+.SS "GnuPG Keys"
+The GPG recipient keys can be specified in two ways:
+.PP
+.IP "1." 4
+The GPG recipient key can be specified as \fCencrypt/key\fP directly\&.
+.IP "2." 4
+If you want to specify multiple keys, you can enumerate them under \fCencrypt/key\fP\&.
+.PP
+.PP
+The following example illustrates how multiple GPG recipient keys can be specified:
+.PP
+.PP
+.nf
+encrypt/key/#0
+encrypt/key/#1
+.fi
+.PP
+.SS "Textmode"
+\fCgpgme\fP operates in textmode per default\&. In textmode the output of GPG is ASCII armored\&.
+.PP
+Textmode can be disabled by setting \fC/gpgme/textmode\fP to \fC0\fP in the plugin configuration\&.
+.SH "Technical Details"
+.PP
+.SS "Message Format"
+The encrypted values are valid PGP messages, that can be decrypted and read solely by the GnuPG binary without Elektra\&. 

@@ -1,0 +1,311 @@
+\label{doc_tutorials_python-kdb_md_md_doc_tutorials_python_kdb}%
+\Hypertarget{doc_tutorials_python-kdb_md_md_doc_tutorials_python_kdb}%
+ \hypertarget{doc_tutorials_python-kdb_md_autotoc_md3892}{}\doxysection{Table of Contents}\label{doc_tutorials_python-kdb_md_autotoc_md3892}
+
+\begin{DoxyItemize}
+\item \href{\#Introduction}{\texttt{ Introduction}}
+\item \href{\#Installation}{\texttt{ Installation}}
+\begin{DoxyItemize}
+\item \href{\#Alpine-Linux}{\texttt{ Alpine Linux}}
+\item \href{\#Debian-buster}{\texttt{ Debian buster}}
+\end{DoxyItemize}
+\item \href{\#Import-kdb}{\texttt{ Import kdb}}
+\item \href{\#Keyset}{\texttt{ Keyset}}
+\item \href{\#Keys}{\texttt{ Keys}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3893}{}\doxysection{Introduction}\label{doc_tutorials_python-kdb_md_autotoc_md3893}
+When programming in Python it is possible to access the kdb database, changing values of existing keys, adding and deleting keys and a few other things.\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3894}{}\doxysection{Installation}\label{doc_tutorials_python-kdb_md_autotoc_md3894}
+Either \href{https://www.libelektra.org/bindings/swig_python}{\texttt{ build}} the package or install from a repository.\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3895}{}\doxysubsection{Alpine Linux}\label{doc_tutorials_python-kdb_md_autotoc_md3895}
+The \href{https://pkgs.alpinelinux.org/packages?name=py3-elektra&branch=edge&repo=testing}{\texttt{ python bindings package}} is only available in the testing repository (as of 2019-\/04-\/29).
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker run -\/it alpine:edge /bin/sh}
+\DoxyCodeLine{echo "{}http://dl-\/cdn.alpinelinux.org/alpine/edge/testing"{} >> /etc/apk/repositories}
+\DoxyCodeLine{\# Install elektra and the python bindings}
+\DoxyCodeLine{apk update \&\& apk add elektra elektra-\/python py3-\/elektra}
+
+\end{DoxyCode}
+
+
+Under regular alpine, you have to install python3 from the edge repository. If you do not want to add the edge repositories permanently like above, you can do
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apk add -\/-\/repository "{}http://dl-\/cdn.alpinelinux.org/alpine/edge/main"{} python3}
+\DoxyCodeLine{apk add -\/-\/repository "{}http://dl-\/cdn.alpinelinux.org/alpine/edge/testing"{} elektra elektra-\/python py3-\/elektra}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3896}{}\doxysubsection{Debian buster}\label{doc_tutorials_python-kdb_md_autotoc_md3896}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker run -\/it debian:buster}
+\DoxyCodeLine{apt-\/get update}
+\DoxyCodeLine{apt-\/get install ca-\/certificates}
+\DoxyCodeLine{apt-\/get install vim gnupg}
+\DoxyCodeLine{apt-\/key adv -\/-\/keyserver keyserver.ubuntu.com -\/-\/recv-\/keys F26BBE02F3C315A19BF1F791A9A25CC1CC83E839}
+\DoxyCodeLine{vim /etc/apt/sources.list}
+
+\end{DoxyCode}
+
+
+Append \textquotesingle{}deb \href{https://debs.libelektra.org/buster}{\texttt{ https\+://debs.\+libelektra.\+org/buster}} buster main\textquotesingle{} to /etc/apt/sources.list
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apt-\/get update}
+\DoxyCodeLine{apt-\/get install python3-\/elektra}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3897}{}\doxysection{Import kdb}\label{doc_tutorials_python-kdb_md_autotoc_md3897}
+In order to being able to use {\ttfamily kdb}, you at first need to {\ttfamily import kdb}. You need access to a Python object of {\ttfamily KDB}. This is accomplished by calling {\ttfamily \mbox{\hyperlink{classkdb_1_1KDB}{kdb.\+KDB()}}} and saving this to a variable because later on this object will be needed for various operations. The easiest way to do this would be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    print(\textcolor{stringliteral}{"{}Hello world! I have a kdb-\/instance! :D"{}})}
+\DoxyCodeLine{    \textcolor{comment}{\# do all kinds of operations explained below}}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3898}{}\doxysection{Keyset}\label{doc_tutorials_python-kdb_md_autotoc_md3898}
+A keyset is basically a list of the keys that lie within the specified range of the database. When creating an empty keyset this range is obviously zero. It is possible to load the whole database into a keyset but in a lot of cases this is not needed and you can specify which keys exactly you need (which I mean with specified range). At first it is necessary to create a new keyset. When simply calling {\ttfamily \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.\+Key\+Set()}}} the keyset is of size 0. There is no restriction to the keyset\textquotesingle{}s size. It is possible to specify a certain (maximum) size for a keyset. To load keys into to keyset from the database you simply call the method {\ttfamily get} provided by the kdb-\/object.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    \textcolor{comment}{\# create empty keyset}}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    print(len(ks))  \textcolor{comment}{\# should be 0}}
+\DoxyCodeLine{    \textcolor{comment}{\# load an existing keyset}}
+\DoxyCodeLine{    k.get(ks, \textcolor{stringliteral}{'user'})}
+
+\end{DoxyCode}
+
+
+It is also possible to iterate as expected over a keyset and use {\ttfamily len}, {\ttfamily reversed} and copying. The elements of a keyset can be accessed by indexes and a keyset can be sliced. Another way of accessing a key is by the key name (`keyset\+\_\+name\mbox{[}'/path/to/keys/key\+\_\+name\textquotesingle{}\mbox{]}{\ttfamily ). If a key with the given name does not exist within the keyset, a}Key\+Error\`{} exception is thrown.
+
+An example that shows how to load an existing keyset and then access every key and value of the loaded keyset\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    \textcolor{comment}{\# load an existing keyset}}
+\DoxyCodeLine{    k.get(ks, \textcolor{stringliteral}{'user'})}
+\DoxyCodeLine{    \textcolor{comment}{\# if you for some reason want to loop through the keyset last key first}}
+\DoxyCodeLine{    \textcolor{comment}{\# use: for key in reversed(ks):}}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} ks:}
+\DoxyCodeLine{        \textcolor{comment}{\# print for every key in the keyset the key and the value}}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"{}key: \{\} value: \{\}"{}}.format(key, key.value))}
+
+\end{DoxyCode}
+
+
+Here an example of how you can easily check if a key exists\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    namespace = \textcolor{stringliteral}{"{}user:/"{}}}
+\DoxyCodeLine{    path = \textcolor{stringliteral}{'\{\}/test'}.format(namespace)}
+\DoxyCodeLine{}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    k.get(ks, namespace)}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"{}The value of the key \{\} is \{\}!"{}}.format(ks[path], ks[path]}
+\DoxyCodeLine{                                                      .value))}
+\DoxyCodeLine{    \textcolor{keywordflow}{except} KeyError:}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"{}The key \{\} does not exist!"{}}.format(path))}
+
+\end{DoxyCode}
+
+
+Ways of copying a keyset\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} copy, kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    k.get(ks, \textcolor{stringliteral}{'spec'})}
+\DoxyCodeLine{    \textcolor{comment}{\# creating a deep copy}}
+\DoxyCodeLine{    ks\_deepcopy = copy.deepcopy(ks)}
+\DoxyCodeLine{    \textcolor{comment}{\# creating a shallow copy}}
+\DoxyCodeLine{    ks\_shallowcopy = copy.copy(ks)}
+
+\end{DoxyCode}
+
+
+Slicing works just like for normal lists in Python. But be careful\+: Afterwards the result will be a list -\/ not a keyset.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    k.get(ks, \textcolor{stringliteral}{'system'})}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{comment}{\# creating a shallow copy by slicing}}
+\DoxyCodeLine{    ks\_copy\_by\_slicing = ks[:]}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{comment}{\# in the following examples start \& end need to be replaced by integers}}
+\DoxyCodeLine{    start, end = 1, 3}
+\DoxyCodeLine{    \textcolor{comment}{\# create keyset with keys from start to end-\/1}}
+\DoxyCodeLine{    a = ks[start:end]}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{comment}{\# create keyset with keys from start to the end of the original keyset}}
+\DoxyCodeLine{    start = len(ks) -\/ 3}
+\DoxyCodeLine{    b = ks[start:]}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{comment}{\# create keyset with keys from the beginning of the keyset to end}}
+\DoxyCodeLine{    c = ks[:end]}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} keyset \textcolor{keywordflow}{in} [a, b, c]:}
+\DoxyCodeLine{        \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} keyset:}
+\DoxyCodeLine{            \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{                print(\textcolor{stringliteral}{'\{\}: \{\}'}.format(key, key.value))}
+\DoxyCodeLine{            \textcolor{keywordflow}{except} UnicodeDecodeError:}
+\DoxyCodeLine{                \textcolor{keywordflow}{pass}  \textcolor{comment}{\# Ignore keys and values that store non-\/ASCII characters}}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{''})}
+
+\end{DoxyCode}
+
+
+If you have changed anything in the keyset and want those changes to be saved to the database, you need to call {\ttfamily set} which is just like {\ttfamily get} provided by the kdb-\/object.
+
+An example of everything up until now could look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    k.get(ks, \textcolor{stringliteral}{'/path/to/keys'})}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{comment}{\# Any number of operations that manipulate the keyset as explained above}}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{comment}{\# Setting and by doing so saving the new keyset}}
+\DoxyCodeLine{    k.set(ks, \textcolor{stringliteral}{'/path/to/keys'})}
+\DoxyCodeLine{    \textcolor{comment}{\# by changing the path here it is for instance possible to set the keyset}}
+\DoxyCodeLine{    \textcolor{comment}{\# of one user identical to another users}}
+
+\end{DoxyCode}
+
+
+If you have a key a very simple way to get its name and value\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    ks = \mbox{\hyperlink{classkdb_1_1KeySet}{kdb.KeySet}}()}
+\DoxyCodeLine{    k.get(ks, \textcolor{stringliteral}{'user'})}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} ks:}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"{}key name:  \{\}"{}}.format(key.name))}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"{}\{0\}\{1\}\(\backslash\)n\{0\}\{2\}\(\backslash\)n"{}}.format(\textcolor{stringliteral}{"{}key value: "{}}, key.value,}
+\DoxyCodeLine{                                        ks.lookup(key).string))}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_python-kdb_md_autotoc_md3899}{}\doxysection{Keys}\label{doc_tutorials_python-kdb_md_autotoc_md3899}
+It is possible to create new keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    \textcolor{comment}{\# the first argument is the path to the key,}}
+\DoxyCodeLine{    \textcolor{comment}{\# the third argument is the key's value}}
+\DoxyCodeLine{    new\_key = \mbox{\hyperlink{classkdb_1_1Key}{kdb.Key}}(\textcolor{stringliteral}{'/user/sw/pk/key\_name'}, kdb.KEY\_VALUE, \textcolor{stringliteral}{'key\_value'})}
+\DoxyCodeLine{    print(\textcolor{stringliteral}{"{}\{\}: \{\}"{}}.format(new\_key, new\_key.value))}
+
+\end{DoxyCode}
+
+
+You can also duplicate a key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    key1 = \mbox{\hyperlink{classkdb_1_1Key}{kdb.Key}}(\textcolor{stringliteral}{'/user/sw/pk/key\_name'}, kdb.KEY\_VALUE, \textcolor{stringliteral}{'key\_value'})}
+\DoxyCodeLine{    key2 = \mbox{\hyperlink{classkdb_1_1Key}{kdb.Key}}(key1.dup())}
+\DoxyCodeLine{    print(\textcolor{stringliteral}{"{}\{\}: \{\}"{}}.format(new\_key, new\_key.value))}
+\DoxyCodeLine{    print(\textcolor{stringliteral}{"{}\{\}: \{\}"{}}.format(key2, key2.value))}
+
+\end{DoxyCode}
+
+
+An example for working with meta-\/keys
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{import} kdb}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} \mbox{\hyperlink{classkdb_1_1KDB}{kdb.KDB}}() \textcolor{keyword}{as} k:}
+\DoxyCodeLine{    key1 = \mbox{\hyperlink{classkdb_1_1Key}{kdb.Key}}(\textcolor{stringliteral}{"{}user:/key1"{}}, kdb.KEY\_VALUE, \textcolor{stringliteral}{"{}some\_value"{}})}
+\DoxyCodeLine{    key1.setMeta(\textcolor{stringliteral}{"{}foo"{}},     \textcolor{stringliteral}{"{}bar"{}})}
+\DoxyCodeLine{    key1.setMeta(\textcolor{stringliteral}{"{}owner"{}},   \textcolor{stringliteral}{"{}manuel"{}})}
+\DoxyCodeLine{    key1.setMeta(\textcolor{stringliteral}{"{}comment/\#0"{}}, \textcolor{stringliteral}{"{}this is my example key"{}})}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} meta \textcolor{keywordflow}{in} key1.getMeta():}
+\DoxyCodeLine{        print(\textcolor{stringliteral}{"{}  key1.\{0\} = \(\backslash\)"{}\{1\}\(\backslash\)"{}"{}}.format(meta.name, meta.value))}
+
+\end{DoxyCode}
+
+
+Keys can be added to a keyset using {\ttfamily append}. If the key already exists, the value will be updated. Calling `keyset\+\_\+name\mbox{[}'/path/to/key\textquotesingle{}\mbox{]} = \textquotesingle{}new\+\_\+value{\ttfamily does not work for updating keys already in a keyset. Keys can be removed with}pop{\ttfamily ,}remove{\ttfamily or}cut\`{}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{from} kdb \textcolor{keyword}{import} KDB, KEY\_VALUE, Key, KeySet}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{class }KeySet(KeySet):}
+\DoxyCodeLine{    \textcolor{keyword}{def }\_\_repr\_\_(self):}
+\DoxyCodeLine{        \textcolor{stringliteral}{"{}"{}"{}Return a textual representation of this keyset."{}"{}"{}}}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} \textcolor{stringliteral}{'\(\backslash\)n'}.join(}
+\DoxyCodeLine{            [\textcolor{stringliteral}{'\{\}: \{\}'}.format(key.name, key.value) \textcolor{keywordflow}{for} key \textcolor{keywordflow}{in} self])}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{def }key(name, value):}
+\DoxyCodeLine{    \textcolor{stringliteral}{"{}"{}"{}Create a new key with the given name and value."{}"{}"{}}}
+\DoxyCodeLine{    \textcolor{keywordflow}{return} Key(name, KEY\_VALUE, value)}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{def }describe(keyset, title, newline=True):}
+\DoxyCodeLine{    \textcolor{keywordflow}{return} \textcolor{stringliteral}{'\{\}\(\backslash\)n\{\}\(\backslash\)n\{\}\{\}'}.format(title, \textcolor{stringliteral}{'='} * len(title), keyset,}
+\DoxyCodeLine{                                 \textcolor{stringliteral}{'\(\backslash\)n'} \textcolor{keywordflow}{if} newline \textcolor{keywordflow}{else} \textcolor{stringliteral}{''})}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{with} KDB() \textcolor{keyword}{as} data:}
+\DoxyCodeLine{    keyset = KeySet()}
+\DoxyCodeLine{    data.get(keyset, \textcolor{stringliteral}{'user'})}
+\DoxyCodeLine{    print(describe(keyset, \textcolor{stringliteral}{"{}Initial Keyset"{}}))}
+\DoxyCodeLine{}
+\DoxyCodeLine{    new\_key = key(\textcolor{stringliteral}{'user:/sw/pk/key\_name'}, \textcolor{stringliteral}{'key\_value'})}
+\DoxyCodeLine{    \textcolor{comment}{\# adding new\_key to the existing key-\/set,}}
+\DoxyCodeLine{    \textcolor{comment}{\# ks['/user/sw/pk/key\_name'].value == 'key\_value'}}
+\DoxyCodeLine{    keyset.append(new\_key)}
+\DoxyCodeLine{    print(describe(keyset, \textcolor{stringliteral}{"{}Add New Key"{}}))}
+\DoxyCodeLine{}
+\DoxyCodeLine{    newer\_key = key(\textcolor{stringliteral}{'user:/sw/pk/key\_name'}, \textcolor{stringliteral}{'other\_key\_value'})}
+\DoxyCodeLine{    \textcolor{comment}{\# adding newer\_key to the existing key-\/set, by doing so replacing new\_key,}}
+\DoxyCodeLine{    \textcolor{comment}{\# ks['/user/sw/pk/key\_name'].value == 'other\_key\_value'}}
+\DoxyCodeLine{    keyset.append(newer\_key)}
+\DoxyCodeLine{    print(describe(keyset, \textcolor{stringliteral}{"{}Replace Key"{}}, newline=\textcolor{keyword}{False}))}
+
+\end{DoxyCode}
+ 

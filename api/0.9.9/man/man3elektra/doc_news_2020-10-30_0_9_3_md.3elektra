@@ -1,0 +1,276 @@
+.TH "doc_news_2020-10-30_0_9_3_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2020-10-30_0_9_3_md \- 0\&.9\&.3 Release 
+
+.IP "\(bu" 2
+guid: 9b9e8889-0c77-45ce-8441-8bdf26a110ac
+.IP "\(bu" 2
+author: Mihael Pranjić
+.IP "\(bu" 2
+pubDate: Fri, 30 Oct 2020 23:03:43 +0100
+.IP "\(bu" 2
+shortDesc: TOML Storage Plugin
+.PP
+.PP
+We are proud to release Elektra 0\&.9\&.3\&. This release again brings us a big step towards Elektra 1\&.0\&. It introduces the new soon-to-be-default storage plugin: TOML\&.
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP
+.PP
+You can try out the latest Elektra release using our docker image \fCelektra/elektra\fP\&. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run \fCdocker run -it elektra/elektra\fP\&.
+.SH "TOML"
+.PP
+The highlight of this release is the \fCTOML plugin\fP\&. The TOML plugin has a similar huge feature set as the INI plugin, but is written in a much cleaner and more maintainable way using flex and bison\&. Furthermore, it follows the popular \fCTOML spec\fP\&.
+.PP
+It has nearly no run-time dependency, it only needs \fCbase64\fP if binary values are needed\&.
+.PP
+A huge thanks to Jakob Fischer for this amazing work!
+.PP
+.RS 4
+Warning: In one of the following \fC0\&.9\&.*\fP releases, INI will be removed and TOML will become the default plugin\&. If you are using INI, please migrate to TOML now\&. 
+.RE
+.PP
+.SH "Plugins"
+.PP
+The following section lists news about the \fCplugins\fP we updated in this release\&.
+.SS "xmltool"
+.IP "\(bu" 2
+Values of KDBStream changed to fit with elektraKeyFlags: recompilation of application is needed\&. _(Markus Raab)_
+.PP
+.SS "TOML"
+.IP "\(bu" 2
+Added the \fCTOML plugin\fP, which can read and write TOML files using flex and bison\&. _(Jakob Fischer)_
+.IP "\(bu" 2
+Removed the \fCnull\fP plugin dependency of the plugin\&. _(Jakob Fischer)_
+.IP "\(bu" 2
+The \fCtype\fP metakey is now set for numbers on reading\&. _(Jakob Fischer)_
+.PP
+.SS "dump"
+.IP "\(bu" 2
+The \fCdump\fP plugin got a major update\&. The new version can read old files, but only write new files\&. The new files \fBcannot\fP be read by the old version of the plugin and will result in a 'version error' message\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The new version stores keynames relative to the mountpoint, so exported \fCdump\fP files can now be imported into a different mountpoint\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+\fCdump\fP no longer writes unnecessary zero-bytes into files\&. This means that as long as all key-values are human-readable, so is the \fCdump\fP output\&. This makes \fCdump\fP usable for tests and demo purposes, as it is a very simple format closely modelled after a KeySet's structure\&. This also makes it much easier to manually fix broken \fCdump\fP files\&. You only need a text editor most of the time\&. _(Klemens Böswirth)_
+.PP
+.SH "Compatibility"
+.PP
+Elektra \fC0\&.9\&.*\fP does not make any compatibility promises, as we want a clean 1\&.0\&.0 release\&. In this release, we did the following changes:
+.PP
+.IP "\(bu" 2
+\fCkeyswitch_t\fP renamed to elektraKeyFlags\&. _(Markus Raab)_
+.IP "\(bu" 2
+\fCoption_t\fP renamed to elektraLockFlags and elektraLookupFlags\&. _(Markus Raab)_
+.IP "\(bu" 2
+\fCcursor_t\fP renamed to elektraCursor\&. _(Markus Raab)_
+.PP
+.PP
+.RS 4
+Note: We made this release before merging larger changes\&. Please expect more fundamental changes in the next releases\&. 
+.RE
+.PP
+.SS "Errors"
+.IP "\(bu" 2
+Improved error messages\&. _(Markus Raab)_
+.PP
+.SH "Bindings"
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up to date with the multi-language support provided by Elektra\&.
+.SS "JNA"
+.IP "\(bu" 2
+Made examples work again\&. _(Markus Raab)_
+.PP
+.SH "Scripts"
+.PP
+.IP "\(bu" 2
+Fix googletest framework path in debian configure script\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+The \fBfish completion script\fP does not fail any more, if you try to complete a simple command that expects a namespace\&. For example, completing
+.PP
+.PP
+.PP
+.nf
+kdb ls ‸
+.fi
+.PP
+.PP
+with the tab key (\fC⇥\fP) (\fC‸\fP represents the current cursor position) should work correctly again\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+The formatting scripts using prettier now use \fC\fCnpx\fP\fP, which is included in \fCnpm\fP v5\&.2\&.0 or newer\&. This allows us to specify an exact version of prettier to use\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The \fCreformat-shell\fP script now accepts the alias \fCshfmt2\fP, in case \fCshfmt\fP v3 is needed for another project\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+The config for restyled\&.io now specifies the image to use for each formatter\&. This clearly reflects the version used for formatting\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Add a release script to automate the release process\&. _(Robert Sowula)_
+.PP
+.SH "Documentation"
+.PP
+.IP "\(bu" 2
+Updated \fCGOALS\&.md\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Describe hierarchy and limitations of \fChosts plugin\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+The Doxygen PDF documentation now also requires the packages
+.IP "  \(bu" 4
+\fCstix\fP (part of \fCtexlive-fonts-extra\fP) and
+.IP "  \(bu" 4
+\fCstmaryrd\fP (part of \fCtexlive-science\fP or \fCtexlive-math-extra\fP)\&. _(René Schwaiger)_
+.PP
+
+.IP "\(bu" 2
+Write down some fundamental \fCdecisions\fP, mostly about key names and key set structure\&. _(Markus Raab in discussions with Klemens Böswirth)_
+.PP
+.SH "Tests"
+.PP
+.IP "\(bu" 2
+Fixed the \fCis_not_rw_storage\fP function\&. _(Lukas Kilian)_
+.IP "\(bu" 2
+We now ensure that the \fCcheck_import\fP and \fCcheck_export\fP tests run for at least one plugin\&. _(Lukas Kilian)_
+.PP
+.SH "Build"
+.PP
+.SS "CMake"
+.IP "\(bu" 2
+\fCmake uninstall\fP also uninstalls symlinks\&. _(Markus Raab)_
+.IP "\(bu" 2
+\fCexternal-links\&.txt\fP and \fCextra_install_manifest\&.txt\fP are cleaned up at cmake runs\&. _(Markus Raab)_
+.IP "\(bu" 2
+Increased CTest timeout for \fCtestscr_check_kdb_internal_suite\fP due to timouts reached on slow test machines\&. _(Mihael Pranjić)_
+.PP
+.SS "Docker"
+.IP "\(bu" 2
+Added Alpine Linux docker image with latest Elektra installed\&. This image is published on docker hub as \fCelektra/elektra\fP\&. We will update the image for each Elektra release such that novices can easily test Elektra without compiling or installing\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Remove unused \fClibgtest-dev\fP from docker images\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Add Ubuntu Focal (20\&.04) docker image\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Update Alpine Linux docker image to 3\&.12\&.1\&. _(Mihael Pranjić)_
+.PP
+.SH "Infrastructure"
+.PP
+.SS "Cirrus"
+.IP "\(bu" 2
+Update FreeBSD images from version 11\&.3 to 11\&.4\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Increase CPU count for containers to 4\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Use Ruby 2\&.7 on macOS\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Export Python 3\&.8 path for macOS builds\&. _(Mihael Pranjić)_
+.PP
+.SS "Jenkins"
+.IP "\(bu" 2
+Temporarily resolve cyclic dependency between go-elektra and libelektra builds\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Add a new Jenkinsfile for release automation\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Our release pipeline now also builds deb packages for Ubuntu Focal (20\&.04)\&. _(Robert Sowula)_
+.PP
+.SS "Travis"
+.IP "\(bu" 2
+Update macOS builds to use GCC 10, Ruby 2\&.7\&.1 and Xcode 12\&.2\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Increase wait time on builds to fix build timeout errors ('No output has been received in the last 10m0s')\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+Export Python 3\&.9 path for macOS builds\&. _(Mihael Pranjić)_
+.PP
+.SH "Website"
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date\&. Furthermore, we changed:
+.PP
+.IP "\(bu" 2
+Renamed the source folder of the \fBwebsite\fP and removed the backend\&. _(Markus Raab)_
+.IP "\(bu" 2
+Use strict dependency injection for website modules\&. _(Marvin Mall)_
+.IP "\(bu" 2
+Added \fCpackage-lock\&.json\fP to ensure repeatable builds\&. _(Marvin Mall)_
+.PP
+.SH "Decisions"
+.PP
+We are intensively working on Elektra 1\&.0\&. The last details of the semantics of Elektra 1\&.0 are in discussion\&. The decisions are \fBdocumented\fP, but some of them are not finalized\&.
+.PP
+If you are interested in the discussions, please \fCsubscribe\fP\&.
+.SH "Outlook"
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+Elektrify KDE _(Dardan Haxhimustafa)_, _(Felix Resch)_ and _(Mihael Pranjić)_
+.IP "\(bu" 2
+Elektrify GNOME _(Mihael Pranjić)_
+.IP "\(bu" 2
+Default TOML plugin _(Jakob Fischer)_
+.IP "\(bu" 2
+Improve Plugin Framework _(Vid Leskovar)_
+.IP "\(bu" 2
+Keyname Overhaul _(Klemens Böswirth)_
+.IP "\(bu" 2
+Continious Releases _(Robert Sowula)_
+.IP "\(bu" 2
+FUSE Integration _(Alexander Firbas)_
+.IP "\(bu" 2
+1\&.0 API _(Philipp Gackstatter)_
+.IP "\(bu" 2
+Improve 3-way merge _(Dominic Jäger)_
+.IP "\(bu" 2
+Shell completion _(Ulrike Schäfer)_
+.IP "\(bu" 2
+Improve Elektra developer experience _(Hani Torabi)_
+.IP "\(bu" 2
+Ansible bindings _(Thomas Waser)_
+.PP
+.SH "Statistics"
+.PP
+We closed \fC15 issues\fP for this release\&.
+.PP
+About 17 authors changed 533 files with 26133 insertions(+) and 15834 deletions(-) in 545 commits\&.
+.PP
+Thanks to all authors for making this release possible!
+.SH "Join the Initiative!"
+.PP
+We welcome new contributors! Read \fChere\fP about how to get started\&.
+.PP
+As first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.
+.SH "Get the Release!"
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+.IP "\(bu" 2
+author: mpranj
+.IP "\(bu" 2
+name: elektra-0\&.9\&.3\&.tar\&.gz
+.IP "\(bu" 2
+size: 7540609
+.IP "\(bu" 2
+md5sum: 649fe13100266ab0e9a4cd19b99e2049
+.IP "\(bu" 2
+sha1: 02900ef5c8b24cf067930068c62f2ff09b44354d
+.IP "\(bu" 2
+sha256: 5022a6ebf004d892ded03fcf6eb3d223942a7fadd2d68f14d847d1f7f243e1d7
+.PP
+.PP
+The release tarball is also available signed by Mihael Pranjic using GnuPG from \fChere\fP or on \fCGitHub\fP
+.PP
+The following GPG Key was used to sign this release: 9C18145C22F9E746D743DEC59ECC0F4CF0359C7B
+.PP
+Already built API-Docu can be found \fChere\fP or on \fCGitHub\fP\&.
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments please contact us via our issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, \fCElektra Initiative\fP 

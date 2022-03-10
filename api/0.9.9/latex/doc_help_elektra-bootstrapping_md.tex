@@ -1,0 +1,26 @@
+\label{doc_help_elektra-bootstrapping_md_md_doc_help_elektra_bootstrapping}%
+\Hypertarget{doc_help_elektra-bootstrapping_md_md_doc_help_elektra_bootstrapping}%
+ One important aspect of a configuration library is the out-\/of-\/the-\/box experience. How does the system work before anything is configured? The optimal situation is that everything fully works, and applications, that just want to load and store configuration, do not see any difference between out-\/of-\/the-\/box behavior and a well-\/configured, fine-\/tuned system.
+
+To support that experience, a so-\/called {\bfseries{default backend}} is responsible in the case that nothing was configured so far. It must have a storage that is able to store full Elektra semantics. To avoid reimplementation of storage plugins, a default storage plugin ({\ttfamily storage} or in code {\ttfamily KDB\+\_\+\+STORAGE}) is used. A resolver plugin ({\ttfamily resolver} or in code {\ttfamily KDB\+\_\+\+RESOLVER}) takes care of the inevitable portability issues. The {\bfseries{default backend}} stores configuration in {\ttfamily KDB\+\_\+\+DB\+\_\+\+FILE}. One can easily avoid the usage of the default backend by simply mounting another backend to {\ttfamily /}.
+
+The mounting configuration (the configuration how to mount the mount points) also needs to be stored somewhere. The so-\/called {\bfseries{init backend}} is responsible for fetching configuration from {\ttfamily system\+:/elektra}, where the mount points are stored. Again {\ttfamily KDB\+\_\+\+STORAGE} and {\ttfamily KDB\+\_\+\+RESOLVER} is used, but now they write into the configuration file {\ttfamily KDB\+\_\+\+DB\+\_\+\+INIT} ({\ttfamily elektra.\+ecf} by default).
+
+Thus for full and static build variants an exchange at run-\/time is not possible. Using shared libraries, however, {\ttfamily KDB\+\_\+\+STORAGE} and {\ttfamily KDB\+\_\+\+RESOLVER} are actually symbolic links ({\ttfamily libelektra-\/resolver.\+so} and {\ttfamily libelektra-\/storage.\+so}) to concrete plugins and thus can be changed without recompilation.
+
+The {\bfseries{init backend}} is guaranteed to stay mounted at {\ttfamily system\+:/elektra} where the configuration for Elektra itself is stored. After mounting all backends, Elektra checks if {\ttfamily system\+:/elektra} still resides at the default backend. If not, the init backend will be mounted there.\hypertarget{doc_help_elektra-bootstrapping_md_autotoc_md2343}{}\doxysection{SUMMARY}\label{doc_help_elektra-bootstrapping_md_autotoc_md2343}
+To summarize, this approach delivers a good out-\/of-\/the-\/box experience capable of storing configuration. For special use cases, applications and administrators can mount specific backends anywhere except at, and below, {\ttfamily system\+:/elektra}. On {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}}, the system bootstraps itself starting with the init backend.
+
+The default backend consists of a default storage plugin and default resolver plugin. The default resolver has no specific requirements, but the default storage plugin must be able to handle full Elektra semantics. The backend is mounted to root ({\ttfamily /}), so any keys can be stored in it. The implementation of the core guarantees that user and system keys always stay separated.\hypertarget{doc_help_elektra-bootstrapping_md_autotoc_md2344}{}\doxysection{TRACEABILITY}\label{doc_help_elektra-bootstrapping_md_autotoc_md2344}
+
+\begin{DoxyItemize}
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga5bfaad0230457cd6386032fe65c41576}{elektra\+Open\+Bootstrap()}}} implements above algorithm
+\item {\ttfamily \mbox{\hyperlink{backend_8c_a5227608d302910f25fc3a5c8968ab542}{backend\+Open\+Default()}}} opens the default backend
+\item {\ttfamily /src/include/kdbconfig.h.\+in} contains above {\ttfamily KDB\+\_\+$\ast$} variables
+\item {\ttfamily src/plugins/\+CMake\+Lists.\+txt} creates the symbolic links
+\item {\ttfamily scripts/cmake/\+Modules/\+Lib\+Add\+Macros.\+cmake} {\ttfamily create\+\_\+lib\+\_\+symlink} function
+\end{DoxyItemize}\hypertarget{doc_help_elektra-bootstrapping_md_autotoc_md2345}{}\doxysection{SEE ALSO}\label{doc_help_elektra-bootstrapping_md_autotoc_md2345}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_bootstrap_md}{bootstrap decision}} 
+\end{DoxyItemize}

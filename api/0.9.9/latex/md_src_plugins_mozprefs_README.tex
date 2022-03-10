@@ -1,0 +1,66 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the mozprefs plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained reviewed conformant compatible coverage specific unittest tested nodep libc preview experimental difficult limited unfinished concept
+\item infos/metadata =
+\item infos/description = storage plugin for mozilla preferences
+\end{DoxyItemize}\hypertarget{md_src_plugins_mozprefs_README_src_plugins_mozprefs_README_md}{}\doxysection{Basics}\label{md_src_plugins_mozprefs_README_src_plugins_mozprefs_README_md}
+This plugin works on Mozilla preference files and is used in Elektra’s \mbox{\hyperlink{md_src_plugins_mozprefs_autoconfig_README_src_plugins_mozprefs_autoconfig_README_md}{Firefox autoconfig script}}.\hypertarget{md_src_plugins_mozprefs_README_autotoc_md359}{}\doxysection{Installation}\label{md_src_plugins_mozprefs_README_autotoc_md359}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_mozprefs_README_autotoc_md360}{}\doxysubsection{Preference Types}\label{md_src_plugins_mozprefs_README_autotoc_md360}
+
+\begin{DoxyItemize}
+\item Default preferences\+: {\ttfamily pref(....}, keys below {\ttfamily mountpoint/pref/}.
+\item User preferences\+: {\ttfamily user\+\_\+pref(....}, keys below {\ttfamily mountpoint/user/}.
+\item Lock preferences\+: {\ttfamily lock\+Pref(....}, keys below {\ttfamily mountpoint/lock/}.
+\item Sticky preferences\+: {\ttfamily sticky\+\_\+pref(....}, keys below {\ttfamily mountpoint/sticky/}.
+\end{DoxyItemize}
+
+Only Keys below one of these points are valid, everything else will be dropped\hypertarget{md_src_plugins_mozprefs_README_autotoc_md361}{}\doxysubsection{Data Types}\label{md_src_plugins_mozprefs_README_autotoc_md361}
+
+\begin{DoxyItemize}
+\item {\ttfamily integer}
+\item {\ttfamily string}
+\item {\ttfamily boolean}
+\end{DoxyItemize}\hypertarget{md_src_plugins_mozprefs_README_autotoc_md362}{}\doxysubsection{Hierarchy}\label{md_src_plugins_mozprefs_README_autotoc_md362}
+In Mozilla preference files {\ttfamily .} is used to separate sections, while elektra uses {\ttfamily /}. For simplification, and because {\ttfamily /} isn\textquotesingle{}t allowed in preference keys, the plugin treats {\ttfamily .} and {\ttfamily /} equally.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system:/prefs/lock/a/lock/key lock}
+\DoxyCodeLine{kdb set system:/prefs/lock/a/lock.key lock}
+\DoxyCodeLine{kdb set system:/prefs/lock/a.lock.key lock}
+
+\end{DoxyCode}
+
+
+will all result in {\ttfamily lock\+Pref(\char`\"{}a.\+lock.\+key\char`\"{}, \char`\"{}lock\char`\"{});}\hypertarget{md_src_plugins_mozprefs_README_autotoc_md363}{}\doxysection{Example}\label{md_src_plugins_mozprefs_README_autotoc_md363}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:user:/tests/mozprefs}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount prefs.js user:/tests/mozprefs mozprefs}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mozprefs/lock/a/lock/key type boolean}
+\DoxyCodeLine{kdb set user:/tests/mozprefs/lock/a/lock/key true}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mozprefs/pref/a/default/key type string}
+\DoxyCodeLine{kdb set user:/tests/mozprefs/pref/a/default/key "{}i'm a default key"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mozprefs/user/a/user/key type integer}
+\DoxyCodeLine{kdb set user:/tests/mozprefs/user/a/user/key 123}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat `kdb file user:/tests/mozprefs`}
+\DoxyCodeLine{\#> lockPref("{}a.lock.key"{}, true);}
+\DoxyCodeLine{\#> pref("{}a.default.key"{}, "{}i'm a default key"{});}
+\DoxyCodeLine{\#> user\_pref("{}a.user.key"{}, 123);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mozprefs}
+\DoxyCodeLine{sudo kdb umount user:/tests/mozprefs}
+
+\end{DoxyCode}
+ 

@@ -1,0 +1,318 @@
+.TH "doc_tutorials_python-kdb_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_python-kdb_md \- How-To: Python kdb 
+ 
+.SH "Table of Contents"
+.PP
+.IP "\(bu" 2
+\fCIntroduction\fP
+.IP "\(bu" 2
+\fCInstallation\fP
+.IP "  \(bu" 4
+\fCAlpine Linux\fP
+.IP "  \(bu" 4
+\fCDebian buster\fP
+.PP
+
+.IP "\(bu" 2
+\fCImport kdb\fP
+.IP "\(bu" 2
+\fCKeyset\fP
+.IP "\(bu" 2
+\fCKeys\fP
+.PP
+.SH "Introduction"
+.PP
+When programming in Python it is possible to access the kdb database, changing values of existing keys, adding and deleting keys and a few other things\&.
+.SH "Installation"
+.PP
+Either \fCbuild\fP the package or install from a repository\&.
+.SS "Alpine Linux"
+The \fCpython bindings package\fP is only available in the testing repository (as of 2019-04-29)\&.
+.PP
+.PP
+.nf
+docker run -it alpine:edge /bin/sh
+echo "http://dl-cdn\&.alpinelinux\&.org/alpine/edge/testing" >> /etc/apk/repositories
+# Install elektra and the python bindings
+apk update && apk add elektra elektra-python py3-elektra
+.fi
+.PP
+.PP
+Under regular alpine, you have to install python3 from the edge repository\&. If you do not want to add the edge repositories permanently like above, you can do
+.PP
+.PP
+.nf
+apk add --repository "http://dl-cdn\&.alpinelinux\&.org/alpine/edge/main" python3
+apk add --repository "http://dl-cdn\&.alpinelinux\&.org/alpine/edge/testing" elektra elektra-python py3-elektra
+.fi
+.PP
+.SS "Debian buster"
+.PP
+.nf
+docker run -it debian:buster
+apt-get update
+apt-get install ca-certificates
+apt-get install vim gnupg
+apt-key adv --keyserver keyserver\&.ubuntu\&.com --recv-keys F26BBE02F3C315A19BF1F791A9A25CC1CC83E839
+vim /etc/apt/sources\&.list
+.fi
+.PP
+.PP
+Append 'deb https://debs.libelektra.org/buster buster main' to /etc/apt/sources\&.list
+.PP
+.PP
+.nf
+apt-get update
+apt-get install python3-elektra
+.fi
+.PP
+.SH "Import kdb"
+.PP
+In order to being able to use \fCkdb\fP, you at first need to \fCimport kdb\fP\&. You need access to a Python object of \fCKDB\fP\&. This is accomplished by calling \fC\fBkdb\&.KDB()\fP\fP and saving this to a variable because later on this object will be needed for various operations\&. The easiest way to do this would be:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    print("Hello world! I have a kdb-instance! :D")
+    # do all kinds of operations explained below
+.fi
+.PP
+.SH "Keyset"
+.PP
+A keyset is basically a list of the keys that lie within the specified range of the database\&. When creating an empty keyset this range is obviously zero\&. It is possible to load the whole database into a keyset but in a lot of cases this is not needed and you can specify which keys exactly you need (which I mean with specified range)\&. At first it is necessary to create a new keyset\&. When simply calling \fC\fBkdb\&.KeySet()\fP\fP the keyset is of size 0\&. There is no restriction to the keyset's size\&. It is possible to specify a certain (maximum) size for a keyset\&. To load keys into to keyset from the database you simply call the method \fCget\fP provided by the kdb-object\&.
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    # create empty keyset
+    ks = kdb\&.KeySet()
+    print(len(ks))  # should be 0
+    # load an existing keyset
+    k\&.get(ks, 'user')
+.fi
+.PP
+.PP
+It is also possible to iterate as expected over a keyset and use \fClen\fP, \fCreversed\fP and copying\&. The elements of a keyset can be accessed by indexes and a keyset can be sliced\&. Another way of accessing a key is by the key name (`keyset_name['/path/to/keys/key_name']\fC)\&. If a key with the given name does not exist within the keyset, a\fPKeyError` exception is thrown\&.
+.PP
+An example that shows how to load an existing keyset and then access every key and value of the loaded keyset:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    ks = kdb\&.KeySet()
+    # load an existing keyset
+    k\&.get(ks, 'user')
+    # if you for some reason want to loop through the keyset last key first
+    # use: for key in reversed(ks):
+    for key in ks:
+        # print for every key in the keyset the key and the value
+        print("key: {} value: {}"\&.format(key, key\&.value))
+.fi
+.PP
+.PP
+Here an example of how you can easily check if a key exists:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    namespace = "user:/"
+    path = '{}/test'\&.format(namespace)
+
+    ks = kdb\&.KeySet()
+    k\&.get(ks, namespace)
+
+    try:
+        print("The value of the key {} is {}!"\&.format(ks[path], ks[path]
+                                                      \&.value))
+    except KeyError:
+        print("The key {} does not exist!"\&.format(path))
+.fi
+.PP
+.PP
+Ways of copying a keyset:
+.PP
+.PP
+.nf
+import copy, kdb
+
+with kdb\&.KDB() as k:
+    ks = kdb\&.KeySet()
+    k\&.get(ks, 'spec')
+    # creating a deep copy
+    ks_deepcopy = copy\&.deepcopy(ks)
+    # creating a shallow copy
+    ks_shallowcopy = copy\&.copy(ks)
+.fi
+.PP
+.PP
+Slicing works just like for normal lists in Python\&. But be careful: Afterwards the result will be a list - not a keyset\&.
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    ks = kdb\&.KeySet()
+    k\&.get(ks, 'system')
+
+    # creating a shallow copy by slicing
+    ks_copy_by_slicing = ks[:]
+
+    # in the following examples start & end need to be replaced by integers
+    start, end = 1, 3
+    # create keyset with keys from start to end-1
+    a = ks[start:end]
+
+    # create keyset with keys from start to the end of the original keyset
+    start = len(ks) - 3
+    b = ks[start:]
+
+    # create keyset with keys from the beginning of the keyset to end
+    c = ks[:end]
+
+    for keyset in [a, b, c]:
+        for key in keyset:
+            try:
+                print('{}: {}'\&.format(key, key\&.value))
+            except UnicodeDecodeError:
+                pass  # Ignore keys and values that store non-ASCII characters
+        print('')
+.fi
+.PP
+.PP
+If you have changed anything in the keyset and want those changes to be saved to the database, you need to call \fCset\fP which is just like \fCget\fP provided by the kdb-object\&.
+.PP
+An example of everything up until now could look like this:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    ks = kdb\&.KeySet()
+    k\&.get(ks, '/path/to/keys')
+
+    # Any number of operations that manipulate the keyset as explained above
+
+    # Setting and by doing so saving the new keyset
+    k\&.set(ks, '/path/to/keys')
+    # by changing the path here it is for instance possible to set the keyset
+    # of one user identical to another users
+.fi
+.PP
+.PP
+If you have a key a very simple way to get its name and value:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    ks = kdb\&.KeySet()
+    k\&.get(ks, 'user')
+    for key in ks:
+        print("key name:  {}"\&.format(key\&.name))
+        print("{0}{1}\n{0}{2}\n"\&.format("key value: ", key\&.value,
+                                        ks\&.lookup(key)\&.string))
+.fi
+.PP
+.SH "Keys"
+.PP
+It is possible to create new keys:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    # the first argument is the path to the key,
+    # the third argument is the key's value
+    new_key = kdb\&.Key('/user/sw/pk/key_name', kdb\&.KEY_VALUE, 'key_value')
+    print("{}: {}"\&.format(new_key, new_key\&.value))
+.fi
+.PP
+.PP
+You can also duplicate a key:
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    key1 = kdb\&.Key('/user/sw/pk/key_name', kdb\&.KEY_VALUE, 'key_value')
+    key2 = kdb\&.Key(key1\&.dup())
+    print("{}: {}"\&.format(new_key, new_key\&.value))
+    print("{}: {}"\&.format(key2, key2\&.value))
+.fi
+.PP
+.PP
+An example for working with meta-keys
+.PP
+.PP
+.nf
+import kdb
+
+with kdb\&.KDB() as k:
+    key1 = kdb\&.Key("user:/key1", kdb\&.KEY_VALUE, "some_value")
+    key1\&.setMeta("foo",     "bar")
+    key1\&.setMeta("owner",   "manuel")
+    key1\&.setMeta("comment/#0", "this is my example key")
+    for meta in key1\&.getMeta():
+        print("  key1\&.{0} = \"{1}\""\&.format(meta\&.name, meta\&.value))
+.fi
+.PP
+.PP
+Keys can be added to a keyset using \fCappend\fP\&. If the key already exists, the value will be updated\&. Calling `keyset_name['/path/to/key'] = 'new_value\fCdoes not work for updating keys already in a keyset\&. Keys can be removed with\fPpop\fC,\fPremove\fCor\fPcut`
+.PP
+.PP
+.nf
+from kdb import KDB, KEY_VALUE, Key, KeySet
+
+
+class KeySet(KeySet):
+    def __repr__(self):
+        """Return a textual representation of this keyset\&."""
+        return '\n'\&.join(
+            ['{}: {}'\&.format(key\&.name, key\&.value) for key in self])
+
+
+def key(name, value):
+    """Create a new key with the given name and value\&."""
+    return Key(name, KEY_VALUE, value)
+
+
+def describe(keyset, title, newline=True):
+    return '{}\n{}\n{}{}'\&.format(title, '=' * len(title), keyset,
+                                 '\n' if newline else '')
+
+
+with KDB() as data:
+    keyset = KeySet()
+    data\&.get(keyset, 'user')
+    print(describe(keyset, "Initial Keyset"))
+
+    new_key = key('user:/sw/pk/key_name', 'key_value')
+    # adding new_key to the existing key-set,
+    # ks['/user/sw/pk/key_name']\&.value == 'key_value'
+    keyset\&.append(new_key)
+    print(describe(keyset, "Add New Key"))
+
+    newer_key = key('user:/sw/pk/key_name', 'other_key_value')
+    # adding newer_key to the existing key-set, by doing so replacing new_key,
+    # ks['/user/sw/pk/key_name']\&.value == 'other_key_value'
+    keyset\&.append(newer_key)
+    print(describe(keyset, "Replace Key", newline=False))
+.fi
+.PP
+ 

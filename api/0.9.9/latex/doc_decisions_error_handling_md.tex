@@ -1,0 +1,29 @@
+\label{doc_decisions_error_handling_md_md_doc_decisions_error_handling}%
+\Hypertarget{doc_decisions_error_handling_md_md_doc_decisions_error_handling}%
+ \hypertarget{doc_decisions_error_handling_md_autotoc_md1843}{}\doxysection{Problem}\label{doc_decisions_error_handling_md_autotoc_md1843}
+There are ambiguous cases where the same return value can refer to multiple problems\+:
+
+
+\begin{DoxyItemize}
+\item name modifications which can be either invalid name or locking the key name
+\item getting values of (non-\/)binary keys
+\end{DoxyItemize}\hypertarget{doc_decisions_error_handling_md_autotoc_md1844}{}\doxysection{Constraints}\label{doc_decisions_error_handling_md_autotoc_md1844}
+We also have to consider that many parts of the API very constrained in what values they can use for error codes. If a function returns a pointer the only possible error value by definition is NULL.\hypertarget{doc_decisions_error_handling_md_autotoc_md1845}{}\doxysection{Assumptions}\label{doc_decisions_error_handling_md_autotoc_md1845}
+\hypertarget{doc_decisions_error_handling_md_autotoc_md1846}{}\doxysection{Considered Alternatives}\label{doc_decisions_error_handling_md_autotoc_md1846}
+
+\begin{DoxyItemize}
+\item Change return types for many functions across the API
+\end{DoxyItemize}\hypertarget{doc_decisions_error_handling_md_autotoc_md1847}{}\doxysection{Decision}\label{doc_decisions_error_handling_md_autotoc_md1847}
+
+\begin{DoxyItemize}
+\item Update documentation in {\ttfamily doc/dev/error-\/$\ast$} and link to them in the documentation for the module {\ttfamily kdb}
+\item Add second channel for getting information about errors
+\item Return error codes directly from functions where failures are expected, e.\+g. {\ttfamily kdb\+Get}, {\ttfamily key\+Set\+Name}
+\item Harmonize return values from all functions and move error reporting to second channel
+\end{DoxyItemize}\hypertarget{doc_decisions_error_handling_md_autotoc_md1848}{}\doxysection{Rationale}\label{doc_decisions_error_handling_md_autotoc_md1848}
+This simplifies and unifies error reporting across all functions. It also introduces a default way for the developers to handle error reporting. Developers of bindings for Elektra can rely on the existing error reporting feature without having to introduce custom error messages, that can vary wildly between different bindings.\hypertarget{doc_decisions_error_handling_md_autotoc_md1849}{}\doxysection{Implications}\label{doc_decisions_error_handling_md_autotoc_md1849}
+\hypertarget{doc_decisions_error_handling_md_autotoc_md1850}{}\doxysection{Related Decisions}\label{doc_decisions_error_handling_md_autotoc_md1850}
+
+\begin{DoxyItemize}
+\item Binary metadata vs flag \#4194
+\end{DoxyItemize}\hypertarget{doc_decisions_error_handling_md_autotoc_md1851}{}\doxysection{Notes}\label{doc_decisions_error_handling_md_autotoc_md1851}

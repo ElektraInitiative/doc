@@ -1,0 +1,59 @@
+.TH "doc_decisions_elektra_malloc_md" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_elektra_malloc_md \- Remove \fBelektraMalloc()\fP et al\&. 
+ 
+.SH "Problem"
+.PP
+A big problem with having elektraMalloc is, that it makes it impossible to call libc functions that allocate data with malloc (e\&.g\&. strndup) or others that expect a pointer that can be passed to realloc\&. You might even do that by accident and never notice the problem, until someone replaces elektraMalloc and then you could get some pretty bad memory bugs\&.
+.PP
+Functions considered for removal:
+.PP
+.IP "\(bu" 2
+\fCelektraMalloc\fP
+.IP "\(bu" 2
+\fCelektraCalloc\fP
+.IP "\(bu" 2
+\fCelektraFree\fP
+.IP "\(bu" 2
+\fCelektraStrDup\fP
+.IP "\(bu" 2
+\fCelektraStrLen\fP
+.PP
+.SH "Constraints"
+.PP
+Proprietary apps are sometimes delivered together with a libc (either static or a startup script makes sure their own libs are found)\&. If they would use Elektra, and the person wants the app to use the global Elektra it is a valid use case for the dedicated functions\&.
+.SH "Assumptions"
+.PP
+The only safe way to keep elektraMalloc et al\&. is to define that they will always call their libc counterpart (malloc et al\&.) and their purpose is simply to add assertions\&. Then we can also make them private, because you can just call free to free any pointer returned by Elektra\&. Ideally, I'd remove the functions, but it seems unlikely this will be accepted\&.
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Completely replace \fCelektraMalloc\fP / \fCelektraCalloc\fP with simple calls to malloc
+.IP "\(bu" 2
+Fix all places where non-Elektra functions get used
+.PP
+.SH "Decision"
+.PP
+.IP "\(bu" 2
+keep current state with the custom functions (allocators)
+.IP "\(bu" 2
+make it optional for plugin developers to use language specific allocators or our custom allocators
+.IP "\(bu" 2
+remove everything except \fCelektraFree\fP from public API
+.IP "\(bu" 2
+remove all functions that don't actually involve any memory allocations (e\&.g\&. \fCelektraStrLen\fP, \fCelektraStrCmp\fP)
+.IP "\(bu" 2
+add \fCelektraStrNDup\fP and other \fCstdlib\fP equivalents that do memory allocation\&.
+.PP
+.SH "Rationale"
+.PP
+While the current state might cause some problems with Compiler optimizations and discoverability, those issues probably are only very minor in practice\&. Removing all functions poses a considerable amount of work, which would have to be undone in case we need those functions one day anyway\&. The current downsides don't justify such a big procedure\&.
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

@@ -1,0 +1,35 @@
+\label{doc_decisions_iterators_md_md_doc_decisions_iterators}%
+\Hypertarget{doc_decisions_iterators_md_md_doc_decisions_iterators}%
+ \hypertarget{doc_decisions_iterators_md_autotoc_md1950}{}\doxysection{Problem}\label{doc_decisions_iterators_md_autotoc_md1950}
+The internal iterator inside Key\+Sets seems to cause more problems than it solves.\hypertarget{doc_decisions_iterators_md_autotoc_md1951}{}\doxysection{Constraints}\label{doc_decisions_iterators_md_autotoc_md1951}
+We could embed one such iterator into Key\+Sets, but recommend that people use an external instance (int) in new code.\hypertarget{doc_decisions_iterators_md_autotoc_md1952}{}\doxysection{Assumptions}\label{doc_decisions_iterators_md_autotoc_md1952}
+@raphi011 made benchmarks showing that external and internal iterators have about the same speed. So it should be a safe choice to not provide the internal iterators for 1.\+0 and only the external instead.\hypertarget{doc_decisions_iterators_md_autotoc_md1953}{}\doxysection{Considered Alternatives}\label{doc_decisions_iterators_md_autotoc_md1953}
+\hypertarget{doc_decisions_iterators_md_autotoc_md1954}{}\doxysection{Decision}\label{doc_decisions_iterators_md_autotoc_md1954}
+
+\begin{DoxyItemize}
+\item remove all functions related to the internal iterator\+:
+\begin{DoxyItemize}
+\item ks\+Rewind
+\item ks\+Next
+\item ks\+Current
+\item ks\+Get\+Cursor
+\item ks\+Set\+Cursor
+\item ks\+Head
+\item ks\+Tail
+\item key\+Rewind\+Meta
+\item key\+Next\+Meta
+\item key\+Current\+Meta
+\end{DoxyItemize}
+\item change {\ttfamily ks\+At\+Cursor} to {\ttfamily ks\+At}
+\item add implementation / documentation / tests for the external iterator
+\item start using external iterators in new code
+\item remove docu about internal cursor from all functions.
+\end{DoxyItemize}\hypertarget{doc_decisions_iterators_md_autotoc_md1955}{}\doxysection{Rationale}\label{doc_decisions_iterators_md_autotoc_md1955}
+
+\begin{DoxyItemize}
+\item The only function that returns a {\ttfamily cursor\+\_\+t} is {\ttfamily ks\+Get\+Cursor}. Its documentation is completely broken\+:
+\item {\ttfamily ks\+Rewind} and {\ttfamily key\+Next\+Meta} cannot be used on the same variable ({\ttfamily ks}).
+\item The documentation (not just for the above function, but all over the {\ttfamily ks$\ast$} functions) also contains lots of warnings (use only cursor from same keyset, may be invalid, may become invalid, etc.) that make it seem like there is something special about these cursors, when in fact they are simply indicies. There is no information (at least that I could find), how cursors can be modified. Most of the time it even seems like modifying cursors would be a bad idea.
+\end{DoxyItemize}\hypertarget{doc_decisions_iterators_md_autotoc_md1956}{}\doxysection{Implications}\label{doc_decisions_iterators_md_autotoc_md1956}
+\hypertarget{doc_decisions_iterators_md_autotoc_md1957}{}\doxysection{Related Decisions}\label{doc_decisions_iterators_md_autotoc_md1957}
+\hypertarget{doc_decisions_iterators_md_autotoc_md1958}{}\doxysection{Notes}\label{doc_decisions_iterators_md_autotoc_md1958}

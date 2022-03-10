@@ -1,0 +1,468 @@
+.TH "invoke" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+invoke \- Invoke
+.PP
+ \- Functionality to use plugins and invoke functions\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "ElektraInvokeHandle * \fBelektraInvokeInitialize\fP (const char *elektraPluginName)"
+.br
+.ti -1c
+.RI "ElektraInvokeHandle * \fBelektraInvokeOpen\fP (const char *elektraPluginName, KeySet *config, Key *errorKey)"
+.br
+.RI "Opens a new handle to invoke functions for a plugin\&. "
+.ti -1c
+.RI "const void * \fBelektraInvokeGetFunction\fP (ElektraInvokeHandle *handle, const char *elektraPluginFunctionName)"
+.br
+.RI "Get a function pointer\&. "
+.ti -1c
+.RI "KeySet * \fBelektraInvokeGetPluginConfig\fP (ElektraInvokeHandle *handle)"
+.br
+.RI "Get the configuration the plugin uses\&. "
+.ti -1c
+.RI "const char * \fBelektraInvokeGetPluginName\fP (ElektraInvokeHandle *handle)"
+.br
+.RI "Get the name of the plugin\&. "
+.ti -1c
+.RI "void * \fBelektraInvokeGetPluginData\fP (ElektraInvokeHandle *handle)"
+.br
+.RI "Get the data of the plugin\&. "
+.ti -1c
+.RI "KeySet * \fBelektraInvokeGetModules\fP (ElektraInvokeHandle *handle)"
+.br
+.RI "Get the modules used for invoking\&. "
+.ti -1c
+.RI "KeySet * \fBelektraInvokeGetExports\fP (ElektraInvokeHandle *handle)"
+.br
+.RI "Get the exports from the plugin\&. "
+.ti -1c
+.RI "int \fBelektraInvoke2Args\fP (ElektraInvokeHandle *handle, const char *elektraPluginFunctionName, KeySet *ks, Key *k)"
+.br
+.RI "A convenience function to call a function with two arguments\&. "
+.ti -1c
+.RI "void \fBelektraInvokeClose\fP (ElektraInvokeHandle *handle, Key *errorKey)"
+.br
+.RI "Closes all affairs with the handle\&. "
+.ti -1c
+.RI "int \fBelektraInvokeCallDeferable\fP (ElektraInvokeHandle *handle, const char *elektraPluginFunctionName, KeySet *parameters)"
+.br
+.RI "Invokes a deferable function on an invoke handle\&. "
+.ti -1c
+.RI "void \fBelektraInvokeExecuteDeferredCalls\fP (ElektraInvokeHandle *handle, ElektraDeferredCallList *list)"
+.br
+.RI "Execute deferred calls from list on given invoke handle\&. "
+.ti -1c
+.RI "int \fBelektraDeferredCall\fP (Plugin *handle, const char *elektraPluginFunctionName, KeySet *parameters)"
+.br
+.RI "Call a deferrable function on a plugin handle\&. "
+.ti -1c
+.RI "int \fBelektraDeferredCallAdd\fP (ElektraDeferredCallList *list, const char *name, KeySet *parameters)"
+.br
+.RI "Add a new deferred call to the deferred call list\&. "
+.ti -1c
+.RI "ElektraDeferredCallList * \fBelektraDeferredCallCreateList\fP (void)"
+.br
+.RI "Create new deferred call list\&. "
+.ti -1c
+.RI "void \fBelektraDeferredCallDeleteList\fP (ElektraDeferredCallList *list)"
+.br
+.RI "Delete deferred call list\&. "
+.ti -1c
+.RI "void \fBelektraDeferredCallsExecute\fP (Plugin *plugin, ElektraDeferredCallList *list)"
+.br
+.RI "Execute deferred calls on given plugin\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Functionality to use plugins and invoke functions\&. 
+
+Allows invoking functions of plugins as needed within applications and plugins inside and outside of the KDB\&.
+.PP
+To use this library, you need to include:
+.PP
+.PP
+.nf
+#include <kdbinvoke\&.h>`
+.fi
+.PP
+.PP
+and link against \fClibelektra-invoke\fP\&. Then you can use it:
+.PP
+.PP
+.nf
+ElektraInvokeHandle * handle = elektraInvokeOpen ("dini", 0);
+elektraInvoke2Args (handle, "get", ks, k);
+elektraInvokeClose (handle);
+.fi
+.PP
+ 
+.SH "Function Documentation"
+.PP 
+.SS "int elektraDeferredCall (Plugin * handle, const char * elektraPluginFunctionName, KeySet * parameters)"
+
+.PP
+Call a deferrable function on a plugin handle\&. If the function is exported by the plugin it is directly invoked, if the plugin supports deferring calls, the call is deferred\&. If both is possible (function is exported and deferred calls are supported), the function is directly called and the call is deferred (i\&.e\&. for nested plugins)\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP invoke handle 
+.br
+\fIelektraPluginFunctionName\fP function name 
+.br
+\fIparameters\fP parameter key set\&. Can bee freed afterwards\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP when the call failed (direct call and deferring not available) 
+.RE
+.PP
+
+.SS "int elektraDeferredCallAdd (ElektraDeferredCallList * list, const char * name, KeySet * parameters)"
+
+.PP
+Add a new deferred call to the deferred call list\&. Used internally by plugins\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIlist\fP deferred call list 
+.br
+\fIname\fP function name 
+.br
+\fIparameters\fP function parameters 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP when malloc failed 
+.RE
+.PP
+
+.SS "ElektraDeferredCallList* elektraDeferredCallCreateList (void)"
+
+.PP
+Create new deferred call list\&. The list needs to be deleted with \fBelektraDeferredCallDeleteList()\fP\&. Used internally by plugins\&.
+.PP
+\fBReturns\fP
+.RS 4
+new list 
+.RE
+.PP
+
+.SS "void elektraDeferredCallDeleteList (ElektraDeferredCallList * list)"
+
+.PP
+Delete deferred call list\&. Used internally by plugins\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIlist\fP list 
+.RE
+.PP
+
+.SS "void elektraDeferredCallsExecute (Plugin * plugin, ElektraDeferredCallList * list)"
+
+.PP
+Execute deferred calls on given plugin\&. Used internally by plugins\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIplugin\fP plugin handle 
+.br
+\fIlist\fP list 
+.RE
+.PP
+
+.SS "int elektraInvoke2Args (ElektraInvokeHandle * handle, const char * elektraPluginFunctionName, KeySet * ks, Key * k)"
+
+.PP
+A convenience function to call a function with two arguments\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to work with 
+.br
+\fIelektraPluginFunctionName\fP the function to call, e\&.g\&. 'get' 
+.br
+\fIks\fP the keyset to be used as first parameter 
+.br
+\fIk\fP the key to be used as second parameter
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the return value of the invoked function (i\&.e\&. -1, 0, or 1) 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-2\fP if the function was not found\&. 
+.RE
+.PP
+
+.SS "int elektraInvokeCallDeferable (ElektraInvokeHandle * handle, const char * elektraPluginFunctionName, KeySet * parameters)"
+
+.PP
+Invokes a deferable function on an invoke handle\&. If the function is exported by the plugin it is directly invoked, if the plugin supports deferring calls, the call is deferred\&.
+.PP
+The parameters key set can be freed afterwards\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP invoke handle 
+.br
+\fIelektraPluginFunctionName\fP function name 
+.br
+\fIparameters\fP parameter key set 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP when the call failed (direct call and deferring not available) 
+.RE
+.PP
+
+.SS "void elektraInvokeClose (ElektraInvokeHandle * handle, Key * errorKey)"
+
+.PP
+Closes all affairs with the handle\&. The close function of the plugin will be called\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to work with 
+.br
+\fIerrorKey\fP a key where error messages will be stored
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP 
+.RE
+.PP
+
+.SS "void elektraInvokeExecuteDeferredCalls (ElektraInvokeHandle * handle, ElektraDeferredCallList * list)"
+
+.PP
+Execute deferred calls from list on given invoke handle\&. Used internally by plugins holding invoke handles\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP invoke handle 
+.br
+\fIlist\fP list 
+.RE
+.PP
+
+.SS "KeySet* elektraInvokeGetExports (ElektraInvokeHandle * handle)"
+
+.PP
+Get the exports from the plugin\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to work with\&.
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the exports of the plugin\&. 
+.RE
+.PP
+
+.SS "const void* elektraInvokeGetFunction (ElektraInvokeHandle * handle, const char * elektraPluginFunctionName)"
+
+.PP
+Get a function pointer\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to use 
+.br
+\fIelektraPluginFunctionName\fP the name of the function to use, e\&.g\&., get/set
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+Example:
+.PP
+.PP
+.nf
+typedef int (*elektra2Args) (KeySet*, Key *);
+elektra2Args func = *(elektra2Args *)elektraInvokeGetFunction (handle, elektraPluginFunctionName);
+if (!func) exit(1);   // no function found, handle error
+func (ks, k);         // otherwise, call function
+.fi
+.PP
+.PP
+\fBSee also\fP
+.RS 4
+\fBelektraInvoke2Args()\fP a convenience function to be used for KeySet,Key arguments\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a function pointer for the specified function\&. 
+.RE
+.PP
+
+.SS "KeySet* elektraInvokeGetModules (ElektraInvokeHandle * handle)"
+
+.PP
+Get the modules used for invoking\&. 
+.PP
+\fBWarning\fP
+.RS 4
+The modules are closed within \fBelektraInvokeClose()\fP\&. It is \fInot\fP enough to \fBksDup()\fP the keyset, you must not call \fBelektraInvokeClose()\fP if you want to reuse the modules\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to work with\&.
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the modules used for invoking\&. 
+.RE
+.PP
+
+.SS "KeySet* elektraInvokeGetPluginConfig (ElektraInvokeHandle * handle)"
+
+.PP
+Get the configuration the plugin uses\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to use
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the config of the plugin\&. 
+.RE
+.PP
+
+.SS "void* elektraInvokeGetPluginData (ElektraInvokeHandle * handle)"
+
+.PP
+Get the data of the plugin\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to work with\&.
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to the plugin's data\&. 
+.RE
+.PP
+
+.SS "const char* elektraInvokeGetPluginName (ElektraInvokeHandle * handle)"
+
+.PP
+Get the name of the plugin\&. The name might differ from the name as passed with elektraInvokeOpen when symlinks are used\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the handle to work with\&.
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+handle must be as returned from \fBelektraInvokeOpen()\fP
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the name of the plugin 
+.RE
+.PP
+
+.SS "ElektraInvokeHandle* elektraInvokeInitialize (const char * elektraPluginName)"
+
+.PP
+\fBDeprecated\fP
+.RS 4
+Do not use\&.
+.RE
+.PP
+.PP
+Use \fCelektraInvokeOpen (name, 0, 0)\fP instead\&.
+.PP
+\fBSee also\fP
+.RS 4
+\fBelektraInvokeOpen()\fP 
+.RE
+.PP
+
+.SS "ElektraInvokeHandle* elektraInvokeOpen (const char * elektraPluginName, KeySet * config, Key * errorKey)"
+
+.PP
+Opens a new handle to invoke functions for a plugin\&. When opening the plugin, it calls the 'open' function of the plugin\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIelektraPluginName\fP the plugin on which we want to invoke functions\&. 
+.br
+\fIconfig\fP the config to be passed to the plugin\&. 
+.br
+\fIerrorKey\fP a key where error messages will be stored
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the handle 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on errors 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

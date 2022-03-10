@@ -1,0 +1,73 @@
+.TH "md_src_plugins_zeromqsend_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_zeromqsend_README \- Plugin: zeromqsend 
+
+.IP "\(bu" 2
+infos = Information about the zeromqsend plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Wahringer waht@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = notification
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage postcommit
+.IP "\(bu" 2
+infos/status = maintained unittest libc global experimental
+.IP "\(bu" 2
+infos/description = Sends notifications over ZeroMq publish sockets when a key is changed
+.PP
+.SH "Introduction"
+.PP
+This plugin is a notification plugin, which sends notifications using ZeroMq publish (\fCZMQ_PUB\fP) sockets when the key database (KDB) has been modified\&. It is compatible with the sending zeromqrecv plugin\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-zeromq\fP\&.
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibzmq3-dev\fP (ZeroMQ C bindings > 3\&.2)
+.PP
+.SH "Usage"
+.PP
+The recommended way is to globally mount the plugin together with the zeromqrecv plugin:
+.PP
+.RS 4
+kdb global-mount zeromqsend zeromqrecv 
+.RE
+.PP
+This plugin is designed to be used as a transport plugin for Elektra's notification feature\&. Since ZeroMq creates threads for asynchronous I/O this plugin always operates asynchronously\&.
+.PP
+Since ZeroMQ sockets only provide a 1:n mapping (i\&.e\&. one publisher with many subscribers or one subscriber and many publishers) the \fCzeromqsend\fP and \fCzeromqrecv\fP plugins require a XPUB/XSUB endpoint\&. The kdb tool \fC'hub-zeromq'\fP provides these endpoints\&.
+.SH "Transport Plugin"
+.PP
+Mount this plugin globally with default settings to use it as \fIsending\fP transport plugin for Elektra's notification feature:
+.PP
+.RS 4
+kdb global-mount zeromqsend 
+.RE
+.PP
+.SH "Configuration"
+.PP
+This plugin supports the following configuration options when mounting:
+.PP
+.IP "\(bu" 2
+\fBendpoint\fP: ZeroMQ XSUB or SUB socket to connect to\&. The \fC\fCipc\fP\fP and \fC\fCtcp\fP\fP ZeroMQ transports are recommended\&. The default value is 'tcp://localhost:6000'\&.
+.IP "\(bu" 2
+\fBconnectTimeout\fP: Timeout for establishing connections in milliseconds\&. The default value is '1000'\&.
+.IP "\(bu" 2
+\fBsubscribeTimeout\fP: Timeout for waiting for subscribers in milliseconds\&. The default value is '200'\&.
+.PP
+.SH "Notification Format"
+.PP
+The ZeroMQ transport plugins use the publish/subscribe sockets (\fCZMQ_PUB\fP and \fCZMQ_SUB\fP) for notification transport\&.
+.PP
+Each notification is a multipart message\&. The first part contains the type of change, the second part contains the name of the changed key\&.
+.PP
+Possible only current change is \fCCommit\fP\&. 

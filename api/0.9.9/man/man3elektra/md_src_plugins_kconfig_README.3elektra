@@ -1,0 +1,168 @@
+.TH "md_src_plugins_kconfig_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_kconfig_README \- Plugin: kconfig 
+
+.IP "\(bu" 2
+infos = Information about the kconfig plugin is in keys below
+.IP "\(bu" 2
+infos/author = Dardan Haxhimustafa mail@dardan.im
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/kconfig
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = recommended maintained compatible specific experimental unfinished nodoc concept
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = Reads and writes the KConfig INI format
+.PP
+.SH "Introduction"
+.PP
+This plugin can be used to parse and serialize a \fCKConfig\fP INI file\&.
+.PP
+Information about the syntax:
+.PP
+.IP "\(bu" 2
+Files are expected to be encoded in \fCUTF-8\fP\&.
+.IP "\(bu" 2
+Empty lines are ignored\&.
+.IP "\(bu" 2
+Lines that start with a \fC#\fP character are considered comments\&. Comments are ignored too\&.
+.IP "\(bu" 2
+Configurations consist of groups and keys\&. Only keys can have values\&.
+.IP "\(bu" 2
+Key names can't start with a \fC[\fP character
+.IP "\(bu" 2
+Keys can contain spaces and any special characters except \fC=\fP\&.
+.IP "\(bu" 2
+If a key has a value, then it will be followed with an \fC=\fP symbol and then the value will be read until the end of the line\&. The white space characters around the \fC=\fP symbol are ignored\&.
+.IP "\(bu" 2
+In values, the following escape sequences can be used:
+.IP "  \(bu" 4
+\fC\\n\fP and \fC\\r\fP are mapped to newline
+.IP "  \(bu" 4
+\fC\\t\fP is mapped to tab
+.IP "  \(bu" 4
+\fC\\\\\fP is mapped to \fC\\\fP
+.PP
+
+.IP "\(bu" 2
+Values can contain any character from the \fCUTF-8\fP set except for newline and \fC\\\fP followed by an invalid escape sequence\&.
+.IP "\(bu" 2
+Keys can be localized\&. The locale is surrounded with \fC[\fP and \fC]\fP and cannot start with \fC$\fP\&.
+.IP "\(bu" 2
+Same key names can be used multiple times if it has different locales\&. The following example is valid: 
+.PP
+.nf
+greeting[en] = Hello
+greeting[de] = Hallo
+
+.fi
+.PP
+
+.IP "\(bu" 2
+Keys can have metadata\&. Those are one byte long, start with \fC$\fP and are surrounded with \fC[\fP and \fC]\fP\&.
+.IP "\(bu" 2
+The same key name can't be used multiple times with different metadata (different to locales)\&. The following example is invalid: 
+.PP
+.nf
+key\&.name[$a] = Something
+key\&.name[$i] = Something else
+
+.fi
+.PP
+
+.IP "\(bu" 2
+Group names begin have a \fC[\fP symbol at the beginning of a line and every key that follows them is part of this group (until the next group is declared)
+.PP
+.PP
+An example of how a valid config file might look like:
+.PP
+.PP
+.nf
+[group][subgroup]
+key\&.name[en][$i][$e]=Key Value
+key\&.name[de]=Key Wert
+.fi
+.PP
+.PP
+And how it will be represented in kdb:
+.PP
+.PP
+.nf
+keyNew (PREFIX "group/subgroup/key\&.name[en]", KEY_VALUE, "Key Value", KEY_META, "kconfig", "ie", KEY_END)
+keyNew (PREFIX "group/subgroup/key\&.name[de]", KEY_VALUE, "Key Wert", KEY_END)
+.fi
+.PP
+.SH "Usage"
+.PP
+The following example shows you how you can read data using this plugin\&.
+.PP
+.PP
+.nf
+# Mount the plugin to the cascading namespace `/tests/kconfig`
+sudo kdb mount configrc /tests/kconfig kconfig
+
+# Manually add a key-value pair to the database
+mkdir -p "$(dirname "$(kdb file /tests/kconfig)")"
+echo 'key=Value' > "$(kdb file /tests/kconfig)"
+
+# Retrieve the new value
+kdb get /tests/kconfig/key
+#> Value
+
+# Set the value to Example
+kdb set /tests/kconfig/key Example
+
+# Verify that the value has changed in the file too
+cat `kdb file /tests/kconfig`
+#> key=Example
+
+# Manually add a gorup to the database
+echo '[group][subgroup]' >> "$(kdb file /tests/kconfig)"
+
+# Manually add a key that contains metas to that group
+echo 'key\&.name[$a][$i]=New Value' >> "$(kdb file /tests/kconfig)"
+
+# Retrieve the new value
+kdb get /tests/kconfig/group/subgroup/key\&.name
+#> New Value
+
+# Retrieve the meta values
+kdb meta-get /tests/kconfig/group/subgroup/key\&.name kconfig
+#> ai
+
+# Manually add a group and a localized key
+echo '[localized keys]' >> `kdb file /tests/kconfig`
+echo 'greeting[en]=Hello' >> `kdb file /tests/kconfig`
+echo 'greeting[de]=Hallo' >> `kdb file /tests/kconfig`
+
+# Retrieve the english greeting
+kdb get '/tests/kconfig/localized keys/greeting[en]'
+#> Hello
+
+# Retrieve the german greeting
+kdb get '/tests/kconfig/localized keys/greeting[de]'
+#> Hallo
+
+# Undo modifications to the database
+sudo kdb umount /tests/kconfig
+.fi
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+Comments from the file are discarded on save (same as the default KConfig functionality)
+.IP "\(bu" 2
+No validation for meta values or locale codes 
+.PP
+

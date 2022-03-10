@@ -1,0 +1,165 @@
+.TH "md_src_plugins_augeas_README" 3elektra "Thu Mar 10 2022" "Version 0.9.9" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_augeas_README \- Plugin: augeas 
+
+.IP "\(bu" 2
+infos = Information about augeas plugin is in keys below
+.IP "\(bu" 2
+infos/author = Felix Berlakovich elektra@berlakovich.net
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends = glob keytometa
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest libc configurable
+.IP "\(bu" 2
+infos/metadata = order
+.IP "\(bu" 2
+infos/description = reading and writing configurations via libaugeas
+.PP
+.SH "Introduction"
+.PP
+This is a plugin for reading and writing configuration files with help from Augeas\&. The plugin should be able to read all configuration files for which an Augeas lens exists\&. However, not all stock lenses of Augeas have been tested yet\&. A detailed description of the lens language and a tutorial on how to write new lenses can be found at http://augeas.net/
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibaugeas-dev\fP: You need version 0\&.16 or higher
+.PP
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-augeas\fP\&.
+.PP
+If you have installed Augeas manually, it may be necessary to update the ld configuration\&. This is especially true if an older version of Augeas is installed also\&. Such a situation may lead to an error similar to this:
+.PP
+.PP
+.nf
+/usr/lib/libaugeas\&.so\&.0: version `AUGEAS_0\&.16\&.0` not found (required by kdb)
+.fi
+.PP
+.PP
+This is because \fCld\fP tries to link \fC/usr/lib/libaugeas\&.so\&.0\fP which is an older version of Augeas\&. Simply add the path to the newer library to your ld search paths (consult your system documentation on how to do this)\&.
+.SH "Mounting and Configuration"
+.PP
+In order to mount the hosts file with the augeas plugin, issue the following command:
+.PP
+.PP
+.nf
+sudo kdb mount /etc/hosts system:/tests/hosts augeas lens=Hosts\&.lns
+.fi
+.PP
+.PP
+And to unmount the file run:
+.PP
+.PP
+.nf
+sudo kdb umount system:/tests/hosts
+.fi
+.PP
+.PP
+The value of the plugin configuration option 'lens' should be the module name of the lens (Hosts in the example) with a '\&.lns' suffix\&. Depending on your distribution and kind of installation, lenses can be found at \fC/usr/share/augeas/lenses/dist\fP, \fC/usr/local/share/augeas/lenses/dist\fP, or something similar\&. The lens module name is equal to the filename without extension in pascal notation\&. For example, the lens \fC/usr/share/augeas/lenses/dist/hosts\&.aug\fP contains the module Hosts\&.
+.PP
+Note that, without configuring the plugin to use a lens, the plugin will print an error message on the first usage:
+.PP
+.PP
+.nf
+sudo kdb mount /etc/hosts system:/tests/hosts augeas #The lens is missing here!
+kdb ls system:/tests/hosts
+# RET: 5
+# ERROR: *C01200*
+.fi
+.PP
+.PP
+This happens because the plugin does not know which lens it should use to read and write the configuration\&. For that reason, the lens configuration option was supplied together with the mount command\&.
+.PP
+And again to unmount the \fChosts\fP file simply run:
+.PP
+.PP
+.nf
+sudo kdb umount system:/tests/hosts
+.fi
+.PP
+.SH "Restrictions"
+.PP
+.SS "Inner Node Values"
+Currently no Augeas lens supports values for inner nodes\&. Unfortunately no validation plugin exists yet that would prevent such modifications early:
+.PP
+.PP
+.nf
+sudo kdb mount /etc/hosts system:/tests/hosts augeas lens=Hosts\&.lns
+kdb set system:/tests/hosts/1 somevalue
+# RET: 5
+# ERROR: *C01100*
+.fi
+.PP
+.PP
+The operation simply fails with an undescriptive error\&.
+.PP
+Finally, to unmount the \fChosts\fP file simply run:
+.PP
+.PP
+.nf
+sudo kdb umount system:/tests/hosts
+.fi
+.PP
+.SS "Leaky Abstraction of Order"
+Most Augeas lenses require subtrees to be in a specific order\&. For example the hosts lens requires the ipaddr node of an entry to precede the canonical node\&. Unfortunately the Augeas storage plugin has no knowledge about this required order\&. Therefore the correct order must be ensured via order metakeys\&. Otherwise saving the KeySet may fail\&. As an example consider the following kdb shell script:
+.PP
+.PP
+.nf
+kdbGet system:/hosts
+keySetName system:/hosts/6
+ksAppendKey
+keySetName system:/hosts/6/ipaddr
+keySetString 14\&.14\&.14\&.14
+ksAppendKey
+keySetName system:/hosts/6/canonical
+keySetString newhost
+ksAppendKey
+kdbSet system:/hosts
+.fi
+.PP
+.PP
+This fails with an error similar to this
+.PP
+.PP
+.nf
+Sorry, module storage issued the error C03100:
+an Augeas error occurred: Failed to match
+some augeas match expression
+with tree
+{ \"canonical\" = \"newhost\" } { \"ipaddr\" = \"14\&.14\&.14\&.14\" }
+.fi
+.PP
+.PP
+Whereas the following script succeeds due to the correct order
+.PP
+.PP
+.nf
+kdbGet system:/hosts
+keySetName system:/hosts/6
+ksAppendKey
+keySetName system:/hosts/6/ipaddr
+keySetString 14\&.14\&.14\&.14
+keySetMeta order 100
+ksAppendKey
+keySetName system:/hosts/6/canonical
+keySetString newhost
+keySetMeta order 110
+ksAppendKey
+kdbSet system:/hosts
+.fi
+.PP
+.SH "Planned Improvements"
+.PP
+.IP "\(bu" 2
+a validation plugin preventing inner node values 
+.PP
+
