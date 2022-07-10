@@ -1,0 +1,26 @@
+.TH "doc_dev_kdb-contracts_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_kdb-contracts_md \- KDB Contracts 
+ The \fC\fBkdbOpen()\fP\fP function accepts a \fCKeySet * contract\fP parameter\&. This parameter allows you to extend and configure the KDB within your application without permanently changing files on disk\&.
+.SH "Contract Structure"
+.PP
+The contract consists of Keys below \fCsystem:/elektra/contract/<type>\fP, where \fC<type>\fP is one of a set of predefined contract types\&. Currently, the types \fCglobalkeyset\fP and \fCmountglobal\fP are supported\&.
+.SS "Global KeySet Contracts"
+To insert data into the global KeySet during \fCkdbOpen\fP, you can add keys below \fCsystem:/elektra/contract/globalkeyset\fP\&. All these keys will be renamed and copied into the global KeySet that is passed to all plugins\&.
+.PP
+Specifically, the subset below \fCsystem:/elektra/contract/globalkeyset\fP is moved to \fCsystem:/elektra\fP and then inserted into the global KeySet\&.
+.SS "Mounting Global Plugins"
+You can also mount a global plugin with a contract\&. To do this, add a key \fCsystem:/elektra/contract/mountglobal/<plugin>\fP where \fC<plugin>\fP is the name of the plugin you want to mount\&. The keys below \fCsystem:/elektra/contract/mountglobal/<plugin>\fP will be moved to \fCuser:/\fP and used as the config for \fC<plugin>\fP\&.
+.SH "Pre-defined Contracts"
+.PP
+There are a few pre-defined contracts that can be accessed via helper functions\&.
+.SS "GOpts"
+To mount and configure the \fCgopts\fP plugin you can use \fCelektraGOptsContract\fP\&. There is also \fCelektraGOptsContractFromStrings\fP, but its use is discouraged unless you really need it\&. It mainly exists for use from various bindings\&.
+.SS "I/O binding"
+To set the I/O binding to be used in a KDB instance, use \fCelektraIoContract\fP\&.
+.SS "Notification"
+To set up notifications use the \fCelektraNotificationContract\fP function\&. It automatically sets up the \fCinternalnotification\fP plugin\&.
+.PP
+If you also need to set up notification transport plugins, you should manually add the relevant \fCsystem:/elektra/contract/mountglobal/<plugin>\fP keys and the required config below\&. 

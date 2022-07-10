@@ -1,0 +1,26 @@
+\label{doc_decisions_header_file_structure_md_md_doc_decisions_header_file_structure}%
+\Hypertarget{doc_decisions_header_file_structure_md_md_doc_decisions_header_file_structure}%
+ \hypertarget{doc_decisions_header_file_structure_md_autotoc_md1909}{}\doxysection{Problem}\label{doc_decisions_header_file_structure_md_autotoc_md1909}
+kdb.\+h contains the public API for both libelektra-\/core and libelektra-\/kdb. It is confusing and makes it hard to see what library a function actually belongs to.
+
+The big problem is \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}. It has two main problems\+:
+
+
+\begin{DoxyEnumerate}
+\item It contains stuff from many different libraries. I found at least libelektra-\/core, libelektra-\/kdb and libelektra-\/highlevel.
+\item It contains things that are different levels of \char`\"{}private\char`\"{}.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1910}{}\doxysection{Constraints}\label{doc_decisions_header_file_structure_md_autotoc_md1910}
+\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1911}{}\doxysection{Assumptions}\label{doc_decisions_header_file_structure_md_autotoc_md1911}
+\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1912}{}\doxysection{Considered Alternatives}\label{doc_decisions_header_file_structure_md_autotoc_md1912}
+\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1913}{}\doxysection{Decision}\label{doc_decisions_header_file_structure_md_autotoc_md1913}
+
+\begin{DoxyEnumerate}
+\item Some parts are truly private, i.\+e. shouldn\textquotesingle{}t be used outside the library that defines them. These things are only there because a library was split into multiple .c files. This includes e.\+g. split\+New and struct \+\_\+\+Split. Here it would be better to use a local header file in the library\textquotesingle{}s source folder. Symbols belonging to this category should not appear at all in the symbols.\+map file.
+\item Other things truly private, but must be tested. This includes e.\+g. most other split$\ast$ functions or the elektra\+Key\+Name$\ast$ functions. Here a local header could be used as well (requires longer relative includes), or we could create a src/include/testing folder (could be added to include path). Symbols belonging to this category should only appear in the private section of the symbols.\+map file (we could also create a second private section, if is just there for testing, or adjust some compiler configs for testing).
+\item Then there are things that I would call internal or pseudo-\/private. This includes the struct \+\_\+\+Key and struct \+\_\+\+Key\+Set, but also key\+Clear\+Sync or elektra\+Malloc and the high-\/level functions needed for codegen. These are things that shouldn\textquotesingle{}t be part of the public API, because we don\textquotesingle{}t want to make all the guarantees associated with that, but nonetheless cannot truly be private. In other words, each of these functions/structs/symbols has a specific \char`\"{}target audience\char`\"{} that may use it. Here I would either create a separate \mbox{\hyperlink{kdbinternal_8h}{kdbinternal.\+h}} or just keep \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}, as long as it is a separate file from 4. Symbols belonging to this category should only appear in the private section of the symbols.\+map file.
+\item Finally, there is what I\textquotesingle{}d call unstable or pseudo-\/public. This includes e.\+g. ks\+Find\+Hierarchy or elektra\+Read\+Array\+Number. These functions could be public, but for various reasons are not. Maybe they are not well-\/tested or maybe we just don\textquotesingle{}t want to commit to the function yet. Many of these (but not all) can\textquotesingle{}t be part of libelektra-\/ease, because the rely on something more private (e.\+g. directly access the array in a Key\+Set). Here I would either create a separate \mbox{\hyperlink{kdbinternal_8h}{kdbinternal.\+h}} or just keep \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}, as long as it is a separate file from 3. Symbols belonging to this category should only appear in the private section of the symbols.\+map file.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1914}{}\doxysection{Rationale}\label{doc_decisions_header_file_structure_md_autotoc_md1914}
+\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1915}{}\doxysection{Implications}\label{doc_decisions_header_file_structure_md_autotoc_md1915}
+\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1916}{}\doxysection{Related Decisions}\label{doc_decisions_header_file_structure_md_autotoc_md1916}
+\hypertarget{doc_decisions_header_file_structure_md_autotoc_md1917}{}\doxysection{Notes}\label{doc_decisions_header_file_structure_md_autotoc_md1917}
+Initial text copied from @kodebach \href{https://github.com/ElektraInitiative/libelektra/issues/4219}{\texttt{ https\+://github.\+com/\+Elektra\+Initiative/libelektra/issues/4219}} 

@@ -1,0 +1,64 @@
+
+\begin{DoxyItemize}
+\item infos = Information about simpleini plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = storage/properties
+\item infos/needs = code binary
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest nodep concept obsolete 3000
+\item infos/description = Very simple storage plugin which stores data in a basic properties file format
+\end{DoxyItemize}\hypertarget{md_src_plugins_simpleini_README_src_plugins_simpleini_README_md}{}\doxysection{Introduction}\label{md_src_plugins_simpleini_README_src_plugins_simpleini_README_md}
+This plugin reads and writes files written in a basic line-\/oriented ini-\/like format. It is very simplistic without sections, the toml plugin and for specifications the ni plugin should be preferred. Since the {\ttfamily simpleini} plugin requires the GNU C library it {\bfseries{will not work}} on operating systems that use another C library such as mac\+OS.\hypertarget{md_src_plugins_simpleini_README_autotoc_md508}{}\doxysection{Usage}\label{md_src_plugins_simpleini_README_autotoc_md508}
+It is quite suitable to export configuration if you want line-\/by-\/line key, value pairs without sections or metadata. (Thus +3000 in status)
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export system:/samba simpleini}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_simpleini_README_autotoc_md509}{}\doxysection{Configuration}\label{md_src_plugins_simpleini_README_autotoc_md509}
+The only parameter simpleini supports is {\ttfamily format} which allows you to change the syntax of individual lines. The {\ttfamily format} is a string with any characters where only {\ttfamily \%} has special meaning\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \%} in an even number N are escaped and represent N/2 {\ttfamily \%}, e.\+g. {\ttfamily \%\%\%\%} are actually {\ttfamily \%\%} in the resulting format.
+\item The first unescaped {\ttfamily \%} represents the key.
+\item The second unescaped {\ttfamily \%} represents the value.
+\end{DoxyItemize}
+
+The default is {\ttfamily \% = \%}.
+
+For example, if you want every key to be marked {\ttfamily \%\+:key value} you would use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export -\/c "{}format=\%\%:\% \%"{} system:/samba simpleini}
+\DoxyCodeLine{\#> \%:key value}
+\DoxyCodeLine{\#> \%:key2 value2}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_simpleini_README_autotoc_md510}{}\doxysection{Restrictions}\label{md_src_plugins_simpleini_README_autotoc_md510}
+
+\begin{DoxyItemize}
+\item Lines in a different format (e.\+g. comments) are discarded.
+\item The order per line must be key and then value\+: the plugin cannot be used if the value is first
+\item Whitespace before and after keynames are trimmed (but not for value)
+\item Delimiting symbols cannot be part of the key.
+\item The last occurrence of the same key wins (others are discarded).
+\item The parent Key cannot be used.
+\item This plugin needs the code and binary plugins. A code plugin is used for the escape character for some symbols (but does not respect user-\/defined {\ttfamily format}) and the binary plugin is used to handle binary values.
+\end{DoxyItemize}\hypertarget{md_src_plugins_simpleini_README_autotoc_md511}{}\doxysection{Examples}\label{md_src_plugins_simpleini_README_autotoc_md511}
+Mount the plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount -\/d /etc/samba/smb.conf system:/samba ccode simpleini}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_simpleini_README_autotoc_md512}{}\doxysection{Limitations}\label{md_src_plugins_simpleini_README_autotoc_md512}
+
+\begin{DoxyItemize}
+\item will be excluded in mac\+OS
+\item cannot parse entries where key or value is missing 
+\end{DoxyItemize}

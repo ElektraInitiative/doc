@@ -1,0 +1,41 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the len plugin is in keys below
+\item infos/author = Philipp Oppel \href{mailto:philipp.oppel@tuwien.ac.at}{\texttt{ philipp.\+oppel@tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = check
+\item infos/recommends =
+\item infos/placements = presetstorage postgetstorage
+\item infos/status = experimental unittest nodep
+\item infos/metadata = check/length/max
+\item infos/description = validates if input is less or equal to length and throws error otherwise
+\end{DoxyItemize}\hypertarget{md_src_plugins_length_README_src_plugins_length_README_md}{}\doxysection{Length Validation}\label{md_src_plugins_length_README_src_plugins_length_README_md}
+\hypertarget{md_src_plugins_length_README_autotoc_md301}{}\doxysubsection{Introduction}\label{md_src_plugins_length_README_autotoc_md301}
+This plugins purpose is to check the maximum length of strings. For example if {\ttfamily check/length/max} is set to 3, Strings with more than 3 characters will not validate (e.\+g. \char`\"{}abcd\char`\"{}), whereas \char`\"{}abc\char`\"{} would validate.\hypertarget{md_src_plugins_length_README_autotoc_md302}{}\doxysubsection{Installation}\label{md_src_plugins_length_README_autotoc_md302}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_length_README_autotoc_md303}{}\doxysubsection{Usage}\label{md_src_plugins_length_README_autotoc_md303}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount `length` plugin to cascading namespace `/tests/length`}
+\DoxyCodeLine{kdb mount config.dump /tests/length length}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the validity of the string stored in `/tests/length/text`}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/length/text check/length/max 3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set a longer string}
+\DoxyCodeLine{kdb set user:/tests/length/text abcd}
+\DoxyCodeLine{\# STDERR: .*Validation Semantic.*}
+\DoxyCodeLine{\# ERROR:  C03200}
+\DoxyCodeLine{\# RET:    5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set a correct string}
+\DoxyCodeLine{kdb set user:/tests/length/text abc}
+\DoxyCodeLine{kdb get user:/tests/length/text}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/rf /tests/length}
+\DoxyCodeLine{kdb umount /tests/length}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_length_README_autotoc_md304}{}\doxysubsection{Limitations}\label{md_src_plugins_length_README_autotoc_md304}
+The plugin only checks that strings are not longer than a given number. It is not possible to set a minimum length. 

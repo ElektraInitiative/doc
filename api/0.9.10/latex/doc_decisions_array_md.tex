@@ -1,0 +1,106 @@
+\label{doc_decisions_array_md_md_doc_decisions_array}%
+\Hypertarget{doc_decisions_array_md_md_doc_decisions_array}%
+ \hypertarget{doc_decisions_array_md_autotoc_md1654}{}\doxysection{Problem}\label{doc_decisions_array_md_autotoc_md1654}
+Currently it is inefficient to detect the length of an array and it is impossible to know if a key (without subkeys) should be an array or not.\hypertarget{doc_decisions_array_md_autotoc_md1655}{}\doxysection{Constraints}\label{doc_decisions_array_md_autotoc_md1655}
+
+\begin{DoxyItemize}
+\item None
+\end{DoxyItemize}\hypertarget{doc_decisions_array_md_autotoc_md1656}{}\doxysection{Assumptions}\label{doc_decisions_array_md_autotoc_md1656}
+\hypertarget{doc_decisions_array_md_autotoc_md1657}{}\doxysection{Considered Alternatives}\label{doc_decisions_array_md_autotoc_md1657}
+
+\begin{DoxyItemize}
+\item Metadata arrays simply work by convention as they are not serialized in special ways nor they get validated.
+\item {\ttfamily \#\#\#empty\+\_\+array} as in {\ttfamily yajl}, problem\+: does not allow efficient access of first element
+\item store length (and not last element), problem\+: needs prepending of {\ttfamily \#\+\_\+...}
+\item store element after last element (C++-\/\+Style), would not fit nicely with key-\/value
+\item use value and not the metadata {\ttfamily array}, problem\+: is ambiguous
+\item use metadata on all children
+\end{DoxyItemize}\hypertarget{doc_decisions_array_md_autotoc_md1658}{}\doxysection{Decision}\label{doc_decisions_array_md_autotoc_md1658}
+Store length in metadata {\ttfamily array} of key, or keep metadata {\ttfamily array} empty if empty array. Only children that have {\ttfamily \#} syntax are allowed in a valid array. The index start with {\ttfamily \#0}. Both {\ttfamily key\+Add\+Name(\char`\"{}\#12\char`\"{})} or {\ttfamily key\+Add\+Base\+Name(\char`\"{}\#\+\_\+12\char`\"{})} is allowed to add the 13th index.
+
+For example ({\ttfamily ni syntax}, sections used for metadata)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{myarray/\#0 = value0}
+\DoxyCodeLine{myarray/\#1 = value1}
+\DoxyCodeLine{myarray/\#2 = value2}
+\DoxyCodeLine{myarray/\#3 = value3}
+\DoxyCodeLine{myarray/\#4 = value4}
+\DoxyCodeLine{myarray/\#5 = value5}
+\DoxyCodeLine{[myarray]}
+\DoxyCodeLine{  array = \#5}
+
+\end{DoxyCode}
+
+
+It is not allowed to have anything else than {\ttfamily \#5} in the metadata {\ttfamily array}, e.\+g. even {\ttfamily \#4} would be a malformed array.
+
+With the metadata {\ttfamily array} in {\ttfamily spec\+:/} the {\ttfamily spec} plugin will add the {\ttfamily array} marker with the correct length. This needs to be happening early, so that plugins can rely on having correct arrays.
+
+For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{spec:/myarray      \# <-\/ has array marker}
+\DoxyCodeLine{}
+\DoxyCodeLine{user:/myarray      \# <-\/ either has correct array marker or no array marker}
+\DoxyCodeLine{user:/myarray/\#0}
+\DoxyCodeLine{user:/myarray/\#1}
+
+\end{DoxyCode}
+
+
+Here, the {\ttfamily spec} plugin would add {\ttfamily array=\#1} to {\ttfamily user\+:/myarray} if it was not there before.
+
+To look up an array, first do {\ttfamily ks\+Lookup\+By\+Name (ks, \char`\"{}/myarray\char`\"{}, 0)} on the parent. With the last index you get from its metadata {\ttfamily array}, iterate over the children. A cascading lookup on every individual child is also needed to make sure that overrides on individual elements are respected.
+
+For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{spec:/myarray    \# <-\/ contains the specification for the array}
+\DoxyCodeLine{spec:/myarray/\#  \# <-\/ contains the specification for the array elements}
+\DoxyCodeLine{}
+\DoxyCodeLine{dir:/myarray/\#0  \# <-\/ not an array, just an override for user:/myarray/\#}
+\DoxyCodeLine{}
+\DoxyCodeLine{user:/myarray    \# <-\/ with metadata array=\#0, this would be the array we get}
+\DoxyCodeLine{user:/myarray/\#0}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/myarray  \# <-\/ not found in cascading lookup, as user:/myarray exists}
+
+\end{DoxyCode}
+
+
+The {\ttfamily spec} plugin should check if it is a valid array, i.\+e.\+:
+
+
+\begin{DoxyItemize}
+\item that the parent key always contains the metadata {\ttfamily array},
+\item that the correct length is in {\ttfamily array},
+\item that the array only contains {\ttfamily \#} children, and
+\item that the children are numbered from {\ttfamily \#0} to {\ttfamily \#n}, without holes.
+\end{DoxyItemize}\hypertarget{doc_decisions_array_md_autotoc_md1659}{}\doxysection{Rationale}\label{doc_decisions_array_md_autotoc_md1659}
+
+\begin{DoxyItemize}
+\item Is very similar to {\ttfamily binary} metadata.
+\item The key alone suffices to know if it\textquotesingle{}s an array
+\item One can distinguish an array with keys that are called by chance e.\+g. {\ttfamily \#0}
+\end{DoxyItemize}\hypertarget{doc_decisions_array_md_autotoc_md1660}{}\doxysection{Implications}\label{doc_decisions_array_md_autotoc_md1660}
+
+\begin{DoxyItemize}
+\item yajl needs to be fixed
+\item metadata library needs to be adapted
+\item spec plugin needs to be fixed, a lot of work needed there. Most amount of work is to detect misstructured nested arrays ({\ttfamily \#} intermixed with non {\ttfamily \#} keys) which is a possibility also in all the alternatives of this decision.
+\item A {\ttfamily user\+:/} or {\ttfamily dir\+:/} key can change the semantics of a {\ttfamily system\+:/} array, if not avoided by {\ttfamily spec}.
+\item user-\/facing documentation should contain a note like\+: \char`\"{}\+Mixing array and non-\/array keys in arrays is not supported.   In many cases the trivial solution is to move the array part into a separate child-\/key.\char`\"{}
+\end{DoxyItemize}\hypertarget{doc_decisions_array_md_autotoc_md1661}{}\doxysection{Related Decisions}\label{doc_decisions_array_md_autotoc_md1661}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_global_plugins_md}{Global Plugins}}
+\item \mbox{\hyperlink{doc_decisions_global_validation_md}{Global Validation}}
+\item \mbox{\hyperlink{doc_decisions_base_name_md}{Base Names}}
+\item \mbox{\hyperlink{doc_decisions_spec_metadata_md}{Metadata in Spec Namespace}}
+\item \mbox{\hyperlink{doc_decisions_spec_expressiveness_md}{Spec Expressiveness}}
+\end{DoxyItemize}\hypertarget{doc_decisions_array_md_autotoc_md1662}{}\doxysection{Notes}\label{doc_decisions_array_md_autotoc_md1662}
+\href{https://github.com/ElektraInitiative/libelektra/issues/182}{\texttt{ https\+://github.\+com/\+Elektra\+Initiative/libelektra/issues/182}} 

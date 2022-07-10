@@ -1,0 +1,77 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the email plugin is in keys below
+\item infos/author = Andreas Kraschitzer \href{mailto:e01226853@student.tuwien.ac.at}{\texttt{ e01226853@student.\+tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = check
+\item infos/recommends =
+\item infos/placements = presetstorage
+\item infos/status = maintained unittest nodep experimental
+\item infos/metadata = check/email
+\item infos/description = Validation for email addresses
+\end{DoxyItemize}\hypertarget{md_src_plugins_email_README_src_plugins_email_README_md}{}\doxysection{Email Address Validation}\label{md_src_plugins_email_README_src_plugins_email_README_md}
+\hypertarget{md_src_plugins_email_README_autotoc_md180}{}\doxysubsection{Introduction}\label{md_src_plugins_email_README_autotoc_md180}
+This plugin validates email addresses using regular expressions. The plugin does not support the full RFC5321 spec. For more information see \href{\#Limitations}{\texttt{ Limitations}} below.\hypertarget{md_src_plugins_email_README_autotoc_md181}{}\doxysubsection{Installation}\label{md_src_plugins_email_README_autotoc_md181}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_email_README_autotoc_md182}{}\doxysubsection{Usage}\label{md_src_plugins_email_README_autotoc_md182}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount `email` plugin to cascading namespace `/tests/email`}
+\DoxyCodeLine{kdb mount config.dump /tests/email dump email}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Incorrect address is valid with incomplete configuration}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/email/noaddr check/email}
+\DoxyCodeLine{kdb set user:/tests/email/noaddr invalid..address@com}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the validity of the email stored in `/tests/email/adr`}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/email/adr check/email "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set a correct email address}
+\DoxyCodeLine{kdb set user:/tests/email/adr test+email@dev.libelektra.com}
+\DoxyCodeLine{kdb get user:/tests/email/adr}
+\DoxyCodeLine{\#> test+email@dev.libelektra.com}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set incorrect addresses}
+\DoxyCodeLine{kdb set user:/tests/email/adr invalid..address@com}
+\DoxyCodeLine{\# STDERR: .*Validation Semantic.*}
+\DoxyCodeLine{\# ERROR:  C03200}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/email/adr not.@email.com}
+\DoxyCodeLine{\# STDERR: .*Validation Semantic.*}
+\DoxyCodeLine{\# ERROR:  C03200}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/email/adr @}
+\DoxyCodeLine{\# STDERR: .*Validation Semantic.*}
+\DoxyCodeLine{\# ERROR:  C03200}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/rf /tests/email}
+\DoxyCodeLine{kdb umount /tests/email}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_email_README_autotoc_md183}{}\doxysubsection{Limitations}\label{md_src_plugins_email_README_autotoc_md183}
+The plugin only checks email addresses for validity. It is not able to resolve if the host and or check if the address can receive emails. The validation does not completely support the RFC5321. The following valid email addresses are not supported\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily (ele)ktra@elektra.\+io}
+\item {\ttfamily elektra@elektra.\+io(io)}
+\item {\ttfamily \char`\"{}hi@you\char`\"{}@elektra.\+io}
+\item {\ttfamily \char`\"{}hi you\char`\"{}@elektra.\+io}
+\item {\ttfamily \char`\"{} \char`\"{}@elektra.\+io}
+\item {\ttfamily \char`\"{}$<$\textbackslash{}\char`\"{}\textbackslash{}"{}.!.\#\%\$@elektra.\+io}
+\item {\ttfamily cow@\mbox{[}dead\+::beef\mbox{]}}
+\item {\ttfamily 1@\mbox{[}23456789\mbox{]}}
+\end{DoxyItemize}
+
+There is no validation of top level domains and no length check. The following invalid email addresses will be allowed\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily valid+part@nonexistenttopleveldomain}
+\item {\ttfamily 1234567890123456789012345678901234567890123456789012345678901234+x@example.\+com} 
+\end{DoxyItemize}

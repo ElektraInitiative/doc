@@ -1,0 +1,100 @@
+.TH "doc_tutorials_contributing-windows_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_contributing-windows_md \- Contributing with Windows 
+ 
+.SH "Introduction"
+.PP
+In this tutorial, you will learn how to set up a development environment for Elektra using Windows Subsystem for Linux (WSL) and Visual Studio 2019\&.
+.PP
+Visual Studio 2022 (VS2022) Community is free but requires a registration after a couple of days\&. \fCDownload it\fP and install the Linux development with C++ workload\&.
+.PP
+Elektra development mainly happens on GNU/Linux distributions\&. Therefore, it makes sense to use WSL if you have Windows 10 installed on your PC\&. For the beginning, it does not matter if you choose WSL 1 or WSL 2\&. It is possible to convert them later\&.
+.SH "Download and Installation"
+.PP
+We assume you use Ubuntu as WSL distribution\&. Install the packages required for building from VS2022:
+.PP
+.PP
+.nf
+apt install g++ gdb make ninja-build rsync zip
+.fi
+.PP
+.PP
+Then clone the libelektra git repository:
+.PP
+.PP
+.nf
+git clone git@github\&.com:ElektraInitiative/libelektra\&.git
+.fi
+.PP
+.PP
+and open it in VS2022\&.
+.PP
+.RS 4
+\fBNote:\fP This command should work both in a Windows Terminal and in a WSL Shell\&. If you do encounter problems (especially related to line endings), please \fCreport the issue\fP\&. Running the command from a WSL Shell should always work, because that uses the Linux version of git\&. 
+.RE
+.PP
+It will complain that IntelliSense is out of date\&. In addition, the \fCError List\fP at the bottom will show CMake errors about missing compilers\&. To solve this, you have to configure a Linux CMake project\&.
+.SH "Configure a Linux CMake project"
+.PP
+Microsoft has \fCeven more information\fP about this task\&.
+.PP
+In the drop-down menu that says \fCx64-Debug (Default)\fP click \fCManage Configurations\&.\&.\&.\fP\&. Add \fCWSL-GCC-Debug\fP and save the configuration\&.
+.PP
+.RS 4
+You can remove \fCx64-Debug (Default)\fP\&. 
+.RE
+.PP
+CMake generation will automatically restart\&. When it has completed, you can click the drop-down \fCSelect Startup Item\&.\&.\&.\fP (by the green \fIPlay\fP button)\&.
+.PP
+A long list of targets should appear\&. Choose \fChello (bin\\hello)\fP and click the green \fIPlay\fP button\&. You should now see the output \fCHello world\fP in the Linux Console Window at the bottom\&.
+.SH "Why choose VS2022"
+.PP
+One advantage of using VS2022 is the graphical debugger\&. Search for \fChello\&.c\fP in the Solution Explorer to the right\&. Create a breakpoint in the main function and run the program again using the green \fIPlay\fP button\&.
+.PP
+On the bottom-left you will see the windows \fCAutos\fP, \fCLocals\fP and \fCWatch 1\fP\&. Click on \fCLocals\fP to inspect the \fCKey * k\fP\&. Right-click \fCkeyNew\fP to access functions like \fCPeek Definition\fP\&.
+.SH "Disadvantages of VS2022"
+.PP
+One problem with VS2022 is that it currently doesn't support opening project that are stored in the WSL filesystem\&. Accessing files on the Windows filesystem via WSL (required for compiling) is much slower\&. This means that compiling Elektra this way may take longer than expected\&.
+.PP
+As an alternative you may want to consider using \fCVisual Studio Code\fP (VSCode)\&. VSCode doesn't have as much graphical IDE features, but it has good C/C++ support and also includes a graphical debugger\&. Most importantly, developing in the WSL (including within the WSL filesystem) is explicitly supported via the \fCWSL Remote Extension\fP\&.
+.SH "Choosing your WSL version"
+.PP
+It makes sense to compare WSL 1 and WSL 2 and make an informed decision for one of them\&. Your setup may require adaptions, such as installing an SSH server in your Linux distribution\&.
+.PP
+Good sources of information are:
+.PP
+.IP "\(bu" 2
+the article \fCComparing WSL 1 and WSL 2\fP from the official WSL documentation
+.IP "\(bu" 2
+the blog post \fCC++ with Visual Studio and WSL2\fP
+.IP "\(bu" 2
+the official \fCLinux with Visual Studio C++ documentation\fP
+.PP
+.PP
+Commands to change your WSL version can be found, for example, in the blog post \fCWSL 2 is now available in Windows Insiders\fP
+.PP
+Like Microsoft, we generally recommend you start with WSL2 (the default)\&. It should provide better performance and more complete support for many use cases\&.
+.SH "Troubleshooting"
+.PP
+For further information, consider the official \fCLinux with Visual Studio C++ documentation\fP\&.
+.PP
+If you choose to work with source code residing on a Windows filesystem mounted in WSL (e\&.g\&.\fC/mnt/c/\&.\&.\&.\fP), please enable the \fCmetadata\fP option to prevent problems due to permissions not being persisted:
+.PP
+.IP "\(bu" 2
+Create or modify \fC/etc/wsl\&.conf\fP to contain the following section and setting:
+.PP
+.PP
+.PP
+.nf
+[automount]
+options = "metadata"
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+Restart the WSL VM by issuing \fCwsl --shutdown\fP in your window console\&.
+.PP
+.PP
+Building from sources residing on a mounted Windows file system may incur a significant performance penalty\&. Consider using your WSL home directory (e\&.g\&. \fC~/\fP) as your location for the Elektra sources\&. 

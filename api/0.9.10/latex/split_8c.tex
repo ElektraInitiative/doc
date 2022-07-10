@@ -1,0 +1,431 @@
+\hypertarget{split_8c}{}\doxysection{split.\+c File Reference}
+\label{split_8c}\index{split.c@{split.c}}
+
+
+Interna of splitting functionality.  
+
+
+{\ttfamily \#include $<$kdbassert.\+h$>$}\newline
+{\ttfamily \#include $<$kdberrors.\+h$>$}\newline
+{\ttfamily \#include $<$kdbinternal.\+h$>$}\newline
+Include dependency graph for split.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{split_8c__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Split $\ast$ \mbox{\hyperlink{split_8c_aa17259b07015cf6c06f14814f52d01fb}{split\+New}} (void)
+\begin{DoxyCompactList}\small\item\em Allocates a new split object. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{split_8c_a455004883f0e5afccc5c78308060d70d}{split\+Del}} (Split $\ast$keysets)
+\begin{DoxyCompactList}\small\item\em Delete a split object. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{split_8c_a1fff7d9e737c42074ab661a1cd136b4c}{split\+Remove}} (Split $\ast$split, size\+\_\+t where)
+\begin{DoxyCompactList}\small\item\em Remove one part of split. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{split_8c_afa0850f1eb48f9f3cf6298c588b92246}{split\+Append}} (Split $\ast$split, Backend $\ast$backend, Key $\ast$parent\+Key, int syncbits)
+\begin{DoxyCompactList}\small\item\em Increases the size of split and appends a new empty keyset. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_ad04a357eb6e46aa889e7f72f063e0263}{split\+Buildup}} (Split $\ast$split, KDB $\ast$kdb, Key $\ast$parent\+Key)
+\begin{DoxyCompactList}\small\item\em Walks through kdb-\/$>$split and adds all backends below parent\+Key to split. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_ae4fcdbb3d58fb0baba1459e0d8b0a94b}{split\+Divide}} (Split $\ast$split, KDB $\ast$handle, Key\+Set $\ast$ks)
+\begin{DoxyCompactList}\small\item\em Splits up the keysets and search for a sync bit in every key. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{split_8c_a9c5bcc3cf34af26d3d8c69bb3cc9dadb}{split\+Update\+File\+Name}} (Split $\ast$split, KDB $\ast$handle, Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Update the (configuration) file name for the parent key. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_abd8e79fdbec5faf611bbd26df137343e}{split\+Appoint}} (Split $\ast$split, KDB $\ast$handle, Key\+Set $\ast$ks)
+\begin{DoxyCompactList}\small\item\em Appoints all keys from ks to yet unsynced splits. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_afbeff288abf59244ddd44d82cb8d93d2}{split\+Get}} (Split $\ast$split, Key $\ast$warning\+Key, KDB $\ast$handle)
+\begin{DoxyCompactList}\small\item\em Does some work after getting of backends is finished. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_a7e1938ac64ef0c120c69c6c8c3943080}{split\+Update\+Size}} (Split $\ast$split)
+\begin{DoxyCompactList}\small\item\em Also update sizes after \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} to recognize multiple \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} attempts. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_a40883cc9699f727c1a31ba283b1d67ae}{split\+Merge\+Backends}} (Split $\ast$split, Key\+Set $\ast$dest)
+\begin{DoxyCompactList}\small\item\em Merges together the backend based parts of split into dest, but bypasses the default split. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_ad79a6dc0ae814dad704b7b442394287d}{split\+Merge\+Default}} (Split $\ast$split, Key\+Set $\ast$dest)
+\begin{DoxyCompactList}\small\item\em Merges the default split into dest. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{split_8c_af6fb30481571a63cfb7745adaa02d526}{split\+Sync}} (Split $\ast$split)
+\begin{DoxyCompactList}\small\item\em Add sync bits everywhere keys were removed/added. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{split_8c_af8a0571065ace2b371e017cabdb9eca7}{split\+Prepare}} (Split $\ast$split)
+\begin{DoxyCompactList}\small\item\em Prepares for \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} mainloop afterwards. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Interna of splitting functionality. 
+
+\begin{DoxyCopyright}{Copyright}
+BSD License (see LICENSE.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{split_8c_afa0850f1eb48f9f3cf6298c588b92246}\label{split_8c_afa0850f1eb48f9f3cf6298c588b92246}} 
+\index{split.c@{split.c}!splitAppend@{splitAppend}}
+\index{splitAppend@{splitAppend}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitAppend()}{splitAppend()}}
+{\footnotesize\ttfamily ssize\+\_\+t split\+Append (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{Backend $\ast$}]{backend,  }\item[{Key $\ast$}]{parent\+Key,  }\item[{int}]{syncbits }\end{DoxyParamCaption})}
+
+
+
+Increases the size of split and appends a new empty keyset. 
+
+Initializes the element with the given parameters at size-\/1 to be used.
+
+Will automatically resize split if needed.
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em backend} & the backend which should be appended \\
+\hline
+{\em parent\+Key} & the parent\+Key which should be appended \\
+\hline
+{\em syncbits} & the initial syncstate which should be appended\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em -\/1} & if no split is found \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxyReturn}{Returns}
+the position of the new element\+: size-\/1 
+\end{DoxyReturn}
+\mbox{\Hypertarget{split_8c_abd8e79fdbec5faf611bbd26df137343e}\label{split_8c_abd8e79fdbec5faf611bbd26df137343e}} 
+\index{split.c@{split.c}!splitAppoint@{splitAppoint}}
+\index{splitAppoint@{splitAppoint}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitAppoint()}{splitAppoint()}}
+{\footnotesize\ttfamily int split\+Appoint (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{KDB $\ast$}]{handle,  }\item[{Key\+Set $\ast$}]{ks }\end{DoxyParamCaption})}
+
+
+
+Appoints all keys from ks to yet unsynced splits. 
+
+\begin{DoxyPrecond}{Precondition}
+\mbox{\hyperlink{split_8c_ad04a357eb6e46aa889e7f72f063e0263}{split\+Buildup()}} need to be executed before.
+\end{DoxyPrecond}
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em handle} & to determine to which backend a key belongs \\
+\hline
+{\em ks} & the keyset to appoint to split\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+{\em -\/1} & if no backend was found for a key \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{split_8c_ad04a357eb6e46aa889e7f72f063e0263}\label{split_8c_ad04a357eb6e46aa889e7f72f063e0263}} 
+\index{split.c@{split.c}!splitBuildup@{splitBuildup}}
+\index{splitBuildup@{splitBuildup}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitBuildup()}{splitBuildup()}}
+{\footnotesize\ttfamily int split\+Buildup (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{KDB $\ast$}]{kdb,  }\item[{Key $\ast$}]{parent\+Key }\end{DoxyParamCaption})}
+
+
+
+Walks through kdb-\/$>$split and adds all backends below parent\+Key to split. 
+
+Sets syncbits to 2 if it is a default or root backend (which needs splitting). The information is copied from kdb-\/$>$split.
+
+\begin{DoxyPrecond}{Precondition}
+split needs to be empty, directly after creation with \mbox{\hyperlink{split_8c_aa17259b07015cf6c06f14814f52d01fb}{split\+New()}}.
+
+there needs to be a valid default\+Backend but its ok not to have a trie inside KDB.
+
+parent\+Key must be a valid key! (could be implemented more generally, but that would require splitting up of keysets of the same backend)
+\end{DoxyPrecond}
+
+\begin{DoxyParams}{Parameters}
+{\em split} & will get all backends appended \\
+\hline
+{\em kdb} & the handle to get information about backends \\
+\hline
+{\em parent\+Key} & the information below which key the backends are from interest\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & always \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{split_8c_a455004883f0e5afccc5c78308060d70d}\label{split_8c_a455004883f0e5afccc5c78308060d70d}} 
+\index{split.c@{split.c}!splitDel@{splitDel}}
+\index{splitDel@{splitDel}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitDel()}{splitDel()}}
+{\footnotesize\ttfamily void split\+Del (\begin{DoxyParamCaption}\item[{Split $\ast$}]{keysets }\end{DoxyParamCaption})}
+
+
+
+Delete a split object. 
+
+Will free all allocated resources of a split keyset.
+
+
+\begin{DoxyParams}{Parameters}
+{\em keysets} & the split object to work with \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{split_8c_ae4fcdbb3d58fb0baba1459e0d8b0a94b}\label{split_8c_ae4fcdbb3d58fb0baba1459e0d8b0a94b}} 
+\index{split.c@{split.c}!splitDivide@{splitDivide}}
+\index{splitDivide@{splitDivide}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitDivide()}{splitDivide()}}
+{\footnotesize\ttfamily int split\+Divide (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{KDB $\ast$}]{handle,  }\item[{Key\+Set $\ast$}]{ks }\end{DoxyParamCaption})}
+
+
+
+Splits up the keysets and search for a sync bit in every key. 
+
+It does not check if there were removed keys, see \mbox{\hyperlink{split_8c_af6fb30481571a63cfb7745adaa02d526}{split\+Sync()}} for the next step.
+
+It does not create new backends, this has to be done by buildup before.
+
+\begin{DoxyPrecond}{Precondition}
+\mbox{\hyperlink{split_8c_ad04a357eb6e46aa889e7f72f063e0263}{split\+Buildup()}} need to be executed before.
+\end{DoxyPrecond}
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em handle} & to get information where the individual keys belong \\
+\hline
+{\em ks} & the keyset to divide\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if there were no sync bits \\
+\hline
+{\em 1} & if there were sync bits \\
+\hline
+{\em -\/1} & if no backend was found for any key \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{split_8c_afbeff288abf59244ddd44d82cb8d93d2}\label{split_8c_afbeff288abf59244ddd44d82cb8d93d2}} 
+\index{split.c@{split.c}!splitGet@{splitGet}}
+\index{splitGet@{splitGet}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitGet()}{splitGet()}}
+{\footnotesize\ttfamily int split\+Get (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{Key $\ast$}]{warning\+Key,  }\item[{KDB $\ast$}]{handle }\end{DoxyParamCaption})}
+
+
+
+Does some work after getting of backends is finished. 
+
+
+\begin{DoxyItemize}
+\item Update sizes
+\item Removal of wrong keys
+\end{DoxyItemize}
+
+\begin{DoxyPrecond}{Precondition}
+\mbox{\hyperlink{split_8c_abd8e79fdbec5faf611bbd26df137343e}{split\+Appoint()}} needs to be executed before.
+\end{DoxyPrecond}
+
+\begin{DoxyItemize}
+\item check if keys are in correct backend
+\item remove syncbits
+\item update sizes in the backends
+\end{DoxyItemize}
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em warning\+Key} & postcondition violations are reported here \\
+\hline
+{\em handle} & the handle to preprocess the keys \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+{\em -\/1} & if no backend was found for a key or split-\/$>$parents has invalid namespace \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{split_8c_a40883cc9699f727c1a31ba283b1d67ae}\label{split_8c_a40883cc9699f727c1a31ba283b1d67ae}} 
+\index{split.c@{split.c}!splitMergeBackends@{splitMergeBackends}}
+\index{splitMergeBackends@{splitMergeBackends}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitMergeBackends()}{splitMergeBackends()}}
+{\footnotesize\ttfamily int split\+Merge\+Backends (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{Key\+Set $\ast$}]{dest }\end{DoxyParamCaption})}
+
+
+
+Merges together the backend based parts of split into dest, but bypasses the default split. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em dest} & the destination keyset where all keysets are appended. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{split_8c_ad79a6dc0ae814dad704b7b442394287d}\label{split_8c_ad79a6dc0ae814dad704b7b442394287d}} 
+\index{split.c@{split.c}!splitMergeDefault@{splitMergeDefault}}
+\index{splitMergeDefault@{splitMergeDefault}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitMergeDefault()}{splitMergeDefault()}}
+{\footnotesize\ttfamily int split\+Merge\+Default (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{Key\+Set $\ast$}]{dest }\end{DoxyParamCaption})}
+
+
+
+Merges the default split into dest. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em dest} & the destination keyset where all keysets are appended. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{split_8c_aa17259b07015cf6c06f14814f52d01fb}\label{split_8c_aa17259b07015cf6c06f14814f52d01fb}} 
+\index{split.c@{split.c}!splitNew@{splitNew}}
+\index{splitNew@{splitNew}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitNew()}{splitNew()}}
+{\footnotesize\ttfamily Split$\ast$ split\+New (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+
+
+Allocates a new split object. 
+
+Splits up a keyset into multiple keysets where each of them will passed to the correct \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}.
+
+Initially the size is 0 and alloc is APPROXIMATE\+\_\+\+NR\+\_\+\+OF\+\_\+\+BACKENDS.
+
+\begin{DoxyReturn}{Returns}
+a fresh allocated split object
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{split_8c_a455004883f0e5afccc5c78308060d70d}{split\+Del()}} 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{split_8c_af8a0571065ace2b371e017cabdb9eca7}\label{split_8c_af8a0571065ace2b371e017cabdb9eca7}} 
+\index{split.c@{split.c}!splitPrepare@{splitPrepare}}
+\index{splitPrepare@{splitPrepare}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitPrepare()}{splitPrepare()}}
+{\footnotesize\ttfamily void split\+Prepare (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split }\end{DoxyParamCaption})}
+
+
+
+Prepares for \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} mainloop afterwards. 
+
+All splits which do not need sync are removed and a deep copy of the remaining keysets is done.
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{split_8c_a1fff7d9e737c42074ab661a1cd136b4c}\label{split_8c_a1fff7d9e737c42074ab661a1cd136b4c}} 
+\index{split.c@{split.c}!splitRemove@{splitRemove}}
+\index{splitRemove@{splitRemove}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitRemove()}{splitRemove()}}
+{\footnotesize\ttfamily void split\+Remove (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{size\+\_\+t}]{where }\end{DoxyParamCaption})}
+
+
+
+Remove one part of split. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+{\em where} & the position to cut away\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+where must be within the size of the split 
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+split will be removed 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{split_8c_af6fb30481571a63cfb7745adaa02d526}\label{split_8c_af6fb30481571a63cfb7745adaa02d526}} 
+\index{split.c@{split.c}!splitSync@{splitSync}}
+\index{splitSync@{splitSync}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitSync()}{splitSync()}}
+{\footnotesize\ttfamily int split\+Sync (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split }\end{DoxyParamCaption})}
+
+
+
+Add sync bits everywhere keys were removed/added. 
+
+
+\begin{DoxyItemize}
+\item checks if the size of a previous \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} is unchanged.
+\item checks if in correct state (\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} needs to be executed before)
+\end{DoxyItemize}
+
+Only \mbox{\hyperlink{split_8c_ae4fcdbb3d58fb0baba1459e0d8b0a94b}{split\+Divide()}} together with this function can really decide if sync is needed or not.
+
+\begin{DoxyPrecond}{Precondition}
+split needs to be processed with \mbox{\hyperlink{split_8c_ae4fcdbb3d58fb0baba1459e0d8b0a94b}{split\+Divide()}} before.
+\end{DoxyPrecond}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} is not needed \\
+\hline
+{\em 1} & if \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} is needed \\
+\hline
+{\em -\/1} & on wrong keys (also has assert, should not happen) \\
+\hline
+{\em -\/2} & wrong spec state\+: \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was not executed before \\
+\hline
+{\em -\/3} & wrong dir state\+: \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was not executed before \\
+\hline
+{\em -\/4} & wrong user state\+: \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was not executed before \\
+\hline
+{\em -\/5} & wrong system state\+: \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was not executed before \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxyPrecond}{Precondition}
+user\+:/system was split before. 
+\end{DoxyPrecond}
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split object to work with \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{split_8c_a9c5bcc3cf34af26d3d8c69bb3cc9dadb}\label{split_8c_a9c5bcc3cf34af26d3d8c69bb3cc9dadb}} 
+\index{split.c@{split.c}!splitUpdateFileName@{splitUpdateFileName}}
+\index{splitUpdateFileName@{splitUpdateFileName}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitUpdateFileName()}{splitUpdateFileName()}}
+{\footnotesize\ttfamily void split\+Update\+File\+Name (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split,  }\item[{KDB $\ast$}]{handle,  }\item[{Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Update the (configuration) file name for the parent key. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em split} & the split to work with \\
+\hline
+{\em handle} & the handle to work with \\
+\hline
+{\em key} & the parent\+Key that should be updated (name must be correct) \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{split_8c_a7e1938ac64ef0c120c69c6c8c3943080}\label{split_8c_a7e1938ac64ef0c120c69c6c8c3943080}} 
+\index{split.c@{split.c}!splitUpdateSize@{splitUpdateSize}}
+\index{splitUpdateSize@{splitUpdateSize}!split.c@{split.c}}
+\doxysubsubsection{\texorpdfstring{splitUpdateSize()}{splitUpdateSize()}}
+{\footnotesize\ttfamily int split\+Update\+Size (\begin{DoxyParamCaption}\item[{Split $\ast$}]{split }\end{DoxyParamCaption})}
+
+
+
+Also update sizes after \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} to recognize multiple \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} attempts. 
+
+\begin{DoxyWarning}{Warning}
+cant use the same code with split\+Get because there is no default split part for \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. 
+\end{DoxyWarning}

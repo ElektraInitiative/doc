@@ -1,0 +1,110 @@
+\hypertarget{globbing_8c}{}\doxysection{globbing.\+c File Reference}
+\label{globbing_8c}\index{globbing.c@{globbing.c}}
+
+
+Library for performing globbing on keynames.  
+
+
+{\ttfamily \#include $<$kdb.\+h$>$}\newline
+{\ttfamily \#include $<$kdbease.\+h$>$}\newline
+{\ttfamily \#include $<$kdbglobbing.\+h$>$}\newline
+{\ttfamily \#include $<$kdbhelper.\+h$>$}\newline
+{\ttfamily \#include $<$ctype.\+h$>$}\newline
+{\ttfamily \#include $<$fnmatch.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+Include dependency graph for globbing.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{globbing_8c__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}{elektra\+Key\+Glob}} (const Key $\ast$key, const char $\ast$pattern)
+\begin{DoxyCompactList}\small\item\em checks whether a given Key matches a given globbing pattern \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{globbing_8c_a85baa9c79325ad1bf08e95cd82a4daf6}{elektra\+Ks\+Glob}} (Key\+Set $\ast$result, Key\+Set $\ast$input, const char $\ast$pattern)
+\begin{DoxyCompactList}\small\item\em filters a given Key\+Set by applying a globbing pattern \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Library for performing globbing on keynames. 
+
+\begin{DoxyCopyright}{Copyright}
+BSD License (see LICENSE.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}\label{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}} 
+\index{globbing.c@{globbing.c}!elektraKeyGlob@{elektraKeyGlob}}
+\index{elektraKeyGlob@{elektraKeyGlob}!globbing.c@{globbing.c}}
+\doxysubsubsection{\texorpdfstring{elektraKeyGlob()}{elektraKeyGlob()}}
+{\footnotesize\ttfamily int elektra\+Key\+Glob (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key,  }\item[{const char $\ast$}]{pattern }\end{DoxyParamCaption})}
+
+
+
+checks whether a given Key matches a given globbing pattern 
+
+WARNING\+: this method will not work correctly, if key parts contain embedded (escaped) slashes.
+
+The globbing patterns for this function are a superset of those from glob(7) used with the FNM\+\_\+\+PATHNAME flag\+: 
+\begin{DoxyItemize}
+\item \textquotesingle{}$\ast$\textquotesingle{} matches any series of characters other than \textquotesingle{}/\textquotesingle{} 
+\item \textquotesingle{}?\textquotesingle{} matches any single character except \textquotesingle{}/\textquotesingle{}  
+\item \textquotesingle{}\#\textquotesingle{}, when used as \char`\"{}/\#/\char`\"{} (or \char`\"{}/\#\char`\"{} at the end of {\ttfamily pattern}), matches a valid array item  
+\item \textquotesingle{}\+\_\+\textquotesingle{}, when used as \char`\"{}/\+\_\+/\char`\"{}(or \char`\"{}/\+\_\+\char`\"{} at the end of {\ttfamily pattern}), matches a key part that is {\bfseries{not}} a valid array item  
+\item everything between \textquotesingle{}\mbox{[}\textquotesingle{} and \textquotesingle{}\mbox{]}\textquotesingle{} is treated as a character class, matching exactly one of the given characters (see glob(7) for details)  
+\item if the pattern ends with \char`\"{}/\+\_\+\+\_\+\char`\"{}, matching key names may contain arbitrary suffixes  
+\end{DoxyItemize}
+
+\begin{DoxyNote}{Note}
+\textquotesingle{}$\ast$\textquotesingle{} cannot match an empty key name part. This also means patterns like \char`\"{}something\&\#47;$\ast$\char`\"{} will not match the key \char`\"{}something\char`\"{}. This is because each slash (\textquotesingle{}/\textquotesingle{}) in the pattern has to correspond to a slash in the canonical key name, which neither end in a slash nor contain multiple slashes in sequence.
+
+use \char`\"{}\mbox{[}\+\_\+\mbox{]}\char`\"{}, \char`\"{}\mbox{[}\#\mbox{]}\char`\"{}, \char`\"{}\mbox{[}$\ast$\mbox{]}\char`\"{}, \char`\"{}\mbox{[}?\mbox{]}\char`\"{} and \char`\"{}\mbox{[}\mbox{[}$\,$\mbox{]}\char`\"{} to match the literal characters \textquotesingle{}\+\_\+\textquotesingle{}, \textquotesingle{}\#\textquotesingle{}, \textquotesingle{}$\ast$\textquotesingle{}, \textquotesingle{}?\textquotesingle{} and \textquotesingle{}\mbox{[}\textquotesingle{}. Using backslash (\textquotesingle{}\textbackslash{}\textquotesingle{}) for escaping is not supported.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key to match against the globbing pattern \\
+\hline
+{\em pattern} & the globbing pattern used \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if {\ttfamily key} is not NULL, {\ttfamily pattern} is not NULL and {\ttfamily pattern} matches {\ttfamily key} \\
+\hline
+{\em ELEKTRA\+\_\+\+GLOB\+\_\+\+NOMATCH} & otherwise\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySeeAlso}{See also}
+is\+Array\+Name(), for info on valid array items 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{globbing_8c_a85baa9c79325ad1bf08e95cd82a4daf6}\label{globbing_8c_a85baa9c79325ad1bf08e95cd82a4daf6}} 
+\index{globbing.c@{globbing.c}!elektraKsGlob@{elektraKsGlob}}
+\index{elektraKsGlob@{elektraKsGlob}!globbing.c@{globbing.c}}
+\doxysubsubsection{\texorpdfstring{elektraKsGlob()}{elektraKsGlob()}}
+{\footnotesize\ttfamily int elektra\+Ks\+Glob (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{result,  }\item[{Key\+Set $\ast$}]{input,  }\item[{const char $\ast$}]{pattern }\end{DoxyParamCaption})}
+
+
+
+filters a given Key\+Set by applying a globbing pattern 
+
+
+\begin{DoxyParams}{Parameters}
+{\em result} & the Key\+Set to which the matching keys should be appended \\
+\hline
+{\em input} & the Key\+Set whose keys should be filtered \\
+\hline
+{\em pattern} & the globbing pattern used \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of Keys appended to result or -\/1, if {\ttfamily result}, {\ttfamily input} or {\ttfamily pattern} are NULL
+\end{DoxyReturn}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}{elektra\+Key\+Glob()}}, for explanation of globbing pattern 
+\end{DoxySeeAlso}

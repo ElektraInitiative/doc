@@ -1,0 +1,84 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the macaddr plugin is in keys below
+\item infos/author = Thomas Bretterbauer \href{mailto:e01306821@student.tuwien.ac.at}{\texttt{ e01306821@student.\+tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = check
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained nodep
+\item infos/metadata = check/macaddr
+\item infos/description = Validates MAC-\/addresses and returns them as integers
+\end{DoxyItemize}\hypertarget{md_src_plugins_macaddr_README_src_plugins_macaddr_README_md}{}\doxysection{Introduction}\label{md_src_plugins_macaddr_README_src_plugins_macaddr_README_md}
+This plugin validates MAC-\/addresses. The following MAC-\/address-\/formats are supported\+: \begin{DoxyVerb}XX-XX-XX-XX-XX-XX
+XX:XX:XX:XX:XX:XX
+XXXXXX-XXXXXX
+Integer values (0 - 281474976710655)
+\end{DoxyVerb}
+ {\ttfamily kdb\+Get} returns an integer-\/representation of these values.\hypertarget{md_src_plugins_macaddr_README_autotoc_md327}{}\doxysection{Installation}\label{md_src_plugins_macaddr_README_autotoc_md327}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_macaddr_README_autotoc_md328}{}\doxysection{Usage}\label{md_src_plugins_macaddr_README_autotoc_md328}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: user:/tests/mac}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Mount `macaddr` plugin}
+\DoxyCodeLine{sudo kdb mount macconf.ecf user:/tests/mac macaddr}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using colons}
+\DoxyCodeLine{kdb set user:/tests/mac/mac1 00:A0:C9:14:C8:29}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using hyphens}
+\DoxyCodeLine{kdb set user:/tests/mac/mac2 00-\/A0-\/C9-\/14-\/C8-\/29}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using one hyphen}
+\DoxyCodeLine{kdb set user:/tests/mac/mac3 00A0C9-\/14C829}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using an integer value}
+\DoxyCodeLine{kdb set user:/tests/mac/mac4 17661175009296}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Marking written keys as MAC addresses}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mac/mac1 check/macaddr "{}"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mac/mac2 check/macaddr "{}"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mac/mac3 check/macaddr "{}"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/mac/mac4 check/macaddr "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using an invalid address}
+\DoxyCodeLine{kdb set user:/tests/mac/mac1 00:G1:C9:14:C8:29}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using an invalid address}
+\DoxyCodeLine{kdb set user:/tests/mac/mac1 00:E1:C914:C8:29}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Setting a MAC address using an invalid address}
+\DoxyCodeLine{kdb set user:/tests/mac/mac4 281474976710656}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieving a MAC address with colons as integer}
+\DoxyCodeLine{kdb get user:/tests/mac/mac1}
+\DoxyCodeLine{\#> 690568349737}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieving a MAC address with hyphens as integer}
+\DoxyCodeLine{kdb get user:/tests/mac/mac2}
+\DoxyCodeLine{\#> 690568349737}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieving a MAC address with one hyphen as integer}
+\DoxyCodeLine{kdb get user:/tests/mac/mac3}
+\DoxyCodeLine{\#> 690568349737}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieving an integer MAC address}
+\DoxyCodeLine{kdb get user:/tests/mac/mac4}
+\DoxyCodeLine{\#> 17661175009296}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests/mac}
+\DoxyCodeLine{sudo kdb umount user:/tests/mac}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_macaddr_README_autotoc_md329}{}\doxysection{Dependencies}\label{md_src_plugins_macaddr_README_autotoc_md329}
+None.\hypertarget{md_src_plugins_macaddr_README_autotoc_md330}{}\doxysection{Limitations}\label{md_src_plugins_macaddr_README_autotoc_md330}
+None. 

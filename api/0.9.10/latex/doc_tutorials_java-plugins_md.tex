@@ -1,0 +1,53 @@
+\label{doc_tutorials_java-plugins_md_md_doc_tutorials_java_plugins}%
+\Hypertarget{doc_tutorials_java-plugins_md_md_doc_tutorials_java_plugins}%
+ This file serves as a tutorial on how to get started with writing a Java plugin.\hypertarget{doc_tutorials_java-plugins_md_autotoc_md3864}{}\doxysection{Basics}\label{doc_tutorials_java-plugins_md_autotoc_md3864}
+If you want to know more about plugins in general, please check out the \mbox{\hyperlink{doc_tutorials_plugins_md}{How-\/\+To\+: Write a Plugin}} page. If you need a tutorial for using Key and Key\+Set in Java, please check out the \mbox{\hyperlink{doc_tutorials_java-kdb_md}{How-\/\+To\+: Java kdb}} page.\hypertarget{doc_tutorials_java-plugins_md_autotoc_md3865}{}\doxysection{Two Technologies used in Java Plugins}\label{doc_tutorials_java-plugins_md_autotoc_md3865}
+Before we will take a look into how to write a plugin in Java, it is important to note, that there are two technologies needed\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily process} plugin
+\item JNA binding
+\end{DoxyItemize}\hypertarget{doc_tutorials_java-plugins_md_autotoc_md3866}{}\doxysubsection{$<$tt$>$process$<$/tt$>$ Plugin}\label{doc_tutorials_java-plugins_md_autotoc_md3866}
+The {\ttfamily process} plugin is a special plugin, which allows using an external application as the implementation of a plugin.
+
+To achieve this, the {\ttfamily process} plugin spawns a child process for the external executable and then uses a simple protocol to relay any requested operations to this child process. The details of how this protocol works are not important for writing a Java plugin. All the details of the protocol are abstracted via the {\ttfamily Plugin\+Process} class and the {\ttfamily Plugin} interface.
+
+If you do want to know the details of the {\ttfamily process} protocol, take a look at the \mbox{\hyperlink{md_src_plugins_process_README_src_plugins_process_README_md}{README}} of the {\ttfamily process} plugin.\hypertarget{doc_tutorials_java-plugins_md_autotoc_md3867}{}\doxysubsection{JNA Binding}\label{doc_tutorials_java-plugins_md_autotoc_md3867}
+Java Native Access is Java technology (library), which like JNI allows a developer to run native code using only Java by providing access to native shared libraries. In order to use the JNA binding, it should be installed first. You can find more information on \href{https://github.com/java-native-access/jna}{\texttt{ JNA’s Git\+Hub page}}.
+
+We provide a Java binding for Elektra\textquotesingle{}s API via JNA. For more general information about the binding take a look at \mbox{\hyperlink{doc_tutorials_java-kdb_md}{this document}}.\hypertarget{doc_tutorials_java-plugins_md_autotoc_md3868}{}\doxysubsection{Writing a Plugin}\label{doc_tutorials_java-plugins_md_autotoc_md3868}
+To write a plugin, you need to create an implementation of the {\ttfamily \mbox{\hyperlink{interfaceorg_1_1libelektra_1_1Plugin}{org.\+libelektra.\+Plugin}}} interface. This is very similar writing any other plugin, except that you use Java instead of C.
+
+The standard API functions of the plugin API all have corresponding methods in the {\ttfamily Plugin} interface\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily int open(\+Key\+Set config, Key error\+Key)} is the Java version of \href{https://doc.libelektra.org/api/latest/html/group__plugin.html\#ga23c2eb3584e38a4d494eb8f91e5e3d8d}{\texttt{ {\ttfamily elektra\+Plugin\+Open}}}
+\item {\ttfamily int get(\+Key\+Set key\+Set, Key parent\+Key)} is the Java version of \href{https://doc.libelektra.org/api/latest/html/group__plugin.html\#gacb69f3441c6d84241b4362f958fbe313}{\texttt{ {\ttfamily elektra\+Plugin\+Get}}}
+\item {\ttfamily int set(\+Key\+Set key\+Set, Key parent\+Key)} is the Java version of \href{https://doc.libelektra.org/api/latest/html/group__plugin.html\#gae65781a1deb34efc79c8cb9d9174842c}{\texttt{ {\ttfamily elektra\+Plugin\+Set}}}
+\item {\ttfamily int error(\+Key\+Set key\+Set, Key parent\+Key)} is the Java version of \href{https://doc.libelektra.org/api/latest/html/group__plugin.html\#gad74b35f558ac7c3262f6069c5c47dc79}{\texttt{ {\ttfamily elektra\+Plugin\+Error}}}
+\item {\ttfamily int close(\+Key parent\+Key)} is the Java version of \href{https://doc.libelektra.org/api/latest/html/group__plugin.html\#ga1236aefe5b2baf8b7bf636ba5aa9ea29}{\texttt{ {\ttfamily elektra\+Plugin\+Close}}}
+\end{DoxyItemize}
+
+Additionally, there is a {\ttfamily @Nonnull String get\+Name()} method. This method must return the unique name of the plugin. In the C API this would be taken from the contract, but the {\ttfamily process} protocol requires this separately, so we need a separate method for it.
+
+Otherwise, there are a few differences between implementing a plugin in C and in Java\+:
+
+
+\begin{DoxyEnumerate}
+\item In C it is possible to implement only {\ttfamily elektra\+Plugin\+Get} and leave the other functions unimplemented. Because of interface inheritance in Java, it is required to implement all 5 method {\ttfamily open}, {\ttfamily get}, {\ttfamily set}, {\ttfamily error} and {\ttfamily close}. Whether a method is actually supported, must be communicated via the contract.
+\item In C the parent key of the contract depends on the plugins name. For example, the contract for {\ttfamily dump} can be found under {\ttfamily system\+:/elektra/modules/dump} and the {\ttfamily dump} plugin returns it as such. However, in Java the parent key for the contract is always {\ttfamily system\+:/elektra/modules/java} (you may use the constant {\ttfamily Plugin.\+PROCESS\+\_\+\+CONTRACT\+\_\+\+ROOT}). The keys will be transformed via the {\ttfamily process} protocol and plugin to match the normal expectations.
+\item In C all functions a plugin exports (including {\ttfamily open}, {\ttfamily get}, {\ttfamily set}, {\ttfamily error}, {\ttfamily close}, but also additional ones) are registered in the contract under {\ttfamily system\+:/elektra/modules/$<$plugin$>$/exports/$<$function$>$} with a function pointer key. Because we cannot provide a C function pointer to a Java function and because {\ttfamily process} uses a child process for the Java code, we cannot export functions like that. This means a Java plugin cannot export additional functions. However, we must still define which functions are supported by the plugin. To this end, a Java plugin must set {\ttfamily system\+:/elektra/modules/java/exports/has/$<$function$>$ = 1} (where {\ttfamily $<$function$>$} is one of {\ttfamily open}, {\ttfamily get}, {\ttfamily set}, {\ttfamily error}, {\ttfamily close}) for all supported functions.
+\item Methods that are not supported, should simply be implemented as 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{throw} \textcolor{keyword}{new} UnsupportedOperationException();}
+
+\end{DoxyCode}
+ This is safe, because the method will not be called if the other steps are followed correctly. The exception here is the {\ttfamily get} method. It must still be implemented and return the contract, when the parent is the same as or below {\ttfamily system\+:/elektra/modules/java}. Otherwise, it is safe to throw {\ttfamily Unsupported\+Operation\+Exception}.
+\end{DoxyEnumerate}
+
+Otherwise, the rules for return values and plugin behavior are the same as for a C plugin.
+
+You can find a few examples for Java plugins in the folder \`{}src/bindings/jna/plugins/\`{}. We use separate Gradle projects for every plugin, but that is not a requirement. But creating separate JAR files for each plugin, keeps down the size of the binaries that need to be loaded to mount a plugin.\hypertarget{doc_tutorials_java-plugins_md_autotoc_md3869}{}\doxysubsection{Usage of Plugin}\label{doc_tutorials_java-plugins_md_autotoc_md3869}
+See \mbox{\hyperlink{doc_help_kdb-mount-java_md}{manpage of \`{}kdb-\/mount-\/java(1)\`{}}}. 

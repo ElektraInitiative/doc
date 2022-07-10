@@ -1,0 +1,71 @@
+.TH "doc_tutorials_java-plugins_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_java-plugins_md \- How-To: Write a Java Plugin 
+ This file serves as a tutorial on how to get started with writing a Java plugin\&.
+.SH "Basics"
+.PP
+If you want to know more about plugins in general, please check out the \fBHow-To: Write a Plugin\fP page\&. If you need a tutorial for using Key and KeySet in Java, please check out the \fBHow-To: Java kdb\fP page\&.
+.SH "Two Technologies used in Java Plugins"
+.PP
+Before we will take a look into how to write a plugin in Java, it is important to note, that there are two technologies needed:
+.PP
+.IP "\(bu" 2
+\fCprocess\fP plugin
+.IP "\(bu" 2
+JNA binding
+.PP
+.SS "<tt>process</tt> Plugin"
+The \fCprocess\fP plugin is a special plugin, which allows using an external application as the implementation of a plugin\&.
+.PP
+To achieve this, the \fCprocess\fP plugin spawns a child process for the external executable and then uses a simple protocol to relay any requested operations to this child process\&. The details of how this protocol works are not important for writing a Java plugin\&. All the details of the protocol are abstracted via the \fCPluginProcess\fP class and the \fCPlugin\fP interface\&.
+.PP
+If you do want to know the details of the \fCprocess\fP protocol, take a look at the \fBREADME\fP of the \fCprocess\fP plugin\&.
+.SS "JNA Binding"
+Java Native Access is Java technology (library), which like JNI allows a developer to run native code using only Java by providing access to native shared libraries\&. In order to use the JNA binding, it should be installed first\&. You can find more information on \fCJNA’s GitHub page\fP\&.
+.PP
+We provide a Java binding for Elektra's API via JNA\&. For more general information about the binding take a look at \fBthis document\fP\&.
+.SS "Writing a Plugin"
+To write a plugin, you need to create an implementation of the \fC\fBorg\&.libelektra\&.Plugin\fP\fP interface\&. This is very similar writing any other plugin, except that you use Java instead of C\&.
+.PP
+The standard API functions of the plugin API all have corresponding methods in the \fCPlugin\fP interface:
+.PP
+.IP "\(bu" 2
+\fCint open(KeySet config, Key errorKey)\fP is the Java version of \fC\fCelektraPluginOpen\fP\fP
+.IP "\(bu" 2
+\fCint get(KeySet keySet, Key parentKey)\fP is the Java version of \fC\fCelektraPluginGet\fP\fP
+.IP "\(bu" 2
+\fCint set(KeySet keySet, Key parentKey)\fP is the Java version of \fC\fCelektraPluginSet\fP\fP
+.IP "\(bu" 2
+\fCint error(KeySet keySet, Key parentKey)\fP is the Java version of \fC\fCelektraPluginError\fP\fP
+.IP "\(bu" 2
+\fCint close(Key parentKey)\fP is the Java version of \fC\fCelektraPluginClose\fP\fP
+.PP
+.PP
+Additionally, there is a \fC@Nonnull String getName()\fP method\&. This method must return the unique name of the plugin\&. In the C API this would be taken from the contract, but the \fCprocess\fP protocol requires this separately, so we need a separate method for it\&.
+.PP
+Otherwise, there are a few differences between implementing a plugin in C and in Java:
+.PP
+.IP "1." 4
+In C it is possible to implement only \fCelektraPluginGet\fP and leave the other functions unimplemented\&. Because of interface inheritance in Java, it is required to implement all 5 method \fCopen\fP, \fCget\fP, \fCset\fP, \fCerror\fP and \fCclose\fP\&. Whether a method is actually supported, must be communicated via the contract\&.
+.IP "2." 4
+In C the parent key of the contract depends on the plugins name\&. For example, the contract for \fCdump\fP can be found under \fCsystem:/elektra/modules/dump\fP and the \fCdump\fP plugin returns it as such\&. However, in Java the parent key for the contract is always \fCsystem:/elektra/modules/java\fP (you may use the constant \fCPlugin\&.PROCESS_CONTRACT_ROOT\fP)\&. The keys will be transformed via the \fCprocess\fP protocol and plugin to match the normal expectations\&.
+.IP "3." 4
+In C all functions a plugin exports (including \fCopen\fP, \fCget\fP, \fCset\fP, \fCerror\fP, \fCclose\fP, but also additional ones) are registered in the contract under \fCsystem:/elektra/modules/<plugin>/exports/<function>\fP with a function pointer key\&. Because we cannot provide a C function pointer to a Java function and because \fCprocess\fP uses a child process for the Java code, we cannot export functions like that\&. This means a Java plugin cannot export additional functions\&. However, we must still define which functions are supported by the plugin\&. To this end, a Java plugin must set \fCsystem:/elektra/modules/java/exports/has/<function> = 1\fP (where \fC<function>\fP is one of \fCopen\fP, \fCget\fP, \fCset\fP, \fCerror\fP, \fCclose\fP) for all supported functions\&.
+.IP "4." 4
+Methods that are not supported, should simply be implemented as 
+.PP
+.nf
+throw new UnsupportedOperationException();
+
+.fi
+.PP
+ This is safe, because the method will not be called if the other steps are followed correctly\&. The exception here is the \fCget\fP method\&. It must still be implemented and return the contract, when the parent is the same as or below \fCsystem:/elektra/modules/java\fP\&. Otherwise, it is safe to throw \fCUnsupportedOperationException\fP\&.
+.PP
+.PP
+Otherwise, the rules for return values and plugin behavior are the same as for a C plugin\&.
+.PP
+You can find a few examples for Java plugins in the folder \fB`src/bindings/jna/plugins/`\fP\&. We use separate Gradle projects for every plugin, but that is not a requirement\&. But creating separate JAR files for each plugin, keeps down the size of the binaries that need to be loaded to mount a plugin\&.
+.SS "Usage of Plugin"
+See \fBmanpage of `kdb-mount-java(1)`\fP\&. 

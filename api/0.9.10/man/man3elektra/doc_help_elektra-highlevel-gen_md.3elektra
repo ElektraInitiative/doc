@@ -1,0 +1,396 @@
+.TH "doc_help_elektra-highlevel-gen_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_elektra-highlevel-gen_md \- elektra-highlevel-gen(7) -- High-level API code-generation advanced features 
+ This document focuses on the advanced features of the high-level API code-generator template\&. We assume you already familiarized yourself with the basic features explained in \fB`kdb-gen-highlevel(1)`\fP\&.
+.SH "Configuration Options"
+.PP
+The parameters that are relevant to the concepts described here are (for the rest see \fB`kdb-gen-highlevel(1)\fP):
+.PP
+.IP "\(bu" 2
+\fCembeddedSpec\fP: allowed values: \fCfull\fP (default), \fCdefaults\fP, \fCnone\fP
+.IP "\(bu" 2
+\fCenumConv\fP: allowed values: \fCstrcmp\fP, \fCswitch\fP, \fCauto\fP (default)
+.PP
+.PP
+Using \fCembeddedSpec\fP you can configure how much of the specification is embedded into your application\&. By default we use \fCfull\fP\&. This means the full specification is embedded into your application's binary\&. Since this can drastically increase the size of the binary, you can also choose \fCdefaults\fP or \fCnone\fP\&. The \fCdefaults\fP setting embeds a reduced version of the specification, which only contains the metadata required by \fCelektraOpen\fP\&. By setting \fCembeddedSpec=none\fP you can also remove this reduced specification\&.
+.PP
+The advantage of using \fCfull\fP is that your application is contained in a single executable file\&. If you don't use \fCfull\fP, the code-generator produces an additional \fC\&.spec\&.eqd\fP file and omits specload function (called \fCexitForSpecload\fP by default)\&. This file contains the full specification in quickdump format\&. You can either mount it directly via \fCquickdump\fP, or if you want the features of \fCspecload\fP use a \fCspecload\fP configuration like this: \fCapp=/usr/bin/cat args=#0 args/#0='path-to-spec-output-file'\fP\&.
+.PP
+Setting \fCembeddedSpec=none\fP is only recommended, if you must have the minimal binary size and you know what you are doing\&. In this case no defaults are passed to \fCelektraOpen\fP and defaults are only handled via the \fCspec\fP plugin\&. If the specification/configuration isn't mounted, the getter functions may fail\&.
+.PP
+The case of a misconfigured mountpoint will be detected automatically and reported as an error\&. It will cause the initialization function (by default named \fCloadConfiguration\fP) to fail, if the specification is not mounted at the expected mountpoint or if the specification was not \fCspec-mount\fPed\&.
+.SH "Enums"
+.PP
+We support the mapping of a set of string values to a native C \fCenum\fP\&. To use this feature, you need to write your specification the same way that the enum part of the \fCtype\fP plugin expects\&.
+.PP
+.PP
+.nf
+[myenum]
+type=enum
+check/enum=#_4
+check/enum/#0=none
+check/enum/#1=red
+check/enum/#2=green
+check/enum/#4=blue
+default=blue
+.fi
+.PP
+.PP
+The above specification will generate the following C \fCenum\fP:
+.PP
+.PP
+.nf
+typedef enum
+{
+    ELEKTRA_ENUM_MYENUM_NONE = 0,
+    ELEKTRA_ENUM_MYENUM_RED = 1,
+    ELEKTRA_ENUM_MYENUM_GREEN = 2,
+    ELEKTRA_ENUM_MYENUM_BLUE = 4,
+} ElektraEnumMyenum;
+.fi
+.PP
+.PP
+As you can see the integer values of the different enum values are taken from the indices of the \fCcheck/enum/#\fP array\&. You may also use e\&.g\&. \fCgen/enum/#2/value=1 << 1\fP to set a different value\&. The \fCgen/enum/#/value\fP values are inserted literally into the C files, so the values must be valid C code\&. The name of the enum may be configured via \fCgen/enum/type\fP\&. If you want to use an existing \fCenum\fP and map its values to strings you can turn the generation of the enum off, by adding \fCgen/enum/create=0\fP\&. In this case you have to add a header that defines the \fCenum\fP or \fCtypedef\fPs it, to the \fCheaders\fP parameter of the code-generator invocation\&.
+.PP
+Like with any other key, the code-generator produces \fCstatic inline\fP getter and setter functions for the key\&. Since there are no generic functions for the conversion of the strings into the enum values, we also generate those:
+.PP
+.PP
+.nf
+ELEKTRA_KEY_TO_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+ELEKTRA_TO_STRING_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+ELEKTRA_TO_CONST_STRING_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+
+ELEKTRA_GET_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+ELEKTRA_GET_ARRAY_ELEMENT_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+ELEKTRA_SET_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+ELEKTRA_SET_ARRAY_ELEMENT_SIGNATURE (ElektraEnumMyenum, EnumMyenum);
+.fi
+.PP
+.PP
+These functions are not generated per key, but per enum type\&. If multiple keys use the same enum type (both need to define the full metadata, including the full set of values), we only generate one set of these functions\&.
+.PP
+The getter and setter functions won't be explained here, they work like any of the other getter and setter functions of the high-level API\&.
+.PP
+The other three functions are used to convert between the string values and the generated \fCenum\fP\&. You may find these useful in your application\&. You can call them via e\&.g\&. \fCELEKTRA_KEY_TO (EnumMyenum)\fP\&. The difference between \fCELEKTRA_TO_STRING\fP and \fCELEKTRA_TO_CONST_STRING\fP is that the first returns a \fCchar *\fP allocated via \fCelektraMalloc\fP, while the second returns a static \fCconstchar *\fP\&.
+.PP
+Both \fCELEKTRA_TO_STRING\fP and \fCELEKTRA_TO_CONST_STRING\fP are always implemented via a straightforward \fCswitch\fP statement\&. The implementation of \fCELEKTRA_KEY_TO\fP on the other hand can be changed via the \fCenumConv\fP parameter\&. If you set \fCenumConv=strcmp\fP, we will generate a code analogous to:
+.PP
+.PP
+.nf
+if (strcmp (string, "none") == 0) { /* \&.\&.\&. */ }
+if (strcmp (string, "red") == 0) { /* \&.\&.\&. */ }
+if (strcmp (string, "green") == 0) { /* \&.\&.\&. */ }
+if (strcmp (string, "blue") == 0) { /* \&.\&.\&. */ }
+.fi
+.PP
+.PP
+This code is not really optimal, since we really only need to look at the first character to determine the correct enum value\&. This is where \fCenumConv=switch\fP comes in\&. With this option, we generate a series of (nested, if necessary) switch/case statements:
+.PP
+.PP
+.nf
+switch (string[0])
+{
+case 'b': /* blue */
+case 'g': /* green */
+case 'n': /* none */
+case 'r': /* red */
+}
+.fi
+.PP
+.PP
+Of course this version also has its own problems\&. Take for example the enum with the values: \fCblue\fP, \fCblueish\fP and \fCbrown\fP\&. With \fCenumConv=switch\fP this would generate the following code:
+.PP
+.PP
+.nf
+switch (string[0])
+{
+case 'b':
+    switch (string[1])
+    {
+    case 'l':
+        switch (string[2])
+        {
+        case 'u':
+            switch (string[3])
+            {
+            case 'e':
+                switch (string[4])
+                {
+                case 'i': /* blueish */
+                }
+                /* blue */
+            }
+            break;
+        }
+        break;
+        case 'r': /* brown */
+    }
+    break;
+}
+.fi
+.PP
+.PP
+This is already quite hard to read and \fCblueish\fP isn't even that long\&.
+.PP
+To provide a compromise between readability and performance, we default to \fCenumConv=auto\fP\&. This options uses the switch version, if the depth is less than 3, and the \fCstrcmp\fP version in all other cases\&. A depth of \fCn\fP means looking at the first \fCn\fP characters \fCstring[0], string[1], \&.\&.\&., string[n-1]\fP\&. In other words a depth of \fCn\fP uses \fCn\fP switch statements\&.
+.SH "Structs"
+.PP
+The \fChighlevel\fP template also has support for structs\&. By setting \fCtype = struct\fP on a key, you can enable the generation of a native C \fCstruct\fP for the keys below it\&.
+.PP
+We will look at this simple example:
+.PP
+.PP
+.nf
+[mystruct]
+type=struct
+check/type=any
+default=""
+
+[mystruct/a]
+type=string
+default=""
+
+[mystruct/b]
+type=long
+default=8
+.fi
+.PP
+.PP
+Note: That we set \fCcheck/type=any\fP and \fCdefault=''\fP\&. This is to avoid problems with the \fCtype\fP plugin, which doesn't know about \fCstruct\fPs\&.
+.PP
+The generated struct looks like this:
+.PP
+.PP
+.nf
+typedef struct ElektraStructMystruct
+{
+    const char * a;
+    kdb_long_t b;
+} ElektraStructMystruct;
+.fi
+.PP
+.PP
+Similar to enums, you can customise the generated struct via additional metadata:
+.PP
+.IP "\(bu" 2
+Metadata for the key with \fCtype=struct\fP:
+.IP "  \(bu" 4
+\fCgen/struct/type\fP can be used to set the name of the generated struct\&.
+.IP "  \(bu" 4
+\fCgen/struct/create=0\fP disables the struct generation and only generates the accessor functions\&. Use this to use structs defined elsewhere\&. Don't forget to include the needed header in the \fCheaders\fP parameter\&.
+.IP "  \(bu" 4
+\fCgen/struct/alloc\fP (values \fC0\fP, \fC1\fP) sets whether the struct is \fIallocating\fP\&. This changes how the getter works and also has some other implications\&. By default structs are non-allocating\&.
+.IP "  \(bu" 4
+\fCgen/struct/depth\fP sets at how many levels below the \fCtype=struct\fP key, we will include in the generated struct\&. Note that keys ending in \fC/#\fP (i\&.e\&. array keys) count as one level above\&. So \fCmystruct/x/#\fP would be included with the default \fCgen/struct/depth=1\fP\&.
+.PP
+
+.IP "\(bu" 2
+Metadata for keys corresponding to fields of the struct:
+.IP "  \(bu" 4
+\fCgen/struct/field\fP sets the name of the field in the generated struct\&.
+.IP "  \(bu" 4
+\fCgen/struct/field/ignore=1\fP ignores this key during struct generation, i\&.e\&. we don't create a field for it\&.
+.IP "  \(bu" 4
+\fCgen/array/sizefield\fP sets the name of the field used to store the size of arrays\&. Only useful on array keys\&. For example, by default the size of the array key \fCmystruct/x/#\fP is stored in \fCxSize\fP, while the array is accessed via the field \fCx\fP\&.
+.PP
+
+.PP
+.PP
+We will also generate getter and setter functions:
+.PP
+.PP
+.nf
+ELEKTRA_GET_SIGNATURE (ElektraStructMystruct *, StructMystruct);
+// or ELEKTRA_GET_OUT_PTR_SIGNATURE (ElektraStructMystruct, StructMystruct);
+ELEKTRA_GET_ARRAY_ELEMENT_SIGNATURE (ElektraStructMystruct *, StructMystruct);
+// or ELEKTRA_GET_OUT_PTR_ARRAY_ELEMENT_SIGNATURE (ElektraStructMystruct, StructMystruct);
+
+ELEKTRA_SET_SIGNATURE (const ElektraStructMystruct *, StructMystruct);
+ELEKTRA_SET_ARRAY_ELEMENT_SIGNATURE (const ElektraStructMystruct *, StructMystruct);
+.fi
+.PP
+.PP
+The difference between \fCELEKTRA_GET_SIGNATURE\fP and \fCELEKTRA_GET_OUT_PTR_SIGNATURE\fP is explained in the next section\&. Both versions are called via \fCELEKTRA_GET (\&.\&.\&.) (\&.\&.\&.)\fP\&.
+.PP
+Allocating structs also generate \fCELEKTRA_STRUCT_FREE (/* struct name */)\fP, which is used to free the allocated memory\&.
+.SS "Allocating vs\&. Non-Allocating"
+The main difference between allocating and non-allocating structs, is how their getter function works\&.
+.PP
+Allocating structs use a getter similar to the one primitive types, strings and enums use\&. It returns a pointer to a newly allocated struct, which has to be freed using the generated \fCELEKTRA_STRUCT_FREE\fP function\&.
+.PP
+Non-allocating structs meanwhile use a different kind of getter declared via \fCELEKTRA_GET_OUT_PTR_SIGNATURE\fP instead of \fCELEKTRA_GET_SIGNATURE\fP\&. This version doesn't return a pointer, instead it takes a pointer to an existing struct and only sets its fields\&. This is why you have to use the convenience macros \fCelektraFillStruct\fP and \fCelektraFillStructV\fP for these structs\&.
+.PP
+Non-allocating structs are also more limited than their allocating counterparts\&. They do not support arrays or struct references\&. They also cannot be for unions\&. Their main advantage is that you can use non-allocating structs without (additional) \fCmalloc\fP/\fCfree\fP, by providing a stack allocated pointer to the getter function\&.
+.SS "Struct references"
+Structs cannot be nested, but they can reference each other\&. This allows for complex and possibly recursive structures\&. Take for example:
+.PP
+.PP
+.nf
+[person/#]
+type=struct
+check/type=any
+default=""
+gen/struct/alloc=1
+
+[person/#/name]
+type=string
+default=Max
+
+[person/#/mother]
+type=struct_ref
+check/type=any
+default=""
+check/reference=recursive
+check/reference/restrict=\&.\&./\&.\&./\&.\&./person/#
+
+[person/#/children/#]
+type=struct_ref
+check/type=any
+default=""
+
+[person/#/children]
+default=""
+check/reference=recursive
+check/reference/restrict=\&.\&./\&.\&./\&.\&./person/#
+.fi
+.PP
+.PP
+This results in a struct like this:
+.PP
+.PP
+.nf
+typedef struct ElektraStructPerson
+{
+    struct ElektraStructPerson * mother;
+        kdb_long_long_t childrenSize;
+        struct ElektraStructPerson ** children;
+        const char * name;
+} ElektraStructPerson;
+.fi
+.PP
+.PP
+As you can see an instance of \fCElektraStructPerson\fP may reference different instances\&. To declare this we must add a key with \fCtype=struct_ref\fP\&. We use the metakeys of the \fCreference\fP plugin (which should be mounted to validate reference) to define what struct we want to reference\&. We also again set \fCcheck/type=any\fP and \fCdefault=''\fP to please the \fCtype\fP plugin\&.
+.PP
+Struct references are also supported as arrays, in which case the \fCcheck/reference\fP keys must be on a different key than the rest of the metadata, because of how the \fCreference\fP plugin works\&. The example above shows this with \fCperson/#/children\fP and \fCperson/#/children/#\fP\&.
+.PP
+If you access an element of the \fCperson/#\fP array via the getter function, we will recursively read the references structs\&. Writing structs that contain struct references or setting \fCstruct_ref\fP keys directly is not supported\&.
+.PP
+Struct references can also exist outside of structs and maybe accessed directly via the generated accessor functions\&. Please, be careful when handling struct references, since invalid references will cause fatal errors\&.
+.SH "Unions"
+.PP
+The most advanced feature of the code-generator are unions\&. Sometimes we want a reference inside a struct, but it is not always to the same struct\&. For example in a menu structure, we might have a list of entries that are either submenus or actual items that execute a command\&.
+.PP
+.PP
+.nf
+[menu/#]
+type=struct
+check/type=any
+default=""
+gen/struct/alloc=1
+
+[menu/#/name]
+type=string
+default=""
+
+[menu/#/entries/#]
+type=struct_ref
+check/type=any
+default=""
+gen/reference/discriminator/enum = MenuEntryType
+gen/reference/discriminator/union = MenuEntry
+gen/reference/restrict/#0/discriminator = item
+gen/reference/restrict/#1/discriminator = menu
+
+[menu/#/entries]
+default=""
+check/reference=recursive
+check/reference/restrict=#1
+check/reference/restrict/#0=@/menu/#
+check/reference/restrict/#1=@/item/#
+
+[menu/#/discriminator]
+type = discriminator
+check/type = enum
+check/enum = #1
+check/enum/#0 = item
+check/enum/#1 = menu
+gen/enum/type=MenuEntryType
+default = menu
+
+[item/#]
+type=struct
+check/type=any
+default=""
+gen/struct/alloc=1
+
+[item/#/name]
+type=string
+default=""
+
+[item/#/command]
+type=string
+default=""
+
+[item/#/entries]
+check/reference/restrict=
+
+[item/#/discriminator]
+type = discriminator
+check/type = enum
+check/enum = #1
+check/enum/#0 = item
+check/enum/#1 = menu
+gen/enum/type=MenuEntryType
+default = item
+.fi
+.PP
+.PP
+As you can see the unions feature requires quite a bit more setup\&. We will start with \fCmenu/#/entries/#\fP\&. It is set to \fCtype=struct_ref\fP like you would do for normal struct reference, but the accompanying \fCmenu/#/entries\fP uses \fCcheck/reference/restrict\fP as an array\&. This tells the \fCreference\fP plugin that any of the given reference restrictions are allowed\&. Therefore we could be referencing one of several structs and the code-generator has to deal with that somehow\&.
+.PP
+To allow alternative references, we need to define \fCgen/reference/discriminator/union\fP and \fCgen/reference/discriminator/enum\fP on the key with \fCtype=struct_ref\fP\&. The former of these defines the name of the native C \fCunion\fP the code-generator creates:
+.PP
+.PP
+.nf
+typedef union {
+    struct ElektraStructMenu * item;
+    struct ElektraStructMenu * menu;
+} MenuEntry;
+.fi
+.PP
+.PP
+The other required metakey defines which enum shall be used as a discriminator between the union values:
+.PP
+.PP
+.nf
+typedef enum {
+    ELEKTRA_ENUM_MENU_ENTRY_TYPE_ITEM = 0,
+    ELEKTRA_ENUM_MENU_ENTRY_TYPE_MENU = 1
+} MenuEntryType;
+.fi
+.PP
+.PP
+Each of the possibly referenced structs must have a discriminator key\&. This key must be part of the struct, it must have \fCtype=discriminator\fP and should have \fCcheck/type=enum\fP\&. All the discriminator keys must also set \fCgen/enum/type\fP to the same value as chosen for \fCgen/reference/discriminator/enum\fP and all of them have to define the same enum, via the \fCcheck/enum/#\fP array\&. The values also have to match the values of the \fCgen/reference/restrict/#/discriminator\fP metakeys on the \fCtype=struct_ref\fP key\&.
+.PP
+The generated structs will then look like this:
+.PP
+.PP
+.nf
+typedef struct Menu
+{
+        const char * name;
+        kdb_long_long_t entriesSize;
+        MenuEntryType * entryTypes;
+        MenuEntry * entries;
+} Menu;
+
+typedef struct Item
+{
+        const char * name;
+        const cahr * command;
+} Menu;
+.fi
+.PP
+.PP
+As you can see the discriminator field is excluded from the struct itself and stored in a separate array\&. We do generate getter and free functions for unions, but we don't recommend using them directly\&. There are no setter functions for unions, because they involve struct references\&. 

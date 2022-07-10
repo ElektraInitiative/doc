@@ -1,0 +1,68 @@
+.TH "doc_decisions_iterators_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_iterators_md \- Iterators 
+ 
+.SH "Problem"
+.PP
+The internal iterator inside KeySets seems to cause more problems than it solves\&.
+.SH "Constraints"
+.PP
+We could embed one such iterator into KeySets, but recommend that people use an external instance (int) in new code\&.
+.SH "Assumptions"
+.PP
+@raphi011 made benchmarks showing that external and internal iterators have about the same speed\&. So it should be a safe choice to not provide the internal iterators for 1\&.0 and only the external instead\&.
+.SH "Considered Alternatives"
+.PP
+.SH "Decision"
+.PP
+.IP "\(bu" 2
+remove all functions related to the internal iterator:
+.IP "  \(bu" 4
+ksRewind
+.IP "  \(bu" 4
+ksNext
+.IP "  \(bu" 4
+ksCurrent
+.IP "  \(bu" 4
+ksGetCursor
+.IP "  \(bu" 4
+ksSetCursor
+.IP "  \(bu" 4
+ksHead
+.IP "  \(bu" 4
+ksTail
+.IP "  \(bu" 4
+keyRewindMeta
+.IP "  \(bu" 4
+keyNextMeta
+.IP "  \(bu" 4
+keyCurrentMeta
+.PP
+
+.IP "\(bu" 2
+change \fCksAtCursor\fP to \fCksAt\fP
+.IP "\(bu" 2
+add implementation / documentation / tests for the external iterator
+.IP "\(bu" 2
+start using external iterators in new code
+.IP "\(bu" 2
+remove docu about internal cursor from all functions\&.
+.PP
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+The only function that returns a \fCcursor_t\fP is \fCksGetCursor\fP\&. Its documentation is completely broken:
+.IP "\(bu" 2
+\fCksRewind\fP and \fCkeyNextMeta\fP cannot be used on the same variable (\fCks\fP)\&.
+.IP "\(bu" 2
+The documentation (not just for the above function, but all over the \fCks*\fP functions) also contains lots of warnings (use only cursor from same keyset, may be invalid, may become invalid, etc\&.) that make it seem like there is something special about these cursors, when in fact they are simply indicies\&. There is no information (at least that I could find), how cursors can be modified\&. Most of the time it even seems like modifying cursors would be a bad idea\&.
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

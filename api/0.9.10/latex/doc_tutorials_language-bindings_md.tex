@@ -1,0 +1,156 @@
+\label{doc_tutorials_language-bindings_md_md_doc_tutorials_language_bindings}%
+\Hypertarget{doc_tutorials_language-bindings_md_md_doc_tutorials_language_bindings}%
+ \hypertarget{doc_tutorials_language-bindings_md_autotoc_md3870}{}\doxysection{Introduction}\label{doc_tutorials_language-bindings_md_autotoc_md3870}
+In this section, we will explain the how to write a language binding for Elektra.\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3871}{}\doxysubsection{High-\/level API}\label{doc_tutorials_language-bindings_md_autotoc_md3871}
+Writing bindings for the high-\/level API is described in a \mbox{\hyperlink{doc_tutorials_highlevel-bindings_md}{different document}}, since it is a bit less straightforward and needs additional considerations.\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3872}{}\doxysection{TODO}\label{doc_tutorials_language-bindings_md_autotoc_md3872}
+
+\begin{DoxyEnumerate}
+\item which parts of Elektra bindings make sense (application, plugin, tools, ...)
+\item how to integrate bindings into CMake (if possible and useful)
+\item which parts of the bindings can and should differ for every language. This includes\+:
+\begin{DoxyEnumerate}
+\item iterators
+\item conversion to native types (strings, int, ...)
+\item operator overloading (if available)
+\item other programming language integrations (streams, hash-\/codes, identity, ...)
+\item returned errors from kdb functions (what this issue here is about)
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3873}{}\doxysection{CMake Integration}\label{doc_tutorials_language-bindings_md_autotoc_md3873}
+\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3874}{}\doxysubsection{Building}\label{doc_tutorials_language-bindings_md_autotoc_md3874}
+To add the subdirectory containing our binding to the build, we have to modify {\ttfamily src/bindings/\+CMake\+Lists.\+txt}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{check\_binding\_included ("{}our\_binding"{} IS\_INCLUDED)}
+\DoxyCodeLine{if (IS\_INCLUDED)}
+\DoxyCodeLine{    add\_subdirectory (our\_binding\_directory)}
+\DoxyCodeLine{endif ()}
+
+\end{DoxyCode}
+
+
+At first we want to make sure that the build tools and compilers we need for the binding are installed. We can use {\ttfamily find\+\_\+program (BUILD\+\_\+\+TOOL\+\_\+\+EXECUTABLE build\+\_\+tool)} to find our {\ttfamily build\+\_\+tool} program. The result of the search will be stored in {\ttfamily BUILD\+\_\+\+TOOL\+\_\+\+EXECUTABLE}, so now we can use an if block to include the bindings in the build, if the program exists or exclude it, if it doesn\textquotesingle{}t. To do that, we use {\ttfamily add\+\_\+binding} which adds ours to the list of bindings that will be built. For more provided functions, \href{/home/jenkins/workspace/libelektra-release/scripts/cmake/Modules/LibAddBinding.cmake}{\texttt{ see here}}.
+
+If, for example, our bindings only support linking against a dynamic library we can express that, by using the {\ttfamily BUILD\+\_\+$\ast$} variables in if blocks or by passing {\ttfamily ONLY\+\_\+\+SHARED} to {\ttfamily add\+\_\+binding}. You can read more in the \mbox{\hyperlink{doc_COMPILE_md}{compile doc}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{if (BUILD\_TOOL\_EXECUTABLE)}
+\DoxyCodeLine{    add\_binding (our\_binding ONLY\_SHARED)}
+\DoxyCodeLine{else ()}
+\DoxyCodeLine{    exclude\_binding (our\_binding, "{}build\_tool not found"{})}
+\DoxyCodeLine{    return ()}
+\DoxyCodeLine{endif ()}
+
+\end{DoxyCode}
+
+
+Elektra uses out-\/of-\/source builds, so we have to copy all the needed files over to the build directory. The \$\{CMAKE\+\_\+\+CURRENT\+\_\+\+SOURCE\+\_\+\+DIR\} variable refers to the source directory, while \$\{CMAKE\+\_\+\+CURRENT\+\_\+\+BINARY\+\_\+\+DIR\} refers to the build directory. The copy is as simple as
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Inside the previous if block}
+\DoxyCodeLine{file (COPY "{}\$\{CMAKE\_CURRENT\_SOURCE\_DIR\}/"{} DESTINATION "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}"{})}
+
+\end{DoxyCode}
+
+
+However for some files we may want to use some CMakes variables. Say we\textquotesingle{}re writing a build script for our project and want to include the version number and the directory that {\ttfamily libelektra.\+so} resides in, so our build tool can find and link against it. We create our script named {\ttfamily build.\+script.\+in}. It looks like this
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{version = "{}@KDB\_VERSION@"{}}
+\DoxyCodeLine{link-\/search-\/path = "{}@CMAKE\_BINARY\_DIR@/lib"{}}
+
+\end{DoxyCode}
+
+
+Back in our CMake script, we tell CMake to replace the variables with their associated values.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{configure\_file ("{}\$\{CMAKE\_CURRENT\_SOURCE\_DIR\}/build.script.in"{} "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}/build.script"{} @ONLY)}
+
+\end{DoxyCode}
+
+
+Note how we leave off the {\ttfamily .in} ending on the target file.
+
+Since we\textquotesingle{}re building a foreign language project, it will most likely have its own build tool or compiler. So we have to tell CMake how to invoke it, in order to build the project. First we specify what file we expect to be generated by that command. In this example it\textquotesingle{}s a {\ttfamily .lib} file that is generated in some target directory. We then call our build tool using the variable {\ttfamily BUILD\+\_\+\+TOOL\+\_\+\+EXECUTABLE} we created earlier with the {\ttfamily build} subcommand and the {\ttfamily -\/-\/release} option. We can also specify one or multiple files that this command depends on, such that CMake can make sure they are built or generated before. Finally, we add a custom target that depends on the {\ttfamily .lib} file. To built this target, CMake will invoke our custom command and build the specified file.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{add\_custom\_command (OUTPUT "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}/target/release/libelektra.lib"{}}
+\DoxyCodeLine{            COMMAND \$\{BUILD\_TOOL\_EXECUTABLE\} build -\/-\/release}
+\DoxyCodeLine{            WORKING\_DIRECTORY \$\{CMAKE\_CURRENT\_BINARY\_DIR\}}
+\DoxyCodeLine{            DEPENDS "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}/build.script"{} "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}/other-\/dependency.file"{})}
+\DoxyCodeLine{add\_custom\_target (our\_binding ALL DEPENDS "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}/target/release/libelektra.lib"{})}
+
+\end{DoxyCode}
+
+
+We can then explicitly include the bindings using {\ttfamily cmake -\/DBINDINGS=\char`\"{}our\+\_\+binding\char`\"{} ..} in the build directory and follow the further steps for \mbox{\hyperlink{doc_COMPILE_md}{compilation}}.\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3875}{}\doxysubsection{Testing}\label{doc_tutorials_language-bindings_md_autotoc_md3875}
+To invoke our tests through CMake, we have to follow similar steps as in the build. We add a test by specifying a command that runs our tests. In our case, we\textquotesingle{}re calling the same program for testing as in the building step.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{add\_test (NAME test\_our\_binding COMMAND \$\{BUILD\_TOOL\_EXECUTABLE\} test WORKING\_DIRECTORY "{}\$\{CMAKE\_CURRENT\_BINARY\_DIR\}"{})}
+
+\end{DoxyCode}
+
+
+We may have to specify an additional environment variable to tell the test command, where {\ttfamily libelektra.\+so} resides, so that the dynamic linker can find it.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{set\_property (TEST test\_our\_binding PROPERTY ENVIRONMENT "{}LD\_LIBRARY\_PATH=\$\{CMAKE\_BINARY\_DIR\}/lib"{})}
+
+\end{DoxyCode}
+
+
+Now our bindings can be tested through {\ttfamily ctest} alongside all other tests.
+
+See the Java binding for examples.\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3876}{}\doxysection{Error Handling}\label{doc_tutorials_language-bindings_md_autotoc_md3876}
+Since v0.\+9.\+0, Elektra has a new error code system. You might want to take a look in the \mbox{\hyperlink{doc_decisions_error_codes_md}{design decision}} first to understand the concept of the error codes. These codes are hierarchically structured and are therefore perfectly suitable for inheritance if the language supports it.
+
+Some error codes like the {\ttfamily Permanent Errors} are generalizations and used for developers who want to catch all specific types of errors (e.\+g., it does not matter if it is a Resource or Installation Error but the developer wants to check for both). Such errors should not be able to \char`\"{}instantiate\char`\"{} or emitted back to Elektra as we want to force developers to take a more specific category. In case of Java for example the {\ttfamily Permanent Error} is an abstract class. Which errors are instantiable or not can be seen in the \mbox{\hyperlink{doc_dev_error-categorization_md}{error-\/categorization guideline}} in the respective title saying either {\ttfamily abstract} or {\ttfamily concrete}. Here is an example of how Java has implemented it\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{public} \textcolor{keyword}{abstract} \textcolor{keyword}{class }PermanentException \textcolor{keyword}{extends} Exception \{...\}}
+\DoxyCodeLine{    \textcolor{keyword}{public} \textcolor{keyword}{class }ResourceException \textcolor{keyword}{extends} PermanentException \{...\}}
+\DoxyCodeLine{        \textcolor{keyword}{public} \textcolor{keyword}{class }MemoryAllocationException \textcolor{keyword}{extends} ResourceException \{...\}}
+\DoxyCodeLine{    \textcolor{keyword}{public} \textcolor{keyword}{class }InstallationException \textcolor{keyword}{extends} PermanentException \{...\}}
+\DoxyCodeLine{...}
+
+\end{DoxyCode}
+
+
+All error codes as well as the hierarchy itself is depicted in the \mbox{\hyperlink{doc_decisions_error_codes_md}{design decision}}.
+
+If you have a language which does not support inheritance this way like Go\+Lang, you can still use the error code itself since the hierarchy is integrated in it. For example you can check if the code starts with {\ttfamily C01...} to catch all {\ttfamily Permanent Errors}.\hypertarget{doc_tutorials_language-bindings_md_autotoc_md3877}{}\doxysubsection{Error Message}\label{doc_tutorials_language-bindings_md_autotoc_md3877}
+In Elektra every error has a predefined format. You can take a look at the \mbox{\hyperlink{doc_decisions_error_message_format_md}{related design decision}} to see how it looks like.
+
+Every Exception/\+Error struct/etc. should have separate accessors to individual parts of the message. These include\+:
+
+
+\begin{DoxyEnumerate}
+\item Module (get\+Module())
+\item Error Code (get\+Error\+Code())
+\item Reason (get\+Reason())
+\item Configfile (get\+Config\+File())
+\item Mountpoint (get\+Mountpoint())
+\item Debuginformation (text looks like \char`\"{}\+At\+: file\+:line\char`\"{}) (get\+Debug\+Information())
+\end{DoxyEnumerate}
+
+In case of an error at least the following part has to be returned\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Sorry, module getModule() issued error getErrorCode():}
+\DoxyCodeLine{getReason()}
+
+\end{DoxyCode}
+
+
+Please also keep the wording identical for consistency. Take a look how the Java binding implemented it in the KDBException 

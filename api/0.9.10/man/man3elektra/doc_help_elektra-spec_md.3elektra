@@ -1,0 +1,111 @@
+.TH "doc_help_elektra-spec_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_elektra-spec_md \- elektra-spec(7) -- spec namespace 
+ 
+.SH "INTRODUCTION"
+.PP
+spec is a special namespace that describes via metadata the semantics of individual keys\&.
+.PP
+Most importantly it:
+.PP
+.IP "1." 4
+describes which keys are of interest to the application
+.IP "2." 4
+describes the metadata to be copied to every key
+.IP "3." 4
+describes how the cascading lookup works
+.IP "4." 4
+describes the mount points including the plugins needed for them
+.PP
+.PP
+It is, however, not limited to this but can express any other key database semantics (new plugins might be necessary, though)\&.
+.SH "Application"
+.PP
+The most simple use is to enlist all keys that will be used by an application and maybe give a description for them (we use ini syntax in this document):
+.PP
+.PP
+.nf
+[mykey]
+
+[folder/anotherkey]
+description = set this key if you want another behavior
+.fi
+.PP
+.PP
+So Keys in \fCspec\fP allow us to specify which keys are read by the application\&. The description key will be copied (referred to) to \fCfolder/anotherkey\fP of any namespace, so that it can easily be accessed\&.
+.SH "Cascading Lookup"
+.PP
+Other features are directly implemented in \fCksLookup\fP\&. When cascading keys (those starting with \fC/\fP) are used following features are now available (in the metadata of respective \fCspec\fP-keys):
+.PP
+.IP "\(bu" 2
+\fCoverride/#\fP: use these keys \fIin favor\fP of the key itself (note that \fC#\fP is the syntax for arrays, e\&.g\&. \fC#0\fP for the first element, \fC#_10\fP for the 11th and so on)
+.IP "\(bu" 2
+\fCnamespace/#\fP: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+.IP "\(bu" 2
+\fCfallback/#\fP: when no key was found in any of the (specified) namespaces the \fCfallback\fP-keys will be searched
+.IP "\(bu" 2
+\fCdefault\fP: this value will be used if nothing else was found
+.PP
+.PP
+E\&.g\&.
+.PP
+.PP
+.nf
+[promise]
+default=20
+fallback/#0=/somewhere/else
+namespace/#0=user
+.fi
+.PP
+.PP
+.IP "1." 4
+When this file is mounted to \fCspec:/sw/app/#0\fP we specify, that for the key \fC/sw/app/#0/promise\fP only the namespace \fCuser\fP should be used\&.
+.IP "2." 4
+If this key was not found, but \fC/somewhere/else\fP is present, we will use this key instead\&. The \fCfallback\fP technique is very powerful: it allows us to have (recursive) links between applications\&. In the example above, the application is tricked in receiving e\&.g\&. the key \fCuser:/somewhere/else\fP when \fCpromise\fP was not available\&.
+.IP "3." 4
+The value \fC20\fP will be used as default, even if no configuration file is found\&.
+.PP
+.PP
+Note that the fallback, override and cascading works on \fIkey level\fP, and not like most other systems have implemented, on configuration \fIfile level\fP\&.
+.SH "Validation"
+.PP
+You can tag any key using the \fCcheck\fP metadata so that it will be validated\&.
+.PP
+For example:
+.PP
+.PP
+.nf
+[folder/anotherkey]
+check/validation = abc\&.*
+check/validation/message = def does not start with abc
+.fi
+.PP
+.SH "Mounting"
+.PP
+In the spec namespace you can also specify mount points\&. First you need the metakey \fCmountpoint\fP and a configuration file name\&. Otherwise, it basically works in the same way as the contracts in plugins using \fCinfos\fP and \fCconfig\fP:
+.PP
+.PP
+.nf
+[]
+mountpoint=file\&.abc
+config/plugin/code/escape = 40
+config/plugin/lua#abc/script = abc_storage\&.lua
+infos/author = Markus Raab
+infos/needs = resolver_abc rename code lua#abc
+infos/recommends = hexcode
+.fi
+.PP
+.SH "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBsee application integration tutorial (towards end)\fP
+.IP "\(bu" 2
+\fBsee namespaces tutorial\fP
+.IP "\(bu" 2
+\fBelektra-namespaces(7)\fP
+.IP "\(bu" 2
+\fBelektra-cascading(7)\fP 
+.PP
+

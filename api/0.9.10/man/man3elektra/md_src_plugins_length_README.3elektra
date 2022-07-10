@@ -1,0 +1,59 @@
+.TH "md_src_plugins_length_README" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_length_README \- Plugin: length 
+
+.IP "\(bu" 2
+infos = Information about the len plugin is in keys below
+.IP "\(bu" 2
+infos/author = Philipp Oppel philipp.oppel@tuwien.ac.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage postgetstorage
+.IP "\(bu" 2
+infos/status = experimental unittest nodep
+.IP "\(bu" 2
+infos/metadata = check/length/max
+.IP "\(bu" 2
+infos/description = validates if input is less or equal to length and throws error otherwise
+.PP
+.SH "Length Validation"
+.PP
+.SS "Introduction"
+This plugins purpose is to check the maximum length of strings\&. For example if \fCcheck/length/max\fP is set to 3, Strings with more than 3 characters will not validate (e\&.g\&. 'abcd'), whereas 'abc' would validate\&.
+.SS "Installation"
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SS "Usage"
+.PP
+.nf
+# Mount `length` plugin to cascading namespace `/tests/length`
+kdb mount config\&.dump /tests/length length
+
+# Check the validity of the string stored in `/tests/length/text`
+kdb meta-set spec:/tests/length/text check/length/max 3
+
+# Try to set a longer string
+kdb set user:/tests/length/text abcd
+# STDERR: \&.*Validation Semantic\&.*
+# ERROR:  C03200
+# RET:    5
+
+# Set a correct string
+kdb set user:/tests/length/text abc
+kdb get user:/tests/length/text
+
+# Undo modifications to the database
+kdb rm -rf /tests/length
+kdb umount /tests/length
+.fi
+.PP
+.SS "Limitations"
+The plugin only checks that strings are not longer than a given number\&. It is not possible to set a minimum length\&. 

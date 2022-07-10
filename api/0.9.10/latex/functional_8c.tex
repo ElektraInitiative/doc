@@ -1,0 +1,103 @@
+\hypertarget{functional_8c}{}\doxysection{functional.\+c File Reference}
+\label{functional_8c}\index{functional.c@{functional.c}}
+
+
+Functional helper.  
+
+
+{\ttfamily \#include $<$kdb.\+h$>$}\newline
+{\ttfamily \#include $<$errno.\+h$>$}\newline
+{\ttfamily \#include $<$limits.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+Include dependency graph for functional.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{functional_8c__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{functional_8c_a5e727c6d8197f5871a2075454b6214f2}{elektra\+Ks\+Filter}} (Key\+Set $\ast$result, Key\+Set $\ast$input, int($\ast$filter)(const Key $\ast$k, void $\ast$argument), void $\ast$argument)
+\begin{DoxyCompactList}\small\item\em return only those keys from the given keyset that pass the supplied filter function with the supplied argument \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{functional_8c_ac3e995819383f904369c260f212125f5}{elektra\+Ks\+To\+Mem\+Array}} (Key\+Set $\ast$ks, Key $\ast$$\ast$buffer)
+\begin{DoxyCompactList}\small\item\em Builds an array of pointers to the keys in the supplied keyset. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Functional helper. 
+
+\begin{DoxyCopyright}{Copyright}
+BSD License (see LICENSE.\+md or \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}) 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{functional_8c_a5e727c6d8197f5871a2075454b6214f2}\label{functional_8c_a5e727c6d8197f5871a2075454b6214f2}} 
+\index{functional.c@{functional.c}!elektraKsFilter@{elektraKsFilter}}
+\index{elektraKsFilter@{elektraKsFilter}!functional.c@{functional.c}}
+\doxysubsubsection{\texorpdfstring{elektraKsFilter()}{elektraKsFilter()}}
+{\footnotesize\ttfamily int elektra\+Ks\+Filter (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{result,  }\item[{Key\+Set $\ast$}]{input,  }\item[{int($\ast$)(const Key $\ast$k, void $\ast$argument)}]{filter,  }\item[{void $\ast$}]{argument }\end{DoxyParamCaption})}
+
+
+
+return only those keys from the given keyset that pass the supplied filter function with the supplied argument 
+
+
+\begin{DoxyParams}{Parameters}
+{\em result} & the keyset that should contain the filtered keys \\
+\hline
+{\em input} & the keyset whose keys should be filtered \\
+\hline
+{\em filter} & a function pointer to a function that will be used to filter the keyset. A key will be taken if the function returns a value greater than 0. \\
+\hline
+{\em argument} & an argument that will be passed to the filter function each time it is called \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of filtered keys if the filter function always returned a positive value, -\/1 otherwise 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em NULL} & on NULL pointer \\
+\hline
+\end{DoxyRetVals}
+\mbox{\Hypertarget{functional_8c_ac3e995819383f904369c260f212125f5}\label{functional_8c_ac3e995819383f904369c260f212125f5}} 
+\index{functional.c@{functional.c}!elektraKsToMemArray@{elektraKsToMemArray}}
+\index{elektraKsToMemArray@{elektraKsToMemArray}!functional.c@{functional.c}}
+\doxysubsubsection{\texorpdfstring{elektraKsToMemArray()}{elektraKsToMemArray()}}
+{\footnotesize\ttfamily int elektra\+Ks\+To\+Mem\+Array (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{ks,  }\item[{Key $\ast$$\ast$}]{buffer }\end{DoxyParamCaption})}
+
+
+
+Builds an array of pointers to the keys in the supplied keyset. 
+
+The keys are not copied, calling key\+Del may remove them from the keyset.
+
+The size of the buffer can be easily allocated via ks\+Get\+Size. Example\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet *ks = somekeyset;}
+\DoxyCodeLine{Key **keyArray = calloc (\mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}}(ks), \textcolor{keyword}{sizeof} (Key *));}
+\DoxyCodeLine{\mbox{\hyperlink{functional_8c_ac3e995819383f904369c260f212125f5}{elektraKsToMemArray}} (ks, keyArray);}
+\DoxyCodeLine{... work with the array ...}
+\DoxyCodeLine{elektraFree (keyArray);}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyParams}{Parameters}
+{\em ks} & the keyset object to work with \\
+\hline
+{\em buffer} & the buffer to put the result into \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of elements in the array if successful 
+
+a negative number on null pointers or if an error occurred 
+\end{DoxyReturn}

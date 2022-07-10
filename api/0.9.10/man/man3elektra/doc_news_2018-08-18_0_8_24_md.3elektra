@@ -1,0 +1,766 @@
+.TH "doc_news_2018-08-18_0_8_24_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2018-08-18_0_8_24_md \- 0\&.8\&.24 Release 
+ We are proud to release Elektra 0\&.8\&.24\&.
+.PP
+.IP "\(bu" 2
+guid: 889b700d-9eac-4eff-9a3d-f6fb15c3d9da
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Sat, 18 Aug 2018 18:13:40 +0200
+.IP "\(bu" 2
+shortDesc: Elektra Web, Notifications, Type System
+.PP
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+For a small demo see here:
+.PP
+\fC\fP.PP
+You can also read the news \fCon our website\fP
+.SH "Highlights"
+.PP
+.IP "\(bu" 2
+Elektra Web
+.IP "\(bu" 2
+Notifications
+.IP "\(bu" 2
+KDE Workshop
+.IP "\(bu" 2
+Type System Prototype
+.IP "\(bu" 2
+Chef Cookbook
+.PP
+.SS "Elektra Web 1\&.6"
+The new release of Elektra Web features many UX improvements from the usability test!
+.PP
+\fC\fP.PP
+Try it out now on: http://webdemo.libelektra.org/
+.SS "1\&.5 changelog:"
+.IP "\(bu" 2
+search completely reworked - it does not act as a filter on already opened keys anymore, and instead searches the whole key database - feedback from the search was also greatly improved (pulsating while searching, glowing blue when done)
+.IP "\(bu" 2
+added 'abort' buttons to dialogs to revert actions
+.IP "\(bu" 2
+added 'create array' button to easily create arrays
+.IP "\(bu" 2
+removed confirmation dialog before deletion (undo can be used instead)
+.IP "\(bu" 2
+created a docker image: \fCelektra/web\fP
+.IP "\(bu" 2
+implemented auto-deployment of webdemo\&.libelektra\&.org
+.IP "\(bu" 2
+small fixes:
+.IP "  \(bu" 4
+updated visibility levels
+.IP "  \(bu" 4
+removed 'done' button in main view
+.IP "  \(bu" 4
+fixed issues with the opener click area
+.IP "  \(bu" 4
+remove metakeys when they are set to the default value or empty/0
+.IP "  \(bu" 4
+improved keyboard support
+.IP "  \(bu" 4
+fixed many small issues (\fC#2037\fP)
+.PP
+
+.PP
+.SS "1\&.6 changelog:"
+.IP "\(bu" 2
+fixed bugs related to arrays (\fC#2103\fP)
+.IP "\(bu" 2
+improved performance of search for many results
+.IP "\(bu" 2
+added 404 page for invalid instance ids
+.IP "\(bu" 2
+implement drag & copy by holding the Ctrl or Alt key
+.IP "\(bu" 2
+add button to show error details
+.IP "\(bu" 2
+allow deleting all keys in a namespace
+.PP
+.PP
+Thanks to Daniel Bugl\&.
+.SS "Notifications"
+Elektra's notification feature which allows applications to keep persistent configuration settings in sync with the key database and other applications was greatly improved with this release:
+.PP
+.IP "\(bu" 2
+The \fCnotification API\fP now supports more types and has improved support for callbacks\&.
+.IP "\(bu" 2
+With the addition of the \fCzeromqsend\fP and \fCzeromqrecv\fP plugins together with the \fChub-zeromq\fP tool we have an alternative to the D-Bus transport plugins (\fCdbus\fP and \fCdbusrecv\fP)\&.
+.IP "\(bu" 2
+The new asynchronous I/O binding for \fCev\fP is the third I/O binding - so notifications can be used in applications using \fCglib\fP, \fCuv\fP or \fCev\fP\&. If your application uses a different library please check out the \fC'How to create your own I/O binding' section\fP in the \fCnotification tutorial\fP\&.
+.IP "\(bu" 2
+Notifications can be used to reload KDB after Elektra's configuration (e\&.g\&. mountpoints or globally mounted plugins) has changed\&. We added a \fChow-to to the notification tutorial\fP that explains the required steps and the \fC'notificationReload'\fP example with the complete code\&.
+.PP
+.PP
+More details can be \fCfound\fP \fCin\fP \fCthis\fP \fCnews\fP\&. Check out the updated \fCnotification tutorial\fP and notification examples (\fCpolling\fP, \fCasync\fP and \fCreload\fP\&.
+.SS "KDE Workshop"
+At \fCAkademy 2018\fP we had a successful \fCConfig Workshop\fP\&.
+.PP
+We generally agreed that misconfiguration is important and the situation in FLOSS needs to improve\&. We discussed how Elektra can be used in KDE and came up with the idea that KConfig could be moved to a Elektra plugin\&. Then KConfig could be patched to use Elektra instead\&. This would lead to the situation that KDE users would have the same user experience with the advantages of Elektra, like:
+.PP
+.IP "\(bu" 2
+Elektra Web and qt-gui to safely modify all settings
+.IP "\(bu" 2
+modification of settings via configuration management tools
+.IP "\(bu" 2
+switch to other configuration file formats (e\&.g\&., XML or YAML for plasma)
+.IP "\(bu" 2
+provide notification with main-loop integration
+.IP "\(bu" 2
+plugin system for LDAP support and similar features
+.PP
+.PP
+For more information see the \fCSlides\fP
+.SS "Type System Prototype"
+Elektra supports specifying the semantics of keys via metakeys in the \fCspec\fP namespace\&. An example is the metakey \fCcheck/range\fP which can be used to specify that a key only holds numbers in a given range\&. Another metakey is \fCcheck/enum\fP which only allows specific keywords to be the content of a key\&. Up to now these semantics are only being checked at runtime\&. Therefore a type system was developed to be able to check configuration specifications statically\&. As an example, it would detect when one accidentally adds both a range and an enum check if their possible contents are not compatible with each other\&.
+.PP
+The type system is available as a plugin that gets mounted along with a configuration specification into the spec namespace\&. Furthermore we include a set of type definitions for commonly used metakeys such as \fCcheck/range\fP, \fCcheck/enum\fP, \fCcheck/validation\fP, \fCfallback\fP or \fCoverride\fP\&.
+.PP
+For more details see the \fCtypechecker readme\fP
+.PP
+Thanks to Armin Wurzinger\&.
+.SS "Chef Cookbook"
+Next to the \fCPuppet Resource Type\fP we now also prepared a \fCChef Cookbook\fP which allows us to use Elektra from within Chef\&.
+.PP
+For example, to set mount a configuration file, you can use:
+.PP
+.PP
+.nf
+kdbmount 'system/hosts' do
+        file '/etc/hosts'
+        plugins 'hosts'
+        action :create
+end
+.fi
+.PP
+.PP
+And to add an hosts entry, you can use:
+.PP
+.PP
+.nf
+kdbset '/hosts/ipv4/showthatitworks' do
+        namespace 'system'
+        value '127\&.0\&.0\&.33'
+        action :create
+end
+.fi
+.PP
+.PP
+.RS 4
+Note that currently \fCkdb\fP is invoked and Elektra needs to be installed for managed systems\&. 
+.RE
+.PP
+Thanks to Michael Zronek and Vanessa Kos\&.
+.SH "Plugins"
+.PP
+.SS "CCode"
+.IP "\(bu" 2
+We fixed various warnings in the source code reported by \fCOCLint\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now also encodes and decodes key names in addition to key values\&. _(René Schwaiger)_
+.PP
+.SS "CPP Template"
+.IP "\(bu" 2
+We added a new \fCtemplate for C++ based plugins\fP\&. To create a plugin based on this template, please use the command
+.PP
+.PP
+.PP
+.nf
+scripts/copy-template -p pluginname
+.fi
+.PP
+.PP
+, where \fCpluginname\fP specifies the name of your new plugin\&. _(René Schwaiger)_
+.SS "Crypto"
+.IP "\(bu" 2
+The \fCcrypto\fP plugin now uses Elektra's \fClibinvoke\fP and the \fCbase64\fP plugin in order to encode and decode Base64 strings\&. This improvement reduces code duplication between the two plugins\&. _(Peter Nirschl)_
+.PP
+.SS "CSVStorage"
+.IP "\(bu" 2
+Changed behaviour of export to validate the structure of exported keys only\&. _(Thomas Waser)_
+.PP
+.SS "Directory Value"
+.IP "\(bu" 2
+We rewrote the plugin using C++\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCDirectory Value\fP now also supports nested arrays\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now also adds leafs for a key, if its value is null or the empty string\&. _(René Schwaiger)_
+.PP
+.SS "fcrypt"
+.IP "\(bu" 2
+The \fCfcrypt\fP plugin will consider the environment variable \fCTMPDIR\fP in order to detect its temporary directory\&. See [#1973] _(Peter Nirschl)_
+.PP
+.SS "fstab"
+.IP "\(bu" 2
+The \fCfstab\fP plugin now passes tests on musl builds\&. _(Lukas Winkler)_
+.PP
+.SS "Haskell"
+.IP "\(bu" 2
+An issue when building Haskell plugins with a cached sandbox is fixed in case a Haskell library bundled with Elektra gets changed\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+The script that generates the list of Haskell dependencies now also works on ghc8\&.0\&.1 and older cabal versions\&. Furthermore one can specify the build directory as a parameter if it is not located within the source directory\&. _(Armin Wurzinger)_
+.PP
+.SS "Interpreter Plugins"
+.IP "\(bu" 2
+The plugins Ruby, Python and Jni can now also be mounted as global plugin\&.
+.IP "\(bu" 2
+Fix crashes in global Python plugin by using pluginprocess\&. Python plugin can now shutdown properly again\&. _(Markus Raab and Armin Wurzinger)_
+.PP
+.SS "JNI"
+.IP "\(bu" 2
+We now disable the plugin for the \fCBUILD_STATIC\fP or \fCBUILD_FULL\fP build variants, since otherwise the plugin breaks the \fCkdb\fP tool\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We disabled the internal check (\fCtestscr_check_kdb_internal_check\fP) for the plugin, since it always fails\&. _(René Schwaiger)_
+.PP
+.SS "HexNumber"
+.IP "\(bu" 2
+The plugin \fChexnumber\fP has been added\&. It can be used to convert hexadecimal values into decimal when read, and back to hexadecimal when written\&. _(Klemens Böswirth)_
+.PP
+.SS "List"
+.IP "\(bu" 2
+The \fC\fClist\fP plugin\fP now allows us to pass common configuration for all plugins by using keys below the 'config/' setting\&. The updated plugin documentation contains more information and an example\&. _(Thomas Wahringer)_
+.IP "\(bu" 2
+The \fC\fClist\fP plugin\fP which is responsible for global mounting had a bug which prevented globally mounted plugins from being configurable\&. _(Thomas Wahringer)_
+.PP
+.SS "mINI"
+.IP "\(bu" 2
+We fixed a memory leak in the \fCmINI plugin\fP by requiring the plugin \fC\fCccode\fP\fP instead of the “provider” \fCcode\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Removed unused header files\&. _(René Schwaiger)_
+.PP
+.SS "network"
+.IP "\(bu" 2
+Fixed an error in network plugin that prevented it from working on non-glibc platforms\&. _(Lukas Winkler)_
+.PP
+.SS "Type"
+.IP "\(bu" 2
+We extended the \fCMarkdown Shell Recorder\fP example inside the \fCREADME of the plugin\fP\&. _(René Schwaiger)_
+.PP
+.SS "Regex Dispatcher"
+.IP "\(bu" 2
+The plugin \fCregexdispatcher\fP has been added\&. It calculates regex representations for commonly used specification keywords to be used with the \fCtypechecker\fP\&. Currently the keywords \fCcheck/range\fP, \fCcheck/enum\fP and \fCdefault\fP are supported\&. _(Armin Wurzinger)_
+.PP
+.SS "Typechecker"
+.IP "\(bu" 2
+The plugin \fCtypechecker\fP, used to validate configuration specifications for Elektra statically, has been improved under the hood\&. It now supports a more concise and efficient typechecking process including a greatly improved type inference scheme that should make generated specification files and thus generated errors to be easier to understand\&. An example of such error message is shown in the \fCREADME\fP\&. _(Armin Wurzinger)_
+.PP
+.SS "Tcl"
+.IP "\(bu" 2
+The \fC\fCtcl\fP\fP plugin does not fail anymore, if its configuration file does not exist and you try to retrieve the plugin contract\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now uses relative key names\&. This update addresses issue \fC#51\fP\&. _(René Schwaiger)_
+.PP
+.SS "YAJL"
+.IP "\(bu" 2
+The \fCYAJL Plugin\fP now uses the internal logger functionality instead of \fCprintf\fP statements\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed a problem with negative values reported by the \fCUndefinedBehaviorSanitizer\fP\&. _(René Schwaiger)_
+.PP
+.SS "YAML CPP"
+.IP "\(bu" 2
+The plugin does not save empty intermediate keys anymore\&. The example below shows the old and the new behavior of the plugin:
+.PP
+.PP
+.PP
+.nf
+# Mount plugin
+kdb mount config\&.yaml /tests/yamlcpp yamlcpp
+# Store single key-value pair
+kdb set /tests/yamlcpp/level1/level2/level3 value
+
+# Old behavior
+kdb ls /tests/yamlcpp
+#> user/tests/yamlcpp/level1
+#> user/tests/yamlcpp/level1/level2
+#> user/tests/yamlcpp/level1/level2/level3
+
+# New behavior
+kdb ls /tests/yamlcpp
+#> user/tests/yamlcpp/level1/level2/level3
+.fi
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.IP "\(bu" 2
+\fCYAML CPP\fP now requires at least \fCyaml-cpp 0\&.6\fP, since the current \fCMSR test for the plugin\fP triggers two bugs:
+.IP "  \(bu" 4
+https://github.com/jbeder/yaml-cpp/issues/247
+.IP "  \(bu" 4
+https://github.com/jbeder/yaml-cpp/issues/289
+.PP
+.PP
+in earlier versions of the \fCyaml-cpp library\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin does now support \fCarrays\fP containing empty fields\&. _(René Schwaiger)_
+.IP "\(bu" 2
+YAML CPP now also adds \fCarray\fP meta data for arrays containing arrays\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The plugin now also supports empty arrays:
+.PP
+.PP
+.PP
+.nf
+kdb mount test\&.yaml user/tests/yamlcpp yamlcpp
+kdb setmeta user/tests/yamlcpp/array array ''
+kdb export user/tests/yamlcpp/array yamlcpp
+#> []
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+YAML CPP now handles null values containing meta data properly:
+.PP
+.PP
+.PP
+.nf
+kdb mount test\&.yaml user/tests/yamlcpp yamlcpp
+kdb set user/tests/yamlcpp/null
+kdb setmeta user/tests/yamlcpp/null comment 'Null Key'
+kdb export user/tests/yamlcpp/null yamlcpp
+#> !<!elektra/meta>
+#> - ~
+#> - comment: Null Key
+.fi
+.PP
+.SS "YAML Smith"
+.IP "\(bu" 2
+\fCYAML Smith\fP is a plugin that converts Elektra’s \fCKeySet\fP data structure to a textual representation in the \fCYAML\fP serialization format\&. The plugin is currently in a \fBvery early stage of development\fP\&. Please be advised, that it is quite likely that the plugin will produce incorrect or even invalid YAML data, especially if your \fCKeySet\fP contains special characters\&.
+.PP
+.SS "Yan LR"
+.IP "\(bu" 2
+The experimental \fCYan LR plugin\fP uses a parser, generated by \fCANTLR\fP to read basic \fCYAML\fP data\&. The plugin only converts YAML data to Elektra’s \fCKeySet\fP data structure\&. If you want to write data in the YAML format please take a look at the \fCYAML Smith plugin\fP\&. _(René Schwaiger)_
+.PP
+.SS "ZeroMQ transport plugins"
+.IP "\(bu" 2
+New notification transport plugins for \fCZeroMQ\fP were added\&. The new \fC'zeromqsend'\fP and \fC'zeromqrecv'\fP plugins use \fCZMQ_PUB\fP and \fCZMQ_SUB\fP sockets to send and receive notifications\&. The plugins can be used instead or along with the \fC'dbus'\fP and \fC'dbusrecv'\fP transport plugins\&. Check out the \fCplugin documentation\fP for more information\&. _(Thomas Wahringer)_
+.PP
+.SS "Misc"
+.IP "\(bu" 2
+The logging plugins \fC'syslog'\fP, \fC'journald'\fP and \fC'logchange'\fP now have a new option called 'get' which can be enabled to log which configuration settings are loaded by applications\&. The new option can be used for logging application behavior when using \fCnotifications\fP\&. _(Thomas Wahringer)_
+.IP "\(bu" 2
+Do not exclude \fCsimpleini\fP silently on non-glibc systems but output a message like for other plugins _(Markus Raab)_
+.IP "\(bu" 2
+We updated the \fCinfos/status\fP clause of the following plugins:
+.IP "  \(bu" 4
+\fC\fCboolean\fP\fP,
+.IP "  \(bu" 4
+\fC\fCconstants\fP\fP,
+.IP "  \(bu" 4
+\fC\fCcsvstorage\fP\fP,
+.IP "  \(bu" 4
+\fC\fChexnumber\fP\fP,
+.IP "  \(bu" 4
+\fC\fCinternalnotification\fP\fP,
+.IP "  \(bu" 4
+\fC\fCruby\fP\fP,
+.IP "  \(bu" 4
+\fC\fCsimpleini\fP\fP,
+.IP "  \(bu" 4
+\fC\fCuname\fP\fP, and
+.IP "  \(bu" 4
+\fC\fCxerces\fP\fP
+.PP
+.PP
+\&. _(René Schwaiger)_
+.PP
+.SH "Libraries"
+.PP
+.SS "General"
+.IP "\(bu" 2
+Replaced \fCstrdup\fP with \fCelektraStrDup\fP (for C99 compatibility)\&. _(Markus Raab)_
+.IP "\(bu" 2
+You can now remove the basename of a key via the C++ API by calling \fCkey\&.delBaseName()\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The function \fCelektraArrayGetNextKey\fP now uses \fCNULL\fP instead of the empty string as init value for the returned key\&. _(René Schwaiger)_
+.PP
+.SS "pluginprocess"
+.IP "\(bu" 2
+The library \fC\fCpluginprocess\fP\fP that is used to execute plugins run inside own processes has been improved\&. This is useful as some plugins like Haskell-based plugins or \fC\fCpython\fP\fP can only be started once inside a single process, while libelektra may call a plugin several times\&. The library now uses an improved communication protocol that separates between pluginprocess-related data and keysets passed to plugins\&. This avoids any possible name clashes between keys used by a plugin and keys used by pluginprocess\&. The documentation of the plugin has been improved as well, some mistakes were corrected and it should be more clear how to store plugin data besides pluginprocess's data structure\&. Tests have been added to the library to ensure its correct functionality\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+Anonymous pipes are now used instead of named pipes for the communication as anonymous pipes get terminated by the OS in case a child process dies before writing back data to the parent\&. Currently the parent process will freeze otherwise attempting to read from the child\&. _(Armin Wurzinger)_
+.PP
+.SH "Bindings"
+.PP
+.IP "\(bu" 2
+A new I/O binding for \fCev\fP has been added\&. It can be used to integrate the notification feature with applications based on \fCev\fP main loops\&. _(Thomas Wahringer)_
+.PP
+.SH "Notifications"
+.PP
+.IP "\(bu" 2
+The \fCnotification API\fP was extended\&. The API now supports more types: \fCint\fP, \fCunsigned int\fP, \fClong\fP, \fCunsigned long\fP, \fClong long\fP, \fCunsinged long long\fP, \fCfloat\fP and \fCdouble\fP\&. It also supports all of Elektra's \fCkdb_*_t\fP types defined in \fCkdbtypes\&.h\fP\&. Also contexts for callbacks were added and \fC\fBelektraNotificationRegisterCallbackSameOrBelow()\fP\fP allows for notifications for the registered key or below\&. _(Thomas Wahringer)_
+.PP
+.SH "Tools"
+.PP
+.IP "\(bu" 2
+The new tool \fCkdb find\fP lists keys of the database matching a certain regular expression\&. _(Markus Raab)_
+.IP "\(bu" 2
+You can now build the \fCQt-GUI\fP using Qt \fC5\&.11\fP\&. _(René Schwaiger)_
+.PP
+.SH "Scripts"
+.PP
+.IP "\(bu" 2
+The script \fC\fCcheck_formatting\&.sh\fP\fP now also checks the formatting of CMake code if you installed \fC\fCsponge\fP\fP and \fC\fCcmake-format\fP\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The script \fC\fCcheck_formatting\&.sh\fP\fP now no longer writes to stdout if clang-format5\&.0 can not be found\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The script \fC\fCcheck_bashisms\&.sh\fP\fP should now work correctly again, if the system uses the GNU version \fCfind\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The script \fC\fCreformat-cmake\fP\fP now checks if \fCcmake-format\fP works before it reformats CMake files\&. Thank you to Klemens Böswirth for the \fCdetailed description of the problem\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+\fCscripts/build/run_icheck\fP now no longer leaves the base directory of the project when checking if the ABI changed\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The completion for \fCfish\fP now also suggest the \fCinfo/\fP meta attributes of the \fCfile plugin\fP\&. _(René Schwaiger)_
+.PP
+.SS "Copy Template"
+.IP "\(bu" 2
+The script \fC\fCcopy-template\fP\fP is now location independent\&. It will always create a new plugin in \fCsrc/plugins\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The command now also supports the new \fCtemplate for C++ based plugins\fP\&. Please use the command line switch \fC-p\fP to create a new plugin based on \fCcpptemplate\fP\&.
+.PP
+.SH "Documentation"
+.PP
+.IP "\(bu" 2
+We improved the formatting of our \fBcompilation guide\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed various minor spelling mistakes in the documentation\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The man pages for \fC\fCkdb change-resolver-symlink\fP\fP and \fC\fCkdb change-storage-symlink\fP\fP referenced the wrong command\&. _(Lukas Winkler, René Schwaiger)_
+.IP "\(bu" 2
+We added documentation for our build system in \fCBUILDSERVER\&.md\fP\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The documentation for \fCkdb\fP and \fCkdb set\fP now mentions the \fC--\fP argument that stops processing of command line switches\&. This is useful for setting negative values among other things\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+We added a new tutorial about the jna binding\&. The tutorial shows how to use the java library to interact with kdb _(Michael Zronek)_
+.IP "\(bu" 2
+GitHub now detects the license of the repository correctly again\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We added a tutorial describing Elektra’s \fCarray data type\fP\&. _(René Schwaiger)_
+.PP
+.SH "Tests"
+.PP
+.SS "(Markdown) Shell Recorder"
+.IP "\(bu" 2
+We added new \fCMarkdown Shell Recorder\fP tests for the
+.IP "  \(bu" 4
+\fC\fCccode\fP\fP,
+.IP "  \(bu" 4
+\fC\fCfile\fP\fP,
+.IP "  \(bu" 4
+\fC\fCiconv\fP\fP,
+.IP "  \(bu" 4
+\fC\fCni\fP\fP,
+.IP "  \(bu" 4
+\fC\fCrename\fP\fP, and
+.IP "  \(bu" 4
+\fC\fCuname\fP\fP plugin\&. _(René Schwaiger)_
+.PP
+
+.IP "\(bu" 2
+(Markdown) Shell Recorder tests now save test data below \fC/tests\fP (see issue \fC#1887\fP)\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The Markdown Shell Recorder checks \fCkdb set\fP commands to ensure we only add tests that store data below \fC/tests\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The Markdown Shell Recorder now supports indented code blocks\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The Markdown Shell Recorder now also tests if a command prints nothing to \fCstdout\fP if you add the check \fC#>\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We fixed some problems in the \fCMarkdown Shell Recorder\fP test of \fC\fCkdb ls\fP\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCShell Recorder\fP now does not interpret \fC-\fP in checks as option character any more\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCadd_plugin\fP helper now respects \fCENABLE_KDB_TESTING\fP when adding Markdown Shell Recorder tests\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The Markdown Shell Recorder test for \fC\fCkdb find\fP\fP now removes the configuration file at the end of the test\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCShell Recorder\fP now properly unmounts any additional mountpoints created during a test\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We removed the broken auto unmounting feature from the \fCMarkdown Shell Recorder\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCMarkdown Shell Recorder\fP does not require a \fCbash\fP compatible shell anymore\&. _(René Schwaiger)_
+.PP
+.SS "General"
+.IP "\(bu" 2
+Plugins added with the flag \fCSHARED_ONLY\fP no longer get tested in the script \fCcheck_kdb_internal_check\&.sh\fP if executed with kdb-full or kdb-static\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+Add \fCcompare_regex_to_line_files\fP which allows to compare a file made of regex patterns to be compared with a text file line by line\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The OPMPHM has a new test case _(Kurt Micheli)_
+.IP "\(bu" 2
+Do not execute \fCfcrypt\fP and \fCcrypto\fP unit tests if the \fCgpg\fP binary is not available\&. _(Peter Nirschl)_
+.IP "\(bu" 2
+Resolved an issue where tests did not cleanup properly after they ran\&. This was especially noticeable for \fCgpg\fP tests as the \fCgpg-agents\fP that were spawned did not get cleaned up afterwards\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+We disabled the general plugin test (\fCtestkdb_allplugins\fP) for the \fC\fCsemlock\fP plugin\fP, since the test reported \fCmemory leaks\fP on the latest version of Debian Unstable\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The \fCCFramework\fP macro \fCcompare_keyset\fP now supports the comparison of two empty key sets\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The C++ version of the macro \fCexit_if_fail\fP now really exits the test progamm if the test fails\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The C++ testing framework now supports the macro \fCcompare_keyset\fP that checks if two key sets are equal\&. _(René Schwaiger)_
+.PP
+.SH "Build"
+.PP
+As written in the previous release notes:
+.PP
+.IP "\(bu" 2
+Debian Wheezy is not supported anymore\&.
+.IP "\(bu" 2
+Jessie (oldstable) with gcc 4\&.8\&.4 is now the oldest supported platform\&.
+.PP
+.PP
+Another important change is:
+.PP
+.IP "\(bu" 2
+We now import the current version of \fCGoogle Test\fP as external project at configuration time using \fCDownloadProject\fP\&. If you want to use a local installation of \fCGoogle Test\fP instead, please set the value of \fCGTEST_ROOT\fP to the path of you local copy of the \fCGoogle Test\fP framework\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The cmake variable \fCGTEST_ROOT\fP now respects the environment variable \fCGTEST_ROOT\fP if it is set\&. _(Lukas Winkler)_
+.PP
+.SS "CMake"
+.IP "\(bu" 2
+The build system no longer installs Haskell dependencies from hackage by itself, instead this has to be done beforehand like it is the case with all other dependencies\&. The main reason is that the build servers shouldn't compile the dependencies over and over again, only if something changes\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+Plugins can be specified to be only built for \fCBUILD_SHARED\fP builds, but to be excluded from any \fCBUILD_FULL\fP or \fCBUILD_STATIC\fP builds using the new optional argument \fCONLY_SHARED\fP for our cmake macro \fCadd_plugin\fP\&. This way \fCBUILD_SHARED\fP can be combined with the other options without excluding such plugins\&. The cmake messages about plugin inclusion have been updated to indicate this behavior\&. This behavior has been applied for the Haskell plugins- and bindings and JNI plugin as they currently don't support full or static builds\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+The build system does not install \fCGoogle Test\fP anymore if you install Elektra\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We disabled the test \fCtestlib_notification\fP on ASAN enabled builds, since Clang reports that the test leaks memory\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Disable Markdown Shell Recorder test \fCvalidation\&.md\fP for ASAN builds\&. It leaks memory and thus fails the test during spec mount\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Haskell plugins and bindings are now correctly excluded when using \fCBUILD_FULL\fP or \fCBUILD_STATIC\fP as this is currently unsupported\&. Another issue when building Haskell plugins with a cached sandbox is fixed as well\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+Fix compilation with \fCBUILD_TESTING=OFF\fP when \fCspec\fP or \fClist\fP plugins are not selected\&.
+.IP "\(bu" 2
+Set coverage prefix to \fCPROJECT_SOURCE_DIR\fP, resulting in easier readable coverage reports\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+The functions \fCadd_plugintest\fP and \fCadd_plugin\fP now also support adding a C++ test instead of a C test\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The function \fCadd_plugintest\fP now also supports setting environment variables for C/C++ based tests\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The build system now automatically detects Homebrew’s OpenSSL version on macOS\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We improved the automatic detection of Libgcrypt and OpenSSL\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Resolved an issue where cmake did not properly set test feature macros to detect and use libc functionality\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Improve the detection of \fCftw\&.h\fP, if the current build use the compiler switch \fC-Werror\fP\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now ignore warnings about
+.IP "  \(bu" 4
+zero size arrays (Clang),
+.IP "  \(bu" 4
+variadic macros (Clang, GCC),
+.IP "  \(bu" 4
+conversions to non-pointer type (GCC), and
+.IP "  \(bu" 4
+attribute warnings (GCC),
+.PP
+.PP
+caused by code generated via \fCSWIG\fP in the Ruby binding and plugin\&. _(René Schwaiger)_
+.PP
+.SS "Docker"
+.IP "\(bu" 2
+\fCclang-5\&.0\fP is now used for clang tests by the build system _(Lukas Winkler)_
+.IP "\(bu" 2
+An additional build job on Ubuntu:xenial has been added _(Lukas Winkler)_
+.IP "\(bu" 2
+\fCwithDockerEnv\fP Jenkinsfile helper now no longer provides stages automatically\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+\fCGoogle Test\fP is installed in Docker images used by the build system\&. _(Lukas Winkler)_
+.PP
+.SH "Infrastructure"
+.PP
+.SS "Jenkins"
+.IP "\(bu" 2
+A build job checks if PRs modify the release notes\&. _(Markus Raab)_
+.IP "\(bu" 2
+Several improvements to the build system have been implemented _(Lukas Winkler)_:
+.IP "  \(bu" 4
+Better Docker image handling\&.
+.IP "  \(bu" 4
+Abort of previously queued but unfinished runs on new commits\&.
+.IP "  \(bu" 4
+Document how to locally replicate the Docker environment used for tests\&.
+.PP
+
+.IP "\(bu" 2
+The Jenkins build server now also compiles and tests Elektra with enabled address sanitizer\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Add \fCSTATIC\fP and \fCFULL\fP linked builds\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Ported GCC ASAN build job to new build system _(René Schwaiger + Lukas Winkler)_
+.IP "\(bu" 2
+Docker artifacts are now cleaned up in our daily build job\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+\fCclang\fP tests have been ported to the new build system _(Lukas Winkler et al)_
+.IP "\(bu" 2
+\fCicheck\fP build server job has been ported to our new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-gcc-configure-debian-optimizations\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-gcc-configure-mingw-w64\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCdebian-multiconfig-gcc-stable\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-ini-mergerequests\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-gcc-configure-debian-nokdbtest\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-gcc-configure-xdg\fPto new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-gcc-i386\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Port \fCelektra-gcc-configure-debian-musl\fP to new build system\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Docker Registry is cleaned up by our daily buildserver task\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Remove \fCelektra-gcc-configure-debian-nokdbtest\fP test\&. Instead we are now removing write permissions of Elektra's paths to detect if we write to the filesystem even though tests are not tagged as such\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Remove \fCelektra-gcc-configure-debian-withspace\fP test\&. We now test for compatibility of spaced build paths during normal tests\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Check for source formatting during early test stages\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Remove the amount of spawned tests via not running a full multiconfig setup for the \fCPLUGINS=NODEP\fP config\&. They did not provide any additional coverage\&. Instead we added a new test checking if \fCPLUGINS=NODEP\fP builds in an minimal Docker image\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Speed up coverage data upload\&. _(Lukas Winkler)_
+.IP "\(bu" 2
+Fix an issue where file archiving did not happen because of suppressed shell expansion _(Lukas Winkler)_
+.IP "\(bu" 2
+Setup mailing for jenkins _(Lukas Winkler)_
+.IP "  \(bu" 4
+send mail to build@libelektra.org when \fCmaster\fP fails _(Lukas Winkler)_
+.IP "  \(bu" 4
+parse change list into mail _(Lukas Winkler)_
+.IP "  \(bu" 4
+do not send mails if pipeline run was aborted _(Lukas Winkler)_
+.PP
+
+.PP
+.SS "Travis"
+.IP "\(bu" 2
+Travis now uses the latest version of GCC and Clang to translate Elektra on Linux\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Our Travis build job now
+.IP "  \(bu" 4
+builds all (applicable) bindings by default again, and
+.IP "  \(bu" 4
+checks the formatting of CMake code via \fC\fCcmake-format\fP\fP \&. _(René Schwaiger)_
+.PP
+
+.IP "\(bu" 2
+Some cache issues on the Travis build job for cached Haskell sandboxes have been resolved\&. _(Armin Wurzinger)_
+.IP "\(bu" 2
+Travis caches downloaded Homebrew packages to improve the reliability of macOS build jobs\&. _(René Schwaiger)_
+.IP "\(bu" 2
+Travis is now using Xcode 9\&.4\&.1 on macOS 10\&.13 for most macOS build jobs\&. _(Mihael Pranjić)_
+.IP "\(bu" 2
+We added a unique name to each build job, so you can see quickly which configuration caused problems\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now specify custom binding, plugin and tool configuration for jobs via the environment variables:
+.IP "  \(bu" 4
+\fCBINDINGS\fP,
+.IP "  \(bu" 4
+\fCPLUGINS\fP, and
+.IP "  \(bu" 4
+\fCTOOLS\fP
+.PP
+.PP
+\&. We also added environment variables for the build configuration options \fCBUILD_FULL\fP, \fCCOMMON_FLAGS\fP, \fCENABLE_ASAN\fP and the command used to test the build (\fCTEST_COMMAND\fP)\&. _(René Schwaiger)_
+.IP "\(bu" 2
+The ASAN build jobs \fC🍏 Clang ASAN\fP and \fC🐧 GCC ASAN\fP now only build the \fCkdb\fP tool and the \fCcpp\fP binding\&. This update ensures, that we do not hit the \fCjob timeout for public repositories\fP that often\&. _(René Schwaiger)_
+.IP "\(bu" 2
+We now use the latest version of Ruby (\fC2\&.5\&.1\fP) to build and test the Ruby binding/plugin\&. _(René Schwaiger)_
+.PP
+.SH "Compatibility"
+.PP
+As always, the ABI and API of kdb\&.h is fully compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API)\&.
+.PP
+Following changes were made:
+.PP
+.IP "\(bu" 2
+The C++ API was extended with \fCdelBaseName()\fP\&. This does not affect ABI compatibility, also C++ programs compiled against 0\&.8\&.24 and using \fCdelBaseName()\fP will work with Elektra 0\&.8\&.23 or older\&.
+.IP "\(bu" 2
+\fCkdbtypes\&.h\fP now comes with support for C99 types\&.
+.IP "\(bu" 2
+We added the private headerfiles \fC\fBkdbnotificationinternal\&.h\fP\fP, \fC\fBkdbioplugin\&.h\fP\fP\&. _(Thomas Wahringer)_
+.IP "\(bu" 2
+The I/O binding header files have been moved a new directory called \fCkdbio\fP\&. For example, instead of including \fCelektra/kdbio_ev\&.h\fP users of the binding now include \fCelektra/kdbio/ev\&.h\fP\&. _(Thomas Wahringer)_
+.IP "\(bu" 2
+The plugin directoryvalue has changed its behavior, see above\&.
+.IP "\(bu" 2
+The plugin list changed its configuration, see above\&.
+.IP "\(bu" 2
+The plugin yamlcpp now gets excluded with too old versions of yamlcpp (Debian Stretch is affected)\&.
+.PP
+.PP
+The new plugins are:
+.PP
+.IP "\(bu" 2
+hexnumber
+.IP "\(bu" 2
+yamlsmith
+.IP "\(bu" 2
+zeromqrecv
+.IP "\(bu" 2
+zeromqsend
+.PP
+.PP
+The new tool is: kdb-find
+.SH "Website"
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up to date\&.
+.SH "Outlook"
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+The hybrid search algorithm for the Key search \fCksLookup (\&.\&.\&.)\fP is now in preparation\&. The preparation includes a new KeySet flag \fCKS_FLAG_NAME_CHANGE\fP, this flag will be used by the hybrid search\&. The hybrid search combines the best properties of the binary search and the \fCOPMPHM\fP\&. The hybrid search uses a modified branch predictor to predicts KeySet changes and decides if binary search or OPMPHM would be faster\&. _(Kurt Micheli)_
+.PP
+.SH "Statistics"
+.PP
+Following persons made in total 1734 commits:
+.PP
+Commits   Author    1   Mihael Pranjic mpranj@limun.org    2   Thomas Waser thomas.waser@libelektra.org    7   Michael Zronek michael.zronek@gmail.com    12   Kurt Micheli e1026558@student.tuwien.ac.at    17   Peter Nirschl peter.nirschl@gmail.com    21   Klemens Böswirth k.boeswirth+git@gmail.com    197   Markus Raab elektra@markus-raab.org    102   Thomas Wahringer thomas.wahringer@libelektra.org    117   Daniel Bugl me@omnidan.net    265   Lukas Winkler derwinlu+git@gmail.com    249   Armin Wurzinger e1528532@student.tuwien.ac.at    744   René Schwaiger sanssecours@me.com   
+.PP
+In total there were 792 files changed with 27677 insertions(+) and 39176 deletions(-)\&.
+.SH "Get It!"
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.24\&.tar\&.gz
+.IP "\(bu" 2
+size: 6130464
+.IP "\(bu" 2
+md5sum: 2e3def7b905f94e1f9f7fa0fe4743189
+.IP "\(bu" 2
+sha1: ff2a9b2d3a5e20a456e272a47fe9fd79ad410428
+.IP "\(bu" 2
+sha256: 454763dd00e95e774a907b26eb59b139cfc59e733692b3cfe37735486d6c4d1d
+.PP
+.PP
+The release tarball is also available signed by Markus Raab using GnuPG from \fChere\fP or on \fCGitHub\fP
+.PP
+Already built API-Docu can be found \fConline\fP or \fCGitHub\fP\&.
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the issue tracker \fCon GitHub\fP or Markus Raab by email using elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, \fCElektra Initiative\fP 

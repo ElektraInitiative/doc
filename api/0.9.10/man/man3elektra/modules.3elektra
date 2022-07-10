@@ -1,0 +1,149 @@
+.TH "modules" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+modules \- Modules
+.PP
+ \- Loading Modules for Elektra\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraModulesInit\fP (KeySet *modules, Key *error)"
+.br
+.RI "Initialises the module loading system\&. "
+.ti -1c
+.RI "elektraPluginFactory \fBelektraModulesLoad\fP (KeySet *modules, const char *name, Key *error)"
+.br
+.RI "Load a library with the given name\&. "
+.ti -1c
+.RI "int \fBelektraModulesClose\fP (KeySet *modules, Key *error)"
+.br
+.RI "Close all modules\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Loading Modules for Elektra\&. 
+
+Unfortunately there is no portable way to load modules, plugins or libraries\&. So Elektra needed a framework which abstracts the loading of modules\&. Depending of the operating system the build system chooses different source files which actually implement the loading of a module\&.
+.PP
+The goals are:
+.IP "\(bu" 2
+to have a list of all loaded modules
+.IP "\(bu" 2
+writing module loaders should be easy
+.IP "\(bu" 2
+handle and report errors well
+.IP "\(bu" 2
+avoid loading of modules multiple times (maybe the OS can't handle that well)
+.IP "\(bu" 2
+hide the OS dependent handle inside a Key (handle is needed to close module afterwards) 
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraModulesClose (KeySet * modules, Key * error)"
+
+.PP
+Close all modules\&. Iterates over all modules and closes each of them\&.
+.PP
+Finish all affairs with the modules\&. Delete all keys where the appropriate module could be closed\&.
+.PP
+If it is not possible to close a module, still try to close all other modules, but report the error with the error key\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fImodules\fP all modules in this keyset will be closed 
+.br
+\fIerror\fP a key to append the error information if it is not null 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+-1 on error 
+.PP
+>=0 otherwise
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+all error information is stored in the key 'error' 
+.RE
+.PP
+
+.SS "int elektraModulesInit (KeySet * modules, Key * error)"
+
+.PP
+Initialises the module loading system\&. Most operating systems will have to do nothing here\&. Anyway you are required to add the key system:/elektra/modules if it was successful\&.
+.PP
+On error -1 is returned and if error != 0 error information is added to it\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fImodules\fP an empty keyset 
+.br
+\fIerror\fP a key to append the error information if it is not null 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+-1 on error 
+.PP
+>=0 otherwise
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+the key system:/elektra/modules is added in case of success 
+.RE
+.PP
+
+.SS "elektraPluginFactory elektraModulesLoad (KeySet * modules, const char * name, Key * error)"
+
+.PP
+Load a library with the given name\&. 
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to the factory which can create the plugin\&.
+.RE
+.PP
+Make sure that you first lookup if this module was already loaded\&. If it was, just return the pointer and you are done\&.
+.PP
+Otherwise load the module/library given by name\&. You need to take care that a proper name is used\&. The name does not have any path, pre- or postfixes\&.
+.PP
+The next step is to fetch the symbol elektraPluginFactory\&.
+.PP
+If everything was successful append all information to the keyset modules and return the pointer\&. Take care that you can close the module with that information\&. All information needs to be stored within system:/elektra/modules/name You might want to use an struct and store it there as binary key\&.
+.PP
+If anything goes wrong don't append anything to modules\&. Instead report the error to the error key and return with 0\&.
+.PP
+\fBPrecondition\fP
+.RS 4
+the name is not null, empty and has at least one character different to '/'\&. It is suitable to be used as keyAddBaseName without any further error checking\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fImodules\fP where to get existing modules from a new module will be added there 
+.br
+\fIname\fP the name for the plugin to load\&. Note that it does not have any prefixes or postfixes, you need to add them yourself\&. 
+.br
+\fIerror\fP the key to add warnings or report errors 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer which can create a Plugin 
+.PP
+0 on error 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

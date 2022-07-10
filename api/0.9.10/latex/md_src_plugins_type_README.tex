@@ -1,0 +1,283 @@
+
+\begin{DoxyItemize}
+\item infos = Information about type plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\texttt{ k.\+boeswirth+git@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/provides = check
+\item infos/needs =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = recommended maintained unittest tested nodep libc
+\item infos/metadata = check/type type check/enum check/enum/\# check/enum/delimiter check/boolean/true check/boolean/false
+\item infos/description = type checker using COBRA data types
+\end{DoxyItemize}\hypertarget{md_src_plugins_type_README_src_plugins_type_README_md}{}\doxysection{Introduction}\label{md_src_plugins_type_README_src_plugins_type_README_md}
+This plugin is a type checker plugin using the {\ttfamily CORBA} data types.
+
+A common and successful type system happens to be CORBA. The system is well suited because of the many well-\/defined mappings it provides to other programming languages.
+
+The type checker plugin supports these types\+: {\ttfamily short}, {\ttfamily unsigned\+\_\+short}, {\ttfamily long}, {\ttfamily unsigned\+\_\+long}, {\ttfamily long\+\_\+long}, {\ttfamily unsigned\+\_\+long\+\_\+long}, {\ttfamily float}, {\ttfamily double}, {\ttfamily char}, {\ttfamily wchar}, {\ttfamily boolean}, {\ttfamily any}, {\ttfamily enum}, {\ttfamily string}, {\ttfamily wstring} and {\ttfamily octet}.
+
+
+\begin{DoxyItemize}
+\item Checking {\ttfamily any} will always be successful, regardless of the content.
+\item {\ttfamily string} matches any string key value.
+\item {\ttfamily octet} and {\ttfamily char} are equivalent to each other.
+\item {\ttfamily enum} will do enum checking as described below.
+\item {\ttfamily boolean} only allows the values {\ttfamily 1} and {\ttfamily 0}. See also \href{\#normalization}{\texttt{ Normalization}}.
+\item To use {\ttfamily wchar} and {\ttfamily wstring} the function {\ttfamily mbstowcs(3)} must be able convert the key value into a wide character string. {\ttfamily wstring}s can be of any non-\/zero length, {\ttfamily wchar} must have exactly length 1.
+\end{DoxyItemize}\hypertarget{md_src_plugins_type_README_autotoc_md568}{}\doxysection{Enums}\label{md_src_plugins_type_README_autotoc_md568}
+If a key is set to the type {\ttfamily enum} the plugin will look for the metadata array {\ttfamily check/enum/\#}.
+
+For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{check/enum = \#3}
+\DoxyCodeLine{check/enum/\#0 = small}
+\DoxyCodeLine{check/enum/\#1 = middle}
+\DoxyCodeLine{check/enum/\#2 = large}
+\DoxyCodeLine{check/enum/\#3 = huge}
+
+\end{DoxyCode}
+
+
+Only the values listed in this array will be accepted. The array indices don\textquotesingle{}t have to be continuous, using e.\+g. only {\ttfamily \#1}, {\ttfamily \#2} and {\ttfamily \#4} is also allowed. Just make sure {\ttfamily check/enum} is set to the largest index in the array.
+
+Furthermore {\ttfamily check/enum/delimiter} may contain a separator character, that separates multiple allowed occurrences. If {\ttfamily check/enum/delimiter} contain more than a single character validation will fail.
+
+For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{check/enum/delimiter = \_}
+
+\end{DoxyCode}
+
+
+Then the value {\ttfamily middle\+\_\+small} would validate. {\ttfamily middle\+\_\+small\+\_\+small} would be allowed as well, because multi-\/values are treated like bitfields.\hypertarget{md_src_plugins_type_README_autotoc_md569}{}\doxysection{Normalization}\label{md_src_plugins_type_README_autotoc_md569}
+Some types support normalization in addition to the standard type checking. This means that an extended set of allowed values is normalized into a different (in most cases standardized) set before type checking. The normalized values will be passed on from {\ttfamily kdb\+Get} to the rest of Elektra and your application. During {\ttfamily kdb\+Set} changed values are also normalized before type checking and at the end of {\ttfamily kdb\+Set}, if everything was successful, the values are restored to the ones originally provided by the user (no matter if they were changed before {\ttfamily kdb\+Set} or already present in {\ttfamily kdb\+Get}).
+
+The full normalization/restore procedure can be described by the following cases\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{Case 1\+:}} The Key existed in kdb\+Get and is unchanged between {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set}
+
+This is the easiest and most obvious case. The value is normalized in {\ttfamily kdb\+Get} and the original value is restored in {\ttfamily kdb\+Set}, so that the underlying storage file remains unchanged (w.\+r.\+t. the key in question).
+\item {\bfseries{Case 2\+:}} The Key didn\textquotesingle{}t exist in {\ttfamily kdb\+Get}, i.\+e. it was added
+
+Here the value is normalized to verify the type and then restored immediately (all inside of {\ttfamily kdb\+Set}).
+\item {\bfseries{Case 3\+:}} The Key existed in {\ttfamily kdb\+Get}, but its value was changed between kdb\+Get and kdb\+Set
+
+This is essential the same as Case 2. {\ttfamily key\+Set\+String} removes the {\ttfamily origvalue} metadata used to store the original value, so as far as this plugin is concerned, the key didn\textquotesingle{}t exist in {\ttfamily kdb\+Get}.
+\end{DoxyItemize}
+
+Note\+: If normalization is used, often times you will get a normalization error instead of a type checking error.\hypertarget{md_src_plugins_type_README_autotoc_md570}{}\doxysubsection{Booleans}\label{md_src_plugins_type_README_autotoc_md570}
+The values that are accepted as {\ttfamily boolean}s are configured during mounting\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount typetest.dump user:/tests/type dump type booleans=\#1 booleans/\#0/true=a booleans/\#0/false=b booleans/\#1/true=t booleans/\#1/false=f}
+
+\end{DoxyCode}
+
+
+The above line defines that the array of allowed boolean pairs. {\ttfamily booleans=\#1} defines the last element of the array as {\ttfamily \#1}. For each element {\ttfamily \#} the keys {\ttfamily booleans/\#/true} and {\ttfamily booleans/\#/false} define the true and false value respectively. True values are normalized to {\ttfamily 1}, false values to {\ttfamily 0}.
+
+Even though we didn\textquotesingle{}t specify them the values {\ttfamily 1} and {\ttfamily 0} are still accepted. The normalized values are always okay to use. If no configuration is given, the allowed values default to {\ttfamily 1}, {\ttfamily yes}, {\ttfamily on}, {\ttfamily true}, {\ttfamily enabled} and {\ttfamily enable} as true values and {\ttfamily 0}, {\ttfamily no}, {\ttfamily off}, {\ttfamily false}, {\ttfamily disabled} and {\ttfamily disable} as false values.
+
+The accepted values can also be overridden on a per-\/key-\/basis. Simply add the metakey {\ttfamily check/boolean/true} and {\ttfamily check/boolean/false} to set the accepted true and false values. Only a single true/false value can be chosen. This is intended for use cases, where normally you prefer to use only e.\+g. {\ttfamily 1}, {\ttfamily 0} and {\ttfamily true}, {\ttfamily false}, but what to override that for a key where e.\+g. {\ttfamily enabled} and {\ttfamily disabled} make more sense contextually (e.\+g. for something like {\ttfamily /log/debug}). Because of this intention restoring also works differently, when {\ttfamily check/boolean/true} and {\ttfamily check/boolean/false} are used. In this case we will always restore to the chosen override values.
+
+Note\+: The values {\ttfamily 1} and {\ttfamily 0} are accepted, even if overrides are used. This means you can set a key with overrides to {\ttfamily 0} (or {\ttfamily 1}) and during {\ttfamily kdb\+Set} it will be restored to the false (or true) override value. (This is useful for the high-\/level API.)
+
+It is an error to specify only one of {\ttfamily booleans/\#/true} and {\ttfamily booleans/\#/false} or {\ttfamily check/boolean/true} and {\ttfamily check/boolean/false}. {\itshape Boolean always come in pairs!}
+
+You can also change how values shall be restored in {\ttfamily kdb\+Set}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount typetest.dump user:/tests/type dump type booleans=\#0 booleans/\#0/true=true booleans/\#0/false=false boolean/restoreas=\#0}
+
+\end{DoxyCode}
+
+
+The config key {\ttfamily boolean/restoreas} must be a valid index of the {\ttfamily booleans} array or the special value {\ttfamily none}. If {\ttfamily boolean/restoreas} was set to an index, the chosen boolean pair will be used when values are restored in {\ttfamily kdb\+Set}. So in the above example the plugin accepts {\ttfamily 1}, {\ttfamily true}, {\ttfamily 0} and {\ttfamily false} as boolean values, on {\ttfamily kdb\+Get} it turns {\ttfamily true} into {\ttfamily 1} and {\ttfamily false} into {\ttfamily 0} and on {\ttfamily kdb\+Set} it turns {\ttfamily 1} into {\ttfamily true} and {\ttfamily 0} into {\ttfamily false}.
+
+If no {\ttfamily booleans} array was given the allowed values for {\ttfamily boolean/restoreas} are\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \#0} for {\ttfamily yes}/{\ttfamily no}
+\item {\ttfamily \#1} for {\ttfamily true}/{\ttfamily false}
+\item {\ttfamily \#2} for {\ttfamily on}/{\ttfamily off}
+\item {\ttfamily \#3} for {\ttfamily enabled}/{\ttfamily disabled}
+\item {\ttfamily \#4} for {\ttfamily enable}/{\ttfamily disable}
+\end{DoxyItemize}
+
+The special value {\ttfamily boolean/restoreas=none} completely disables the restore procedure. In other words, {\ttfamily kdb\+Set} will always return either {\ttfamily 0} or {\ttfamily 1} for boolean values. This is useful, if a storage format with built-\/in support for boolean values is used.\hypertarget{md_src_plugins_type_README_autotoc_md571}{}\doxysubsection{Enums}\label{md_src_plugins_type_README_autotoc_md571}
+Enums also support normalization. Contrary to boolean normalization, enum normalization is always configured on a per-\/key-\/basis.
+
+Simply set the metakey {\ttfamily check/enum/normalize} to {\ttfamily 1} in order to normalize the string values to there indexes. Any other value is ignored.
+
+Take for example a key with the following enum configuration\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{check/enum = \#3}
+\DoxyCodeLine{check/enum/\#0 = small}
+\DoxyCodeLine{check/enum/\#1 = medium}
+\DoxyCodeLine{check/enum/\#3 = huge}
+
+\end{DoxyCode}
+
+
+The value {\ttfamily small} will be normalized to {\ttfamily 0}, {\ttfamily medium} to {\ttfamily 1} and {\ttfamily huge} to {\ttfamily 3}. During restore the values {\ttfamily 0}, {\ttfamily 1} and {\ttfamily 3} will be restored to {\ttfamily small}, {\ttfamily medium} and {\ttfamily huge}.
+
+If you use normalization, you can pass string values or indices to {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set}, but you will always get back indices from {\ttfamily kdb\+Get} and string values from {\ttfamily kdb\+Set}. (Therefore you can seamlessly use {\ttfamily elektra\+Get\+Unsigned\+Long\+Long} from high-\/level API for normalized enums.)
+
+The plugin also supports normalizing enums that use {\ttfamily check/enum/delimiter}, however be careful which indexes you use in this case. The indexes of all values are simple bitwise or-\/ed (using {\ttfamily $\vert$}). In the above example {\ttfamily small\+\_\+medium} would be normalized to {\ttfamily 1} ({\ttfamily 0 $\vert$ 1 == 1}), the same value as {\ttfamily medium}. This means during restore the value emitted will be {\ttfamily medium}.
+
+A version that would work with delimiter and normalization is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{check/enum = \#4}
+\DoxyCodeLine{check/enum/\#0 = none}
+\DoxyCodeLine{check/enum/\#1 = small}
+\DoxyCodeLine{check/enum/\#2 = medium}
+\DoxyCodeLine{check/enum/\#4 = huge}
+
+\end{DoxyCode}
+
+
+Here {\ttfamily small\+\_\+medium} is normalized to {\ttfamily 3}, which is a unique value. During restore with delimiters the values might not be restored to there original form, but may be restored to an equivalent representation. e.\+g. {\ttfamily small\+\_\+none} may be restored to just {\ttfamily small} or {\ttfamily small\+\_\+medium} may be restored to {\ttfamily medium\+\_\+small} This has technical reasons and we do not guarantee any restriction on what representation is produced during restore, other than the normalized value being the same as for the user provided representation.
+
+$\ast$$\ast$\+\_\+\+IMPORTANT\+:\+\_\+$\ast$$\ast$ Do {\bfseries{not}} use normalization together with enums, whose string values start with digits (e.\+g. {\ttfamily check/enum/\#0 = 1abc}). This breaks normalization! Indices are differentiated from string value by whether they start with a digit.\hypertarget{md_src_plugins_type_README_autotoc_md572}{}\doxysection{Example}\label{md_src_plugins_type_README_autotoc_md572}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#Mount the plugin}
+\DoxyCodeLine{sudo kdb mount typetest.dump user:/tests/type dump type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#Store a character value}
+\DoxyCodeLine{kdb set user:/tests/type/key a}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#Only allow character values}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/key type char}
+\DoxyCodeLine{kdb get user:/tests/type/key}
+\DoxyCodeLine{\#> a}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#If we store another character everything works fine}
+\DoxyCodeLine{kdb set user:/tests/type/key b}
+\DoxyCodeLine{kdb get user:/tests/type/key}
+\DoxyCodeLine{\#> b}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#If we try to store a string Elektra will not change the value}
+\DoxyCodeLine{kdb set user:/tests/type/key 'Not a char'}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{kdb get user:/tests/type/key}
+\DoxyCodeLine{\#> b}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#Undo modifications to the database}
+\DoxyCodeLine{kdb rm user:/tests/type/key}
+\DoxyCodeLine{sudo kdb umount user:/tests/type}
+
+\end{DoxyCode}
+
+
+For enums\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:/tests/enum}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount typeenum.ecf user:/tests/type dump type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# valid initial value + setup valid enum list}
+\DoxyCodeLine{kdb set user:/tests/type/value middle}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/value check/enum '\#2'}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/value 'check/enum/\#0' 'low'}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/value 'check/enum/\#1' 'middle'}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/value 'check/enum/\#2' 'high'}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/value type enum}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should succeed}
+\DoxyCodeLine{kdb set user:/tests/type/value low}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail with error C03200}
+\DoxyCodeLine{kdb set user:/tests/type/value no}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+
+\end{DoxyCode}
+
+
+Or with multi-\/enums\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# valid initial value + setup array with valid enums}
+\DoxyCodeLine{kdb set user:/tests/type/multivalue middle\_small}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue check/enum/\#0 small}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue check/enum/\#1 middle}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue check/enum/\#2 large}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue check/enum/\#3 huge}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue check/enum/delimiter \_}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue check/enum "{}\#3"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/multivalue type enum}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should succeed}
+\DoxyCodeLine{kdb set user:/tests/type/multivalue small\_middle}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail with error C03200}
+\DoxyCodeLine{kdb set user:/tests/type/multivalue all\_small}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/type}
+\DoxyCodeLine{sudo kdb umount user:/tests/type}
+
+\end{DoxyCode}
+
+
+For booleans\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount plugin}
+\DoxyCodeLine{sudo kdb mount config.ecf user:/tests/type dump type}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# By default the plugin uses `1` (true) and `0` (false) to represent boolean values}
+\DoxyCodeLine{kdb set user:/tests/type/truthiness false}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/truthiness type boolean}
+\DoxyCodeLine{kdb get user:/tests/type/truthiness}
+\DoxyCodeLine{\#> 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The plugin does not change ordinary values}
+\DoxyCodeLine{kdb set user:/tests/type/key value}
+\DoxyCodeLine{kdb get user:/tests/type/key}
+\DoxyCodeLine{\#> value}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo changes}
+\DoxyCodeLine{kdb rm -\/r user:/tests/type}
+\DoxyCodeLine{sudo kdb umount user:/tests/type}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount config.ecf user:/tests/type dump type}
+\DoxyCodeLine{kdb set user:/tests/type/truthiness 0}
+\DoxyCodeLine{kdb meta-\/set user:/tests/type/truthiness type boolean}
+\DoxyCodeLine{ kdb set user:/tests/type/truthiness yes}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{ \# Undo changes}
+\DoxyCodeLine{kdb rm -\/r user:/tests/type}
+\DoxyCodeLine{sudo kdb umount user:/tests/type}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_type_README_autotoc_md573}{}\doxysection{Limitations}\label{md_src_plugins_type_README_autotoc_md573}
+Records are part of other plugins.
+
+The {\ttfamily CORBA} type system also has its limits. The types {\ttfamily string} and {\ttfamily enum} can be unsatisfactory. While string is too general and makes no limit on how the sequence of characters is structured, the enumeration is too finite. For example, it is not possible to say that a string is not allowed to have a specific symbol in it. Combine this plugin with other type checker plugins to circumvent such limitations. 

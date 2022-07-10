@@ -1,0 +1,31 @@
+\label{doc_decisions_library_split_md_md_doc_decisions_library_split}%
+\Hypertarget{doc_decisions_library_split_md_md_doc_decisions_library_split}%
+ \hypertarget{doc_decisions_library_split_md_autotoc_md1980}{}\doxysection{Problem}\label{doc_decisions_library_split_md_autotoc_md1980}
+Only libelektra-\/core is supposed to access private data but this contradicts the goal to keep the library minimal. {\ttfamily \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}} was too generic, it contained many other parts next to the struct definitions of Key/\+Key\+Set.\hypertarget{doc_decisions_library_split_md_autotoc_md1981}{}\doxysection{Constraints}\label{doc_decisions_library_split_md_autotoc_md1981}
+
+\begin{DoxyItemize}
+\item The \href{http://www.open-std.org/jtc1/sc22/wg14/}{\texttt{ C99 standard, section 5.\+2.\+4.\+1}} gives following limit\+: 4095 external identifiers in one translation unit
+\item Some parts of Elektra, like {\ttfamily mmapstorage} need access to private data structure.
+\item Elektra does not support several different struct definitions of Key/\+Key\+Set. Alternative implementations that want to coexist (e.\+g. {\ttfamily mmapstorage} should still work) must use the same struct definitions of Key/\+Key\+Set.
+\end{DoxyItemize}\hypertarget{doc_decisions_library_split_md_autotoc_md1982}{}\doxysection{Assumptions}\label{doc_decisions_library_split_md_autotoc_md1982}
+\hypertarget{doc_decisions_library_split_md_autotoc_md1983}{}\doxysection{Considered Alternatives}\label{doc_decisions_library_split_md_autotoc_md1983}
+
+\begin{DoxyItemize}
+\item keep current situation
+\end{DoxyItemize}\hypertarget{doc_decisions_library_split_md_autotoc_md1984}{}\doxysection{Decision}\label{doc_decisions_library_split_md_autotoc_md1984}
+Also allow {\ttfamily libelektra-\/operations} library to access private Key/\+Key\+Set. Put struct definitions of Key/\+Key\+Set in a separate header file, which gets included by parts that need it\hypertarget{doc_decisions_library_split_md_autotoc_md1985}{}\doxysection{Rationale}\label{doc_decisions_library_split_md_autotoc_md1985}
+
+\begin{DoxyItemize}
+\item allows various users (plugins, applications) to link to (more or less) exactly what they need
+\item allows symbol versioning on different levels (for different evolving libraries)
+\item allows alternative implementation of parts of Elektra, e.\+g. a libcore written in Rust
+\item facilitates code reuse between plugins
+\end{DoxyItemize}\hypertarget{doc_decisions_library_split_md_autotoc_md1986}{}\doxysection{Implications}\label{doc_decisions_library_split_md_autotoc_md1986}
+
+\begin{DoxyItemize}
+\item we need to clearly communicate which plugins/libraries must be exactly in the version of the libelektra-\/core
+\end{DoxyItemize}\hypertarget{doc_decisions_library_split_md_autotoc_md1987}{}\doxysection{Related Decisions}\label{doc_decisions_library_split_md_autotoc_md1987}
+
+\begin{DoxyItemize}
+\item none
+\end{DoxyItemize}\hypertarget{doc_decisions_library_split_md_autotoc_md1988}{}\doxysection{Notes}\label{doc_decisions_library_split_md_autotoc_md1988}

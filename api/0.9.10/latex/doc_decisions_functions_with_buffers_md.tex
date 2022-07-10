@@ -1,0 +1,32 @@
+\label{doc_decisions_functions_with_buffers_md_md_doc_decisions_functions_with_buffers}%
+\Hypertarget{doc_decisions_functions_with_buffers_md_md_doc_decisions_functions_with_buffers}%
+ \hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1873}{}\doxysection{Problem}\label{doc_decisions_functions_with_buffers_md_autotoc_md1873}
+Currently the way functions like \mbox{\hyperlink{group__keyname_gab29a850168d9b31c9529e90cf9ab68be}{key\+Get\+Name()}} work is by passing a buffer with a max\+Size and if the buffer is large enough, the value gets copied into the buffer. This leads to the user having to write a lot of surrounding boilerplate code, checking for the size of every value / name they want to copy into a buffer.\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1874}{}\doxysection{Constraints}\label{doc_decisions_functions_with_buffers_md_autotoc_md1874}
+\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1875}{}\doxysection{Assumptions}\label{doc_decisions_functions_with_buffers_md_autotoc_md1875}
+\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1876}{}\doxysection{Considered Alternatives}\label{doc_decisions_functions_with_buffers_md_autotoc_md1876}
+\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1877}{}\doxysection{Decision}\label{doc_decisions_functions_with_buffers_md_autotoc_md1877}
+
+\begin{DoxyItemize}
+\item Remove Functions\+:
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{group__keyname_gab29a850168d9b31c9529e90cf9ab68be}{key\+Get\+Name()}}
+\item \mbox{\hyperlink{group__keyname_ga44a576c7919d5b03f28d3ed3afaa7cd1}{key\+Get\+Unescaped\+Name()}}
+\item \mbox{\hyperlink{group__keyname_ga0992d26bcfca767cb8e77053a483eb64}{key\+Get\+Base\+Name()}}
+\item \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}}
+\item \mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}}
+\end{DoxyItemize}
+\item add documentation in API docu about life-\/time and add in release notes that you should use strncpy() / memcpy() instead\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// str values}}
+\DoxyCodeLine{strncpy(..., \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (k), ...)}
+\DoxyCodeLine{\textcolor{comment}{// binary values}}
+\DoxyCodeLine{memcpy(..., \mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (k), ...)}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1878}{}\doxysection{Rationale}\label{doc_decisions_functions_with_buffers_md_autotoc_md1878}
+The functions clutter the API and try to replace existing builtin functionality for little to no gain. This makes the API leaner while also retaining its functionality.\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1879}{}\doxysection{Implications}\label{doc_decisions_functions_with_buffers_md_autotoc_md1879}
+\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1880}{}\doxysection{Related Decisions}\label{doc_decisions_functions_with_buffers_md_autotoc_md1880}
+\hypertarget{doc_decisions_functions_with_buffers_md_autotoc_md1881}{}\doxysection{Notes}\label{doc_decisions_functions_with_buffers_md_autotoc_md1881}

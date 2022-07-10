@@ -1,0 +1,51 @@
+.TH "doc_help_elektra-cascading_md" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_elektra-cascading_md \- elektra-cascading(7) -- of key names 
+ \fBCascading\fP is the triggering of secondary actions\&. For configuration it means that first the user configuration is read and if this attempt fails, the system configuration is used as fallback\&.
+.PP
+The idea is that the application installs a configuration storage with default settings that can only be changed by the administrator\&. But every user has the possibility to override parts of this \fIsystem configuration\fP regarding the user's needs in the \fIuser configuration\fP\&. To sum up, besides system configuration, users have their own key databases that can override the settings according to their preferences\&.
+.PP
+Thus when a key starts with \fC/\fP such cascading will automatically be performed\&.
+.SH "SPEC"
+.PP
+Keys in \fCspec\fP allow us to specify which keys are read by the application, which fallback it might have and which is the default value using metadata\&. The implementation of these features happened in \fCksLookup\fP\&. When cascading keys (those starting with \fC/\fP) are used following features are available (in the metadata of respective \fCspec\fP-keys):
+.PP
+.IP "\(bu" 2
+\fCoverride/#\fP: use these keys \fIin favor\fP of the key itself (note that \fC#\fP is the syntax for arrays, e\&.g\&. \fC#0\fP for the first element, \fC#_10\fP for the 11th and so on)
+.IP "\(bu" 2
+\fCnamespace/#\fP: instead of using all namespaces in the predefined order, one can specify which namespaces should be searched in which order
+.IP "\(bu" 2
+\fCfallback/#\fP: when no key was found in any of the (specified) namespaces the \fCfallback\fP-keys will be searched
+.IP "\(bu" 2
+\fCdefault\fP: this value will be used if nothing else was found
+.PP
+.PP
+They can be used like this:
+.PP
+.PP
+.nf
+kdb set /overrides/test "example override"
+sudo kdb meta-set spec:/test override/#0 /overrides/test
+.fi
+.PP
+.SH "CASCADING"
+.PP
+When cascading keys (those starting with \fC/\fP) the lookup will work in the following way (it can be debugged with \fCkdb get -v\fP):
+.PP
+.IP "1." 4
+In the \fCspec\fP-key the \fCoverride/#\fP keys will be considered\&.
+.IP "2." 4
+If, in the \fCspec\fP-key, a \fCnamespace/#\fP exist, those namespaces will be used\&.
+.IP "3." 4
+Otherwise, all namespaces will be considered, see \fBhere\&.\fP
+.IP "4." 4
+In the \fCspec\fP-key the \fCfallback/#\fP keys will be considered\&.
+.IP "5." 4
+In the \fCspec\fP-key the \fCdefault\fP value will be returned\&.
+.PP
+.PP
+See \fBapplication integration\fP for how to use cascading names in the context of applications\&.
+.PP
+\fBRead more about namespaces\&.\fP 

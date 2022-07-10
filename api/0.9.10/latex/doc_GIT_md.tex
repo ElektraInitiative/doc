@@ -1,0 +1,113 @@
+\label{doc_GIT_md_md_doc_GIT}%
+\Hypertarget{doc_GIT_md_md_doc_GIT}%
+ \hypertarget{doc_GIT_md_autotoc_md2335}{}\doxysection{Basic GIT Commands}\label{doc_GIT_md_autotoc_md2335}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git add readme.md   \# adds the changes of the file `readme.md` to the staging area}
+\DoxyCodeLine{git add .           \# adds all changes of files in the current directory (recursively) to the staging area}
+\DoxyCodeLine{git add -\/-\/all       \# adds all changes of files in the repository to the staging area}
+\DoxyCodeLine{git commit -\/a       \# executes a commit that automatically stages all changed and deleted files before}
+
+\end{DoxyCode}
+\hypertarget{doc_GIT_md_autotoc_md2336}{}\doxysection{Basic Configuration}\label{doc_GIT_md_autotoc_md2336}
+make sure to do\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git config -\/-\/global merge.ff false}
+\DoxyCodeLine{git config merge.ff false}
+
+\end{DoxyCode}
+\hypertarget{doc_GIT_md_autotoc_md2337}{}\doxysection{The Commit Message}\label{doc_GIT_md_autotoc_md2337}
+A commit message should have the following syntax\+: {\ttfamily component\+: short change description}
+
+For a clean and meaningful log the commit message should fulfil the following\+:
+
+
+\begin{DoxyItemize}
+\item use imperative in the subject line
+\item the subject line should not be longer than 50 characters
+\item start the subject line with the module name (e.\+g. resolver\+:, cpp bindings\+:)
+\item separate subject from body with a blank line
+\item in the body describe in detail what you did, and possibly why
+\item metadata like \char`\"{}\+Fixes \#123\char`\"{} should be kept at the bottom of the commit message and definitely not in the title
+\end{DoxyItemize}
+
+Most commits should have a longer description in the body.\hypertarget{doc_GIT_md_autotoc_md2338}{}\doxysection{Remote Branches}\label{doc_GIT_md_autotoc_md2338}
+To list all remote branches use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git branch -\/a}
+
+\end{DoxyCode}
+
+
+To checkout a remote branch initially use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git checkout -\/b <branchname> origin/<branchname>}
+
+\end{DoxyCode}
+
+
+Once you have done this, it will be a local branch, too. Following remote branches should exist\+: \begin{DoxyVerb}master
+\end{DoxyVerb}
+ This is the development branch. Please try to not work directly on it, but instead you should use feature branches. So the only commits on master should be non-\/fastforward merges from features branches. Commits on master should always compile and all test cases should pass successfully. (see config option above)\hypertarget{doc_GIT_md_autotoc_md2339}{}\doxysection{Local Branches}\label{doc_GIT_md_autotoc_md2339}
+You should always make your own feature branch with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git checkout -\/b <feature-\/branch-\/name>}
+
+\end{DoxyCode}
+
+
+On this branch it is not so important that every commit compiles or all test cases run.
+
+To merge a branch use (no-\/fastforward)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git merge -\/-\/no-\/ff <branchname>}
+
+\end{DoxyCode}
+
+
+If you already did some commits, but want them in a branch, you can do\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git branch foo}
+\DoxyCodeLine{git reset HEAD\string^\string^  \# for 2 commits back}
+\DoxyCodeLine{git reset origin/master}
+\DoxyCodeLine{}
+\DoxyCodeLine{git-\/ref-\/log \# recover}
+
+\end{DoxyCode}
+\hypertarget{doc_GIT_md_autotoc_md2340}{}\doxysection{Working with forks}\label{doc_GIT_md_autotoc_md2340}
+We recommend you use your own fork of the main {\ttfamily libelektra} repository, if you want to contribute. For more information on creating a fork, please take a look at \href{https://docs.github.com/en/github/getting-started-with-github/fork-a-repo}{\texttt{ Git\+Hub\textquotesingle{}s tutorial}}.
+
+Once you have set up and cloned your fork, you need to keep it in sync with the main repository. To do that, we recommend you never directly commit anything to your fork\textquotesingle{}s {\ttfamily master} branch. You also need to add a remote for the main repository\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# We assume the remote for your fork is called `origin` (the default).}
+\DoxyCodeLine{git remote add upstream https://github.com/ElektraInitiative/libelektra.git}
+
+\end{DoxyCode}
+
+
+When you want to sync changes from the main repository into your fork, you can use these commands\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git fetch upstream master:master}
+\DoxyCodeLine{git push orign master:master}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note}}\+: These commands work with any branch checked out. You don\textquotesingle{}t need to switch to the {\ttfamily master} branch first. However, this only works, if you have not modified your {\ttfamily master} branch, i.\+e. the latest commit in your forked {\ttfamily master} branch was once the latest commit in the main {\ttfamily master} branch. \end{quote}

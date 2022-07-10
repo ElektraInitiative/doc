@@ -1,0 +1,63 @@
+
+\begin{DoxyItemize}
+\item infos = Information about network plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = check
+\item infos/needs =
+\item infos/placements = presetstorage
+\item infos/status = maintained unittest nodep libc nodoc
+\item infos/metadata = check/ipaddr check/port check/port/listen
+\item infos/description = Checks keys if they contain a valid ip address
+\end{DoxyItemize}\hypertarget{md_src_plugins_network_README_src_plugins_network_README_md}{}\doxysection{Introduction}\label{md_src_plugins_network_README_src_plugins_network_README_md}
+This plugin is a check plugin that checks if a key contains a valid ip address. It uses the {\ttfamily POSIX.\+1-\/2001} interface {\ttfamily getaddrinfo()} in order to check if an ip address is valid.
+
+Furthermore {\ttfamily getaddrinfo()} is used in {\ttfamily check/port} to resolve a port by its service name which is defined under {\ttfamily /etc/services}. The portname is translated to the respective portnumber. The plugin can be used to check for valid port numbers and if the set port is free to use.\hypertarget{md_src_plugins_network_README_autotoc_md371}{}\doxysection{Purpose}\label{md_src_plugins_network_README_autotoc_md371}
+While, in theory, a regular expression can express if a string is a network address, in practice, such an attempt does not work well. The reason is that an unmanageable number of valid shortenings for IPv6 addresses makes the regular expression hard to write and understand.
+
+So the idea of building such a complicated regular expression was discarded, but instead a dedicated checker was introduced. The idea is to use the operating system facilities to resolve the network address. If this succeeds, it is guaranteed that this network address will be valid when it is resolved by the same interface afterwards.
+
+Many network address translators coexist. In {\ttfamily POSIX.\+1-\/2001} a powerful address translator is provided with the interface {\ttfamily getaddrinfo()}. It is a common network address translation for both IPv4 and IPv6. We used it to implement this plugin.\hypertarget{md_src_plugins_network_README_autotoc_md372}{}\doxysection{Usage}\label{md_src_plugins_network_README_autotoc_md372}
+Every key tagged with the metakey {\ttfamily check/ipaddr} will be checked using {\ttfamily getaddrinfo()}. If additionally the values {\ttfamily ipv4} or {\ttfamily ipv6} are supplied, the address family will be specified.\hypertarget{md_src_plugins_network_README_autotoc_md373}{}\doxysubsection{Example}\label{md_src_plugins_network_README_autotoc_md373}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount Network plugin to `user:/tests/network`}
+\DoxyCodeLine{sudo kdb mount config.file user:/tests/network network}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set valid IPv4 address}
+\DoxyCodeLine{kdb set user:/tests/network/host 127.0.0.1}
+\DoxyCodeLine{\# Check for valid IPv4 address}
+\DoxyCodeLine{kdb meta-\/set user:/tests/network/host check/ipaddr ipv4}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set invalid IPv4 address}
+\DoxyCodeLine{kdb set user:/tests/network/host 133.133.133.1337}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{\# STDERR:.*Validation Semantic: name:.*133.133.133.1337.*}
+\DoxyCodeLine{kdb get user:/tests/network/host}
+\DoxyCodeLine{\#> 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Set valid IPv4 address}
+\DoxyCodeLine{kdb set user:/tests/network/host 1.2.3.4}
+\DoxyCodeLine{\#> Set string to "{}1.2.3.4"{}}
+\DoxyCodeLine{kdb get user:/tests/network/host}
+\DoxyCodeLine{\#> 1.2.3.4}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check for any valid network address}
+\DoxyCodeLine{kdb meta-\/set user:/tests/network/host check/ipaddr ''}
+\DoxyCodeLine{\# If identifier `localhost` is not a valid network address it is not part of /etc/hosts}
+\DoxyCodeLine{kdb set user:/tests/network/host localhost || ! grep -\/q localhost /etc/hosts}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/network/host}
+\DoxyCodeLine{\# STDOUT-\/REGEX: localhost|1.2.3.4}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/network}
+\DoxyCodeLine{sudo kdb umount user:/tests/network}
+
+\end{DoxyCode}
+
+
+If {\ttfamily check/port} is specified on a given key, the plugin will validate if the port is a correct number between 1 and 65535.
+
+If {\ttfamily check/port/listen} is specified, the plugin will check if the application can be started and listen on the given port.\hypertarget{md_src_plugins_network_README_autotoc_md374}{}\doxysection{Future Work}\label{md_src_plugins_network_README_autotoc_md374}
+{\ttfamily check/port/connect} to check if the port can be pinged/reached (usually for clients). If not reachable, users receive a warning. A correct timeout setting will be problematic though. 

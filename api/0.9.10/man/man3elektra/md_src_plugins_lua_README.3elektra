@@ -1,0 +1,115 @@
+.TH "md_src_plugins_lua_README" 3elektra "Sun Jul 10 2022" "Version 0.9.10" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_lua_README \- Plugin: lua 
+
+.IP "\(bu" 2
+infos = Information about the lua plugin is in keys below
+.IP "\(bu" 2
+infos/author = Manuel Mausz manuel-elektra@mausz.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = unittest configurable global memleak
+.IP "\(bu" 2
+infos/description = proxy that calls other plugins (scripts) written in lua
+.PP
+.SH "Introduction"
+.PP
+The plugin uses Lua to do magic things\&. It basically allows to call plugins written in Lua\&.
+.PP
+What a Lua script can do is not really limited by design, so any kind of plugin may be implemented\&. The lua plugin is especially useful to write filter and logging scripts\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-lua\fP\&.
+.SH "Usage"
+.PP
+The lua plugin accepts only the \fBscript\fP configuration parameter holding the path to a Lua script\&. The mount command would look like
+.PP
+.PP
+.nf
+kdb mount file\&.ini /lua ini lua script=/path/to/filter_script\&.lua
+.fi
+.PP
+.PP
+if the \fBini\fP plugin should be used for storage and the lua plugin only serves to invoke the filter script\&.
+.PP
+For a Lua script that serves as (JSON) storage plugin itself, one could also use
+.PP
+.PP
+.nf
+kdb mount file\&.json /lua lua script=/path/to/json_plugin\&.lua
+.fi
+.PP
+.SS "Lua Scripts"
+Lua scripts can implement the following functions
+.PP
+.IP "\(bu" 2
+elektraOpen(config, errorKey)
+.IP "\(bu" 2
+elektraGet(returned, parentKey)
+.IP "\(bu" 2
+elektraSet(returned, parentKey)
+.IP "\(bu" 2
+elektraError(returned, parentKey)
+.IP "\(bu" 2
+elektraClose(errorKey)
+.PP
+.PP
+where \fIconfig\fP & \fIreturned\fP are KeySets and \fIerrorKey\fP & \fIparentKey\fP are Keys\&. For the return codes of the functions, the same rules as for normal plugins apply\&.
+.PP
+If a function is not available, it simply is not called\&. A script does not have to implement all functions therefore\&.
+.PP
+Access to \fBkdb\fP can be retrieved using the Lua import
+.PP
+.PP
+.nf
+require("kdb")
+.fi
+.PP
+.SH "Example"
+.PP
+An example script that prints some information for each method call would be:
+.PP
+.PP
+.nf
+function elektraOpen(config, errorKey)
+  print("Lua script method 'elektraOpen' called")
+  return 0
+end
+
+function elektraGet(returned, parentKey)
+  print("Lua script method 'elektraGet' called")
+  return 1
+end
+
+function elektraSet(returned, parentKey)
+  print("Lua script method 'elektraSet' called")
+  return 1
+end
+
+function elektraError(returned, parentKey)
+  print("Lua script method 'elektraError' called")
+  return 1
+end
+
+function elektraClose(errorKey)
+  print("Lua script method 'elektraClose' called")
+  return 0
+end
+.fi
+.PP
+.PP
+Further examples can be found in the \fBlua\fP directory\&.
+.SH "Disclaimer"
+.PP
+Note, this is a technical preview\&. It might have severe bugs and the API might change in the future\&.
+.PP
+Be also aware that a Lua script will never be as performant as a native C/C++ plugin\&. Spinning up the interpreter takes additional time and resources\&. 

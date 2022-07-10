@@ -1,0 +1,149 @@
+
+\begin{DoxyItemize}
+\item infos = Information about augeas plugin is in keys below
+\item infos/author = Felix Berlakovich \href{mailto:elektra@berlakovich.net}{\texttt{ elektra@berlakovich.\+net}}
+\item infos/licence = BSD
+\item infos/provides = storage
+\item infos/needs =
+\item infos/recommends = glob keytometa
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest libc configurable
+\item infos/metadata = order
+\item infos/description = reading and writing configurations via libaugeas
+\end{DoxyItemize}\hypertarget{md_src_plugins_augeas_README_src_plugins_augeas_README_md}{}\doxysection{Introduction}\label{md_src_plugins_augeas_README_src_plugins_augeas_README_md}
+This is a plugin for reading and writing configuration files with help from Augeas. The plugin should be able to read all configuration files for which an Augeas lens exists. However, not all stock lenses of Augeas have been tested yet. A detailed description of the lens language and a tutorial on how to write new lenses can be found at \href{http://augeas.net/}{\texttt{ http\+://augeas.\+net/}}\hypertarget{md_src_plugins_augeas_README_autotoc_md44}{}\doxysection{Dependencies}\label{md_src_plugins_augeas_README_autotoc_md44}
+
+\begin{DoxyItemize}
+\item {\ttfamily libaugeas-\/dev}\+: You need version 0.\+16 or higher
+\end{DoxyItemize}\hypertarget{md_src_plugins_augeas_README_autotoc_md45}{}\doxysection{Installation}\label{md_src_plugins_augeas_README_autotoc_md45}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/augeas}.
+
+If you have installed Augeas manually, it may be necessary to update the ld configuration. This is especially true if an older version of Augeas is installed also. Such a situation may lead to an error similar to this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/usr/lib/libaugeas.so.0: version `AUGEAS\_0.16.0` not found (required by kdb)}
+
+\end{DoxyCode}
+
+
+This is because {\ttfamily ld} tries to link {\ttfamily /usr/lib/libaugeas.so.\+0} which is an older version of Augeas. Simply add the path to the newer library to your ld search paths (consult your system documentation on how to do this).\hypertarget{md_src_plugins_augeas_README_autotoc_md46}{}\doxysection{Mounting and Configuration}\label{md_src_plugins_augeas_README_autotoc_md46}
+In order to mount the hosts file with the augeas plugin, issue the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /etc/hosts system:/tests/hosts augeas lens=Hosts.lns}
+
+\end{DoxyCode}
+
+
+And to unmount the file run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount system:/tests/hosts}
+
+\end{DoxyCode}
+
+
+The value of the plugin configuration option \char`\"{}lens\char`\"{} should be the module name of the lens (Hosts in the example) with a \textquotesingle{}.lns\textquotesingle{} suffix. Depending on your distribution and kind of installation, lenses can be found at {\ttfamily /usr/share/augeas/lenses/dist}, {\ttfamily /usr/local/share/augeas/lenses/dist}, or something similar. The lens module name is equal to the filename without extension in pascal notation. For example, the lens {\ttfamily /usr/share/augeas/lenses/dist/hosts.aug} contains the module Hosts.
+
+Note that, without configuring the plugin to use a lens, the plugin will print an error message on the first usage\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /etc/hosts system:/tests/hosts augeas \#The lens is missing here!}
+\DoxyCodeLine{kdb ls system:/tests/hosts}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{\# ERROR: *C01200*}
+
+\end{DoxyCode}
+
+
+This happens because the plugin does not know which lens it should use to read and write the configuration. For that reason, the lens configuration option was supplied together with the mount command.
+
+And again to unmount the {\ttfamily hosts} file simply run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount system:/tests/hosts}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_augeas_README_autotoc_md47}{}\doxysection{Restrictions}\label{md_src_plugins_augeas_README_autotoc_md47}
+\hypertarget{md_src_plugins_augeas_README_autotoc_md48}{}\doxysubsection{Inner Node Values}\label{md_src_plugins_augeas_README_autotoc_md48}
+Currently no Augeas lens supports values for inner nodes. Unfortunately no validation plugin exists yet that would prevent such modifications early\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /etc/hosts system:/tests/hosts augeas lens=Hosts.lns}
+\DoxyCodeLine{kdb set system:/tests/hosts/1 somevalue}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{\# ERROR: *C01100*}
+
+\end{DoxyCode}
+
+
+The operation simply fails with an undescriptive error.
+
+Finally, to unmount the {\ttfamily hosts} file simply run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount system:/tests/hosts}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_augeas_README_autotoc_md49}{}\doxysubsection{Leaky Abstraction of Order}\label{md_src_plugins_augeas_README_autotoc_md49}
+Most Augeas lenses require subtrees to be in a specific order. For example the hosts lens requires the ipaddr node of an entry to precede the canonical node. Unfortunately the Augeas storage plugin has no knowledge about this required order. Therefore the correct order must be ensured via order metakeys. Otherwise saving the Key\+Set may fail. As an example consider the following kdb shell script\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbGet system:/hosts}
+\DoxyCodeLine{keySetName system:/hosts/6}
+\DoxyCodeLine{ksAppendKey}
+\DoxyCodeLine{keySetName system:/hosts/6/ipaddr}
+\DoxyCodeLine{keySetString 14.14.14.14}
+\DoxyCodeLine{ksAppendKey}
+\DoxyCodeLine{keySetName system:/hosts/6/canonical}
+\DoxyCodeLine{keySetString newhost}
+\DoxyCodeLine{ksAppendKey}
+\DoxyCodeLine{kdbSet system:/hosts}
+
+\end{DoxyCode}
+
+
+This fails with an error similar to this
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Sorry, module storage issued the error C03100:}
+\DoxyCodeLine{an Augeas error occurred: Failed to match}
+\DoxyCodeLine{some augeas match expression}
+\DoxyCodeLine{with tree}
+\DoxyCodeLine{\{ \(\backslash\)"{}canonical\(\backslash\)"{} = \(\backslash\)"{}newhost\(\backslash\)"{} \} \{ \(\backslash\)"{}ipaddr\(\backslash\)"{} = \(\backslash\)"{}14.14.14.14\(\backslash\)"{} \}}
+
+\end{DoxyCode}
+
+
+Whereas the following script succeeds due to the correct order
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbGet system:/hosts}
+\DoxyCodeLine{keySetName system:/hosts/6}
+\DoxyCodeLine{ksAppendKey}
+\DoxyCodeLine{keySetName system:/hosts/6/ipaddr}
+\DoxyCodeLine{keySetString 14.14.14.14}
+\DoxyCodeLine{keySetMeta order 100}
+\DoxyCodeLine{ksAppendKey}
+\DoxyCodeLine{keySetName system:/hosts/6/canonical}
+\DoxyCodeLine{keySetString newhost}
+\DoxyCodeLine{keySetMeta order 110}
+\DoxyCodeLine{ksAppendKey}
+\DoxyCodeLine{kdbSet system:/hosts}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_augeas_README_autotoc_md50}{}\doxysection{Planned Improvements}\label{md_src_plugins_augeas_README_autotoc_md50}
+
+\begin{DoxyItemize}
+\item a validation plugin preventing inner node values 
+\end{DoxyItemize}
