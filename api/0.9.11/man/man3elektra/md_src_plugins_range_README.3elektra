@@ -1,0 +1,114 @@
+.TH "md_src_plugins_range_README" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_range_README \- Plugin: range 
+
+.IP "\(bu" 2
+infos = Information about the range plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage postgetstorage
+.IP "\(bu" 2
+infos/status = maintained conformant compatible coverage specific unittest tested libc preview unfinished
+.IP "\(bu" 2
+infos/metadata = check/range check/type type
+.IP "\(bu" 2
+infos/description = tests if a value is within a given range
+.PP
+.SH "Introduction"
+.PP
+The range plugin checks if a \fCKey\fP's value is within a given range\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SH "Usage"
+.PP
+.IP "\(bu" 2
+The plugin checks every \fCKey\fP in the \fCKeySet\fP having a metakey \fCcheck/range\fP\&.
+.IP "\(bu" 2
+For these keys, it checks whether the key value is within the specified range\&.
+.IP "\(bu" 2
+\fCcheck/range\fP can contain either:
+.IP "  1." 6
+a single range with the syntax \fC[-]min-[-]max\fP
+.IP "  2." 6
+or a list of ranges or values separated by \fC,\fP
+.PP
+
+.IP "\(bu" 2
+Metakey \fCcheck/type\fP can be used to specify the data type\&. If not specified, metakey \fCtype\fP will be used as fallback\&. If both are unspecified or unsupported, the type is assumed to be \fClong long\fP\&.
+.PP
+.PP
+Possible values:
+.PP
+.IP "\(bu" 2
+\fCshort\fP, \fClong\fP, \fClong long\fP
+.PP
+for signed integer values
+.IP "\(bu" 2
+\fCunsigned short\fP, \fCunsigned long\fP, \fCunsigned long long\fP
+.PP
+for unsigned integer values
+.IP "\(bu" 2
+\fCfloat\fP, \fCdouble\fP, \fClong double\fP
+.PP
+for floating point values
+.IP "\(bu" 2
+\fCHEX\fP
+.PP
+for hexadecimal values
+.IP "\(bu" 2
+\fCchar\fP
+.PP
+for characters
+.PP
+.SH "Dependencies"
+.PP
+None\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# Backup-and-Restore:/tests/range
+
+sudo kdb mount range\&.ecf /tests/range range dump
+
+# should succeed
+kdb set user:/tests/range/value 5
+kdb meta-set spec:/tests/range/value check/range "1-10"
+# RET: 0
+
+# should fail
+kdb set user:/tests/range/value 11
+# RET:5
+
+# should also fail
+kdb set user:/tests/range/value "\-1"
+# RET:5
+
+# we can also allow only individual values: (using the --force flag, as the current value of 5 would not be allowed under the new policy)
+kdb meta-set -f spec:/tests/range/value check/range "1,2,4,8"
+
+kdb set user:/tests/range/value 7
+# RET:5
+
+kdb set user:/tests/range/value 2
+# RET:0
+
+kdb rm -r user:/tests/range
+sudo kdb umount /tests/range
+.fi
+.PP
+.SH "Limitations"
+.PP
+None\&. 

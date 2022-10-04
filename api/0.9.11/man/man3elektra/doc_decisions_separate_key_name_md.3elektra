@@ -1,0 +1,45 @@
+.TH "doc_decisions_separate_key_name_md" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_separate_key_name_md \- Key Name 
+ 
+.SH "Problem"
+.PP
+Often a \fCKey\fP argument is used when you just need a key name\&. This is because with a \fCKey\fP we know the name is valid and we get an unescaped name\&. Using a \fCKey\fP here makes the API a bit confusing\&.
+.PP
+There could be a richer API for manipulating key names without relying on the escaped name (e\&.g\&. concatenating two full key names)\&. With the current situation, all these functions would need to be part of the API for a key\&. Adding such functions to the key API is certainly not minimal\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+add separate \fCstruct KeyName\fP
+.PP
+.SH "Decision"
+.PP
+Continue keeping 3 classes: \fCKey\fP, \fCKeySet\fP and \fCKDB\fP\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+A minimal \fCKey\fP ideally only consists of a key name and the goal is to keep \fCKey\fP small, so introducing \fCKeyName\fP would go the wrong direction\&.
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+Thus, operations working on key names, directly use \fCKey\fP as argument\&.
+.IP "\(bu" 2
+The key name is actually, in every implementation, a plain string\&. This is also required, because implementations must use the same memory layout\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBNull\fP
+.IP "\(bu" 2
+\fBStore the escaped and/or unescaped key name\fP
+.PP
+.SH "Notes"
+.PP
+Text partly copied from @kodebach https://github.com/ElektraInitiative/libelektra/pull/4201#pullrequestreview-840564988 

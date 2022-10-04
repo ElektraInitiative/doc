@@ -1,0 +1,39 @@
+\label{doc_decisions_private_api_md_md_doc_decisions_private_api}%
+\Hypertarget{doc_decisions_private_api_md_md_doc_decisions_private_api}%
+ \hypertarget{doc_decisions_private_api_md_autotoc_md2088}{}\doxysection{Problem}\label{doc_decisions_private_api_md_autotoc_md2088}
+Only {\ttfamily libelektra-\/core} is supposed to access private data, but this contradicts the goal to keep the library minimal. {\ttfamily \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}} was too generic, it contained many other parts next to the struct definitions of Key/\+Key\+Set. Theoretically everything in {\ttfamily \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}} is supposed to be private, but lots of code still uses it when it shouldn\textquotesingle{}t. {\ttfamily kdb.\+h} is also the only header that is definitely public. All other headers are anybody\textquotesingle{}s guess.\hypertarget{doc_decisions_private_api_md_autotoc_md2089}{}\doxysection{Constraints}\label{doc_decisions_private_api_md_autotoc_md2089}
+
+\begin{DoxyItemize}
+\item The \href{https://www.open-std.org/jtc1/sc22/wg14/}{\texttt{ C99 standard, section 5.\+2.\+4.\+1}} gives following limit\+: 4095 external identifiers in one translation unit
+\end{DoxyItemize}\hypertarget{doc_decisions_private_api_md_autotoc_md2090}{}\doxysection{Assumptions}\label{doc_decisions_private_api_md_autotoc_md2090}
+\hypertarget{doc_decisions_private_api_md_autotoc_md2091}{}\doxysection{Considered Alternatives}\label{doc_decisions_private_api_md_autotoc_md2091}
+
+\begin{DoxyItemize}
+\item keep current situation, as described above
+\end{DoxyItemize}\hypertarget{doc_decisions_private_api_md_autotoc_md2092}{}\doxysection{Decision}\label{doc_decisions_private_api_md_autotoc_md2092}
+
+\begin{DoxyItemize}
+\item Also allow other libraries (e.\+g. a new {\ttfamily libelektra-\/operations}) to access to non-\/public API. Such libraries need to have a good reason (e.\+g. performance, impossible otherwise, etc.) why they access non-\/public API and they need to be kept up-\/to-\/date. If a library cannot provide a stable API on top of the unstable non-\/public API, it clearly needs to state which APIs are not stable.
+\item Put struct definitions of Key/\+Key\+Set in a separate header file, which gets included by parts that need it (see also \mbox{\hyperlink{doc_decisions_header_file_structure_md}{Header File Structure}}).
+\end{DoxyItemize}\hypertarget{doc_decisions_private_api_md_autotoc_md2093}{}\doxysection{Rationale}\label{doc_decisions_private_api_md_autotoc_md2093}
+
+\begin{DoxyItemize}
+\item allows various users (plugins, applications) to link to (more or less) exactly what they need
+\item allows alternative implementation of parts of Elektra, e.\+g. a libcore written in Rust
+\item facilitates code reuse between plugins
+\item The {\ttfamily extern const} version constant(s) can be used for compatibility checks. In most cases, compatibility should be ensured via package management systems or manually by the user. Sometimes it may be possible to write code (e.\+g. in a third-\/party library) such that it is compatible with multiple versions of Elektra. In those cases, we need to know what version of Elektra is installed, so that the correct code can be executed. For example, if a new version accepts an argument to {\ttfamily foo()} that previously wasn\textquotesingle{}t allowed. An external library may be able to use this when available and use other code as a fallback in older versions.
+\end{DoxyItemize}\hypertarget{doc_decisions_private_api_md_autotoc_md2094}{}\doxysection{Implications}\label{doc_decisions_private_api_md_autotoc_md2094}
+
+\begin{DoxyItemize}
+\item Any library that uses non-\/public API, but itself exposes a public API, must either
+\begin{DoxyItemize}
+\item hide breaking changes of the underlying non-\/public API
+\item increment it\textquotesingle{}s major version, if an underlying non-\/public API causes an incompatible change
+\end{DoxyItemize}
+\item For some libraries (e.\+g. {\ttfamily libelektra-\/operations}) it might be easiest to require a specific version of {\ttfamily libelektra-\/core}. This cannot easily be enforced, so it must be well documented.
+\item Plugins can safely be used as before, but loading may fail if there is a version mismatch (only important for third-\/party plugins).
+\end{DoxyItemize}\hypertarget{doc_decisions_private_api_md_autotoc_md2095}{}\doxysection{Related Decisions}\label{doc_decisions_private_api_md_autotoc_md2095}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_header_file_structure_md}{Header File Structure}}
+\end{DoxyItemize}\hypertarget{doc_decisions_private_api_md_autotoc_md2096}{}\doxysection{Notes}\label{doc_decisions_private_api_md_autotoc_md2096}

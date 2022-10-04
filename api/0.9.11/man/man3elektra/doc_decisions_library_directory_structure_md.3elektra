@@ -1,0 +1,92 @@
+.TH "doc_decisions_library_directory_structure_md" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_library_directory_structure_md \- Library Directory Structure 
+ 
+.SH "Problem"
+.PP
+Currently \fCsrc/libs/elektra\fP contains the source of several libraries\&. Each of the libraries should have its own folder\&. Furthermore, we need to allow rust source to exist in parallel\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+It must be possible to set up include-paths via CMake so that \fC#include <elektra/foo/header\&.h>\fP works the same in the build directory and when installed\&.
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+One folder per language, then split by code type (\fCsrc/<lang>/plugins\fP, \fCsrc/<lang>/libs\fP, etc\&.):
+.IP "  \(bu" 4
+Pro: Makes the per language setup easier, since everything is contained in a single directory and that directory is for a single language, just as if it was any other standalone project in that language\&.
+.IP "  \(bu" 4
+Con: When navigating the source-code you need to know what language e\&.g\&. a plugin is written in to find the correct folder\&.
+.PP
+
+.IP "\(bu" 2
+First split by code type, then one folder per language (\fCsrc/plugins/<lang>\fP, \fCsrc/libs/<lang>\fP, etc\&.)
+.IP "  \(bu" 4
+Similar to the variant above, but has more downsides\&. 'single folder per language' no longer applies and you still need to know the language to find the folder\&.
+.PP
+
+.PP
+.SH "Decision"
+.PP
+We use this directory tree (YAML syntax for highlighting):
+.PP
+.PP
+.nf
+doc:
+benchmarks:
+examples:
+scripts:
+src:
+  include:
+   # headers that don't belong to a specific library
+  libs:
+    core-c: C implementation of libelektra-core\&.so
+    core-rust: Rust implementation of libelektra-core\&.so
+    opts: libelektra-opts\&.so has only a single implementation, so no suffix
+  # plugins and tools use the same suffix idea as above
+  plugins:
+  tools:
+  bindings:
+    rust: Rust bindings
+    cpp: C++ bindings
+    java: Java bindings
+  tests:
+    shell: shell script tests
+    cframework: framework for C tests
+    gtest-framework: framework for C++ tests
+    abi: ABI compatibility tests
+  # build tool configuration files to create a single root project for every language
+  # this is improves IDE support
+  CMakeLists\&.txt
+  build\&.gradle
+  Cargo\&.toml
+.fi
+.PP
+.PP
+Unit tests (*) (e\&.g\&. the old \fCtests/ctest\fP, \fCtests/kdb\fP) should be bundled with the code they are testing: e\&.g\&. in Rust test code is in the same file, in C/C++ it should be in the same folder and in Java a separate source set in the same module is used\&. This makes it easier to find the tests for a library, and also creates a uniform structure (in Rust or Java it would be harder to put tests into the current structure)\&. System tests that test multiple components live in the \fCsrc/tests\fP folder\&.
+.PP
+.RS 4
+(*) The term 'unit test' is used very loosely here\&. Most tests for e\&.g\&. the \fCkdb\fP tool will not, strictly speaking, be unit tests, since they don't replace dependencies with mocks/fakes and instead test the whole \fCkdb\fP tool\&. 
+.RE
+.PP
+For now benchmarks will remain in the top-level \fCbenchmarks\fP directory, unless there is a language specific reason to have them next to the code they benchmark (like unit-tests)\&. In future this may change to facilitate automated performance-regression tests\&.
+.SH "Rationale"
+.PP
+This setup, allows to find a plugin/library/etc\&. just by knowing its code type (library/plugin/etc\&.) and its name\&. At the same time, using language suffixes allows having multiple implementations in different languages\&. Finally, whenever possible there should be project config file in the top-level \fCsrc\fP directory for every language\&. This will improve IDE support and make it possible to treat all code from one language as a single project\&. However, it is important that modularity is not lost in the process\&. It must still be possible to depend on individual libraries in CMake, without having to build everything else that is written in the same language\&.
+.PP
+Therefore, the top-level project should only exist, if the language allows projects that only include sub-modules\&. Otherwise, fully separate projects for every plugin/library/etc\&. should be used to preserve modularity\&.
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBHeader File Structure\fP
+.PP
+.SH "Notes"
+.PP
+

@@ -1,0 +1,88 @@
+\label{doc_decisions_ensure_md_md_doc_decisions_ensure}%
+\Hypertarget{doc_decisions_ensure_md_md_doc_decisions_ensure}%
+ \hypertarget{doc_decisions_ensure_md_autotoc_md1833}{}\doxysection{Problem}\label{doc_decisions_ensure_md_autotoc_md1833}
+Applications want to ensure that some functionality (=global plugin) is present in Elektra.\hypertarget{doc_decisions_ensure_md_autotoc_md1834}{}\doxysection{Constraints}\label{doc_decisions_ensure_md_autotoc_md1834}
+\hypertarget{doc_decisions_ensure_md_autotoc_md1835}{}\doxysection{Assumptions}\label{doc_decisions_ensure_md_autotoc_md1835}
+\hypertarget{doc_decisions_ensure_md_autotoc_md1836}{}\doxysection{Considered Alternatives}\label{doc_decisions_ensure_md_autotoc_md1836}
+
+\begin{DoxyItemize}
+\item Keep {\ttfamily kdb\+Ensure} (Rejected because it is too flexible and can be called many times. Furthermore, {\ttfamily kdb\+Open} would build up configurations that get removed afterwards.)
+\begin{DoxyItemize}
+\item reduce for only global plugins, as the partial other functionality is confusing and not needed
+\item find solution that list plugin is not needed
+\item only as implementation detail below libraries (e.\+g. like done for notification)
+\end{DoxyItemize}
+\item Specific APIs per plugin, Rejected because\+:
+\begin{DoxyItemize}
+\item difficult for application developers
+\item every plugin would need to design new APIs
+\end{DoxyItemize}
+\item Have a new API\+: {\ttfamily KDB $\ast$ kdb\+Open (Key $\ast$ parent);} {\ttfamily int kdb\+Configure (KDB $\ast$ handle, Key\+Set $\ast$ contract, Key $\ast$ parent\+Key);} {\ttfamily KDB $\ast$ kdb\+Open\+Default (Key $\ast$ parent);} The new kdb\+Open only does the absolute minimum work, in particular it doesn\textquotesingle{}t set up any global plugins. If you use kdb\+Open you must call kdb\+Configure otherwise kdb\+Get will fail. kdb\+Configure configures global plugins (basically just a renamed kdb\+Ensure). Lastly, kdb\+Open\+Default does more or less what the old kdb\+Open does. It sets up the default case and you can call kdb\+Get immediately. But you cannot call kdb\+Configure after kdb\+Open\+Default. Rejected because of API bloat and introduction of further state in {\ttfamily kdb}.
+\end{DoxyItemize}\hypertarget{doc_decisions_ensure_md_autotoc_md1837}{}\doxysection{Decision}\label{doc_decisions_ensure_md_autotoc_md1837}
+Integrate {\ttfamily kdb\+Ensure} in {\ttfamily kdb\+Open(\+Key $\ast$error\+Key, Key\+Set $\ast$contract)} but only allow global plugins.\hypertarget{doc_decisions_ensure_md_autotoc_md1838}{}\doxysection{Rationale}\label{doc_decisions_ensure_md_autotoc_md1838}
+
+\begin{DoxyItemize}
+\item can immediately build up correct plugin positioning
+\item does not allow starting applications if the contract cannot be fulfilled
+\item simplest and minimalistic solution
+\end{DoxyItemize}\hypertarget{doc_decisions_ensure_md_autotoc_md1839}{}\doxysection{Implications}\label{doc_decisions_ensure_md_autotoc_md1839}
+{\ttfamily elektra\+Notification\+Open} will be renamed and only return a contract Key\+Set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * errorKey = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}/"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{KeySet * contract = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{\mbox{\hyperlink{notification_8c_ad9290f444f315d3eac3f7cfdaf4efcda}{elektraNotificationContract}} (contract, iobinding, errorKey);}
+
+\end{DoxyCode}
+
+
+The same for gopts\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{contracts_8c_af4f606fc2179e917a10c77dab576d648}{elektraGOptsContract}} (contract, argc, argv, environ, errorKey);}
+
+\end{DoxyCode}
+
+
+Finally, we create {\ttfamily KDB} with the contracts we got before\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB * \mbox{\hyperlink{namespacekdb}{kdb}} = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (contract, parentKey);}
+
+\end{DoxyCode}
+
+
+Opening {\ttfamily KDB} will fail if any of the contracts cannot be ensured.
+
+As the {\ttfamily contract} gets copied, at any point after {\ttfamily kdb\+Open} the contract can be safely deleted\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ksDel (contract);}
+
+\end{DoxyCode}
+
+
+The cleanup of the global plugins happens within\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (\mbox{\hyperlink{namespacekdb}{kdb}}, errorKey);}
+
+\end{DoxyCode}
+
+
+It is safe to use the contract {\ttfamily Key\+Set} also for {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} invocations. Contract {\ttfamily Key\+Set}s only contain {\ttfamily Key}s below {\ttfamily system\+:/elektra/contract}. Therefore, normal {\ttfamily Key\+Set}s should not interfere.\hypertarget{doc_decisions_ensure_md_autotoc_md1840}{}\doxysection{Related Decisions}\label{doc_decisions_ensure_md_autotoc_md1840}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_global_plugins_md}{Global Plugins}}
+\item \mbox{\hyperlink{doc_decisions_notifications_md}{Notifications}}
+\end{DoxyItemize}\hypertarget{doc_decisions_ensure_md_autotoc_md1841}{}\doxysection{Notes}\label{doc_decisions_ensure_md_autotoc_md1841}
+
+\begin{DoxyItemize}
+\item Issue \href{https://issues.libelektra.org/2764}{\texttt{ \#2764}}
+\item Implemented in \#3651 
+\end{DoxyItemize}

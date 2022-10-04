@@ -1,0 +1,53 @@
+\label{doc_decisions_global_plugins_md_md_doc_decisions_global_plugins}%
+\Hypertarget{doc_decisions_global_plugins_md_md_doc_decisions_global_plugins}%
+ \hypertarget{doc_decisions_global_plugins_md_autotoc_md1905}{}\doxysection{Problem}\label{doc_decisions_global_plugins_md_autotoc_md1905}
+
+\begin{DoxyItemize}
+\item Notification does not happen once after final commit, but for every plugin
+\item Problems in spec plugin
+\end{DoxyItemize}
+
+These problems can be traced back to the placement of the plugins. We need to clean up and simplify the placement.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1906}{}\doxysection{Constraints}\label{doc_decisions_global_plugins_md_autotoc_md1906}
+
+\begin{DoxyItemize}
+\item Plugin interface should be the same. Many plugins, e.\+g. dbus, should work as global plugins w/o any change in code (i.\+e. only changes in contract)
+\item Global plugins might depend on specific applications or specific mount points (it should be possible to enforce global plugins for specific applications).
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1907}{}\doxysection{Assumptions}\label{doc_decisions_global_plugins_md_autotoc_md1907}
+
+\begin{DoxyItemize}
+\item Elektra is useful with following types of global plugins\+:
+\begin{DoxyItemize}
+\item mmap
+\item spec
+\item gopts
+\item receiving of notifications (internalnotification)
+\item sending of notifications (dbus, ...)
+\end{DoxyItemize}
+\item There are not too many types of global plugins, not more than 10
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1908}{}\doxysection{Considered Alternatives}\label{doc_decisions_global_plugins_md_autotoc_md1908}
+
+\begin{DoxyItemize}
+\item generic placements like /prerollback /rollback /postrollback /getresolver /pregetcache /pregetstorage /getstorage /postgetstorage /postgetcache /setresolver /presetstorage /setstorage /precommit /commit /postcommit which can be executed at\+: /init /deinit /foreach proved to be too complicated and untestable.
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1909}{}\doxysection{Decision}\label{doc_decisions_global_plugins_md_autotoc_md1909}
+Have hooks and API specific to the list of global plugins in assumptions. These hooks are not shared, so no {\ttfamily list} plugin is needed.
+
+Installed plugins will be used.\hypertarget{doc_decisions_global_plugins_md_autotoc_md1910}{}\doxysection{Rationale}\label{doc_decisions_global_plugins_md_autotoc_md1910}
+
+\begin{DoxyItemize}
+\item allows adding more types of plugins later, also post-\/1.\+0
+\item much clearer semantics for each type, no need to compromise
+\item easier to implement
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1911}{}\doxysection{Implications}\label{doc_decisions_global_plugins_md_autotoc_md1911}
+
+\begin{DoxyItemize}
+\item remove {\ttfamily global-\/mount} command
+\item command for mmap/notification/... enable disable (like current {\ttfamily kdb cache} tool)
+\item remove {\ttfamily list} plugin
+\item remove plugins that stop working or disallow global positioning for them
+\item call {\ttfamily spec} as needed several times
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1912}{}\doxysection{Related Decisions}\label{doc_decisions_global_plugins_md_autotoc_md1912}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_array_md}{Array}}
+\item \mbox{\hyperlink{doc_decisions_ensure_md}{Ensure}}
+\end{DoxyItemize}\hypertarget{doc_decisions_global_plugins_md_autotoc_md1913}{}\doxysection{Notes}\label{doc_decisions_global_plugins_md_autotoc_md1913}

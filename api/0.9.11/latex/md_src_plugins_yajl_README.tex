@@ -1,0 +1,278 @@
+
+\begin{DoxyItemize}
+\item infos = Information about YAJL plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = storage/json
+\item infos/needs = directoryvalue type
+\item infos/recommends = rebase comment
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained coverage unittest
+\item infos/description = JSON using YAJL
+\end{DoxyItemize}\hypertarget{md_src_plugins_yajl_README_src_plugins_yajl_README_md}{}\doxysection{Introduction}\label{md_src_plugins_yajl_README_src_plugins_yajl_README_md}
+This is a plugin reading and writing JSON files using the library \href{http://lloyd.github.com/yajl/}{\texttt{ yail}}
+
+The plugin was tested with yajl version 1.\+0.\+8-\/1 from Debian 6 and yajl version 2.\+0.\+4-\/2 from Debian 7.
+
+Examples of files which are used for testing can be found below the folder in \char`\"{}src/plugins/yajl/yajl\char`\"{}.
+
+The JSON grammar can be found \href{http://www.json.org}{\texttt{ here}}.
+
+A validator can be found \href{http://jsonlint.com/}{\texttt{ here}}.
+
+Supports every Key\+Set except when arrays are intermixed with other keys. Has only limited support for metadata.\hypertarget{md_src_plugins_yajl_README_autotoc_md611}{}\doxysection{Installation}\label{md_src_plugins_yajl_README_autotoc_md611}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/yajl}.\hypertarget{md_src_plugins_yajl_README_autotoc_md612}{}\doxysection{Dependencies}\label{md_src_plugins_yajl_README_autotoc_md612}
+
+\begin{DoxyItemize}
+\item {\ttfamily libyajl-\/dev} (version 1 and 2 should work)
+\end{DoxyItemize}\hypertarget{md_src_plugins_yajl_README_autotoc_md613}{}\doxysection{Types}\label{md_src_plugins_yajl_README_autotoc_md613}
+The type of the data is available via the metadata {\ttfamily type}\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily string}\+: The JSON string type.
+\item {\ttfamily boolean}\+: The JSON boolean type (true or false)
+\item {\ttfamily double}\+: For JSON numbers.
+\end{DoxyItemize}
+
+If no metadata {\ttfamily type} is given, the type is either\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily null} on binary null-\/key
+\item {\ttfamily string} otherwise
+\end{DoxyItemize}
+
+Any other type/value will still be treated as string, but the warning {\ttfamily C03200} will be added because of the potential data loss.\hypertarget{md_src_plugins_yajl_README_autotoc_md614}{}\doxysection{Special values}\label{md_src_plugins_yajl_README_autotoc_md614}
+In JSON it is possible to have empty arrays and objects. In Elektra this is mapped using the special names
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\#\#empty\_array}
+
+\end{DoxyCode}
+
+
+and
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\_\_\_empty\_map}
+
+\end{DoxyCode}
+
+
+Arrays are mapped to Elektra’s array convention \#0, \#1,..\hypertarget{md_src_plugins_yajl_README_autotoc_md615}{}\doxysection{Restrictions}\label{md_src_plugins_yajl_README_autotoc_md615}
+
+\begin{DoxyItemize}
+\item Only UTF-\/8 is supported. Use the {\ttfamily iconv} plugin if your locale are not UTF-\/8. When using non-\/\+UTF-\/8 the plugin will be able to write the file, but cannot parse it back again. You will error C03100, invalid bytes in UTF8 string.
+\item Everything is string if not tagged by metakey \char`\"{}type\char`\"{} Only valid JSON types can be used in type, otherwise there are some fall backs to string but warnings are produced.
+\item Arrays will be normalized (to \#0, \#1, ..)
+\item Comments of various JSON-\/dialects are discarded.
+\item Mixing of arrays and maps is not detected and leads to corrupted JSON files. Please specify arrays to avoid such situations.
+\item The plugin creates adds an empty root key to the database, even if you did not add this key (see \href{http://issues.libelektra.org/2132}{\texttt{ http\+://issues.\+libelektra.\+org/2132}}).
+\end{DoxyItemize}
+
+Because of these potential problems a type checker and comments filter are highly recommended.\hypertarget{md_src_plugins_yajl_README_autotoc_md616}{}\doxysection{Usage}\label{md_src_plugins_yajl_README_autotoc_md616}
+The following example shows you how you can read and write data using this plugin.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount the plugin to the cascading namespace `/tests/yajl`}
+\DoxyCodeLine{sudo kdb mount config.json /tests/yajl yajl}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Manually add a key-\/value pair to the database}
+\DoxyCodeLine{printf '\{ "{}number"{}: 1337 \}' > `kdb file user:/tests/yajl`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new value}
+\DoxyCodeLine{kdb get user:/tests/yajl/number}
+\DoxyCodeLine{\#> 1337}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Determine the data type of the value}
+\DoxyCodeLine{kdb meta-\/get user:/tests/yajl/number type}
+\DoxyCodeLine{\#> double}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add another key-\/value pair}
+\DoxyCodeLine{kdb set user:/tests/yajl/key value}
+\DoxyCodeLine{\# STDOUT-\/REGEX: .*Create a new key user:/tests/yajl/key with string "{}value"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve the new value}
+\DoxyCodeLine{kdb get user:/tests/yajl/key}
+\DoxyCodeLine{\#> value}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the format of the configuration file}
+\DoxyCodeLine{kdb file user:/tests/yajl/ | xargs cat}
+\DoxyCodeLine{\#> \{}
+\DoxyCodeLine{\#>     "{}key"{}: "{}value"{},}
+\DoxyCodeLine{\#>     "{}number"{}: 1337}
+\DoxyCodeLine{\#> \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add an array}
+\DoxyCodeLine{kdb set user:/tests/yajl/piggy/\#0 straw}
+\DoxyCodeLine{kdb set user:/tests/yajl/piggy/\#1 sticks}
+\DoxyCodeLine{kdb set user:/tests/yajl/piggy/\#2 bricks}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve an array key}
+\DoxyCodeLine{kdb get user:/tests/yajl/piggy/\#2}
+\DoxyCodeLine{\#> bricks}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the format of the configuration file}
+\DoxyCodeLine{kdb file user:/tests/yajl | xargs cat}
+\DoxyCodeLine{\#> \{}
+\DoxyCodeLine{\#>     "{}key"{}: "{}value"{},}
+\DoxyCodeLine{\#>     "{}number"{}: 1337,}
+\DoxyCodeLine{\#>     "{}piggy"{}: [}
+\DoxyCodeLine{\#>         "{}straw"{},}
+\DoxyCodeLine{\#>         "{}sticks"{},}
+\DoxyCodeLine{\#>         "{}bricks"{}}
+\DoxyCodeLine{\#>     ]}
+\DoxyCodeLine{\#> \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/yajl}
+\DoxyCodeLine{sudo kdb umount /tests/yajl}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yajl_README_autotoc_md617}{}\doxysubsection{Directory Values}\label{md_src_plugins_yajl_README_autotoc_md617}
+The YAJL plugin support values in directory keys via the Directory Value plugin.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount the plugin to `user:/tests/yajl`}
+\DoxyCodeLine{sudo kdb mount config.json user:/tests/yajl yajl}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add two directory keys and one leaf key}
+\DoxyCodeLine{kdb set user:/tests/yajl/roots 'Things Fall Apart'}
+\DoxyCodeLine{kdb set user:/tests/yajl/roots/bloody 'Radical Face'}
+\DoxyCodeLine{kdb set user:/tests/yajl/roots/bloody/roots 'No Roots'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add an array containing two elements}
+\DoxyCodeLine{kdb set user:/tests/yajl/now ', Now'}
+\DoxyCodeLine{\# Elektra arrays require the metakey `array` to the parent.}
+\DoxyCodeLine{\# Otherwise the keys below `user:/tests/yajl/now` would be}
+\DoxyCodeLine{\# interpreted as normal key-\/value pairs.}
+\DoxyCodeLine{kdb meta-\/set user:/tests/yajl/now array ''}
+\DoxyCodeLine{kdb set user:/tests/yajl/now/\#0 'Neighbors'}
+\DoxyCodeLine{kdb set user:/tests/yajl/now/\#1 'Threads'}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/yajl}
+\DoxyCodeLine{\#> user:/tests/yajl/now}
+\DoxyCodeLine{\#> user:/tests/yajl/now/\#0}
+\DoxyCodeLine{\#> user:/tests/yajl/now/\#1}
+\DoxyCodeLine{\#> user:/tests/yajl/roots}
+\DoxyCodeLine{\#> user:/tests/yajl/roots/bloody}
+\DoxyCodeLine{\#> user:/tests/yajl/roots/bloody/roots}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve directory values}
+\DoxyCodeLine{kdb get user:/tests/yajl/roots}
+\DoxyCodeLine{\#> Things Fall Apart}
+\DoxyCodeLine{kdb get user:/tests/yajl/roots/bloody}
+\DoxyCodeLine{\#> Radical Face}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Retrieve leaf value}
+\DoxyCodeLine{kdb get user:/tests/yajl/roots/bloody/roots}
+\DoxyCodeLine{\#> No Roots}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check array}
+\DoxyCodeLine{kdb get user:/tests/yajl/now}
+\DoxyCodeLine{\#> , Now}
+\DoxyCodeLine{kdb meta-\/get user:/tests/yajl/now array}
+\DoxyCodeLine{\#> \#1}
+\DoxyCodeLine{kdb get user:/tests/yajl/now/\#0}
+\DoxyCodeLine{\#> Neighbors}
+\DoxyCodeLine{kdb get user:/tests/yajl/now/\#1}
+\DoxyCodeLine{\#> Threads}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/yajl}
+\DoxyCodeLine{sudo kdb umount user:/tests/yajl}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yajl_README_autotoc_md618}{}\doxysubsection{Booleans}\label{md_src_plugins_yajl_README_autotoc_md618}
+The YAJL plugin maps \char`\"{}1\char`\"{} and \char`\"{}true\char`\"{} to its true bool type, and \char`\"{}0\char`\"{} and \char`\"{}false\char`\"{} to its false bool type. However, it always returns 1 or 0.
+
+You can take advantage of the \mbox{\hyperlink{md_src_plugins_type_README_src_plugins_type_README_md}{type}} plugin to map arbitrary values to true and false.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Type plugin is automatically mounted since yajl depends on it}
+\DoxyCodeLine{sudo kdb mount conf.json user:/tests/yajl yajl}
+\DoxyCodeLine{kdb set user:/tests/yajl 1}
+\DoxyCodeLine{kdb get user:/tests/yajl}
+\DoxyCodeLine{\#> 1}
+\DoxyCodeLine{kdb meta-\/set user:/tests/yajl type boolean}
+\DoxyCodeLine{kdb set user:/tests/yajl on}
+\DoxyCodeLine{kdb get user:/tests/yajl}
+\DoxyCodeLine{\#> 1}
+\DoxyCodeLine{kdb set user:/tests/yajl/subkey disable}
+\DoxyCodeLine{kdb meta-\/set user:/tests/yajl/subkey type boolean}
+\DoxyCodeLine{kdb get user:/tests/yajl/subkey}
+\DoxyCodeLine{\#> 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/yajl}
+\DoxyCodeLine{sudo kdb umount user:/tests/yajl}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_yajl_README_autotoc_md619}{}\doxysection{Open\+ICC Device Config}\label{md_src_plugins_yajl_README_autotoc_md619}
+This plugin was specifically designed and tested for the {\ttfamily Open\+ICC\+\_\+device\+\_\+config\+\_\+\+DB} although it is of course not limited to it.
+
+Mount the plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount -\/-\/resolver=resolver\_fm\_xhp\_x color/settings/openicc-\/devices.json \(\backslash\)}
+\DoxyCodeLine{  /org/freedesktop/openicc yajl rename cut=org/freedesktop/openicc}
+
+\end{DoxyCode}
+
+
+or\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount-\/openicc}
+
+\end{DoxyCode}
+
+
+Then you can copy the {\ttfamily Open\+ICC\+\_\+device\+\_\+config\+\_\+\+DB.\+json} to systemwide or user config, e.\+g.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cp src/plugins/yajl/examples/OpenICC\_device\_config\_DB.json /etc/xdg}
+\DoxyCodeLine{cp src/plugins/yajl/examples/OpenICC\_device\_config\_DB.json \string~/.config}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls system:/org/freedesktop/openicc}
+
+\end{DoxyCode}
+
+
+prints out then all device entries available in the config
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get system:/org/freedesktop/openicc/device/camera/0/EXIF\_manufacturer}
+
+\end{DoxyCode}
+
+
+prints out \char`\"{}\+Glasshuette\char`\"{} with the example config in source
+
+You can export the whole system openicc config to ini with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export system:/org/freedesktop/openicc simpleini > dump.ini}
+
+\end{DoxyCode}
+
+
+or import it\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb import system:/org/freedesktop/openicc ini < dump.ini}
+
+\end{DoxyCode}
+ 

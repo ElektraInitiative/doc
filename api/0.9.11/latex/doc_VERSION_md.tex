@@ -1,0 +1,72 @@
+\label{doc_VERSION_md_md_doc_VERSION}%
+\Hypertarget{doc_VERSION_md_md_doc_VERSION}%
+ The version of Elektra is handled with the kdb.\+h macros {\ttfamily KDB\+\_\+\+VERSION} which is a string and {\ttfamily KDB\+\_\+\+VERSION\+\_\+\+MAJOR}, {\ttfamily KDB\+\_\+\+VERSION\+\_\+\+MINOR} and {\ttfamily KDB\+\_\+\+VERSION\+\_\+\+PATCH} which are numbers for the publicly announced versions.
+
+The version can also be retrieved at run-\/time from KDB\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/version/constants/KDB\_VERSION}
+\DoxyCodeLine{system:/elektra/version/constants/KDB\_VERSION\_MAJOR}
+\DoxyCodeLine{system:/elektra/version/constants/KDB\_VERSION\_MINOR}
+\DoxyCodeLine{system:/elektra/version/constants/KDB\_VERSION\_PATCH}
+
+\end{DoxyCode}
+
+
+All libraries and plugins from Elektra must be installed in exactly the same major and minor version, so no library or plugin-\/specific version information exists.\hypertarget{doc_VERSION_md_autotoc_md4124}{}\doxysection{Scope}\label{doc_VERSION_md_autotoc_md4124}
+The version applies to following parts of Elektra\+:
+
+
+\begin{DoxyItemize}
+\item the API for programs using Elektra. Its interface is declared in src/include/kdb.h. Both applications and plugins use this API.
+\item the high-\/level API as declared in \href{/home/jenkins/workspace/libelektra-release/src/include/elektra.h}{\texttt{ src/include/elektra.\+h}}.
+\item the API to plugins as declared in \href{/home/jenkins/workspace/libelektra-release/src/plugins/doc/doc.h}{\texttt{ src/plugins/doc/doc.\+h}}.
+\item the API to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbease.h}{\texttt{ libease}}
+\item the API to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbmeta.h}{\texttt{ libmeta}}
+\item the API to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbmerge.h}{\texttt{ libmerge}}
+\item the API to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbmodule.h}{\texttt{ module loading}}
+\item the API to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbnotification.h}{\texttt{ libnotification}}
+\item the API to \href{/home/jenkins/workspace/libelektra-release/src/include/kdbopts.h}{\texttt{ libopts}}
+\item plugins that have {\ttfamily infos/status} of {\ttfamily compatible}.
+\item the CLI tool {\ttfamily kdb} with its command-\/line arguments, KDB access and its return values.
+\end{DoxyItemize}\hypertarget{doc_VERSION_md_autotoc_md4125}{}\doxysection{Behavior}\label{doc_VERSION_md_autotoc_md4125}
+The behavior of Elektra is defined by (in that order)\+:
+
+
+\begin{DoxyEnumerate}
+\item ABI test cases
+\item Non-\/\+ABI test cases (including Shell Recorder)
+\item The \href{https://doc.libelektra.org/api/master/html/}{\texttt{ API documentation}}
+\item The man pages
+\item Tutorials (excluding Shell Recorder)
+\item Examples
+\end{DoxyEnumerate}
+
+Any inconsistency within these artifacts within each other or with the implementation constitutes a bug.\hypertarget{doc_VERSION_md_autotoc_md4126}{}\doxysection{Compatibility}\label{doc_VERSION_md_autotoc_md4126}
+This section describes under which circumstances API and ABI incompatibilities may occur. As Elektra developer your mission is to avoid any unwanted incompatibilities. The tool icheck which checks the interfaces mentioned in the Scope may help you.
+
+Elektra uses a stricter version of \href{https://semver.org/}{\texttt{ Semantic Versioning 2.\+0.\+0}}, with the extensions explained here.
+
+In {\ttfamily 1.\+0.$\ast$} the API and ABI must be always forward-\/compatible and backwards-\/compatible. That means that Elektra\textquotesingle{}s libraries and plugins may be upgraded and downgraded without any effect on applications, only bug or docu fixes are allowed.
+
+In minor or patch version updates the API and ABI must be always forward-\/compatible, but not backwards-\/compatible. That means that a program written and compiled against 1.\+0.\+0 compiles and links against 1.\+1.\+0. But because it is not necessarily backwards-\/compatible a program written for 1.\+1.\+0 may not link or compile against Elektra 1.\+0.\+0 (but it compiles if you use the compatible subset, maybe by using \#ifdefs). Also here applications must continue to work as originally intended.
+
+Changes in Elektra\textquotesingle{}s datastructure will increase (at least) the minor version level. This is required, as the cache plugin exposes the datastructure and must have the same version as the core and other libraries.
+
+When you add a new function you break ABI and API backward-\/ compatibility (but not forward). You are only allowed to do so in a {\ttfamily 1.$\ast$} change.
+
+In the signature you are only allowed to add const to any parameter. You are {\itshape not} allowed to use subtypes to the objects, in C means you are not allowed to call any functions of an object which appear new. C does {\itshape not} type check that, it\textquotesingle{}s your responsibility.
+
+What C also does not check are the pre and postconditions. That means you are not allowed to demand more client code (e.\+g. first accept a NULL pointer and in the next version you crash on it) and you are not allowed to return values that the previous version did not return. It is a complex topic, so better don\textquotesingle{}t underestimate it, but generally said the methods should behave on the same data the same way.
+
+As we use \mbox{\hyperlink{doc_dev_symbol-versioning_md}{symbol versioning}}, the SO\+\_\+\+VERSION of Elektra always remains the same, even if the major version changes. That means, if we rename or remove a function in the {\ttfamily 2.\+0} release, applications that linked against Elektra {\ttfamily 1.\+0} can still link against Elektra {\ttfamily 2.\+0} but they do not necessarily compile with Elektra {\ttfamily 2.\+0} anymore. Once the code is adapted to use {\ttfamily 2.\+0}, it cannot link against {\ttfamily 1.\+0} anymore. Note that this feature is only available on platforms that support symbol versioning. For other platforms, all applications need to be recompiled for every major version.
+
+In major upgrades, changes of behavior is possible even if it might break some use cases of some applications. Furthermore, symbols that already have been deprecated before, might be removed. For example, in {\ttfamily 1.\+0} there is a deprecated method {\ttfamily ks\+Next} (not available in {\ttfamily kdb.\+h}). Thus in {\ttfamily 2.\+0} it is subject to be removed.
+
+References\+: \href{http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html}{\texttt{ http\+://tldp.\+org/\+HOWTO/\+Program-\/\+Library-\/\+HOWTO/shared-\/libraries.\+html}} \href{http://packages.debian.org/de/sid/icheck}{\texttt{ http\+://packages.\+debian.\+org/de/sid/icheck}}\hypertarget{doc_VERSION_md_autotoc_md4127}{}\doxysection{Bindings}\label{doc_VERSION_md_autotoc_md4127}
+Bindings are in general tied to Elektra\textquotesingle{}s version number except for the patch level. So bindings can only add or change functionality when Elektra\textquotesingle{}s core does. This is a quite severe restriction but makes the version much easier to understand for users. It serves the goal that Elektra does not prefer any programming languages, instead people expect from Elektra version {\ttfamily x.\+y.$\ast$} identical functionality.
+
+The patch level can be chosen by bindings as wanted. Using the binding {\ttfamily x.\+y.\+z} does not mean that Elektra {\ttfamily x.\+y.\+z} will be used on the target system. Please read the changelog of the binding maintainers to know about which bug fixes are included.
+
+The patch level might also be used to fix bugs within bindings. This means that applications can only introspect the patch level of Elektra by getting {\ttfamily system\+:/elektra/version/constants/\+KDB\+\_\+\+VERSION\+\_\+\+PATCH} but not by static patch levels the binding might provide. This should be no problem, as the patch level is supposed to not change the behavior. 

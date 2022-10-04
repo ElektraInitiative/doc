@@ -1,0 +1,210 @@
+\label{doc_tutorials_cascading_md_md_doc_tutorials_cascading}%
+\Hypertarget{doc_tutorials_cascading_md_md_doc_tutorials_cascading}%
+ This tutorial assumes that you are already familiar with \mbox{\hyperlink{doc_tutorials_namespaces_md}{namespaces}}. This tutorial will only explain \mbox{\hyperlink{doc_help_elektra-cascading_md}{cascading lookup}}.
+
+When Elektra looks up a {\itshape cascading key} (i.\+e. key names without a namespace and a leading slash {\ttfamily /}, the namespaces are searched in the following order\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md\#spec}{\texttt{ spec}} (contains metadata, e.\+g. to modify Elektra\textquotesingle{}s lookup behavior)
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md\#proc}{\texttt{ proc}} (process-\/related information)
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md\#dir}{\texttt{ dir}} (directory-\/related information, e.\+g. {\ttfamily .git} or {\ttfamily .htaccess})
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md\#user}{\texttt{ user}} (user configuration)
+\item \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/help/elektra-namespaces.md\#system}{\texttt{ system}} (system configuration)
+\end{DoxyItemize}
+
+If a key, for example, exists in both {\bfseries{user}} and {\bfseries{system}} namespace, the key in the {\bfseries{user}} namespace takes precedence over the one in the {\bfseries{system}} namespace. If there is no such key in the {\bfseries{user}} namespace the key in the {\bfseries{system}} namespace acts as a fallback.
+
+But let\textquotesingle{}s demonstrate this with an example\+:\hypertarget{doc_tutorials_cascading_md_autotoc_md3792}{}\doxysubsection{Add a Key to the system Namespace}\label{doc_tutorials_cascading_md_autotoc_md3792}
+Configuration in the {\bfseries{system}} namespace is the same for all users. Therefore, this namespace provides a default or fallback configuration.
+
+With the default Elektra installation only an administrator can update configuration settings within the {\bfseries{system}} namespace.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:/tests/tutorial}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Backup old override specification}
+\DoxyCodeLine{kdb set user:/tests/overrides \$(mktemp)}
+\DoxyCodeLine{kdb export system:/tests/overrides dump > \$(kdb get user:/tests/overrides)}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\# RET: 11}
+\DoxyCodeLine{\# STDERR: Did not find key '/tests/tutorial/cascading/\#0/current/test'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Now add the key ...}
+\DoxyCodeLine{sudo kdb set system:/tests/tutorial/cascading/\#0/current/test "{}hello world"{}}
+\DoxyCodeLine{\#> Create a new key system:/tests/tutorial/cascading/\#0/current/test with string "{}hello world"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ... and verify that it exists}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\#> hello world}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_cascading_md_autotoc_md3793}{}\doxysubsection{Add a Key to the user Namespace}\label{doc_tutorials_cascading_md_autotoc_md3793}
+A user may now want to override the configuration in {\bfseries{system}}, so he/she sets a key in the {\bfseries{user}} namespace\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/tutorial/cascading/\#0/current/test "{}hello galaxy"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/tutorial/cascading/\#0/current/test with string "{}hello galaxy"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# This key masks the key in the system namespace}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\#> hello galaxy}
+
+\end{DoxyCode}
+
+
+Note that configuration in the {\bfseries{user}} namespace only affects {\itshape this} user. Other users would still get the key from the {\bfseries{system}} namespace.\hypertarget{doc_tutorials_cascading_md_autotoc_md3794}{}\doxysubsection{Add a Key to the dir Namespace}\label{doc_tutorials_cascading_md_autotoc_md3794}
+The {\bfseries{dir}} namespace is associated with a directory. The configuration in the {\bfseries{dir}} namespace applies to the {\bfseries{current working directory}} and all its subdirectories. This is useful if you have project specific settings (e.\+g. your git configuration or a .htaccess file).
+
+As {\bfseries{dir}} precedes the {\bfseries{user}} namespace, configuration in {\bfseries{dir}} can overwrite user configuration\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# create and change to a new directory ...}
+\DoxyCodeLine{mkdir kdbtutorial}
+\DoxyCodeLine{cd kdbtutorial}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ... and create a key in this directories dir-\/namespace}
+\DoxyCodeLine{\# By default this data will be saved in the directory `.dir`.}
+\DoxyCodeLine{kdb set dir:/tests/tutorial/cascading/\#0/current/test "{}hello universe"{}}
+\DoxyCodeLine{\#> Create a new key dir:/tests/tutorial/cascading/\#0/current/test with string "{}hello universe"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# This key masks the key in the system namespace}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\#> hello universe}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# But is only present in the associated directory}
+\DoxyCodeLine{cd ..}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\# hello galaxy}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_cascading_md_autotoc_md3795}{}\doxysubsection{Add a Key to the proc Namespace}\label{doc_tutorials_cascading_md_autotoc_md3795}
+The {\bfseries{proc}} namespace is not accessible by the command line tool {\bfseries{kdb}}, as it is unique for each running process using Elektra. So we have to omit an example for this namespace at this point. \mbox{\hyperlink{doc_help_elektra-glossary_md}{Elektrified}} applications can use this namespace to override configuration from other namespaces internally.\hypertarget{doc_tutorials_cascading_md_autotoc_md3796}{}\doxysubsection{Add a Key to the spec Namespace}\label{doc_tutorials_cascading_md_autotoc_md3796}
+The {\bfseries{spec}} namespace is used to store metadata about keys and therefore Elektra handles the {\bfseries{spec}} namespace differently to other namespaces. The following part of the tutorial is dedicated to the impact of the {\bfseries{spec}} namespace on cascading lookups.\hypertarget{doc_tutorials_cascading_md_autotoc_md3797}{}\doxysection{Write Operations and the cascading Namespace}\label{doc_tutorials_cascading_md_autotoc_md3797}
+If a value is to be written to a cascading key, i.\+e., a key starting with \textquotesingle{}/\textquotesingle{}, only cascading keys that resolve to an existing key will be used.
+
+For example,
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set /tests/tutorial/cascading/\#0/current/cascading\_write\_test value}
+\DoxyCodeLine{\# STDERR: Aborting: A cascading write to a non-\/existent key is ambiguous.}
+\DoxyCodeLine{\# RET: 2}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set /tests/tutorial/cascading/\#0/current/cascading\_write\_test metakey metavalue}
+\DoxyCodeLine{\# STDERR: Aborting: A cascading write to a non-\/existent key is ambiguous.}
+\DoxyCodeLine{\# RET: 2}
+
+\end{DoxyCode}
+
+
+will both fail, as no matching key exists. Since there are multiple hypothetical key names that would match the cascading name (keys of specific namespaces like user\+:, system\+:, ...) if they existed, it is not clear what the user intended and thus an error is produced.
+
+To make the previous two operations meaningful, a matching key in the user\+: namespace is created\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/tutorial/cascading/\#0/current/cascading\_write\_test value}
+\DoxyCodeLine{\#> Create a new key user:/tests/tutorial/cascading/\#0/current/cascading\_write\_test with string "{}value"{}}
+
+\end{DoxyCode}
+
+
+Now, the operations operate on a well-\/defined key and succeed this time\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set /tests/tutorial/cascading/\#0/current/cascading\_write\_test value}
+\DoxyCodeLine{\#> Set string to "{}value"{}}
+\DoxyCodeLine{\#> Using name user:/tests/tutorial/cascading/\#0/current/cascading\_write\_test}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set /tests/tutorial/cascading/\#0/current/cascading\_write\_test metakey metavalue}
+\DoxyCodeLine{\#> Using name user:/tests/tutorial/cascading/\#0/current/cascading\_write\_test}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_cascading_md_autotoc_md3798}{}\doxysection{Override Links}\label{doc_tutorials_cascading_md_autotoc_md3798}
+The {\ttfamily spec} namespace is special as it can completely change how the cascading lookup works.
+
+During a cascading lookup for a specific key, the default Elektra behavior can be changed by a corresponding {\ttfamily spec-\/key}, i.\+e. a key in the {\bfseries{spec}} namespace {\bfseries{with the same name}}.
+
+For example, the metadata {\ttfamily override/\#0} of the respective {\ttfamily spec-\/key} can be specified to use a different key in favor of the key itself. This way, we can implement a redirect or symlink like behavior and therefore even config from current folder ({\ttfamily dir} namespace) can be overwritten.
+
+The cascading lookup will consider the following {\bfseries{metadata keys}} of {\ttfamily spec-\/key}\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily override/\#n} redirect to one of the specified keys
+\item {\ttfamily namespaces/\#n} specifies which namespaces will be considered and in which order
+\item {\ttfamily fallback/\#n} if no key was found these keys will act as a fallback
+\item {\ttfamily default} defines a default value for the key if none of the keys was found
+\end{DoxyEnumerate}
+
+{\bfseries{Note\+:}} {\ttfamily override/\#n}, {\ttfamily namespaces/\#n} and {\ttfamily fallback/\#n} are Elektra {\bfseries{array keys}}. This means, such keys can exist several times, each with a different number for {\ttfamily n}, e.\+g. {\ttfamily override/\#0}, {\ttfamily override/\#1}... This way, we can define multiple values for a specific key with a defined order.
+
+As you can see, override links are considered before everything else, which makes them really powerful.
+
+Consider the following example\+:
+
+First, we create a target key to demonstrate the override link mechanism\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb set system:/tests/overrides/test "{}hello override"{}}
+\DoxyCodeLine{\#> Create a new key system:/tests/overrides/test with string "{}hello override"{}}
+
+\end{DoxyCode}
+
+
+Override links can be defined by adding them to the {\ttfamily override/\#} metadata array key of the corresponding {\ttfamily spec-\/key}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb meta-\/set spec:/tests/tutorial/cascading/\#0/current/test override/\#0 /tests/overrides/test}
+
+\end{DoxyCode}
+
+
+Now when doing a cascading lookup, we get the value of our target key instead of the specified one\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\#> hello override}
+
+\end{DoxyCode}
+
+
+As we used a cascading key for our override link ({\ttfamily /tests/overrides/test}) we can use this to allow users to provide their own {\ttfamily tests/overrides/test} keys. If a user sets the {\ttfamily /tests/overrides/test} key, the {\bfseries{user}} namespace will be used (for a non-\/root user) and therefore the new target for our {\ttfamily /tests/tutorial/cascading/\#0/current/test} key will be {\ttfamily user\+:/tests/overrides/test} instead of {\ttfamily system\+:/tests/overrides/test}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/overrides/test "{}hello user"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/overrides/test with string "{}hello user"{}}
+\DoxyCodeLine{kdb get /tests/tutorial/cascading/\#0/current/test}
+\DoxyCodeLine{\#> hello user}
+
+\end{DoxyCode}
+
+
+Furthermore, you can specify a custom order for the namespaces, set fallback keys and more. For more information, read the \mbox{\hyperlink{doc_help_elektra-spec_md}{\`{}elektra-\/spec\`{} help page}}.\hypertarget{doc_tutorials_cascading_md_autotoc_md3799}{}\doxysection{Cleanup}\label{doc_tutorials_cascading_md_autotoc_md3799}
+As last part in this tutorial we remove the modifications to the database we made previously.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb rm -\/r user:/tests/tutorial/}
+\DoxyCodeLine{sudo kdb rm -\/r system:/tests/tutorial}
+\DoxyCodeLine{sudo kdb rm -\/r system:/tests/overrides}
+\DoxyCodeLine{kdb import system:/tests/overrides dump < \$(kdb get user:/tests/overrides)}
+\DoxyCodeLine{rm \$(kdb get user:/tests/overrides)}
+\DoxyCodeLine{kdb rm user:/tests/overrides}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb rm -\/r spec:/tests/tutorial/}
+\DoxyCodeLine{}
+\DoxyCodeLine{rm -\/r kdbtutorial}
+
+\end{DoxyCode}
+ 

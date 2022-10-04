@@ -1,0 +1,70 @@
+\label{doc_decisions_library_directory_structure_md_md_doc_decisions_library_directory_structure}%
+\Hypertarget{doc_decisions_library_directory_structure_md_md_doc_decisions_library_directory_structure}%
+ \hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2003}{}\doxysection{Problem}\label{doc_decisions_library_directory_structure_md_autotoc_md2003}
+Currently {\ttfamily src/libs/elektra} contains the source of several libraries. Each of the libraries should have its own folder. Furthermore, we need to allow rust source to exist in parallel.\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2004}{}\doxysection{Constraints}\label{doc_decisions_library_directory_structure_md_autotoc_md2004}
+
+\begin{DoxyItemize}
+\item It must be possible to set up include-\/paths via CMake so that {\ttfamily \#include $<$elektra/foo/header.\+h$>$} works the same in the build directory and when installed.
+\end{DoxyItemize}\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2005}{}\doxysection{Assumptions}\label{doc_decisions_library_directory_structure_md_autotoc_md2005}
+\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2006}{}\doxysection{Considered Alternatives}\label{doc_decisions_library_directory_structure_md_autotoc_md2006}
+
+\begin{DoxyItemize}
+\item One folder per language, then split by code type ({\ttfamily src/$<$lang$>$/plugins}, {\ttfamily src/$<$lang$>$/libs}, etc.)\+:
+\begin{DoxyItemize}
+\item Pro\+: Makes the per language setup easier, since everything is contained in a single directory and that directory is for a single language, just as if it was any other standalone project in that language.
+\item Con\+: When navigating the source-\/code you need to know what language e.\+g. a plugin is written in to find the correct folder.
+\end{DoxyItemize}
+\item First split by code type, then one folder per language ({\ttfamily src/plugins/$<$lang$>$}, {\ttfamily src/libs/$<$lang$>$}, etc.)
+\begin{DoxyItemize}
+\item Similar to the variant above, but has more downsides. \char`\"{}single folder per language\char`\"{} no longer applies and you still need to know the language to find the folder.
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2007}{}\doxysection{Decision}\label{doc_decisions_library_directory_structure_md_autotoc_md2007}
+We use this directory tree (YAML syntax for highlighting)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{doc:}
+\DoxyCodeLine{benchmarks:}
+\DoxyCodeLine{examples:}
+\DoxyCodeLine{scripts:}
+\DoxyCodeLine{src:}
+\DoxyCodeLine{  include:}
+\DoxyCodeLine{   \# headers that don't belong to a specific library}
+\DoxyCodeLine{  libs:}
+\DoxyCodeLine{    core-\/c: C implementation of libelektra-\/core.so}
+\DoxyCodeLine{    core-\/rust: Rust implementation of libelektra-\/core.so}
+\DoxyCodeLine{    opts: libelektra-\/opts.so has only a single implementation, so no suffix}
+\DoxyCodeLine{  \# plugins and tools use the same suffix idea as above}
+\DoxyCodeLine{  plugins:}
+\DoxyCodeLine{  tools:}
+\DoxyCodeLine{  bindings:}
+\DoxyCodeLine{    rust: Rust bindings}
+\DoxyCodeLine{    cpp: C++ bindings}
+\DoxyCodeLine{    java: Java bindings}
+\DoxyCodeLine{  tests:}
+\DoxyCodeLine{    shell: shell script tests}
+\DoxyCodeLine{    cframework: framework for C tests}
+\DoxyCodeLine{    gtest-\/framework: framework for C++ tests}
+\DoxyCodeLine{    abi: ABI compatibility tests}
+\DoxyCodeLine{  \# build tool configuration files to create a single root project for every language}
+\DoxyCodeLine{  \# this is improves IDE support}
+\DoxyCodeLine{  CMakeLists.txt}
+\DoxyCodeLine{  build.gradle}
+\DoxyCodeLine{  Cargo.toml}
+
+\end{DoxyCode}
+
+
+Unit tests ($\ast$) (e.\+g. the old {\ttfamily tests/ctest}, {\ttfamily tests/kdb}) should be bundled with the code they are testing\+: e.\+g. in Rust test code is in the same file, in C/\+C++ it should be in the same folder and in Java a separate source set in the same module is used. This makes it easier to find the tests for a library, and also creates a uniform structure (in Rust or Java it would be harder to put tests into the current structure). System tests that test multiple components live in the {\ttfamily src/tests} folder.
+
+\begin{quote}
+($\ast$) The term \char`\"{}unit test\char`\"{} is used very loosely here. Most tests for e.\+g. the {\ttfamily kdb} tool will not, strictly speaking, be unit tests, since they don\textquotesingle{}t replace dependencies with mocks/fakes and instead test the whole {\ttfamily kdb} tool. \end{quote}
+For now benchmarks will remain in the top-\/level {\ttfamily benchmarks} directory, unless there is a language specific reason to have them next to the code they benchmark (like unit-\/tests). In future this may change to facilitate automated performance-\/regression tests.\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2008}{}\doxysection{Rationale}\label{doc_decisions_library_directory_structure_md_autotoc_md2008}
+This setup, allows to find a plugin/library/etc. just by knowing its code type (library/plugin/etc.) and its name. At the same time, using language suffixes allows having multiple implementations in different languages. Finally, whenever possible there should be project config file in the top-\/level {\ttfamily src} directory for every language. This will improve IDE support and make it possible to treat all code from one language as a single project. However, it is important that modularity is not lost in the process. It must still be possible to depend on individual libraries in CMake, without having to build everything else that is written in the same language.
+
+Therefore, the top-\/level project should only exist, if the language allows projects that only include sub-\/modules. Otherwise, fully separate projects for every plugin/library/etc. should be used to preserve modularity.\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2009}{}\doxysection{Implications}\label{doc_decisions_library_directory_structure_md_autotoc_md2009}
+\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2010}{}\doxysection{Related Decisions}\label{doc_decisions_library_directory_structure_md_autotoc_md2010}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_header_file_structure_md}{Header File Structure}}
+\end{DoxyItemize}\hypertarget{doc_decisions_library_directory_structure_md_autotoc_md2011}{}\doxysection{Notes}\label{doc_decisions_library_directory_structure_md_autotoc_md2011}

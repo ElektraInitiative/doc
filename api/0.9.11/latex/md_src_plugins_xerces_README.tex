@@ -1,0 +1,117 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the xerces plugin is in keys below
+\item infos/author = Armin Wurzinger \href{mailto:e1528532@libelektra.org}{\texttt{ e1528532@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = storage/xml
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = recommended maintained unittest memleak
+\item infos/metadata = xerces/rootname
+\item infos/description = Storage in the XML format.
+\end{DoxyItemize}\hypertarget{md_src_plugins_xerces_README_src_plugins_xerces_README_md}{}\doxysection{Introduction}\label{md_src_plugins_xerces_README_src_plugins_xerces_README_md}
+This plugin is a storage plugin allowing Elektra to read and write XML formatted files. It uses a general format which\+:
+
+
+\begin{DoxyItemize}
+\item Maps key names to XML elements
+\item Maps key values to textual content of XML elements
+\item Maps metakeys to XML attributes. Metakey name = attribute name, Metakey value = attribute value
+\item Ignores XML comments
+\end{DoxyItemize}\hypertarget{md_src_plugins_xerces_README_autotoc_md599}{}\doxysection{Installation}\label{md_src_plugins_xerces_README_autotoc_md599}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/xerces}.
+
+To include this plugin in a homebrew installation run {\ttfamily brew tap elektrainitiative/elektra} followed by {\ttfamily brew install elektrainitiative/elektra/elektra -\/-\/with-\/xerces}\hypertarget{md_src_plugins_xerces_README_autotoc_md600}{}\doxysection{Usage}\label{md_src_plugins_xerces_README_autotoc_md600}
+To mount an XML file we use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.xml user:/test/file xerces}
+
+\end{DoxyCode}
+
+
+The strength and usage of this plugin is that it supports arbitrary XML files and does not require a specific format. Given the following example of an XML file\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{<?\textcolor{keyword}{xml} \textcolor{keyword}{version}=\textcolor{stringliteral}{"{}1.0"{}} \textcolor{keyword}{encoding}=\textcolor{stringliteral}{"{}UTF-\/8"{}} \textcolor{keyword}{standalone}=\textcolor{stringliteral}{"{}no"{}} ?>}
+\DoxyCodeLine{<\textcolor{keywordtype}{xerces}>\textcolor{keyword}{foo}}
+\DoxyCodeLine{  <\textcolor{keywordtype}{bar} \textcolor{keyword}{meta}=\textcolor{stringliteral}{"{}da\_ta"{}}>\textcolor{keyword}{bar}</\textcolor{keywordtype}{bar}>}
+\DoxyCodeLine{</\textcolor{keywordtype}{xerces}>}
+
+\end{DoxyCode}
+
+
+Please note that if the key name does not correspond to the root element of the xml file, the original name gets stored in a metakey called {\ttfamily xerces/rootname}. The content of the root element gets mapped to the mount point.
+
+We can observe the following result after mounting\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get user:/test/file}
+\DoxyCodeLine{\#> foo}
+\DoxyCodeLine{kdb get user:/test/file/bar}
+\DoxyCodeLine{\#> bar}
+\DoxyCodeLine{kdb meta-\/get user:/test/file/bar meta}
+\DoxyCodeLine{\#> da\_ta}
+
+\end{DoxyCode}
+
+
+To export an existing keyset to the XML format\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export user:/test/xerces xerces > example.xml}
+
+\end{DoxyCode}
+
+
+The root element of the resulting XML file will be \char`\"{}xerces\char`\"{} again, restored via the metadata. If you don\textquotesingle{}t want this behavior, delete the metadata {\ttfamily xerces/rootname} on the mount point, then it uses the mount point\textquotesingle{}s name instead.\hypertarget{md_src_plugins_xerces_README_autotoc_md601}{}\doxysection{Dependencies}\label{md_src_plugins_xerces_README_autotoc_md601}
+
+\begin{DoxyItemize}
+\item {\ttfamily Xerces-\/\+C++ 3.\+0.\+0} or newer ({\ttfamily apt-\/get install libxerces-\/c-\/dev} or {\ttfamily brew install xerces-\/c} on mac\+OS)
+\item CMake 3.\+6 or a copy of {\ttfamily Find\+Xerces\+C.\+cmake} in {\ttfamily /usr/share/cmake-\/3.0/\+Modules/}
+\end{DoxyItemize}\hypertarget{md_src_plugins_xerces_README_autotoc_md602}{}\doxysection{Limitations}\label{md_src_plugins_xerces_README_autotoc_md602}
+This plugin is not able to handle key names which contain characters that are not allowed to appear as an XML element name. Consider using the rename plugin to take care about proper escaping.
+
+The main rules of an XML element name are\+:
+
+
+\begin{DoxyItemize}
+\item Element names must start with a letter or underscore
+\item Element names cannot start with the letters xml (or XML, or Xml, etc.)
+\item Element names can contain letters, digits, hyphens, underscores, and periods
+\item Element names cannot contain spaces
+\end{DoxyItemize}
+
+The root key is not allowed to be an array, as this would correspond to multiple root elements in XML (see the \href{https://github.com/ElektraInitiative/libelektra/issues/1451}{\texttt{ Git\+Hub issue}}).
+
+XSD transformations, schemas or DTDs are not supported yet.\hypertarget{md_src_plugins_xerces_README_autotoc_md603}{}\doxysection{Examples}\label{md_src_plugins_xerces_README_autotoc_md603}
+\hypertarget{md_src_plugins_xerces_README_autotoc_md604}{}\doxysubsection{Mounting, setting a key and exporting}\label{md_src_plugins_xerces_README_autotoc_md604}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:user:/tests/xercesfile}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount xerces.xml user:/tests/xercesfile xerces}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/xercesfile foo}
+\DoxyCodeLine{kdb meta-\/set user:/tests/xercesfile xerces/rootname xerces}
+\DoxyCodeLine{kdb set user:/tests/xercesfile/bar bar}
+\DoxyCodeLine{kdb meta-\/set user:/tests/xercesfile/bar meta "{}da\_ta"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/xercesfile xerces/rootname}
+\DoxyCodeLine{\#> xerces}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/xercesfile/bar}
+\DoxyCodeLine{\#> bar}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/xercesfile xerces}
+\DoxyCodeLine{\# STDOUT-\/REGEX: <bar meta="{}da\_ta"{}>bar</bar>}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb rm -\/r user:/tests/xercesfile}
+\DoxyCodeLine{sudo kdb umount user:/tests/xercesfile}
+
+\end{DoxyCode}
+ 

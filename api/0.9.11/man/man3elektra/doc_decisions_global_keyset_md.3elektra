@@ -1,0 +1,33 @@
+.TH "doc_decisions_global_keyset_md" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_global_keyset_md \- Global KeySet 
+ 
+.SH "Problem"
+.PP
+Some plugins need to communicate more data than is possible to do with metadata\&. This can limit the functionality of plugins, which need to exchange binary or very complex data\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.SH "Decision"
+.PP
+To make the communication between plugins easier, plugins will additionally get a handle to a global keyset via \fC\fBelektraPluginGetGlobalKeySet()\fP\fP\&. The global keyset is tied to a KDB handle, initialized on \fC\fBkdbOpen()\fP\fP and deleted on \fC\fBkdbClose()\fP\fP\&.
+.PP
+The global keyset handle is initialized and accessible for all plugins except manually created plugins (by calling e\&.g\&. \fC\fBelektraPluginOpen()\fP\fP)\&.
+.PP
+This decision removes the need to exchange information between plugins via the parentKey\&.
+.SH "Rationale"
+.PP
+The need for a global keyset arose when developing a global cache plugin\&. A global cache plugin needs to store internal and binary information for the KDB, which is simply not possible with metadata\&.
+.SH "Implications"
+.PP
+Plugins are responsible for cleaning up their part of the global keyset\&.
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

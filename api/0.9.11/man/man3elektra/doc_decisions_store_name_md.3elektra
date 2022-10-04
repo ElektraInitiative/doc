@@ -1,0 +1,72 @@
+.TH "doc_decisions_store_name_md" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_store_name_md \- Store the escaped and/or unescaped key name 
+ 
+.SH "Problem"
+.PP
+Memory Consumption in Elektra is quite high as the key names are long and stored twice in memory\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+comparing of keys and thus searching in key sets must be possible with memcmp
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+printing the escaped key name is not so much used in typical applications and in tooling doing extra escaping does not matter
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+store both
+.IP "\(bu" 2
+store both but in one memory block (previous implementation)
+.IP "\(bu" 2
+only store escaped name
+.PP
+.SH "Decision"
+.PP
+Only store the unescaped key name, suitable for comparing/searching/iterating over name, i\&.e\&.:
+.PP
+.IP "\(bu" 2
+Remove the escaped name from \fCstruct _Key\fP and use it only when necessary\&.
+.IP "\(bu" 2
+Clarify and reduce \fBterminology\fP\&.
+.IP "\(bu" 2
+API Changes:
+.IP "  \(bu" 4
+\fCkeyNew (const char*, size_t)\fP
+.IP "  \(bu" 4
+\fCkeyName\fP returns the unescaped name
+.IP "  \(bu" 4
+remove \fCkeyUnescapedName\fP, \fCkeyGetUnescapedNameSize\fP\&.
+.IP "  \(bu" 4
+reverse terminology: with 'key name' we will refer to the unescaped (base) name, the escaped name will be explicitly called 'escaped key name'\&.
+.IP "  \(bu" 4
+escaped name will be outside the core for tooling
+.IP "  \(bu" 4
+\fCkeyDup(\&.\&., int)\fP with options to filter which parts are copied (to allow copy of keys where only the key name is copied)
+.PP
+
+.PP
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+saves memory
+.IP "\(bu" 2
+reduces API (\fCkeyUnescapedName*\fP)
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+users should use compare functions, \&.\&. instead of \fCkeyName\fP
+.IP "\(bu" 2
+modifications in keyNew needed
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

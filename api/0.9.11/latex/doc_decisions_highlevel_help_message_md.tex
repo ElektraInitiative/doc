@@ -1,0 +1,33 @@
+\label{doc_decisions_highlevel_help_message_md_md_doc_decisions_highlevel_help_message}%
+\Hypertarget{doc_decisions_highlevel_help_message_md_md_doc_decisions_highlevel_help_message}%
+ This decision {\itshape does not} assume code-\/generation is used. For the case of code-\/generation see the \href{\#notes}{\texttt{ Notes}} section.\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1941}{}\doxysection{Problem}\label{doc_decisions_highlevel_help_message_md_autotoc_md1941}
+We want to allow to print the help message no matter what errors happened in {\ttfamily kdb\+Open} or {\ttfamily kdb\+Get}.\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1942}{}\doxysection{Constraints}\label{doc_decisions_highlevel_help_message_md_autotoc_md1942}
+
+\begin{DoxyItemize}
+\item {\ttfamily elektra\+Open} should not return a broken {\ttfamily Elektra} instance.
+\item The help message can only be printed, if {\ttfamily elektra\+Open} returns an {\ttfamily Elektra} instance and no {\ttfamily Elektra\+Error}.
+\end{DoxyItemize}\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1943}{}\doxysection{Assumptions}\label{doc_decisions_highlevel_help_message_md_autotoc_md1943}
+
+\begin{DoxyItemize}
+\item We assume that the application in question was correctly installed.
+\item We assume {\ttfamily gopts} was mounted. This is not the default right now, but the code-\/generator template {\ttfamily highlevel} contains code that will mount {\ttfamily gopts}, if it is missing.
+\item We assume the application was called in {\itshape help mode}, i.\+e. with {\ttfamily -\/-\/help}. Otherwise printing the help message is not possible, anyway.
+\end{DoxyItemize}\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1944}{}\doxysection{Considered Alternatives}\label{doc_decisions_highlevel_help_message_md_autotoc_md1944}
+
+\begin{DoxyItemize}
+\item Ignore all errors (in help mode)\+: Not a feasible solution, because there may have been problems when reading the storage file and therefore, the help message may be broken or incomplete.
+\item Ignore all errors (in help mode), which occurred after the {\ttfamily gopts} plugin ran\+: Complicated to implement (we need to know about plugin order, etc.). Not actually necessary (see \href{\#rationale}{\texttt{ Rationale}}).
+\end{DoxyItemize}\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1945}{}\doxysection{Decision}\label{doc_decisions_highlevel_help_message_md_autotoc_md1945}
+Ignore missing {\ttfamily require}d keys (in help mode), but fail for every other error.\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1946}{}\doxysection{Rationale}\label{doc_decisions_highlevel_help_message_md_autotoc_md1946}
+Required keys {\bfseries{must}} be provided by the user/admin and cannot come from another source (Elektra, app developer, etc.). Therefore they will be missing until the user makes changes to the KDB. Before that, no other error should occur (we assumed a correct installation). If a user runs {\ttfamily app} for the first time and receives an error about a missing required key, they will\+:
+
+
+\begin{DoxyEnumerate}
+\item know what to do and add the key, thereby fixing the problem.
+\item try {\ttfamily app -\/h} and see that it doesn\textquotesingle{}t show a help message. They will probably continue with 3.
+\item try {\ttfamily app -\/-\/help} to find out more. The help message may or may not contain useful information. If not they may try 4.
+\item read some other documentation to find out more. Ideally this leads them to 1.
+\end{DoxyEnumerate}
+
+In any case after this the user definitely know how to interact with the KDB. Since we assumed that there won\textquotesingle{}t be any errors before the KDB was changed, we can assume that the user caused other errors by changing the KDB.\hypertarget{doc_decisions_highlevel_help_message_md_autotoc_md1947}{}\doxysection{Notes}\label{doc_decisions_highlevel_help_message_md_autotoc_md1947}
+If code-\/generation is used, the situation is a little different. If the parameter {\ttfamily embed\+Help\+Fallback} is set to {\ttfamily 1}, a fallback help message will be created from the specification originally passed to the code-\/generator and embedded into the application. The parameter also changes, how help mode is detected and ultimately allows the help message function ({\ttfamily print\+Help\+Message} by default) to always print a help message. Although it may not reflect changes, the user made to the specification. 

@@ -1,0 +1,83 @@
+\label{doc_decisions_error_codes_md_md_doc_decisions_error_codes}%
+\Hypertarget{doc_decisions_error_codes_md_md_doc_decisions_error_codes}%
+ \hypertarget{doc_decisions_error_codes_md_autotoc_md1851}{}\doxysection{Problem}\label{doc_decisions_error_codes_md_autotoc_md1851}
+The current error concept has disadvantages in following regards\+:
+
+
+\begin{DoxyItemize}
+\item A lot of redundant errors At the moment, each new plugin introduces new error codes which led to about 210+ error codes. Many of those errors are duplicated because developers did not know or search for a similar error which is already present. This concept should group similar errors together so that there is one coherent and consistent state again.
+\item Hard to manage specification file Since every developer adds its own error individually, a lot of merge conflicts happen which makes contributing to the codebase unpleasant. Additionally, if you want to reuse any error you have to scrape to the whole file with $\sim$1300+ lines. As there is no senseful ordering or scheme behind the errors (since they grew by time), it is a hassle to find the correct error code. The new concept should standardize errors, making it easy to categorize errors from new plugins and avoid merge conflicts.
+\item No senseful way for application developers to use error codes from elektra If developers of plugins/ external tools using elektra want to react to errors, they have to be very specific. At the moment there is no possibility to catch all errors easily which force a certain behavior. Eg. if there happens a temporary recoverable error, developers have to catch for every specific error code rather than a general hierarchical error. The new concept should make it easy to react to errors as they are sensefully grouped together and are hierarchically structured.
+\end{DoxyItemize}\hypertarget{doc_decisions_error_codes_md_autotoc_md1852}{}\doxysection{Constraints}\label{doc_decisions_error_codes_md_autotoc_md1852}
+
+\begin{DoxyItemize}
+\item Error codes/numbers must stay but can be changed to another format (eg. Strings)
+\item Supporting multiple programming languages
+\item Supporting Elektra\textquotesingle{}s Plugin System
+\end{DoxyItemize}\hypertarget{doc_decisions_error_codes_md_autotoc_md1853}{}\doxysection{Assumptions}\label{doc_decisions_error_codes_md_autotoc_md1853}
+\hypertarget{doc_decisions_error_codes_md_autotoc_md1854}{}\doxysection{Considered Alternatives}\label{doc_decisions_error_codes_md_autotoc_md1854}
+
+\begin{DoxyItemize}
+\item Removing the specification file without requiring error numbers
+\item Adding the key of the occurred error to the API which permits reading information from additional metadata such as an error message provided by a specification author. Reason against\+: The description of the key should already provide such information. Doing it in an extra key would imply redundant information.
+\item Removal of warnings with error codes from the specification file.
+\end{DoxyItemize}
+
+Various projects and standards\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://github.com/GStreamer/gstreamer}{\texttt{ GStreamer}}\+: This project uses 4 domain type errors which are suited to their project\+: CORE, LIBRARY, RESOURCE or STREAM. Every domain type has further sub error codes which are numbered from 1-\/x where 1 is a general purpose error \char`\"{}\+FAILED\char`\"{} which should be used instead of inventing a new error code (additional enum). You can see an example of enum errors \href{https://github.com/GStreamer/gstreamer/blob/a7db80f9a98287f012108845e121f6f6fb62171b/gst/gsterror.h\#L63-L80}{\texttt{ here}}
+\item \href{https://github.com/apache/httpd}{\texttt{ Apache httpd}}\+: This project does not use any error codes at all. They solely rely on the printed message and pass various other information along like file, line, level, etc. The primary function they use can be seen \href{https://github.com/apache/httpd/blob/1acebd4933e5315c669605c3c9222ed8bb0ee9ea/include/http_log.h\#L378-L403}{\texttt{ here}}
+\item \href{https://github.com/jenkinsci/jenkins}{\texttt{ Jenkins}}\+: Since Jenkins is a java project they have inheritance of errors by nature. They mostly use reaction based Exception such as {\ttfamily Missing\+Dependency}, {\ttfamily Restart\+Required}, {\ttfamily Form\+Fill\+Validation}, {\ttfamily Boot\+Failure}, etc. Some exceptions even have more concrete exceptions such as a {\ttfamily No\+Temp\+Dir} which inherits from {\ttfamily Boot\+Failure}. A very similar approach will be implemented by Elektra, except that it is a C project and will use error codes.
+\item \href{https://github.com/postgres/postgres}{\texttt{ Postgresql}}\+: Postgres has one of the most advanced error concepts among all investigated projects. It also uses one bigger \href{https://github.com/postgres/postgres/blob/master/src/backend/utils/errcodes.txt}{\texttt{ specification file}} which is parsed and generates multiple header files. Also noteworthy is that they once had multiple files containing error codes and merged them into a single one (commit \href{https://github.com/postgres/postgres/commit/ddfe26f6441c24660595c5efe5fd0bd3974cdc5c}{\texttt{ \#ddfe26f}}). Errors are a string made up of 5 chars, where the first two chars indicate a certain class. This follows the SQLSTATE conventions. Currently they have 43 classes which all come from SQLSTATE. Postgres also throws additional errors but have to subclass it to one of the current 43 classes and have a special naming convention which have to start with a {\ttfamily P} in the subclass.
+\item \href{https://github.com/etcd-io/etcd}{\texttt{ etcd}}\+: Etcd\textquotesingle{}s approach for errors are tightly coupled to the programming language Go as well as the \href{https://grpc.io/}{\texttt{ g\+RPC}} standard which currently has \href{https://pkg.go.dev/google.golang.org/grpc/codes?utm_source=godoc}{\texttt{ 16 codes}} defined. Some of these errors are similar or identical to those which will be used in elektra. Every error of etcd is associated with one of these categories and gets its own error message which is specified in \href{https://github.com/etcd-io/etcd/blob/master/etcdserver/api/v3rpc/rpctypes/error.go}{\texttt{ this}} file. This concept though does not allow easy subclassing which might be useful (eg. further split Failed\+Precondition into more specific errors like semantic and syntactic errors)
+\item \href{https://docs.microsoft.com/en-us/windows/desktop/sysinfo/registry}{\texttt{ Windows Registry}}\+: The registry does not use any specific error concept but takes the standard \href{https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/18d8fbe8-a967-4f1c-ae50-99ca8e491d2d}{\texttt{ Win32 Error Codes}}. These are neither hierarchical nor have any special ordering. Basically it is the same as elektra has now except for no duplicated errors.
+\item mac\+OS X plist\+: Just like Windows, plist uses standard mac\+OS X errors which is a \href{http://krypted.com/lists/comprehensive-list-of-mac-os-x-error-codes/}{\texttt{ huge catalog}} of unordered return codes as integers.
+\item \href{http://www.snmp.com/protocol/}{\texttt{ SNMP Standard}}\+: Being a standard network protocol, error codes are very specific to the domain itself. A list can be found \href{https://docs.microsoft.com/en-us/windows/desktop/snmp/snmp-error-codes}{\texttt{ here}} and would not meet the needs of elektra at all.
+\item POSIX\+: Returning a non-\/zero value and retrieving the concrete information from {\ttfamily errno} would not suffice for elektra as it is too simple. It would not solve any of our current problems like having excessive uncategorized codes for errors.
+\end{DoxyItemize}\hypertarget{doc_decisions_error_codes_md_autotoc_md1855}{}\doxysection{Decision}\label{doc_decisions_error_codes_md_autotoc_md1855}
+All \char`\"{}fatal\char`\"{} errors will be converted to \char`\"{}errors\char`\"{} as the distinction is not relevant.
+
+Unused errors will be removed from the specification.
+
+Errors will be categorized into logical groups with subgroups. Each error will be made up of 5 characters, where the first 2 character indicate the highest level and character 3 to 5 will be used for subgrouping. Errors are prepended with the letter {\ttfamily C} which is the abbreviation for \char`\"{}\+Code\char`\"{}.
+
+
+\begin{DoxyItemize}
+\item Permanent errors C01000
+\begin{DoxyItemize}
+\item Resource C01100
+\begin{DoxyItemize}
+\item Out of Memory C01110
+\end{DoxyItemize}
+\item Installation C01200
+\item Logical C01300
+\begin{DoxyItemize}
+\item Internal C01310
+\item Interface C01320
+\item Plugin Misbehavior C01330
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item Conflicting State C02000
+\item Validation C03000
+\begin{DoxyItemize}
+\item Syntactic C03100
+\item Semantic C03200
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+To see an explanation of the categories along with a guideline on how to categorize please see the \mbox{\hyperlink{doc_dev_error-categorization_md}{Error Codes Guideline}}\hypertarget{doc_decisions_error_codes_md_autotoc_md1856}{}\doxysection{Rationale}\label{doc_decisions_error_codes_md_autotoc_md1856}
+The grouping of errors will allow developers to filter for specific as well as more general errors to correctly react to them programmatically. The new concept will permit additional subgrouping of errors in case it might be needed in the future.
+
+Splitting/merging/rearranging any category should only be done by a decision (such as this file here) because elektra developers should not be able to generate a new category as they wish because it would lead to the same proliferation of errors as we have now.
+
+These categories are chosen because they can help developers to react programmatically and cover the majority of use cases to our present knowledge. If there is ever the need for another reaction based category, it can be extended very easily.\hypertarget{doc_decisions_error_codes_md_autotoc_md1857}{}\doxysection{Implications}\label{doc_decisions_error_codes_md_autotoc_md1857}
+The specification file will stay but should be untouched in most of the cases in the future. Also the C++ code generation file which uses the specification will stay as it is easier to change categories.
+
+Current errors will be migrated.\hypertarget{doc_decisions_error_codes_md_autotoc_md1858}{}\doxysection{Related Decisions}\label{doc_decisions_error_codes_md_autotoc_md1858}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_error_message_format_md}{Error Message Format}} Shows the new format of the error message
+\item \mbox{\hyperlink{doc_dev_error-categorization_md}{Error Codes Guideline}} Shows how to categorize errors
+\end{DoxyItemize}\hypertarget{doc_decisions_error_codes_md_autotoc_md1859}{}\doxysection{Notes}\label{doc_decisions_error_codes_md_autotoc_md1859}

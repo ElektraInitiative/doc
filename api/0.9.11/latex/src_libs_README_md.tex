@@ -1,0 +1,138 @@
+\label{src_libs_README_md_md_src_libs_README}%
+\Hypertarget{src_libs_README_md_md_src_libs_README}%
+ \begin{quote}
+{\bfseries{Note\+:}} Some information in this document is outdated and will change before the release of Elektra 1.\+0. \end{quote}
+\hypertarget{src_libs_README_md_autotoc_md24}{}\doxysection{Highlevel APIs}\label{src_libs_README_md_autotoc_md24}
+\hypertarget{src_libs_README_md_autotoc_md25}{}\doxysubsection{Highlevel}\label{src_libs_README_md_autotoc_md25}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/highlevel.so}
+
+\end{DoxyCode}
+
+
+Contains the {\bfseries{\mbox{\hyperlink{src_libs_highlevel_README_md}{highlevel API}}}}. See also examples.\hypertarget{src_libs_README_md_autotoc_md26}{}\doxysubsection{Notification}\label{src_libs_README_md_autotoc_md26}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/notification.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{notification}} provides the \href{https://doc.libelektra.org/api/latest/html/group__kdbnotification.html}{\texttt{ notification API}}. Usage examples\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/examples/notificationpolling}{\texttt{ Basic notifications using polling}}
+\item \href{https://www.libelektra.org/examples/notificationasync}{\texttt{ Using asynchronous I/O bindings}}
+\item \href{https://www.libelektra.org/examples/notificationreload}{\texttt{ Reload KDB when Elektra\textquotesingle{}s configuration has changed}}
+\end{DoxyItemize}\hypertarget{src_libs_README_md_autotoc_md27}{}\doxysection{Base Elektra Libraries}\label{src_libs_README_md_autotoc_md27}
+Since version {\bfseries{0.\+8.\+15}} {\bfseries{libelektra}} is split into following libraries\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{overview_libs.png}%Overview of Libraries
+\end{DoxyInlineImage}
+\hypertarget{src_libs_README_md_autotoc_md28}{}\doxysubsection{Libkdb}\label{src_libs_README_md_autotoc_md28}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/kdb.so}
+
+\end{DoxyCode}
+
+
+Accesses the configuration files by orchestrating the plugins. The implementation lives in \mbox{\hyperlink{md_src_libs_elektra_README_src_libs_elektra_README_md}{elektra}}.
+
+It coordinates the interactions between the applications and the plugins.
+
+{\bfseries{loader}} contains source files that implement the plugin loader functionality as used by {\ttfamily libelektra-\/kdb}.\hypertarget{src_libs_README_md_autotoc_md29}{}\doxysubsection{Libcore}\label{src_libs_README_md_autotoc_md29}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/core.so}
+\DoxyCodeLine{<kdbhelper.h>}
+\DoxyCodeLine{<kdb.h> (key* and ks*)}
+
+\end{DoxyCode}
+
+
+Contains the fundamental data-\/structures every participant of Elektra needs to link against. It should be the only part that access the internal data structures. The implementation lives in \mbox{\hyperlink{md_src_libs_elektra_README_src_libs_elektra_README_md}{elektra}}.\hypertarget{src_libs_README_md_autotoc_md30}{}\doxysubsection{Libease}\label{src_libs_README_md_autotoc_md30}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/ease.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{libease}} contains data-\/structure operations on top of libcore which do not depend on internals. Applications and plugins can choose to not link against it if they want to stay minimal. Its main goal is to make programming with Elektra easier if some extra kB are not an issue.\hypertarget{src_libs_README_md_autotoc_md31}{}\doxysubsection{Libplugin}\label{src_libs_README_md_autotoc_md31}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/plugin.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{libplugin}} contains {\ttfamily elektra\+Plugin$\ast$} symbols to be used by plugins.\hypertarget{src_libs_README_md_autotoc_md32}{}\doxysubsection{Libmeta}\label{src_libs_README_md_autotoc_md32}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/meta.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{\href{/home/jenkins/workspace/libelektra-release/src/libs/meta/meta.c}{\texttt{ libmeta}}}} contains metadata operations as described in {\bfseries{\href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ METADATA.\+ini}}}}. Currently mainly contains legacy code and some generic metadata operations.\hypertarget{src_libs_README_md_autotoc_md33}{}\doxysubsection{Libelektra}\label{src_libs_README_md_autotoc_md33}
+Is a legacy library that provides the same functionality as {\ttfamily libelektra-\/kdb} and {\ttfamily libelektra-\/core}. The sources can be found in {\bfseries{libelektra}}.\hypertarget{src_libs_README_md_autotoc_md34}{}\doxysection{Other Libraries}\label{src_libs_README_md_autotoc_md34}
+\hypertarget{src_libs_README_md_autotoc_md35}{}\doxysubsection{Libpluginprocess}\label{src_libs_README_md_autotoc_md35}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/pluginprocess.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{libpluginprocess}} contains functions aiding in executing plugins in a separate process and communicating with those child processes. This child process is forked from Elektra\textquotesingle{}s main process each time such plugin is used and gets closed again afterwards. It uses a simple communication protocol based on a Key\+Set that gets serialized through a pipe via the dump plugin to orchestrate the processes.
+
+This is useful for plugins which cause memory leaks to be isolated in an own process. Furthermore this is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used.\hypertarget{src_libs_README_md_autotoc_md36}{}\doxysubsection{Libtools}\label{src_libs_README_md_autotoc_md36}
+{\bfseries{libtools}} is a high-\/level C++ shared-\/code for tools. It includes\+:
+
+
+\begin{DoxyItemize}
+\item plugin interface
+\item backend interface
+\item 3-\/way merge
+\end{DoxyItemize}\hypertarget{src_libs_README_md_autotoc_md37}{}\doxysubsection{Utility}\label{src_libs_README_md_autotoc_md37}
+{\bfseries{libutility}} provides utility functions to be used in plugins.\hypertarget{src_libs_README_md_autotoc_md38}{}\doxysubsection{Libinvoke}\label{src_libs_README_md_autotoc_md38}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/invoke.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{libinvoke}} provides a simple API allowing us to call functions exported by plugins.\hypertarget{src_libs_README_md_autotoc_md39}{}\doxysubsection{IO}\label{src_libs_README_md_autotoc_md39}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/io.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{io}} provides the \href{https://doc.libelektra.org/api/latest/html/group__kdbio.html}{\texttt{ common API}} for using asynchronous I/O bindings.\hypertarget{src_libs_README_md_autotoc_md40}{}\doxysubsection{Globbing}\label{src_libs_README_md_autotoc_md40}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{libelektra-\/globbing.so}
+
+\end{DoxyCode}
+
+
+{\bfseries{globbing}} provides globbing functionality for Elektra.
+
+The supported syntax is a superset of the syntax used by {\ttfamily glob(7)}. The following extensions are supported\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \#}, when used as {\ttfamily /\#/} (or {\ttfamily /\#"{}} at the end of the pattern), matches a valid array item
+\item {\ttfamily \+\_\+} is the exact opposite; it matches anything but a valid array item
+\item if the pattern ends with {\ttfamily /\+\_\+\+\_\+}, matching key names may contain arbitrary suffixes
+\end{DoxyItemize}
+
+For more info take a look a the documentation of {\ttfamily \mbox{\hyperlink{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}{elektra\+Key\+Glob()}}} and {\ttfamily \mbox{\hyperlink{globbing_8c_a85baa9c79325ad1bf08e95cd82a4daf6}{elektra\+Ks\+Glob()}}}. 

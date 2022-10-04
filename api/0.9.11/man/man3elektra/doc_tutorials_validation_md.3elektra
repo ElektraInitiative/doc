@@ -1,0 +1,320 @@
+.TH "doc_tutorials_validation_md" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_validation_md \- Validation 
+ 
+.SH "Introduction"
+.PP
+Configuration in <abbr title='Free/Libre and Open Source Software'>FLOSS</abbr> unfortunately is often stored completely without validation\&. Notable exceptions are sudo (\fCvisudo\fP), or user accounts (\fCadduser\fP) but in most cases you only get feedback of non-validating configuration when the application fails to start\&.
+.PP
+Elektra provides a generic way to validate any configuration before it is written to disc\&.
+.SH "User Interfaces"
+.PP
+Any of Elektra's user interfaces will work with the technique described in this tutorial, e\&.g\&.:
+.PP
+.IP "1." 4
+\fCkdb qt-gui\fP: graphical user interface
+.IP "2." 4
+\fCkdb editor\fP: starts up your favorite text editor and allows you to edit configuration in any syntax\&. (generalization of \fCvisudo\fP)
+.IP "3." 4
+\fCkdb set\fP: manipulate or add individual configuration entries\&. (generalization of \fCadduser\fP)
+.IP "4." 4
+Any other tool using Elektra to store configuration (e\&.g\&. if the application itself has capabilities to modify its configuration)
+.PP
+.SH "Metadata Together With Keys"
+.PP
+The most direct way to validate keys is
+.PP
+.PP
+.nf
+kdb meta-set user:/tests/together/test check/validation "[1-9][0-9]*"
+kdb meta-set user:/tests/together/test check/validation/match LINE
+kdb meta-set user:/tests/together/test check/validation/message "Not a number"
+kdb set user:/tests/together/test 123
+#> Set string to "123"
+
+# Undo modifications
+kdb rm -r user:/tests/together
+.fi
+.PP
+.PP
+The approach is not limited to validation via regular expressions, but any values-validation plugin can be used, e\&.g\&. \fBtype\fP\&. For a full list refer to the section 'Value Validation' in the \fBlist of all plugins\fP\&.
+.PP
+Note that it's also easy \fBto write your own (value validation) plugin\fP\&.
+.PP
+The drawbacks of this approach are:
+.PP
+.IP "\(bu" 2
+The administrator needs to take care that the validation plugins are available where needed\&.
+.IP "\(bu" 2
+Some metadata (in this case \fCcheck/validation\fP) needs to be stored next to the key which won't work with most configuration files\&. This is the reason why we explicitly used \fCdump\fP as storage in \fCkdb mount\fP\&.
+.IP "\(bu" 2
+After the key is removed, the validation information is gone, too\&.
+.IP "\(bu" 2
+You cannot validate structure of which keys must be present or absent\&.
+.PP
+.SH "Get Started with <tt>spec</tt>"
+.PP
+These issues are resolved straightforward by separating the configuration from its configuration specification (often called schemata in XML or JSON)\&. The purpose of the \fBspec namespace\fP is to hold the configuration specification, i\&.e\&., the description of how to validate the keys of all other namespaces\&.
+.PP
+To make this work, we need a plugin that applies all metadata found in the \fCspec\fP-namespace to all other namespaces\&. This plugin is called \fCspec\fP and needs to be mounted globally (will be added by default and also with any \fCkdb global-mount\fP call)\&.
+.PP
+Before we start, let us make a backup of the current data in the spec and user namespace:
+.PP
+.PP
+.nf
+kdb set system:/tests/specbackup $(mktemp)
+kdb set system:/tests/userbackup $(mktemp)
+kdb export spec:/ dump > $(kdb get system:/tests/specbackup)
+kdb export user:/ dump > $(kdb get system:/tests/userbackup)
+.fi
+.PP
+.PP
+We write metadata to the namespace \fCspec\fP and the plugin \fCspec\fP applies it to every cascading key:
+.PP
+.PP
+.nf
+kdb meta-set spec:/tests/spec/test hello world
+kdb set user:/tests/spec/test value
+kdb meta-ls spec:/tests/spec/test | grep -v '^internal/ini'
+#> hello
+kdb meta-ls /tests/spec/test | grep -v '^internal/ini'
+#> hello
+kdb meta-get /tests/spec/test hello
+#> world
+.fi
+.PP
+.PP
+But it also supports globbing (\fC_\fP for any key, \fC?\fP for any char, \fC[]\fP for character classes):
+.PP
+.PP
+.nf
+kdb meta-set "spec:/tests/spec/_" new metaval
+kdb set user:/tests/spec/test value
+kdb meta-ls /tests/spec/test | grep -v '^internal/ini'
+#> hello
+#> new
+
+# Remove keys and metadata from the commands above
+kdb rm -r spec:/tests/spec
+kdb rm -r user:/tests/spec || kdb rm -r system:/tests/spec
+.fi
+.PP
+.PP
+So let us combine this functionality with validation plugins\&. So we would specify:
+.PP
+.PP
+.nf
+kdb meta-set spec:/tests/spec/test check/validation "[1-9][0-9]*"
+kdb meta-set spec:/tests/spec/test check/validation/match LINE
+kdb meta-set spec:/tests/spec/test check/validation/message "Not a number"
+.fi
+.PP
+.PP
+If we now set a new key with
+.PP
+.PP
+.nf
+kdb set user:/tests/spec/test "not a number"
+#> Create a new key user:/tests/spec/test with string "not a number"
+.fi
+.PP
+.PP
+this key has adopted all metadata from the spec namespace:
+.PP
+.PP
+.nf
+kdb meta-ls /tests/spec/test | grep -v '^internal/ini'
+#> check/validation
+#> check/validation/match
+#> check/validation/message
+.fi
+.PP
+.PP
+Note that this key should not have passed the validation that we defined in the spec namespace\&. Nonetheless we were able to set this key, because the validation plugin was not active for this key\&. On that behalf we have to make sure that the validation plugin is loaded for this key with:
+.PP
+.PP
+.nf
+kdb mount tutorial\&.dump /tests/spec dump validation
+.fi
+.PP
+.PP
+This \fBmounts\fP the backend \fCtutorial\&.dump\fP to the mount point **/tests/spec** and activates the validation plugin for the keys below the mount point\&. The validation plugin now uses the metadata of the keys below **/tests/spec** to validate values before storing them in \fCtutorial\&.dump\fP\&.
+.PP
+If we try setting the key again, we will get an error:
+.PP
+.PP
+.nf
+kdb set user:/tests/spec/test "not a number"
+# STDERR: \&.*Validation Syntactic\&.*Not a number\&.*
+# ERROR:  C03100
+# RET: 5
+.fi
+.PP
+.PP
+However, if we add a key that adheres to the validation rules, it will work:
+.PP
+.PP
+.nf
+kdb set user:/tests/spec/test 42
+#> Create a new key user:/tests/spec/test with string "42"
+.fi
+.PP
+.PP
+Although this is better than defining metadata in the same place as the data itself, we can still do better\&. The reason for that is that one of the aims of Elektra is to remove the trouble of validation and finding the files that hold your configuration from the users\&. At the moment a user still has to know which files should hold the configuration and which plugins must be loaded when he mounts configuration files\&.
+.PP
+This problem can be addressed by recognizing that the location of the configuration files and the plugins that must be loaded is part of the \fIschema\fP of our configuration and therefore should be stored in the spec namespace\&.
+.PP
+.PP
+.nf
+# Undo modifications
+kdb rm -r spec:/tests/spec
+kdb rm -r user:/tests/spec || kdb rm -r system:/tests/spec
+kdb umount /tests/spec
+.fi
+.PP
+.SS "Specfiles"
+We call the files, that contain a complete schema for configuration below a specific path in form of metadata, \fISpecfiles\fP\&.
+.PP
+A \fISpecfile\fP contains metadata, among others, that defines how the configuration settings should be validated\&.
+.PP
+Let us create an example \fISpecfile\fP in the dump format, which supports metadata\&. Although the specfile is stored in the dump format, we can still create it using the human-readable \fBni format\fP by using \fCkdb import\fP (note that the \fC\\\\\fP are due to \fCMarkdown Shell Recorder\fP, do not copy them to your shell):
+.PP
+.PP
+.nf
+sudo kdb mount tutorial\&.dump spec:/tests/tutorial dump
+cat << HERE | kdb import spec:/tests/tutorial ni  \
+[]                                         \
+ mountpoint=tutorial\&.dump                \
+ infos/plugins=dump validation           \
+                                           \
+[/links/_]                                 \
+check/validation=https?://\&.*\\&.\&.*         \
+check/validation/match=LINE              \
+check/validation/message=not a valid URL \
+description=A link to some website       \
+HERE
+kdb meta-ls spec:/tests/tutorial
+#> infos/plugins
+#> mountpoint
+.fi
+.PP
+.PP
+We now have all the metadata that we need to mount and validate the data below \fC/tutorial\fP in one file\&.
+.PP
+For a description which metadata is available, have a look in \fCMETADATA\&.ini\fP\&.
+.PP
+Now we apply this \fISpecfile\fP to the key database to all keys below \fCtests/tutorial\fP\&.
+.PP
+.PP
+.nf
+kdb spec-mount /tests/tutorial
+.fi
+.PP
+.PP
+This command automatically mounts \fC/tests/tutorial\fP to the backend \fCtutorial\&.dump\fP\&. Furthermore it adds all plugins necessary for all metadata within the specification\&. So in this example the validation plugin will be loaded automatically for us\&. \fCspec-mount\fP basically does a normal mount except that it automatically selects plugins\&. As a result there is no \fCspec-umount\fP command since the normal \fCumount\fP is sufficient\&.
+.PP
+Please be aware that if you require many plugins for the same mount point, you can run into \fCthis\fP error\&.
+.PP
+.PP
+.nf
+kdb set user:/tests/tutorial/links/url "invalid url"
+# STDERR: \&.*Validation Syntactic\&.*not a valid URL\&.*
+# ERROR:  C03100
+# RET:    5
+.fi
+.PP
+.PP
+Note that the backend \fCtutorial\&.dump\fP is mounted for all namespaces:
+.PP
+.PP
+.nf
+kdb file user:/tests/tutorial
+# STDOUT-REGEX: /\&.*/tutorial\\&.dump
+kdb file system:/tests/tutorial
+# STDOUT-REGEX: /\&.*/tutorial\\&.dump
+kdb file dir:/tests/tutorial
+# STDOUT-REGEX: /\&.*/tutorial\\&.dump
+.fi
+.PP
+.PP
+If you want to go without validation, you can work around that by setting the keys with the \fC-f\fP (\fC--force\fP) option:
+.PP
+.PP
+.nf
+kdb set -f system:/tests/tutorial/links/elektra "invalid url"
+#> Create a new key system:/tests/tutorial/links/elektra with string "invalid url"
+.fi
+.PP
+.SH "Rejecting Configuration Keys"
+.PP
+Up to now we only discussed how to reject keys that have unwanted values\&. Sometimes, however, applications require the presence or absence of keys\&. There are many ways to do so directly supported by \fBthe spec plugin\fP\&. Another way is to trigger errors with the \fBerror plugin\fP:
+.PP
+.PP
+.nf
+kdb meta-set spec:/tests/tutorial/spec/should_not_be_here trigger/error C03200
+kdb spec-mount /tests/tutorial
+kdb set user:/tests/tutorial/spec/should_not_be_here abc
+# RET:    5
+# ERROR:C03200
+kdb get /tests/tutorial/spec/should_not_be_here
+# RET: 11
+# STDERR: Did not find key '/tests/tutorial/spec/should_not_be_here'
+.fi
+.PP
+.PP
+If we want to reject every optional key (and only want to allow required keys) we can use the plugin \fCrequired\fP as further discussed below\&.
+.PP
+Before we look further let us undo the modifications to the key database\&.
+.PP
+.PP
+.nf
+kdb rm -r spec:/tests/tutorial
+kdb rm -r system:/tests/tutorial
+kdb rm -rf user:/tests/tutorial
+kdb umount spec:/tests/tutorial
+kdb umount /tests/tutorial
+kdb rm -rf spec:/
+kdb rm -rf user:/
+kdb import spec:/ dump < $(kdb get system:/tests/specbackup)
+kdb import user:/ dump < $(kdb get system:/tests/userbackup)
+rm $(kdb get system:/tests/specbackup)
+rm $(kdb get system:/tests/userbackup)
+kdb rm system:/tests/specbackup
+kdb rm system:/tests/userbackup
+.fi
+.PP
+.SH "Validate Existing Keys"
+.PP
+To check if an existing set of keys can be read and written with the current validation rules \fCkdb validate\fP should be used\&. Validate will read the values of all string keys under the point defined as argument in the command line, sets the key value to something different, then back to the original and finally writes that original value back to the key database\&. All loaded \fBvalidation plugins\fP are now used to validate the values of keys with the necessary meta-keys (see above)\&.
+.PP
+Only string keys are validated! Binary keys are skipped!
+.PP
+.PP
+.nf
+# mount test config file and set a value
+sudo kdb mount range\&.ecf /tests/range range dump
+
+# set value
+kdb set user:/tests/range/value 5
+
+# add range check to all keys under /tests/range/
+kdb meta-set spec:/tests/range/_ check/range "1-10"
+
+# check if validate passes
+kdb validate /tests/range
+
+# set new key to invalid value (with kdb set -f)
+kdb set -f user:/tests/range/value2 11
+
+# validation fails now
+kdb validate /tests/range
+# RET:1
+
+# clean up
+kdb rm -r /tests/range/
+sudo kdb umount /tests/range
+.fi
+.PP
+ 

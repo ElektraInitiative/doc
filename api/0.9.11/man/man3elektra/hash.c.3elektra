@@ -1,0 +1,85 @@
+.TH "hash.c" 3elektra "Tue Oct 4 2022" "Version 0.9.11" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hash.c \- Provides functions to hash Elektra data structures\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbease\&.h>\fP
+.br
+\fC#include <kdberrors\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+\fC#include <stdio\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include 'sha\-256\&.h'\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "kdb_boolean_t \fBcalculateSpecificationToken\fP (char hash_string[65], KeySet *ks, Key *parentKey)"
+.br
+.RI "Calculate a specification token for the KeySet of an application\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Provides functions to hash Elektra data structures\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "kdb_boolean_t calculateSpecificationToken (char hash_string[65], KeySet * ks, Key * parentKey)"
+
+.PP
+Calculate a specification token for the KeySet of an application\&. The KeySet of an application is identified as all keys below the applications root key\&.
+.PP
+\fBPrecondition\fP
+.RS 4
+The parentKey must have the correct namespace\&. E\&.g\&. If only keys from the spec:/ should be considered for the token calculation, pass a key with KEY_NS_SPEC\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+Array parent key's (e\&.g\&., \fC/format/#\fP) are ignored for the token\&. See inline documentation below for rationale\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIhash_string\fP A string\&. After successful execution this will contain the hash as hex-string\&. 
+.br
+\fIks\fP The KeySet for the application\&. 
+.br
+\fIparentKey\fP The Key below which all the relevant keys are\&. Keys that are not below \fCparentKey\fP are ignored\&. The key's namespace is important (see preconditions) 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIfalse\fP If an error occurred\&. 
+.br
+\fItrue\fP If the computation was successful\&. 
+.RE
+.PP
+Loop through all keys relevant for token calculation\&.
+.PP
+Ignore array parents for token calculation\&. Rationale: There is a bug in the spec plugin that is triggered on changing the size of an array\&. It leads to array parents vanishing from the spec namespace and thus a different token\&. See https://github.com/ElektraInitiative/libelektra/issues/4061
+.PP
+Include NULL teminator in this and all following key/value strings, to avoid the following bug: https://github.com/ElektraInitiative/libelektra/issues/4110
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

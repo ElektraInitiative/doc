@@ -1,0 +1,82 @@
+\label{doc_decisions_logging_md_md_doc_decisions_logging}%
+\Hypertarget{doc_decisions_logging_md_md_doc_decisions_logging}%
+ \hypertarget{doc_decisions_logging_md_autotoc_md2012}{}\doxysection{Problem}\label{doc_decisions_logging_md_autotoc_md2012}
+Both code comments and assertions are unfortunately not very popular. A quite efficient way to still get some documentation about the code are logging statements. In Elektra they are currently inconsistent and unusable. Thus there is an urge for this decision.\hypertarget{doc_decisions_logging_md_autotoc_md2013}{}\doxysection{Constraints}\label{doc_decisions_logging_md_autotoc_md2013}
+
+\begin{DoxyItemize}
+\item this decision is irrelevant for plugins and bindings that are not written in C/\+C++. In any case, however, logging must be disabled by default.
+\item should completely compile away with ENABLE\+\_\+\+LOGGER=OFF
+\item should support minimalistic, compile-\/time filtering (per modules and verbosity level?) and some sinks (stderr, syslog or files)
+\end{DoxyItemize}\hypertarget{doc_decisions_logging_md_autotoc_md2014}{}\doxysection{Assumptions}\label{doc_decisions_logging_md_autotoc_md2014}
+
+\begin{DoxyItemize}
+\item run-\/time problems are checked via assertions, not logged
+\item opinions about if logging should be to stderr or files differ
+\item filtering with grep is not enough
+\item per default there should be no output
+\item with ENABLE\+\_\+\+LOGGER=ON only warnings and errors should be shown on stderr
+\item other sinks like syslog and file may log more (they are not immediately visible and distracting)
+\item performance is not so important (because logging is usually turned off anyway)
+\end{DoxyItemize}\hypertarget{doc_decisions_logging_md_autotoc_md2015}{}\doxysection{Considered Alternatives}\label{doc_decisions_logging_md_autotoc_md2015}
+
+\begin{DoxyItemize}
+\item log similar to the warnings/error system work, discarded because of the run-\/time overhead and no use case why end users should see log statements.
+\item C++ logging library (boost, apache,..), discarded because C++ should not be in core
+\item libraries needed static initializing\+: problematic, logging should just work, even if application does not initialize anything
+\item using syslog\+: no info from which source file the logging statement comes from
+\item using journald\+: adds deps problematic for non-\/linux
+\item zlog\+: incompatible licence (LGPL)
+\end{DoxyItemize}\hypertarget{doc_decisions_logging_md_autotoc_md2016}{}\doxysection{Decision}\label{doc_decisions_logging_md_autotoc_md2016}
+Provide a Macro
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ELEKTRA\_LOG (\textcolor{keywordtype}{int} module, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *msg, ...);}
+
+\end{DoxyCode}
+
+
+that calls
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{elektraLog ([as above], \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{function}, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * file,}
+\DoxyCodeLine{            \textcolor{keyword}{const} \textcolor{keywordtype}{int} line, ...);}
+
+\end{DoxyCode}
+
+
+and adds current function, file and line to {\ttfamily elektra\+Log}\textquotesingle{}s arguments.
+
+{\ttfamily elektra\+Log} is implemented in a separate {\ttfamily \mbox{\hyperlink{log_8c}{log.\+c}}} file. If someone needs filtering, logging to different sources or similar, he/she simply modifies {\ttfamily \mbox{\hyperlink{log_8c}{log.\+c}}}.\hypertarget{doc_decisions_logging_md_autotoc_md2017}{}\doxysubsection{Severity}\label{doc_decisions_logging_md_autotoc_md2017}
+The severity passed to {\ttfamily ELEKTRA\+\_\+\+LOG\+\_\+} should be as in syslog\textquotesingle{}s priority, except the error conditions which are not needed (asserts should be used in these situations).
+
+So we would have\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily ELEKTRA\+\_\+\+LOG\+\_\+\+WARNING}\+: warning conditions
+\item {\ttfamily ELEKTRA\+\_\+\+LOG\+\_\+\+NOTICE}\+: normal, but significant, condition
+\item {\ttfamily ELEKTRA\+\_\+\+LOG\+\_\+\+INFO}\+: informational message
+\item {\ttfamily ELEKTRA\+\_\+\+LOG\+\_\+\+DEBUG}\+: debug-\/level message
+\end{DoxyItemize}\hypertarget{doc_decisions_logging_md_autotoc_md2018}{}\doxysubsection{Modules}\label{doc_decisions_logging_md_autotoc_md2018}
+To add a new module, one simply adds his/her module to {\ttfamily elektramodules.\+h} via {\ttfamily \#define}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define ELEKTRA\_MODULE\_<NAME> <SEQNUMBER>}}
+
+\end{DoxyCode}
+
+
+The module name {\ttfamily $<$NAME$>$} shall be consistent with module names used in {\ttfamily module\+:} of {\ttfamily src/error/specification}.\hypertarget{doc_decisions_logging_md_autotoc_md2019}{}\doxysection{Rationale}\label{doc_decisions_logging_md_autotoc_md2019}
+A more complex system seems to be overkill. Thus libraries should not have any effects other than what is described by their API, logging should nearly always be disabled.
+
+A more \char`\"{}hackable\char`\"{} logger seems to be more suitable for individual needs. Having a separate {\ttfamily \mbox{\hyperlink{log_8c}{log.\+c}}} means that the logger can be changed without the need to recompile anything but a single file. It also removes the dependency of {\ttfamily stdio.\+h} from every individual file to a single place.
+
+Thus logging is very easy to use (only include {\ttfamily elektralog.\+h} and use {\ttfamily ELEKTRA\+\_\+\+LOG}) and still very flexible (with modules, severity, file, line and function information nearly everything someone wants from a logging system can be achieved in {\ttfamily \mbox{\hyperlink{log_8c}{log.\+c}}}.\hypertarget{doc_decisions_logging_md_autotoc_md2020}{}\doxysection{Implications}\label{doc_decisions_logging_md_autotoc_md2020}
+The current VERBOSE would be turned off forever and the code within VERBOSE needs to be migrated to {\ttfamily ELEKTRA\+\_\+\+LOG}.\hypertarget{doc_decisions_logging_md_autotoc_md2021}{}\doxysection{Related Decisions}\label{doc_decisions_logging_md_autotoc_md2021}
+
+\begin{DoxyItemize}
+\item assertions
+\end{DoxyItemize}\hypertarget{doc_decisions_logging_md_autotoc_md2022}{}\doxysection{Notes}\label{doc_decisions_logging_md_autotoc_md2022}

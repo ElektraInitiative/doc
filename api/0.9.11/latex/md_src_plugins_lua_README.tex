@@ -1,0 +1,93 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the lua plugin is in keys below
+\item infos/author = Manuel Mausz \href{mailto:manuel-elektra@mausz.at}{\texttt{ manuel-\/elektra@mausz.\+at}}
+\item infos/licence = BSD
+\item infos/provides =
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = unittest configurable global memleak
+\item infos/description = proxy that calls other plugins (scripts) written in lua
+\end{DoxyItemize}\hypertarget{md_src_plugins_lua_README_src_plugins_lua_README_md}{}\doxysection{Introduction}\label{md_src_plugins_lua_README_src_plugins_lua_README_md}
+The plugin uses Lua to do magic things. It basically allows to call plugins written in Lua.
+
+What a Lua script can do is not really limited by design, so any kind of plugin may be implemented. The lua plugin is especially useful to write filter and logging scripts.\hypertarget{md_src_plugins_lua_README_autotoc_md327}{}\doxysection{Installation}\label{md_src_plugins_lua_README_autotoc_md327}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/lua}.\hypertarget{md_src_plugins_lua_README_autotoc_md328}{}\doxysection{Usage}\label{md_src_plugins_lua_README_autotoc_md328}
+The lua plugin accepts only the {\bfseries{script}} configuration parameter holding the path to a Lua script. The mount command would look like
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.ini /lua ini lua script=/path/to/filter\_script.lua}
+
+\end{DoxyCode}
+
+
+if the {\bfseries{ini}} plugin should be used for storage and the lua plugin only serves to invoke the filter script.
+
+For a Lua script that serves as (JSON) storage plugin itself, one could also use
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.json /lua lua script=/path/to/json\_plugin.lua}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_lua_README_autotoc_md329}{}\doxysubsection{Lua Scripts}\label{md_src_plugins_lua_README_autotoc_md329}
+Lua scripts can implement the following functions
+
+
+\begin{DoxyItemize}
+\item elektra\+Open(config, error\+Key)
+\item elektra\+Get(returned, parent\+Key)
+\item elektra\+Set(returned, parent\+Key)
+\item elektra\+Error(returned, parent\+Key)
+\item elektra\+Close(error\+Key)
+\end{DoxyItemize}
+
+where {\itshape config} \& {\itshape returned} are Key\+Sets and {\itshape error\+Key} \& {\itshape parent\+Key} are Keys. For the return codes of the functions, the same rules as for normal plugins apply.
+
+If a function is not available, it simply is not called. A script does not have to implement all functions therefore.
+
+Access to {\bfseries{kdb}} can be retrieved using the Lua import
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{require("{}kdb"{})}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_lua_README_autotoc_md330}{}\doxysection{Example}\label{md_src_plugins_lua_README_autotoc_md330}
+An example script that prints some information for each method call would be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{function elektraOpen(config, errorKey)}
+\DoxyCodeLine{  print("{}Lua script method 'elektraOpen' called"{})}
+\DoxyCodeLine{  return 0}
+\DoxyCodeLine{end}
+\DoxyCodeLine{}
+\DoxyCodeLine{function elektraGet(returned, parentKey)}
+\DoxyCodeLine{  print("{}Lua script method 'elektraGet' called"{})}
+\DoxyCodeLine{  return 1}
+\DoxyCodeLine{end}
+\DoxyCodeLine{}
+\DoxyCodeLine{function elektraSet(returned, parentKey)}
+\DoxyCodeLine{  print("{}Lua script method 'elektraSet' called"{})}
+\DoxyCodeLine{  return 1}
+\DoxyCodeLine{end}
+\DoxyCodeLine{}
+\DoxyCodeLine{function elektraError(returned, parentKey)}
+\DoxyCodeLine{  print("{}Lua script method 'elektraError' called"{})}
+\DoxyCodeLine{  return 1}
+\DoxyCodeLine{end}
+\DoxyCodeLine{}
+\DoxyCodeLine{function elektraClose(errorKey)}
+\DoxyCodeLine{  print("{}Lua script method 'elektraClose' called"{})}
+\DoxyCodeLine{  return 0}
+\DoxyCodeLine{end}
+
+\end{DoxyCode}
+
+
+Further examples can be found in the lua directory.\hypertarget{md_src_plugins_lua_README_autotoc_md331}{}\doxysection{Disclaimer}\label{md_src_plugins_lua_README_autotoc_md331}
+Note, this is a technical preview. It might have severe bugs and the API might change in the future.
+
+Be also aware that a Lua script will never be as performant as a native C/\+C++ plugin. Spinning up the interpreter takes additional time and resources. 

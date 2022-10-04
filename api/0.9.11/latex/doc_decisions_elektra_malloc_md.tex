@@ -1,0 +1,33 @@
+\label{doc_decisions_elektra_malloc_md_md_doc_decisions_elektra_malloc}%
+\Hypertarget{doc_decisions_elektra_malloc_md_md_doc_decisions_elektra_malloc}%
+ \hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1779}{}\doxysection{Problem}\label{doc_decisions_elektra_malloc_md_autotoc_md1779}
+A big problem with having elektra\+Malloc is, that it makes it impossible to call libc functions that allocate data with malloc (e.\+g. strndup) or others that expect a pointer that can be passed to realloc. You might even do that by accident and never notice the problem, until someone replaces elektra\+Malloc and then you could get some pretty bad memory bugs.
+
+Functions considered for removal\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily elektra\+Malloc}
+\item {\ttfamily elektra\+Calloc}
+\item {\ttfamily elektra\+Free}
+\item {\ttfamily elektra\+Str\+Dup}
+\item {\ttfamily elektra\+Str\+Len}
+\end{DoxyItemize}\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1780}{}\doxysection{Constraints}\label{doc_decisions_elektra_malloc_md_autotoc_md1780}
+Proprietary apps are sometimes delivered together with a libc (either static or a startup script makes sure their own libs are found). If they would use Elektra, and the person wants the app to use the global Elektra it is a valid use case for the dedicated functions.\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1781}{}\doxysection{Assumptions}\label{doc_decisions_elektra_malloc_md_autotoc_md1781}
+The only safe way to keep elektra\+Malloc et al. is to define that they will always call their libc counterpart (malloc et al.) and their purpose is simply to add assertions. Then we can also make them private, because you can just call free to free any pointer returned by Elektra. Ideally, I\textquotesingle{}d remove the functions, but it seems unlikely this will be accepted.\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1782}{}\doxysection{Considered Alternatives}\label{doc_decisions_elektra_malloc_md_autotoc_md1782}
+
+\begin{DoxyItemize}
+\item Completely replace {\ttfamily elektra\+Malloc} / {\ttfamily elektra\+Calloc} with simple calls to malloc
+\item Fix all places where non-\/\+Elektra functions get used
+\end{DoxyItemize}\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1783}{}\doxysection{Decision}\label{doc_decisions_elektra_malloc_md_autotoc_md1783}
+
+\begin{DoxyItemize}
+\item keep current state with the custom functions (allocators)
+\item make it optional for plugin developers to use language specific allocators or our custom allocators
+\item remove everything except {\ttfamily elektra\+Free} from public API
+\item remove all functions that don\textquotesingle{}t actually involve any memory allocations (e.\+g. {\ttfamily elektra\+Str\+Len}, {\ttfamily elektra\+Str\+Cmp})
+\item add {\ttfamily elektra\+Str\+NDup} and other {\ttfamily stdlib} equivalents that do memory allocation.
+\end{DoxyItemize}\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1784}{}\doxysection{Rationale}\label{doc_decisions_elektra_malloc_md_autotoc_md1784}
+While the current state might cause some problems with Compiler optimizations and discoverability, those issues probably are only very minor in practice. Removing all functions poses a considerable amount of work, which would have to be undone in case we need those functions one day anyway. The current downsides don\textquotesingle{}t justify such a big procedure.\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1785}{}\doxysection{Implications}\label{doc_decisions_elektra_malloc_md_autotoc_md1785}
+\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1786}{}\doxysection{Related Decisions}\label{doc_decisions_elektra_malloc_md_autotoc_md1786}
+\hypertarget{doc_decisions_elektra_malloc_md_autotoc_md1787}{}\doxysection{Notes}\label{doc_decisions_elektra_malloc_md_autotoc_md1787}
