@@ -1,0 +1,692 @@
+\label{doc_tutorials_specification_md_md_doc_tutorials_specification}%
+\Hypertarget{doc_tutorials_specification_md_md_doc_tutorials_specification}%
+ \hypertarget{doc_tutorials_specification_md_autotoc_md4422}{}\doxysection{Overview}\label{doc_tutorials_specification_md_autotoc_md4422}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4423}{}\doxysubsection{Introduction}\label{doc_tutorials_specification_md_autotoc_md4423}
+In this tutorial you will learn how to interactively use the {\ttfamily Spec\+Elektra} specification language and {\ttfamily kdb} to write a configuration specification for an example application.\hypertarget{doc_tutorials_specification_md_autotoc_md4424}{}\doxysubsection{What you should already know}\label{doc_tutorials_specification_md_autotoc_md4424}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/getstarted/guide\#installation}{\texttt{ how to install Elektra}}
+\item basic Elektra commands and concepts ({\ttfamily kdb get}, {\ttfamily kdb set}, {\ttfamily kdb ls})
+\item how to open and use a terminal
+\end{DoxyItemize}\hypertarget{doc_tutorials_specification_md_autotoc_md4425}{}\doxysubsection{What you’ll learn}\label{doc_tutorials_specification_md_autotoc_md4425}
+
+\begin{DoxyItemize}
+\item how to create and mount a specification using {\ttfamily kdb}
+\item how to add keys with different types, defaults and examples to your specification and how to validate them
+\item the benefits of using {\ttfamily kdb} to generate a specification, instead of writing one by hand
+\item how to use the final specification during the installation process of applications
+\end{DoxyItemize}\hypertarget{doc_tutorials_specification_md_autotoc_md4426}{}\doxysubsection{What you\textquotesingle{}ll do}\label{doc_tutorials_specification_md_autotoc_md4426}
+
+\begin{DoxyItemize}
+\item use {\ttfamily kdb} to create and mount a specification for an example CRUD (Create, Read, Update, Delete) application
+\item define defaults, examples and checks for keys in the validation
+\item use the specification as a starting point for customizing the configuration of installed applications
+\end{DoxyItemize}\hypertarget{doc_tutorials_specification_md_autotoc_md4427}{}\doxysection{Example App Overview}\label{doc_tutorials_specification_md_autotoc_md4427}
+For this tutorial you will write a specification for a simple CRUD backend application. You need to configure a {\ttfamily port} and a {\ttfamily secure} property, that toggles SSL usage, for the REST server. An {\ttfamily ip} and a SQL {\ttfamily dialect} for the database server the app will connect to and finally a {\ttfamily date} where all the data will be saved to a backup.
+
+So the application will need the following configuration options\+:
+
+
+\begin{DoxyItemize}
+\item a server port
+\item server secure
+\item a database ip
+\item a database dialect
+\item a backup date
+\end{DoxyItemize}\hypertarget{doc_tutorials_specification_md_autotoc_md4428}{}\doxysection{Getting Started}\label{doc_tutorials_specification_md_autotoc_md4428}
+Make sure you have {\ttfamily Elektra} installed on your local machine\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb -\/-\/version}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# KDB\_VERSION: 0.9.9}
+\DoxyCodeLine{\# SO\_VERSION: 5}
+
+\end{DoxyCode}
+
+
+Otherwise refer to the \href{https://www.libelektra.org/getstarted/guide}{\texttt{ getting started guide}} to install it.\hypertarget{doc_tutorials_specification_md_autotoc_md4429}{}\doxysection{Mounting the Specification}\label{doc_tutorials_specification_md_autotoc_md4429}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4430}{}\doxysubsection{Step 1\+: Mount a Specification File}\label{doc_tutorials_specification_md_autotoc_md4430}
+First you need to mount a specification file, in this case {\ttfamily spec.\+ni} to the {\ttfamily spec\+:/} namespace. You can define the path inside the {\ttfamily spec\+:/} namespace as {\ttfamily /tests/sw/org/app/\#0/current}, refer to \href{https://www.libelektra.org/tutorials/integration-of-your-c-application}{\texttt{ the documentation}} to find out more about constructing the name.
+
+You will be using the profile {\ttfamily current}, you can find out more about profiles in \href{https://www.libelektra.org/plugins/profile}{\texttt{ the documentation}} as well.
+
+We will be writing values mostly to the {\ttfamily user\+:/} namespace. If you want to learn more about namespaces in general, refer to the \href{https://www.libelektra.org/tutorials/namespaces}{\texttt{ the documentation on namespaces}}
+
+You also need to specify the plugin you will use for writing to the file in the correct format. In this case you can choose the {\ttfamily ni} plugin to write to the specification file.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount `pwd`/spec.ni spec:/tests/sw/org/app/\(\backslash\)\#0/current ni}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+$\ast$$\ast$\+\_\+\+Attention\+\_\+$\ast$$\ast$\+: Mounting the specification by supplying an absolute path (like in the previous example with {\ttfamily \`{}pwd\`{}}) is only recommended for defining the specification in the first place. It is not recommended when mounting the final specification for usage with the application, especially not in production environments!
+
+Please read the section \href{\#elektra-use-spec}{\texttt{ Using the specification}} at the end of this document for further information. \end{quote}
+Using the command below you can get the location of the concrete file that is used by Elektra.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current}
+\DoxyCodeLine{\# /current/working/directory/spec.ni}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4431}{}\doxysubsection{Step 2\+: Define a mountpoint}\label{doc_tutorials_specification_md_autotoc_md4431}
+Next you can define, that this specification uses a specific mountpoint for a concrete application configuration. So you can say the concrete configuration should be written to {\ttfamily app.\+ni}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current mountpoint app.ni}
+
+\end{DoxyCode}
+
+
+Your {\ttfamily spec.\+ni} file should now look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# =}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = app.ni}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4432}{}\doxysubsection{Step 3\+: Do a specification mount}\label{doc_tutorials_specification_md_autotoc_md4432}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb spec-\/mount /tests/sw/org/app/\(\backslash\)\#0/current ni}
+
+\end{DoxyCode}
+
+
+This specification mount makes sure that the paths where the concrete configuration should be ({\ttfamily app.\+ni}) are ready to fulfill our specification ({\ttfamily spec.\+ni}). Be aware that different files get mounted for different namespaces. You\textquotesingle{}ve a specification file ({\ttfamily spec.\+ni}) for the {\ttfamily spec}-\/namespace and three files ({\ttfamily app.\+ni}) on different locations for the {\ttfamily dir}-\/ {\ttfamily user}-\/ and {\ttfamily system}-\/namespaces.
+
+You can see the files by providing the namespace as prefix to the {\ttfamily kdb file} command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file system:/tests/sw/org/app/\#0/current}
+\DoxyCodeLine{\# /etc/kdb/app.ni}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb file user:/tests/sw/org/app/\#0/current}
+\DoxyCodeLine{\# /home/user/.config/app.ni}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb file dir:/tests/sw/org/app/\#0/current}
+\DoxyCodeLine{\# /current/working/directory/.dir/app.ni}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+$\ast$$\ast$\+\_\+\+Note\+\_\+$\ast$$\ast$\+: The files only exist, when configuration values are stored there, i.\+e. they are created on the first {\ttfamily kdb set} and removed with the last {\ttfamily kdb rm}. \end{quote}
+For more information about namespaces in Elektra please see \href{https://www.libelektra.org/man-pages/elektra-namespaces}{\texttt{ here}}, a tutorial about the topic is available \href{https://www.libelektra.org/tutorials/namespaces}{\texttt{ here}}.\hypertarget{doc_tutorials_specification_md_autotoc_md4433}{}\doxysection{Adding your first key to the specification}\label{doc_tutorials_specification_md_autotoc_md4433}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4434}{}\doxysubsection{Step 1\+: Adding the server port}\label{doc_tutorials_specification_md_autotoc_md4434}
+The first key you will add to your specification is the port of the server. You add it by using the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/port type unsigned\_short}
+
+\end{DoxyCode}
+
+
+What you also specified in the command above is the type of the configuration value. Elektra uses the \href{https://www.libelektra.org/plugins/type}{\texttt{ CORBA type system}} and will check if values conform to the type specified.
+
+So after adding the initial key, your specification should look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#  =}
+\DoxyCodeLine{\# server/port =}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = app.ni}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/port]}
+\DoxyCodeLine{\#  meta:/type = unsigned\_short}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4435}{}\doxysubsection{Step 2\+: Adding more metadata}\label{doc_tutorials_specification_md_autotoc_md4435}
+So with your first key added, you of course want to specify more information for the port. There surely is more information to a port than just the type. What about a {\ttfamily default}, or what about an {\ttfamily example} for a usable port? Maybe a {\ttfamily description} what the port really is for? Let\textquotesingle{}s add that next!
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/port default 8080}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/port example 8080}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/port description "{}port of the REST server that runs the application"{}}
+
+\end{DoxyCode}
+
+
+Beautiful! Your specification is starting to look like something useful. But wait! Shouldn\textquotesingle{}t a port just use values between {\ttfamily 1} and {\ttfamily 65535}?
+
+Of course Elektra also has a plugin for that. You can just use the \href{https://www.libelektra.org/plugins/network}{\texttt{ network}} checker plugin.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/port check/port ''}
+
+\end{DoxyCode}
+
+
+Now we define the plugins that we want to load. In our example we need the {\ttfamily ni}-\/Plugin for reading and writing the configuration files, the {\ttfamily type}-\/plugin for validating data types and the {\ttfamily network}-\/plugin for validating port numbers.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current infos/plugins "{}ni type network"{}}
+
+\end{DoxyCode}
+
+
+Nice! You just have to do one more thing when using a new plugin. Elektra needs to remount the spec to use the new plugin. Use the command from before\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb spec-\/mount /tests/sw/org/app/\(\backslash\)\#0/current}
+
+\end{DoxyCode}
+
+
+Your final specification after adding the port should now look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#  =}
+\DoxyCodeLine{\# server/port =}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = app.ni}
+\DoxyCodeLine{\#  meta:/infos/plugins = ni type network}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/port]}
+\DoxyCodeLine{\#  meta:/check/port =}
+\DoxyCodeLine{\#  meta:/type = unsigned\_short}
+\DoxyCodeLine{\#  meta:/example = 8080}
+\DoxyCodeLine{\#  meta:/description = port of the REST server that runs the application}
+\DoxyCodeLine{\#  meta:/default = 8080}
+
+\end{DoxyCode}
+
+
+You can now try to read the value of the newly created configuration. Since you did not set the value to anything yet, you will get the default value back.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get /tests/sw/org/app/\(\backslash\)\#0/current/server/port}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#> 8080}
+
+\end{DoxyCode}
+
+
+Try to set the port to {\ttfamily 65536} now.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/sw/org/app/\(\backslash\)\#0/current/server/port 65536}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{\#  Sorry, 1 warning was issued ;(}
+\DoxyCodeLine{\#  1: Module network issued the warning C03200:}
+\DoxyCodeLine{\#       Validation Semantic: Port 65536 on key user:/tests/sw/org/app/\#0/current/server/port was not within 0 -\/ 65535}
+\DoxyCodeLine{\# Sorry, module type issued the error C03200:}
+\DoxyCodeLine{\# Validation Semantic: The type 'unsigned\_short' failed to match for 'user:/tests/sw/org/app/\#0/current/server/port' with string '65536'}
+
+\end{DoxyCode}
+
+
+Did it work? I hope not. The validation plugins you specified will now correctly validate the port you enter and give you an error.
+
+In this example, the {\ttfamily network} plugin and the {\ttfamily type} plugin are emitting warnings or errors, because the valid ranges for {\ttfamily port} and {\ttfamily unsigned\+\_\+short} are the same.\hypertarget{doc_tutorials_specification_md_autotoc_md4436}{}\doxysubsection{Step 3\+: Adding boolean keys}\label{doc_tutorials_specification_md_autotoc_md4436}
+Next up you will configure the {\ttfamily secure} property of our server. This boolean key will toggle if your server encrypts the communication via SSL.
+
+So we will add the key and some metadata for it\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/secure type boolean}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/secure default 1}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/secure example 0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/server/secure description "{}true if the REST server uses SSL for communication"{}}
+
+\end{DoxyCode}
+
+
+By default the {\ttfamily type} plugin will normalize boolean values when setting them, before storing them. This only works for the concrete config, so when setting the values for the spec you have to use the unnormalized values. In the case it uses {\ttfamily 1} for boolean {\ttfamily true} and {\ttfamily 0} for boolean {\ttfamily false}.
+
+Since the key {\ttfamily /sw/org/app/\textbackslash{}\#0/current/server/secure} has a default value of {\ttfamily 1}, we are able to retrieve the default value from the key database\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get /tests/sw/org/app/\(\backslash\)\#0/current/server/secure}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#> 1}
+
+\end{DoxyCode}
+
+
+You can read more about this in the documentation for the \href{https://www.libelektra.org/plugins/type\#normalization}{\texttt{ type plugin}}.\hypertarget{doc_tutorials_specification_md_autotoc_md4437}{}\doxysection{Adding the database keys to the specification}\label{doc_tutorials_specification_md_autotoc_md4437}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4438}{}\doxysubsection{Step 1\+: Adding the database ip}\label{doc_tutorials_specification_md_autotoc_md4438}
+Next up you will add a key for the database {\ttfamily ip} address. Like with the key before, you will add a {\ttfamily type}, {\ttfamily default}, {\ttfamily example} and a {\ttfamily description} so that the configuration will be easily usable.
+
+Don\textquotesingle{}t forget the most important rule of configurations\+: {\bfseries{Always add sensible defaults!}}
+
+Now let\textquotesingle{}s try something different. What if you change the file manually? Will Elektra pick up on the changes? And save you from writing {\bfseries{a lot}} of {\ttfamily kdb} commands?
+
+{\itshape of course}
+
+So just open your file using good old {\ttfamily vim} and add the following lines to specify configuration for the {\ttfamily ip} address.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{vim \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{database/ip =}
+\DoxyCodeLine{\#  =}
+\DoxyCodeLine{\# server/port =}
+\DoxyCodeLine{\# server/secure =}
+\DoxyCodeLine{}
+\DoxyCodeLine{[database/ip]}
+\DoxyCodeLine{ meta:/check/ipaddr =}
+\DoxyCodeLine{ meta:/type = string}
+\DoxyCodeLine{ meta:/example = 127.0.0.1}
+\DoxyCodeLine{ meta:/description = ip address of the database server, that the application will connect to}
+\DoxyCodeLine{ meta:/default = 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = app.ni}
+\DoxyCodeLine{\#  meta:/infos/plugins = ni type network}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/port]}
+\DoxyCodeLine{\#  meta:/check/port =}
+\DoxyCodeLine{\#  meta:/type = unsigned\_short}
+\DoxyCodeLine{\#  meta:/example = 8080}
+\DoxyCodeLine{\#  meta:/description = port of the REST server that runs the application}
+\DoxyCodeLine{\#  meta:/default = 8080}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/secure]}
+\DoxyCodeLine{\#  meta:/type = boolean}
+\DoxyCodeLine{\#  meta:/example = 0}
+\DoxyCodeLine{\#  meta:/description = true if the REST server uses SSL for communication}
+\DoxyCodeLine{\#  meta:/default = 1}
+
+\end{DoxyCode}
+
+
+Alternatively you can of course use {\ttfamily kdb} again to set the configuration values that way. Here are the commands to do that.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/ip type string}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/ip default 127.0.0.1}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/ip example 127.0.0.1}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/ip description "{}ip address of the database server, that the application will connect to"{}}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/ip check/ipaddr ''}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4439}{}\doxysubsection{Step 2\+: Adding the database dialect}\label{doc_tutorials_specification_md_autotoc_md4439}
+Next up you will add a key for the SQL {\ttfamily dialect} the database will use. Since there are only a few databases your application will support, you can define the possible dialects via an \href{https://www.libelektra.org/plugins/type\#enums}{\texttt{ enum}} type. This allows us to prohibit all other possible dialects that are not SQL.
+
+First you define the size of the {\ttfamily enum} type, and then you can add the different {\ttfamily enum} values.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect type enum}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect check/enum "{}\#4"{}}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect check/enum/\(\backslash\)\#0 postgresql}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect check/enum/\(\backslash\)\#1 mysql}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect check/enum/\(\backslash\)\#2 mssql}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect check/enum/\(\backslash\)\#3 mariadb}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect check/enum/\(\backslash\)\#4 sqlite}
+
+\end{DoxyCode}
+
+
+Afterwards you define all the other parameters, just as before.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect default sqlite}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect example mysql}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/database/dialect description "{}SQL dialect of the database server, that the application will connect to"{}}
+
+\end{DoxyCode}
+
+
+After this meta-\/setting bonanza your specification file should look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# database/ip =}
+\DoxyCodeLine{\#  =}
+\DoxyCodeLine{\# server/port =}
+\DoxyCodeLine{\# server/secure =}
+\DoxyCodeLine{\# database/dialect =}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [database/ip]}
+\DoxyCodeLine{\#  meta:/check/ipaddr =}
+\DoxyCodeLine{\#  meta:/type = string}
+\DoxyCodeLine{\#  meta:/example = 127.0.0.1}
+\DoxyCodeLine{\#  meta:/description = ip address of the database server, that the application will connect to}
+\DoxyCodeLine{\#  meta:/default = 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = app.ni}
+\DoxyCodeLine{\#  meta:/infos/plugins = ni type network}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/port]}
+\DoxyCodeLine{\#  meta:/check/port =}
+\DoxyCodeLine{\#  meta:/type = unsigned\_short}
+\DoxyCodeLine{\#  meta:/example = 8080}
+\DoxyCodeLine{\#  meta:/description = port of the REST server that runs the application}
+\DoxyCodeLine{\#  meta:/default = 8080}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/secure]}
+\DoxyCodeLine{\#  meta:/type = boolean}
+\DoxyCodeLine{\#  meta:/example = 0}
+\DoxyCodeLine{\#  meta:/description = true if the REST server uses SSL for communication}
+\DoxyCodeLine{\#  meta:/default = 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [database/dialect]}
+\DoxyCodeLine{\#  meta:/check/enum/\#2 = mssql}
+\DoxyCodeLine{\#  meta:/check/enum/\(\backslash\)\#0 = postgresql}
+\DoxyCodeLine{\#  meta:/type = enum}
+\DoxyCodeLine{\#  meta:/check/enum/\#1 = mysql}
+\DoxyCodeLine{\#  meta:/example = mysql}
+\DoxyCodeLine{\#  meta:/description = SQL dialect of the database server, that the application will connect to}
+\DoxyCodeLine{\#  meta:/check/enum/\#4 = sqlite}
+\DoxyCodeLine{\#  meta:/check/enum/\#3 = mariadb}
+\DoxyCodeLine{\#  meta:/default = sqlite}
+\DoxyCodeLine{\#  meta:/check/enum = \#4}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4440}{}\doxysection{Adding the backup date}\label{doc_tutorials_specification_md_autotoc_md4440}
+The last key you will add to our specification is a {\ttfamily date} key for the annual backup and restart (this should probably not be annually in a real application). Here you use the \href{https://www.libelektra.org/plugins/date}{\texttt{ check/date}} plugin with the {\ttfamily ISO8601} format. You also specify a {\ttfamily check/date/format}. You can find all possible date formats on the \href{https://www.libelektra.org/plugins/date}{\texttt{ plugin page}}. For this you can use the following commands\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date type string}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date check/date ISO8601}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date check/date/format "{}calendardate complete extended"{}}
+
+\end{DoxyCode}
+
+
+Then just add examples, defaults and description as always.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date default 2021-\/11-\/01}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date example 2021-\/01-\/12}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date description "{}date of the annual server and database backup"{}}
+
+\end{DoxyCode}
+
+
+Now we add the validation plugin for dates and remount the specification\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/app/\(\backslash\)\#0/current infos/plugins "{}ni type network date"{}}
+\DoxyCodeLine{sudo kdb spec-\/mount /tests/sw/org/app/\(\backslash\)\#0/current}
+
+\end{DoxyCode}
+
+
+If we try to add a value that is not in the specified format, an error should get emitted.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date "{}03.04.2022"{}}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{\# Sorry, module date issued the error C03100:}
+\DoxyCodeLine{\# Validation Syntactic: Date '03.04.2022' doesn't match iso specification calendardate complete extended}
+
+\end{DoxyCode}
+
+
+To double-\/check if things are correct, we try to get the value from the {\ttfamily user}-\/namespace and via cascading lookup.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get user:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date}
+\DoxyCodeLine{\# RET: 11}
+\DoxyCodeLine{\# STDERR: Did not find key 'user:/tests/sw/org/app/\#0/current/backup/date'}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get /tests/sw/org/app/\(\backslash\)\#0/current/backup/date}
+\DoxyCodeLine{\#> 2021-\/11-\/01}
+
+\end{DoxyCode}
+
+
+As expected, no value was written to the {\ttfamily user}-\/namespace and a cascading lookup returns the date that was given as default value in the specification. If we now use the correct format, the new date should be stored in the {\ttfamily user}-\/namespace and retrieved with both {\ttfamily kdb get} lookups.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date "{}2022-\/04-\/03"{}}
+\DoxyCodeLine{\#> Create a new key user:/tests/sw/org/app/\#0/current/backup/date with string "{}2022-\/04-\/03"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date}
+\DoxyCodeLine{\#> 2022-\/04-\/03}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get /tests/sw/org/app/\(\backslash\)\#0/current/backup/date}
+\DoxyCodeLine{\#> 2022-\/04-\/03}
+
+\end{DoxyCode}
+
+
+If we explicitly query the {\ttfamily system}-\/namespace, no key is found.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get system:/tests/sw/org/app/\(\backslash\)\#0/current/backup/date}
+\DoxyCodeLine{\# RET: 11}
+\DoxyCodeLine{\# STDERR: Did not find key 'system:/tests/sw/org/app/\#0/current/backup/date'}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_specification_md_autotoc_md4441}{}\doxysection{Final specification code}\label{doc_tutorials_specification_md_autotoc_md4441}
+Your specification should be complete now! After adding all the keys that are necessary for our application, your specification should look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# backup/date =}
+\DoxyCodeLine{\# database/ip =}
+\DoxyCodeLine{\#  =}
+\DoxyCodeLine{\# server/port =}
+\DoxyCodeLine{\# server/secure =}
+\DoxyCodeLine{\# database/dialect =}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [backup/date]}
+\DoxyCodeLine{\#  meta:/check/date/format = calendardate complete extended}
+\DoxyCodeLine{\#  meta:/type = string}
+\DoxyCodeLine{\#  meta:/example = 2021-\/01-\/12}
+\DoxyCodeLine{\#  meta:/description = date of the annual server and database backup}
+\DoxyCodeLine{\#  meta:/default = 2021-\/11-\/01}
+\DoxyCodeLine{\#  meta:/check/date = ISO8601}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [database/ip]}
+\DoxyCodeLine{\#  meta:/check/ipaddr =}
+\DoxyCodeLine{\#  meta:/type = string}
+\DoxyCodeLine{\#  meta:/example = 127.0.0.1}
+\DoxyCodeLine{\#  meta:/description = ip address of the database server, that the application will connect to}
+\DoxyCodeLine{\#  meta:/default = 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = app.ni}
+\DoxyCodeLine{\#  meta:/infos/plugins = ni type network date}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/port]}
+\DoxyCodeLine{\#  meta:/check/port =}
+\DoxyCodeLine{\#  meta:/type = unsigned\_short}
+\DoxyCodeLine{\#  meta:/example = 8080}
+\DoxyCodeLine{\#  meta:/description = port of the REST server that runs the application}
+\DoxyCodeLine{\#  meta:/default = 8080}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [server/secure]}
+\DoxyCodeLine{\#  meta:/type = boolean}
+\DoxyCodeLine{\#  meta:/example = 0}
+\DoxyCodeLine{\#  meta:/description = true if the REST server uses SSL for communication}
+\DoxyCodeLine{\#  meta:/default = 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [database/dialect]}
+\DoxyCodeLine{\#  meta:/check/enum/\#2 = mssql}
+\DoxyCodeLine{\#  meta:/check/enum/\(\backslash\)\#0 = postgresql}
+\DoxyCodeLine{\#  meta:/type = enum}
+\DoxyCodeLine{\#  meta:/check/enum/\#1 = mysql}
+\DoxyCodeLine{\#  meta:/example = mysql}
+\DoxyCodeLine{\#  meta:/description = SQL dialect of the database server, that the application will connect to}
+\DoxyCodeLine{\#  meta:/check/enum/\#4 = sqlite}
+\DoxyCodeLine{\#  meta:/check/enum/\#3 = mariadb}
+\DoxyCodeLine{\#  meta:/default = sqlite}
+\DoxyCodeLine{\#  meta:/check/enum = \#4}
+
+\end{DoxyCode}
+
+
+\label{_elektra-use-spec}%
+\hypertarget{doc_tutorials_specification_md_autotoc_md4442}{}\doxysection{Using the specification}\label{doc_tutorials_specification_md_autotoc_md4442}
+Now, after you\textquotesingle{}ve finished your specification and want to use it for daily business, some aspects have to be considered. A specification usually is written to cover the most common use cases and to provide sensible defaults. In some cases, the administrator may want to change the specification, e.\+g. for extending it or introducing further restrictions.
+
+In such cases, {\bfseries{directly changing}} the specification that was designed for and delivered with the application, is {\bfseries{not}} the {\bfseries{recommended}} approach.
+
+The recommended way is making a {\bfseries{copy}} of the default specification while installing the application and then saving changes to that copy. If misconfiguration occurs, you can easily look at the default specification or reapply it to start over.
+
+If you mount the specification with an absolute path (e.\+g. by using {\ttfamily \`{}pwd\`{}} in scripts), like it was done for defining the specification with {\ttfamily kdb}, the file gets changed directly. If {\ttfamily \`{}pwd\`{}} refers to the installation directory of the application, this would be totally fine, but if this is done during development and {\ttfamily \`{}pwd\`{}} refers to the source directory, the source specification would be modified via {\ttfamily kdb set spec\+:/...} calls.
+
+First we have to unmount our original configuration file we just created\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount spec:/tests/sw/org/app/\(\backslash\)\#0/current}
+
+\end{DoxyCode}
+
+
+The {\bfseries{recommended way}} to apply the specification is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# choose a unique filename for your application instead of spec.ni}
+\DoxyCodeLine{sudo kdb mount spec.ni spec:/tests/sw/org/app/\(\backslash\)\#0/current ni}
+\DoxyCodeLine{sudo kdb import spec:/tests/sw/org/app/\(\backslash\)\#0/current ni ./spec.ni}
+
+\end{DoxyCode}
+
+
+Because we used a relative path (not starting with {\ttfamily /}), Elektra will use a file within the {\ttfamily spec} directory ({\ttfamily /usr/share/elektra/specification} by default) for storing the specification.
+
+The {\ttfamily kdb import} command just tells Elektra to load the file {\ttfamily ./spec.ni} with the {\ttfamily ni} plugin and write it into {\ttfamily spec\+:/tests/sw/org/app/\textbackslash{}\#0/current}. Using a separate {\ttfamily kdb import} also means we could use a different storage plugin for mounting than what {\ttfamily ./spec.ni} uses.
+
+Another alternative is copying the file manually\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount spec.ni spec:/tests/sw/org/app/\(\backslash\)\#0/current ni}
+\DoxyCodeLine{sudo cp ./spec.ni \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+
+\end{DoxyCode}
+
+
+This works like the previous snippet, except that we directly modify the spec file without going through Elektra. For very big specifications this might be faster, but we get no validation that the file is actually readable and {\ttfamily ./spec.ni} has to be readable by the storage plugin used with {\ttfamily kdb mount}.
+
+Finally, in some cases you may want to control where the mounted spec file is stored (e.\+g. if you are updating a legacy application that has an existing configuration directory). In those cases using an absolute path is fine\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount /etc/spec.ni spec:/tests/sw/org/app/\(\backslash\)\#0/current ni}
+\DoxyCodeLine{kdb import spec:/tests/sw/org/app/\(\backslash\)\#0/current ni ./my-\/spec.ini}
+
+\end{DoxyCode}
+
+
+or
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /etc/spec.ni spec:/tests/sw/org/app/\(\backslash\)\#0/current ni}
+\DoxyCodeLine{sudo cp ./spec.ni \$(kdb file spec:/tests/sw/org/app/\(\backslash\)\#0/current)}
+
+\end{DoxyCode}
+
+
+Please note that also in these examples, the file referred to by the absolute path {\ttfamily /etc/spec.ni} is a {\bfseries{new file}} where the content of the file {\ttfamily ./spec.ni} in the working directory gets imported or copied to.\hypertarget{doc_tutorials_specification_md_autotoc_md4443}{}\doxysection{Cleanup}\label{doc_tutorials_specification_md_autotoc_md4443}
+If you want to remove the files that were created in the course of the tutorial, the following steps are necessary.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo rm -\/v `kdb file spec:/tests/sw/org/app/\#0/current`}
+\DoxyCodeLine{rm -\/v `kdb file user:/tests/sw/org/app/\#0/current`}
+\DoxyCodeLine{sudo rm -\/v /usr/share/elektra/specification/spec.ni}
+\DoxyCodeLine{sudo rm -\/v /etc/spec.ni}
+
+\end{DoxyCode}
+
+
+If you take a look at {\ttfamily kdb mount}, you\textquotesingle{}ll see that there are currently two mountpoints open.
+
+Mountpoints are meant to mount (external) files into the key database structure of Elektra. This mechanism is similar to {\ttfamily mount} on Linux\+: changes made to the key database will be written to the underlying mounted file. If you want to learn more on mounting and mountpoints in Eletra, refer to \href{https://www.libelektra.org/tutorials/mount-configuration-files}{\texttt{ the documentation}}.
+
+To round up this tutorial, we will {\ttfamily kdb umount} these two mountpoints\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{rm -\/v ./spec.ni}
+\DoxyCodeLine{sudo kdb umount /tests/sw/org/app/\#0/current}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount spec:/tests/sw/org/app/\#0/current}
+
+\end{DoxyCode}
+
+
+In case something went wrong and you want to reset the whole content of your kdb, please refer to \href{https://www.libelektra.org/man-pages/kdb-reset}{\texttt{ the man page of kdb reset}}.\hypertarget{doc_tutorials_specification_md_autotoc_md4444}{}\doxysection{Summary}\label{doc_tutorials_specification_md_autotoc_md4444}
+
+\begin{DoxyItemize}
+\item You set up and mounted a specification using {\ttfamily kdb mount} and {\ttfamily kdb spec-\/mount}.
+\item You added keys to the specification using {\ttfamily kdb meta-\/set}.
+\item You added different types of keys with {\ttfamily type string}, {\ttfamily type boolean} or {\ttfamily type unsigned\+\_\+short}.
+\item You added keys with {\ttfamily enum types}, to restrict specific configuration settings to a defined set of possible values.
+\item You added default parameters, examples and descriptions with {\ttfamily example}, {\ttfamily default}, {\ttfamily description}.
+\item You also added validation checks using different plugins, like {\ttfamily check/port} or {\ttfamily check/date}.
+\item You know how to use the specification for installed applications (esp. in production environments).
+\end{DoxyItemize}\hypertarget{doc_tutorials_specification_md_autotoc_md4445}{}\doxysection{Learn more}\label{doc_tutorials_specification_md_autotoc_md4445}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/tutorials/readme}{\texttt{ Tutorial Overview}} 
+\end{DoxyItemize}

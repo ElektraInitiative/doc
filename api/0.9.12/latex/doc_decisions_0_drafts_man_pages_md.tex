@@ -1,0 +1,85 @@
+\label{doc_decisions_0_drafts_man_pages_md_md_doc_decisions_0_drafts_man_pages}%
+\Hypertarget{doc_decisions_0_drafts_man_pages_md_md_doc_decisions_0_drafts_man_pages}%
+ \hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1742}{}\doxysection{Problem}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1742}
+Our man pages are written as Markdown in {\ttfamily doc/help} and then converted to roff and stored in {\ttfamily doc/man}. These are the only generated files in our version control system. Having such files is a problematic workaround, which was introduced because {\ttfamily ronn-\/ng} is not available on most distributions. The poor availability of the package {\ttfamily ronn-\/ng} is a problem because distributions usually build packages by exclusively relying on other packages of the distribution. E.\+g. {\ttfamily dpkg-\/buildpackage} must work with only {\ttfamily deb} packages installed (and not any packages via {\ttfamily gem}, as would be needed to get {\ttfamily ronn-\/ng v0.\+10.\+1}).
+
+We have a mechanism to automatically disable (re)building man pages. But we want to avoid that distributions build packages without man pages, hence we added the generated files.
+
+Storing generated files, however, is problematic, as it requires\+:
+
+
+\begin{DoxyItemize}
+\item developers to always update generated files if the sources are changed
+\item developers not committing irrelevant changes to generated files (e.\+g. as may occur with different {\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX} etc.)
+\item require extra effort for continuous integration, e.\+g. \href{https://issues.libelektra.org/4542}{\texttt{ \#4542}}
+\end{DoxyItemize}
+
+TODO\+: everything below is draft, please don\textquotesingle{}t comment on it.\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1743}{}\doxysection{Constraints}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1743}
+
+\begin{DoxyEnumerate}
+\item we want beautiful rendered man pages, e.\+g., OPTIONS section looks like normal man pages, see in Notes¹ below
+\item we cannot require rare tools for the build process\+: the man pages must be present in every package
+\end{DoxyEnumerate}\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1744}{}\doxysection{Assumptions}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1744}
+\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1745}{}\doxysection{Considered Alternatives}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1745}
+0. staying with {\ttfamily ronn-\/ng} but add the man pages only in the release tarballs but not to {\ttfamily git}
+\begin{DoxyEnumerate}
+\item Write a tool that converts our specification, similar to pythongen
+\item Write a tool that parses gopts {\ttfamily -\/-\/help} output
+\item \href{https://www.gnu.org/software/help2man/}{\texttt{ help2man}}
+\item Doxygen\+:
+\begin{DoxyItemize}
+\item Constraint 1 probably broken
+\end{DoxyItemize}
+\item Pandoc\+:
+\begin{DoxyItemize}
+\item has a few standard dependencies
+\item would need rewrite of the current documentation in doc/help\+:
+\begin{DoxyItemize}
+\item To fulfill Constraint 1 \href{https://pandoc.org/MANUAL.html\#definition-lists}{\texttt{ definition lists}} would be needed
+\item would need YAML metadata/front matter for every file (It would be possible, but not advisable, to\+:
+\begin{DoxyItemize}
+\item also pass information as command-\/line arguments via {\ttfamily -\/-\/variable} but then we would move meta-\/information about man pages to the build system
+\item that we use the current (non-\/standard) front matter and convert it to Pandoc\textquotesingle{}s frontmatter but this makes the build system more complicated)
+\end{DoxyItemize}
+\end{DoxyItemize}
+\end{DoxyItemize}
+\end{DoxyEnumerate}\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1746}{}\doxysection{Decision}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1746}
+Not yet done except spelling of man pages, see \href{https://issues.libelektra.org/4567}{\texttt{ \#4567}}.\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1747}{}\doxysection{Rationale}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1747}
+\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1748}{}\doxysection{Implications}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1748}
+\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1749}{}\doxysection{Related Decisions}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1749}
+
+\begin{DoxyItemize}
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_man_pages_md_autotoc_md1750}{}\doxysection{Notes}\label{doc_decisions_0_drafts_man_pages_md_autotoc_md1750}
+¹ ronn-\/ng converts\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ `-\/H`, `-\/-\/help`:}
+\DoxyCodeLine{  Show the man page.}
+\DoxyCodeLine{-\/ `-\/V`, `-\/-\/version`:}
+\DoxyCodeLine{  Print version info.}
+\DoxyCodeLine{-\/ `-\/p`, `-\/-\/profile <profile>`:}
+\DoxyCodeLine{  Use a different kdb profile.}
+
+\end{DoxyCode}
+
+
+to\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{OPTIONS}
+\DoxyCodeLine{       -\/H, -\/-\/help}
+\DoxyCodeLine{              Show the man page.}
+\DoxyCodeLine{}
+\DoxyCodeLine{       -\/V, -\/-\/version}
+\DoxyCodeLine{              Print version info.}
+\DoxyCodeLine{}
+\DoxyCodeLine{       -\/p, -\/-\/profile <profile>}
+\DoxyCodeLine{              Use a different kdb profile.}
+
+\end{DoxyCode}
+ 

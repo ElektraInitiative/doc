@@ -1,0 +1,109 @@
+
+\begin{DoxyItemize}
+\item infos = Information about hosts plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = storage/hosts
+\item infos/needs =
+\item infos/recommends = glob error network
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest nodep libc limited
+\item infos/metadata = order comment/\# comment/\#/start comment/\#/space
+\item infos/description = This plugin reads and writes /etc/hosts files.
+\end{DoxyItemize}\hypertarget{md_src_plugins_hosts_README_src_plugins_hosts_README_md}{}\doxysection{Introduction}\label{md_src_plugins_hosts_README_src_plugins_hosts_README_md}
+The {\ttfamily /etc/hosts} file is a simple text file that associates IP addresses with hostnames, one line per IP address. The format is described in {\ttfamily hosts(5)}.
+
+The {\ttfamily hosts} plugins transforms the information of this file to the following structure. The keys directly below {\ttfamily ipv4} or {\ttfamily ipv6} are host names of IPv4 or IPv6 addresses, respectively. The keys directly below these keys are aliases. The IP addresses themselves are stored as values.\hypertarget{md_src_plugins_hosts_README_autotoc_md263}{}\doxysection{Special values}\label{md_src_plugins_hosts_README_autotoc_md263}
+\hypertarget{md_src_plugins_hosts_README_autotoc_md264}{}\doxysubsection{Hostnames}\label{md_src_plugins_hosts_README_autotoc_md264}
+Canonical hostnames are stored as key base names with their IP addresses as value.\hypertarget{md_src_plugins_hosts_README_autotoc_md265}{}\doxysubsection{Aliases}\label{md_src_plugins_hosts_README_autotoc_md265}
+Aliases are stored as keys directly below canonical hostnames with a read-\/only duplicate of the associated IP address as value.\hypertarget{md_src_plugins_hosts_README_autotoc_md266}{}\doxysubsection{Comments}\label{md_src_plugins_hosts_README_autotoc_md266}
+Comments are stored according to the comment metadata specification (see \href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ /doc/\+METADATA.ini}} for more information).\hypertarget{md_src_plugins_hosts_README_autotoc_md267}{}\doxysubsection{Ordering}\label{md_src_plugins_hosts_README_autotoc_md267}
+The ordering of the hosts is stored in metakeys of type {\ttfamily order}. The value is an ascending number. Ordering of aliases is {\itshape not} preserved.\hypertarget{md_src_plugins_hosts_README_autotoc_md268}{}\doxysection{Examples}\label{md_src_plugins_hosts_README_autotoc_md268}
+Mount the plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount -\/-\/with-\/recommends /etc/hosts system:/hosts hosts}
+
+\end{DoxyCode}
+
+
+Print out all known hosts and their aliases\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls system:/hosts}
+
+\end{DoxyCode}
+
+
+Get IP address of ipv4 host \char`\"{}localhost\char`\"{}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get system:/hosts/ipv4/localhost}
+
+\end{DoxyCode}
+
+
+Check if a comment is belonging to host \char`\"{}localhost\char`\"{}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/ls system:/hosts/ipv4/localhost}
+
+\end{DoxyCode}
+
+
+Try to change the host \char`\"{}localhost\char`\"{}, should fail because it is not an IPv4 address\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb set system:/hosts/ipv4/localhost ::1}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:/tests/hosts}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount -\/-\/with-\/recommends hosts /tests/hosts hosts}
+\DoxyCodeLine{}
+\DoxyCodeLine{mkdir -\/p \$(dirname `kdb file user:/tests/hosts`)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create hosts file for testing}
+\DoxyCodeLine{echo '127.0.0.1 localhost' >  `kdb file user:/tests/hosts`}
+\DoxyCodeLine{echo '::1       localhost'          >> `kdb file user:/tests/hosts`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the file}
+\DoxyCodeLine{cat `kdb file user:/tests/hosts`}
+\DoxyCodeLine{\#> 127.0.0.1    localhost}
+\DoxyCodeLine{\#> ::1  localhost}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check if the values are read correctly}
+\DoxyCodeLine{kdb get /tests/hosts/ipv4/localhost}
+\DoxyCodeLine{\#> 127.0.0.1}
+\DoxyCodeLine{kdb get /tests/hosts/ipv6/localhost}
+\DoxyCodeLine{\#> ::1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Should both fail with error 04200 and return 5}
+\DoxyCodeLine{kdb set /tests/hosts/ipv4/localhost ::1}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{kdb set /tests/hosts/ipv6/localhost 127.0.0.1}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -\/r /tests/hosts}
+\DoxyCodeLine{sudo kdb umount /tests/hosts}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_hosts_README_autotoc_md269}{}\doxysection{Limitations}\label{md_src_plugins_hosts_README_autotoc_md269}
+
+\begin{DoxyItemize}
+\item host names are not validated, see \href{https://issues.libelektra.org/2185}{\texttt{ https\+://issues.\+libelektra.\+org/2185}}
+\item duplicates, where a host names is the same as an alias name, are not rejected, see \href{https://issues.libelektra.org/3461}{\texttt{ https\+://issues.\+libelektra.\+org/3461}}
+\item keys that do not confirm to the hierarchy are ignored 
+\end{DoxyItemize}

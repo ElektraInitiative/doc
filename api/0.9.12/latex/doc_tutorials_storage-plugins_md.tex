@@ -1,0 +1,322 @@
+\label{doc_tutorials_storage-plugins_md_md_doc_tutorials_storage_plugins}%
+\Hypertarget{doc_tutorials_storage-plugins_md_md_doc_tutorials_storage_plugins}%
+ The \mbox{\hyperlink{doc_tutorials_plugins_md}{plugin tutorial}} already covers some of the most interesting parts on how to write a (storage) plugin. This text will tell you a little bit more about how a storage plugin should act. While it is usually relatively easy to create a plugin that stores basic key-\/value pairs, adding advanced features such as support for
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_tutorials_arrays_md}{arrays}}, and
+\item \mbox{\hyperlink{doc_dev_metadata_md}{metadata}},
+\end{DoxyItemize}
+
+takes more work. Before you continue with this text, please make sure that you read all of the linked documents above.\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4446}{}\doxysection{Don’t Add Additional Keys}\label{doc_tutorials_storage-plugins_md_autotoc_md4446}
+One common problem of storage plugins is, that they store too many keys. For example, if the user adds the keys
+
+
+\begin{DoxyItemize}
+\item {\ttfamily user\+:/tests/storage/root} and
+\item {\ttfamily user\+:/tests/storage/root/level1/level2/level3},
+\end{DoxyItemize}
+
+then your plugin should only store those two keys. {\bfseries{Do not}} add the keys
+
+
+\begin{DoxyItemize}
+\item {\ttfamily user\+:/tests/storage/root/level1}, or
+\item {\ttfamily user\+:/tests/storage/root/level1/level2}
+\end{DoxyItemize}
+
+to the key set. One plugin that handles this situation properly is YAML CPP, as the following \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} test shows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount plugin}
+\DoxyCodeLine{sudo kdb mount config.yaml user:/tests/storage yamlcpp}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add key-\/value pairs}
+\DoxyCodeLine{kdb set user:/tests/storage/root 🐓}
+\DoxyCodeLine{kdb set user:/tests/storage/root/level1/level2/level3 🐣}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Make sure that YAML CPP did not store any additional keys}
+\DoxyCodeLine{kdb ls user:/tests/storage/root}
+\DoxyCodeLine{\#> user:/tests/storage/root}
+\DoxyCodeLine{\#> user:/tests/storage/root/level1/level2/level3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+
+
+. For more information on why we allow “holes” in the hierarchy, please take a look \mbox{\hyperlink{doc_decisions_6_implemented_holes_md}{here}}.\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4447}{}\doxysection{Differentiate Between Empty Keys and Keys Containing an Empty String}\label{doc_tutorials_storage-plugins_md_autotoc_md4447}
+Elektra supports both binary and textual values. The main difference between binary and textual data is that textual data always ends with a null byte. Therefore you are not allowed to store the code point {\ttfamily 0} inside textual data. Binary data does not have this limitation.
+
+The simplest textual data is the empty string ({\ttfamily \char`\"{}\char`\"{}} = {\ttfamily 0}) and has length 1, while the simplest binary data stores nothing at all and therefore has length 0. In the {\ttfamily kdb} utility you can disambiguate between these value by checking for the \mbox{\hyperlink{doc_help_elektra-metadata_md}{metakey \`{}binary\`{}}}. The following \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} test shows how a storage plugin should handle empty values.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount plugin}
+\DoxyCodeLine{sudo kdb mount config.yaml user:/tests/storage yamlcpp}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/storage/empty ''}
+\DoxyCodeLine{\#> Create a new key user:/tests/storage/empty with string "{}"{}}
+\DoxyCodeLine{kdb get user:/tests/storage/empty}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{kdb meta-\/ls user:/tests/storage/empty}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4448}{}\doxysection{Convert Boolean Data}\label{doc_tutorials_storage-plugins_md_autotoc_md4448}
+Elektra uses \mbox{\hyperlink{doc_decisions_5_partially_implemented_boolean_md}{\`{}0\`{} and \`{}1\`{} to represent binary data}}. A storage plugin that uses other values (e.\+g. {\ttfamily false} and {\ttfamily true}) needs to convert these values to {\ttfamily 0} and {\ttfamily 1}. The \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} test below shows that \mbox{\hyperlink{md_src_plugins_yamlcpp_README_src_plugins_yamlcpp_README_md}{YAML CPP}} handles the conversion from and to \href{https://yaml.org/spec/1.2/spec.html\#id2803629}{\texttt{ YAML’s boolean type}} properly. In the test we also use the \mbox{\hyperlink{md_src_plugins_type_README_src_plugins_type_README_md}{\`{}type\`{} plugin}} to makes sure that YAML CPP interacts correctly with this essential plugin.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount plugin}
+\DoxyCodeLine{sudo kdb mount config.yaml user:/tests/storage yamlcpp type}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/storage/bool/value true}
+\DoxyCodeLine{kdb meta-\/set user:/tests/storage/bool/value type boolean}
+\DoxyCodeLine{kdb get user:/tests/storage/bool/value}
+\DoxyCodeLine{\#> 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/storage/bool/value 1}
+\DoxyCodeLine{kdb get user:/tests/storage/bool/value}
+\DoxyCodeLine{\#> 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/storage/bool/value false}
+\DoxyCodeLine{kdb get user:/tests/storage/bool/value}
+\DoxyCodeLine{\#> 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/storage/bool/value 'non boolean'}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/storage/bool/value}
+\DoxyCodeLine{\#> 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4449}{}\doxysection{Support Values Inside Non-\/\+Leaf Keys}\label{doc_tutorials_storage-plugins_md_autotoc_md4449}
+Sometimes the most “natural” mapping of key-\/value pairs to a file format might cause a storage plugin to not be able to store values in so-\/called directory (non-\/leaf) keys.
+
+For example, in a key set that contains the keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/directory}
+\DoxyCodeLine{user:/directory/leaf1}
+\DoxyCodeLine{user:/directory/leaf2}
+\DoxyCodeLine{user:/leaf3}
+
+\end{DoxyCode}
+
+
+, all keys at the bottom of the hierarchy\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{        user}
+\DoxyCodeLine{      /      \(\backslash\)}
+\DoxyCodeLine{  directory  leaf3}
+\DoxyCodeLine{   /     \(\backslash\)}
+\DoxyCodeLine{leaf1   leaf2}
+
+\end{DoxyCode}
+
+
+, such as
+
+
+\begin{DoxyItemize}
+\item {\ttfamily user\+:/directory/leaf1}
+\item {\ttfamily user\+:/directory/leaf2}
+\item {\ttfamily user\+:/leaf3}
+\end{DoxyItemize}
+
+are called leaf keys, while {\ttfamily user\+:/directory} is a directory key. Plugins such as YAJL or YAML CPP will not be able to store data in the key with the name {\ttfamily user\+:/directory} directly. To work around this issue these plugin use the Directory Value plugin. In the Read\+Me of the \href{https://www.libelektra.org/plugins/directoryvalue}{\texttt{ Directory Value plugin}} and \href{https://www.libelektra.org/plugins/yamlcpp}{\texttt{ YAML CPP}} you will find more information about this issue, and how to handle it.
+
+The following Markdown Shell Recorder test shows {\bfseries{the proper behavior}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount plugin}
+\DoxyCodeLine{sudo kdb mount config.yaml user:/tests/storage yamlcpp}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add key-\/value pair (leaf key)}
+\DoxyCodeLine{kdb set user:/tests/storage/root 🐓}
+\DoxyCodeLine{\# Since we add a key below `user:/tests/storage/root`, the key}
+\DoxyCodeLine{\# `user:/tests/storage/root` turns from a leaf key to a directory key.}
+\DoxyCodeLine{kdb set user:/tests/storage/root/level1/level2/level3 🐣}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Make sure that the directory key still stores the correct value}
+\DoxyCodeLine{kdb get user:/tests/storage/root}
+\DoxyCodeLine{\#> 🐓}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check the value of the leaf key}
+\DoxyCodeLine{kdb get user:/tests/storage/root/level1/level2/level3}
+\DoxyCodeLine{\#> 🐣}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+
+
+. To make sure that your storage plugin works correctly, please just replace {\ttfamily yamlcpp} with the name of your plugin and verify that the test above still works.\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4450}{}\doxysection{Support Array And Non-\/\+Array Data Properly}\label{doc_tutorials_storage-plugins_md_autotoc_md4450}
+You already learned about the array syntax and the mandatory {\ttfamily array} metakey in the \mbox{\hyperlink{doc_tutorials_arrays_md}{array tutorial}}. Now it is time to check, if your storage plugin supports array and non-\/array keys properly. Let us look at a concrete example. We use a key set that contains the following keys as example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/tests/storage/array}
+\DoxyCodeLine{user:/tests/storage/array/\#0}
+\DoxyCodeLine{user:/tests/storage/array/\#1}
+\DoxyCodeLine{user:/tests/storage/map}
+\DoxyCodeLine{user:/tests/storage/map/\#0}
+\DoxyCodeLine{user:/tests/storage/map/\#1}
+
+\end{DoxyCode}
+
+
+. If we assume that only {\ttfamily user\+:/tests/storage/array} stores the metakey {\ttfamily array}, then the keys
+
+
+\begin{DoxyItemize}
+\item {\ttfamily user\+:/tests/storage/array/\#0}, and
+\item {\ttfamily user\+:/tests/storage/array/\#1}
+\end{DoxyItemize}
+
+represent array elements, while
+
+
+\begin{DoxyItemize}
+\item {\ttfamily user\+:/tests/storage/map/\#0}, and
+\item {\ttfamily user\+:/tests/storage/map/\#1}
+\end{DoxyItemize}
+
+are normal key-\/value pairs. The following example shows that the storage plugin \href{https://www.libelektra.org/plugins/yamlcpp}{\texttt{ YAML CPP}} handles this situation properly\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount plugin}
+\DoxyCodeLine{sudo kdb mount config.yaml user:/tests/storage yamlcpp}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create an array containing two elements}
+\DoxyCodeLine{kdb meta-\/set user:/tests/storage/array array ''}
+\DoxyCodeLine{kdb set user:/tests/storage/array/\#0 one}
+\DoxyCodeLine{kdb set user:/tests/storage/array/\#1 two}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# The array parent key stores the basename of the last element}
+\DoxyCodeLine{kdb meta-\/get user:/tests/storage/array array}
+\DoxyCodeLine{\#> \#1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# If you do not add the metakey `array`, then keys}
+\DoxyCodeLine{\# containing array syntax `\#0`, `\#1`, … will not be}
+\DoxyCodeLine{\# interpreted as arrays.}
+\DoxyCodeLine{kdb set user:/tests/storage/map "{}"{}}
+\DoxyCodeLine{kdb set user:/tests/storage/map/\#0 "{}"{}}
+\DoxyCodeLine{kdb set user:/tests/storage/map/\#1 "{}"{}}
+\DoxyCodeLine{kdb meta-\/get user:/tests/storage/map array}
+\DoxyCodeLine{\# RET: 2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/storage}
+\DoxyCodeLine{sudo kdb umount user:/tests/storage}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4451}{}\doxysection{Storing Comments}\label{doc_tutorials_storage-plugins_md_autotoc_md4451}
+Most markup languages provide the possibility of adding comments. Elektra can store those comments in its metadata as well. This can be achieved by setting the meta Keys {\ttfamily comment/\#} for the respective configuration Key. Also the {\ttfamily hosts} plugin stores the comments of the file in the respective Elektra configuration Key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount empty hosts file}
+\DoxyCodeLine{sudo kdb mount -\/-\/with-\/recommends hosts user:/tests/hosts hosts}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add a line to the hosts file containing a comment}
+\DoxyCodeLine{echo '127.0.0.1    localhost \# test comment' >  `kdb file user:/tests/hosts`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check if the line has been synced successfully}
+\DoxyCodeLine{kdb get user:/tests/hosts/ipv4/localhost}
+\DoxyCodeLine{\#> 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/ls user:/tests/hosts/ipv4/localhost}
+\DoxyCodeLine{\#> comment/\#0}
+\DoxyCodeLine{\#> comment/\#0/space}
+\DoxyCodeLine{\#> comment/\#0/start}
+\DoxyCodeLine{\#> order}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/hosts/ipv4/localhost 'comment/\#0'}
+\DoxyCodeLine{\#>  test comment}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/hosts}
+\DoxyCodeLine{sudo kdb umount user:/tests/hosts}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_storage-plugins_md_autotoc_md4452}{}\doxysection{Ordering of Elements}\label{doc_tutorials_storage-plugins_md_autotoc_md4452}
+If your plugin also has the ability to store configuration options in a certain order, then this is also supported by Elektra. Keys can have the metakey {\ttfamily order}, which indicates in which order lines should be written back to the configuration file. Inversely, when reading from configuration files, plugins should add the {\ttfamily order} metakey to the respective KDB entries.
+
+This behavior can be illustrated via the usage of the {\ttfamily hosts} plugin, which honors this convention\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount empty hosts file}
+\DoxyCodeLine{sudo kdb mount -\/-\/with-\/recommends hosts user:/tests/hosts hosts}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Add lines to the hosts file}
+\DoxyCodeLine{echo '127.0.0.1    localhost.1' >  `kdb file user:/tests/hosts`}
+\DoxyCodeLine{echo '127.0.0.1    localhost.2' >>  `kdb file user:/tests/hosts`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Check if the lines have been synced successfully}
+\DoxyCodeLine{kdb ls user:/tests/hosts/ipv4}
+\DoxyCodeLine{\#> user:/tests/hosts/ipv4/localhost.1}
+\DoxyCodeLine{\#> user:/tests/hosts/ipv4/localhost.2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Checking the created Meta KeySet}
+\DoxyCodeLine{kdb meta-\/ls user:/tests/hosts/ipv4/localhost.1}
+\DoxyCodeLine{\#> comment/\#0}
+\DoxyCodeLine{\#> order}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Getting the content of the order}
+\DoxyCodeLine{kdb meta-\/get user:/tests/hosts/ipv4/localhost.1 order}
+\DoxyCodeLine{\#> 1}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/hosts/ipv4/localhost.2 order}
+\DoxyCodeLine{\#> 2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# adding some additional Keys out of order}
+\DoxyCodeLine{kdb set user:/tests/hosts/ipv4/localhost.4 127.0.0.1}
+\DoxyCodeLine{kdb set user:/tests/hosts/ipv4/localhost.3 127.0.0.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# lines in hosts file have improper ordering}
+\DoxyCodeLine{cat `kdb file user:/tests/hosts`}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.3}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.4}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.1}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.2}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# setting the correct order}
+\DoxyCodeLine{kdb meta-\/set user:/tests/hosts/ipv4/localhost.4 order 4}
+\DoxyCodeLine{kdb meta-\/set user:/tests/hosts/ipv4/localhost.3 order 3}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# lines in hosts file are also in correct order afterwards}
+\DoxyCodeLine{cat `kdb file user:/tests/hosts`}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.1}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.2}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.3}
+\DoxyCodeLine{\#> 127.0.0.1    localhost.4}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/hosts}
+\DoxyCodeLine{sudo kdb umount user:/tests/hosts}
+
+\end{DoxyCode}
+
+
+As you can see by setting the order metakey in the respective KDB entries, we can manipulate the order in which entries get written to the hosts file. Also when importing from the initial hosts file, the plugin stores the correct order in the meta Key\+Set. 

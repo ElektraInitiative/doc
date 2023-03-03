@@ -1,0 +1,188 @@
+.TH "doc_decisions_4_decided_header_include_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_4_decided_header_include_md \- Including Headers 
+ 
+.SH "Problem"
+.PP
+In C you can include a header file with
+.PP
+.PP
+.nf
+#include "header\&.h"
+.fi
+.PP
+.PP
+or
+.PP
+.PP
+.nf
+#include <header\&.h>
+.fi
+.PP
+.PP
+In the C standard, section 6\&.10\&.2, paragraphs 2 to 4 state:
+.PP
+.RS 4
+2\&. A preprocessing directive of the form
+.PP
+.PP
+.nf
+#include <h-char-sequence> new-line
+.fi
+.PP
+.PP
+searches a sequence of implementation-defined places for a header identified uniquely by the specified sequence between the \fC<\fP and \fC>\fP delimiters, and causes the replacement of that directive by the entire contents of the header\&. How the places are specified or the header identified is implementation-defined\&.
+.PP
+.IP "3." 4
+A preprocessing directive of the form
+.PP
+.PP
+.PP
+.nf
+#include "q-char-sequence" new-line
+.fi
+.PP
+.PP
+causes the replacement of that directive by the entire contents of the source file identified by the specified sequence between the \fC"\fP delimiters\&. The named source file is searched for in an implementation-defined manner\&. If this search is not supported, or if the search fails, the directive is reprocessed as if it read
+.PP
+.PP
+.nf
+#include <h-char-sequence> new-line
+.fi
+.PP
+.PP
+with the identical contained sequence (including \fC>\fP characters, if any) from the original directive\&.
+.PP
+.IP "4." 4
+A preprocessing directive of the form
+.PP
+.PP
+.PP
+.nf
+#include pp-tokens new-line
+.fi
+.PP
+.PP
+(that does not match one of the two previous forms) is permitted\&. The preprocessing tokens after include in the directive are processed just as in normal text\&. (Each identifier currently defined as a macro name is replaced by its replacement list of preprocessing tokens\&.) The directive resulting after all replacements shall match one of the two previous forms\&. The method by which a sequence of preprocessing tokens between a \fC<\fP and a \fC>\fP preprocessing token pair or a pair of \fC"\fP characters is combined into a single header name preprocessing token is implementation-defined\&.
+.PP
+.RE
+.PP
+.SS "Definitions:"
+.IP "\(bu" 2
+h-char: any member of the source character set except the new-line character and \fC>\fP
+.IP "\(bu" 2
+q-char: any member of the source character set except the new-line character and \fC"\fP 
+.PP
+.PP
+In short, the whole search process of the \fC#include\fP mechanism is implementation-defined\&. However, because \fC#include\fP works (mostly) like a literal copy-paste, deciding between \fC''\fP and \fC<>\fP within a public header file can affect user code\&.
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Modern Compilers work like \fCGCC\fP:
+.IP "  \(bu" 4
+\fC#include '[header]'\fP treats \fC[header]\fP as file path relative to the current file (as defined by the standard, if such a file doesn't exist there is a fallback to the \fC<>\fP behavior)
+.IP "  \(bu" 4
+\fC#include <[header]>\fP treats \fC[header]\fP as file path relative to one of the pre-defined include-paths
+.PP
+
+.IP "\(bu" 2
+We can write a tool that enforces all rules in this decision, in such a way that new contributors can learn the rules as they go\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Let developers decide:
+.PP
+This would just create inconsistent code\&.
+.IP "\(bu" 2
+Put all headers into one directory and use the same relative layout as will be installed\&. Then use \fC''\fP:
+.PP
+This makes for an inconvenient development experience\&. It is also pretty hard to achieve for plugins and private headers would clutter the include-directory\&.
+.IP "\(bu" 2
+Only use \fC#include <>\fP and add everything to include path\&.
+.PP
+This makes the build setup more complicated\&. It also makes it much easier to accidentally include a non-installed header in an installed one\&.
+.PP
+.SH "Decision"
+.PP
+The rules for including headers are:
+.PP
+.IP "\(bu" 2
+To include a private non-installed header (i\&.e\&., a file that is only available in the source repo) use: 
+.PP
+.nf
+#include "\&./header\&.h"
+// or
+#include "\&./subdir/header\&.h"
+
+.fi
+.PP
+ It should not be necessary, to include a private non-installed header from another directory\&. This ensures that libraries only use their own private APIs\&. Going up one (or more) directories, but staying in the same library would be okay, but is considered an indication of bad code structure\&. A library can always be restructured to avoid needing a \fC#include "\&.\&./\fP\&.
+.IP "\(bu" 2
+Internal non-installed headers (i\&.e\&., a file that is not installed, but contains APIs exposed to other libraries within Elektra) can be included with 
+.PP
+.nf
+#include <internal/somelib\&.h>
+// or
+#include <internal/somelib/header\&.h>
+
+.fi
+.PP
+ Since these internal headers are not installed, they must only be included from other headers that are not installed or from code files\&.
+.IP "\(bu" 2
+Installed headers are included with their full path as if they are installed already: 
+.PP
+.nf
+#include <elektra/somelib\&.h>
+// or
+#include <elektra/somelib/header\&.h>
+
+.fi
+.PP
+
+.IP "\(bu" 2
+System headers or headers for external libraries are included with: 
+.PP
+.nf
+#include <stdlib\&.h>
+#include <dbus/dbus\&.h>
+// etc\&.
+
+.fi
+.PP
+
+.PP
+.PP
+Only \fCbuild/include\fP, which is a copy of \fCsrc/include\fP after CMake processing, is added to the include path\&. The entire \fCbuild/include/elektra\fP directory is installed as-is, with the exact same directory structure and without any further processing\&.
+.PP
+This is enough for \fC#include <>\fPs to work\&.
+.PP
+But we will create an additional script that enforces that \fCinternal/*\fP headers are not included from headers in \fCsrc/include/elektra\fP\&. We will also enforce that the path in a \fC#include ''\fP always starts with a \fC\&./\fP and does not contain any \fC/\&.\&./\fP\&.
+.PP
+These include-rules do not apply to tests\&. Tests can include anything (including \fC\&.c\fP files) from anywhere within the code base to allow testing private APIs\&.
+.SH "Rationale"
+.PP
+The decision highlights the difference between installed and non-installed headers\&. The main driving factor for using \fC''\fP at all was that including a non-installed private header with \fC<>\fP would be unexpected, since non-installed headers shouldn't be in the (standard) include-path\&. This distinction also makes it easier to ensure that non-installed headers are not accidentally included in installed ones\&.
+.PP
+See also considered alternatives\&.
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+All installed headers (and only those) must be put into \fCsrc/include/elektra\fP\&.
+.IP "\(bu" 2
+To enforce the restrictions on the path in an \fC#include ''\fP, we will use a simple \fCgrep\fP-based script that runs as a test case and as an early part of the CI (like e\&.g\&., the formatting check)\&.
+.IP "\(bu" 2
+There must not be any \fC#include <internal/\&.\&.\&.>\fPs anywhere within \fCsrc/include/elektra\fP\&. This will be enforced by the same \fCgrep\fP-based script as the paths in \fC#include ''\fP\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBHeader File Structure\fP
+.IP "\(bu" 2
+\fBLibrary Directory Structure\fP
+.PP
+.SH "Notes"
+.PP
+

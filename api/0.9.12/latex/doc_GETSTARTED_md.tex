@@ -1,0 +1,175 @@
+\label{doc_GETSTARTED_md_md_doc_GETSTARTED}%
+\Hypertarget{doc_GETSTARTED_md_md_doc_GETSTARTED}%
+ This document is intended for developers who want to get started with developing with Elektra.\hypertarget{doc_GETSTARTED_md_autotoc_md2688}{}\doxysection{Skill requirements}\label{doc_GETSTARTED_md_autotoc_md2688}
+
+\begin{DoxyItemize}
+\item Operating system
+
+We recommend a Unix-\/based operating system to run Elektra (Linux, BSD, mac\+OS) but \href{https://www.libelektra.org/tutorials/contributing-with-visual-studio-windows}{\texttt{ it\textquotesingle{}s also possible to use Windows which is supported but not yet fully tested}}.
+\item Using command-\/line interface and commands
+
+The easiest way to compile, install and use Elektra is by using the terminal. We will introduce the basic commands which you will need to run Elektra for the very first time. \href{https://www.libelektra.org/tutorials/contributing-with-clion}{\texttt{ It\textquotesingle{}s also possible to use CLion}}
+\item Basic knowledge about git
+
+\href{https://git-scm.com/}{\texttt{ Git}} is a distributed version control system to track changes of the source code in a project. We will use a single Git command to get the source code of Elektra.
+\item Basic knowledge about make/\+CMake
+
+Don\textquotesingle{}t panic! \href{https://www.gnu.org/software/make/}{\texttt{ make}} or \href{https://cmake.org/}{\texttt{ CMake}} are used to generate an executable program from the code. If you are not used to these tools, it\textquotesingle{}s not a problem, we will introduce them to you in later sections.
+\item We also need your skill set to improve Elektra
+
+You can contribute to Elektra to improve the source code, website, documentation, translation etc.
+\end{DoxyItemize}\hypertarget{doc_GETSTARTED_md_autotoc_md2689}{}\doxysection{Software requirements}\label{doc_GETSTARTED_md_autotoc_md2689}
+We need to install some basic tools to run Elektra\+: CMake, Git and essential build tools (make, gcc, and some standard Unix tools; alternatively \href{https://ninja-build.org/}{\texttt{ ninja}} and \href{https://clang.llvm.org/index.html}{\texttt{ clang}} are also supported but not described here). Depending on your Linux distribution use the following commands to install these tools\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo apt-\/get install cmake git build-\/essential}
+
+\end{DoxyCode}
+
+
+Or on RPM (Red Hat Package Manager) based systems (like Fedora, open\+SUSE, Cent\+OS etc.)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo yum install -\/y cmake git gcc-\/c++}
+
+\end{DoxyCode}
+
+
+Or on mac\+OS, most of the build tools can be obtained by installing \href{https://developer.apple.com/xcode/}{\texttt{ Xcode}}. Other required tools may be installed using \href{https://brew.sh/}{\texttt{ brew}}. First, install brew as described on their website. Then issue the following command to get CMake to complete the basic requirements\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install cmake git}
+
+\end{DoxyCode}
+\hypertarget{doc_GETSTARTED_md_autotoc_md2690}{}\doxysection{Installation}\label{doc_GETSTARTED_md_autotoc_md2690}
+If you meet all the software requirements you can get the source code of Elektra by using this command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git clone https://github.com/ElektraInitiative/libelektra.git}
+
+\end{DoxyCode}
+
+
+Run the following commands to compile Elektra with non-\/experimental plugins where your system happens to fulfill the dependencies\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cd libelektra  \#navigate to libelektra}
+\DoxyCodeLine{mkdir build  \&\& cd build  \#create and navigate to the build directory}
+\DoxyCodeLine{cmake ..  \# watch output to see if everything needed is included}
+\DoxyCodeLine{\#  optionally run "{}ccmake .."{} to get an overview of the available build settings (needs cmake-\/curses-\/gui)}
+\DoxyCodeLine{cmake -\/-\/build . -\/-\/ -\/j5}
+
+\end{DoxyCode}
+
+
+Optionally you can also run tests, see \mbox{\hyperlink{doc_TESTING_md}{here for more information}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/-\/build . -\/-\/target run\_nokdbtests}
+
+\end{DoxyCode}
+
+
+With these commands you will be able to run the \char`\"{}\+Hello World!\char`\"{} example, but usually you will need to use some of the \mbox{\hyperlink{src_plugins_README_md}{plugins}}, tools and bindings of Elektra. Please take a look at the more detailed \mbox{\hyperlink{doc_COMPILE_md}{compiling documentation}}. After you completed building Elektra on your own, you can execute these commands to install Elektra (please check the \mbox{\hyperlink{doc_INSTALL_md}{installation documentation}}for the many available packages)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo make install}
+\DoxyCodeLine{sudo ldconfig \#optional: check installation documentation for more information}
+
+\end{DoxyCode}
+
+
+\mbox{\hyperlink{doc_INSTALL_md}{Installation documentation}} contains further information about available packages.
+
+Optionally you can also run tests to verify the installed Elektra, see \mbox{\hyperlink{doc_TESTING_md}{here for more information}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb run\_nokdbtests}
+
+\end{DoxyCode}
+\hypertarget{doc_GETSTARTED_md_autotoc_md2691}{}\doxysection{Hello first steps!}\label{doc_GETSTARTED_md_autotoc_md2691}
+This section attempts to give a brief introduction on how to use the key database of Elektra. The key database is modified and queried by using the {\ttfamily kdb} tool.
+
+Let\textquotesingle{}s look into an example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount "{}hello.spec.ni"{} "{}spec:/example/hello"{} ni}
+
+\end{DoxyCode}
+
+
+This first command shows one of the core concepts\+: In Elektra you mount a file into the key database by specifying a mountpoint. In this example we mount the file {\ttfamily hello.\+spec.\+ni} that shall be our configuration specification to the mountpoint {\ttfamily /example/hello} in the {\ttfamily spec} \mbox{\hyperlink{doc_tutorials_namespaces_md}{namespace}} (which is the namespace used for specifications). We could also say that we persistently mount a new {\itshape backend}. The last parameter {\ttfamily ni} specifies that we use the \mbox{\hyperlink{md_src_plugins_ni_README_src_plugins_ni_README_md}{ni plugin}} to write in the ni format (a specialised variant of INI) to the file. This can also be omitted in which case the less human-\/friendly dump plugin is used.
+
+Since we did not denote an absolute file path it depends on the namespace where the actual file is stored. However, we can always retrieve the location of a file with the {\ttfamily file} subcommand, e.\+g., {\ttfamily kdb file \char`\"{}spec\+:/example/hello\char`\"{}}.
+
+Now let\textquotesingle{}s add some data to our specification\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb set "{}spec:/example/hello/what"{} "{}"{}}
+
+\end{DoxyCode}
+
+
+As you see above we extended the the mountpoint {\ttfamily /example/hello} with {\ttfamily /what}. Our specification now expects (but not requires) a {\ttfamily what} key in the configuration. (If you want to actually require it you need to set the metakey {\ttfamily meta\+:/require}, but more about metakeys below.) Note that the value is empty since we just want to specify the key.
+
+Now let\textquotesingle{}s show the actual power of Elektra by setting metadata to our specification\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb meta-\/set "{}spec:/example/hello/what"{} default World}
+
+\end{DoxyCode}
+
+
+The metakey {\ttfamily default} (having the value {\ttfamily World}) is now associated with the key {\ttfamily spec\+:/example/hello/what}. It should be noted that the previous setting of {\ttfamily what} is in this scenario redundant and could be omitted because this is done implicitly.
+
+Now let\textquotesingle{}s mount our specification\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb meta-\/set "{}spec:/example/hello"{} mountpoint "{}hello.ni"{}}
+\DoxyCodeLine{sudo kdb spec-\/mount "{}/example/hello"{} ni}
+
+\end{DoxyCode}
+
+
+As you see above, we first specify a mountpoint for our configuration (which is just metadata of the parent key {\ttfamily spec\+:/example/hello}). Afterwards we use the {\ttfamily spec-\/mount} subcommand to mount a new backend by a previously mounted specification. Note that there shall not be a namespace given, because {\ttfamily spec-\/mount} creates mountpoints for all namespaces (except {\ttfamily spec} of course).
+
+Now let\textquotesingle{}s enjoy some configuration magic\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get "{}/example/hello/what"{}}
+
+\end{DoxyCode}
+
+
+We notice even if we did not set a value for the key {\ttfamily /example/hello/what} we still get {\ttfamily World} back since this is specified as default value. Therein lies the power of Elektra\+: We can set metadata (like \mbox{\hyperlink{md_src_plugins_type_README_src_plugins_type_README_md}{types}}, \mbox{\hyperlink{md_src_plugins_validation_README_src_plugins_validation_README_md}{Reg\+Ex}} or \mbox{\hyperlink{md_src_plugins_date_README_src_plugins_date_README_md}{date}} validation, etc.) that gets handled by plugins.
+
+If we want to set a custom value we can do it this way\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set "{}user:/example/hello/what"{} "{}first few steps"{}}
+
+\end{DoxyCode}
+
+
+Now a {\ttfamily kdb get /example/hello/what} would return {\ttfamily first few steps}.
+
+Note that when we set a value the namespace of the key should be specified explicitly. If we don\textquotesingle{}t give a proper namespace (like in the get example above) a so-\/called \mbox{\hyperlink{doc_tutorials_cascading_md}{cascading lookup}} is done. However, cascading lookups during {\ttfamily kdb set} only work, if there is already an existing value (i.\+e. there is no ambiguity which key we want to set).\hypertarget{doc_GETSTARTED_md_autotoc_md2692}{}\doxysection{Further Reading}\label{doc_GETSTARTED_md_autotoc_md2692}
+Start with your very first Elektra application in C and follow these steps\+: \mbox{\hyperlink{doc_tutorials_hello-elektra_md}{Hello World!}}
+
+Modify the \href{https://www.libelektra.org/home}{\texttt{ website}} with the following tutorial. The website is build with angular and hosted with grunt.
+
+Also take a look at the webui. 

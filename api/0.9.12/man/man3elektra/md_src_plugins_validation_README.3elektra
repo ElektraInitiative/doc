@@ -1,0 +1,50 @@
+.TH "md_src_plugins_validation_README" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_validation_README \- Plugin: validation 
+
+.IP "\(bu" 2
+infos = Information about validation plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep libc
+.IP "\(bu" 2
+infos/metadata = check/validation check/validation/message check/validation/ignorecase check/validation/match check/validation/invert check/validation/type
+.IP "\(bu" 2
+infos/description = Validates key values using regular expressions
+.PP
+.SH "Introduction"
+.PP
+This plugin is a check plugin which checks string values of Keys using regular expressions\&.
+.SH "Usage"
+.PP
+The validation plugin looks for two metakeys\&. \fCcheck/validation\fP gives a regular expression to check against\&. If it is present, \fCcheck/validation/message\fP may contain an optional humanly readable message that will be passed with the error information\&.
+.PP
+Important: To validate against the whole string, you have to start the regular expression with \fC^\fP and end it with \fC$\fP\&. Otherwise expressions that e\&.g\&. match the empty string, always return true\&. Alternatively, you can use \fCcheck/validation/match=LINE\fP\&.
+.SH "Configuration"
+.PP
+Metadata can be supplied to configure the validation:
+.PP
+.IP "\(bu" 2
+\fCcheck/validation/match\fP: You can check against \fCLINE\fP, \fCWORD\fP or \fCANY\fP
+.IP "\(bu" 2
+\fCcheck/validation/ignorecase\fP: If you want to ignore case\&.
+.IP "\(bu" 2
+\fCcheck/validation/invert\fP: If you want to invert match\&.
+.PP
+.SH "Implementation"
+.PP
+The implementation consists of a loop checking for every key if it has the mentioned metakey\&. The check itself is done by the POSIX regular expression library with the interface \fCregcomp\fP, \fCregexec\fP, \fCregerror\fP and \fCregfree\fP\&. The flag \fCREG_EXTENDED\fP is passed so that the regular expression will be compiled as an extended regular expression\&. \fCREG_NOSUB\fP gives a better performance and subexpressions cannot be used in this setup anyway\&.
+.SH "Exported Methods"
+.PP
+The plugin also exports the function \fCksLookupRE()\fP that does a lookup in a KeySet using a regular expression\&. It starts from the current cursor of the KeySet and stops when the first value matches\&. Finally, this key is returned\&. 

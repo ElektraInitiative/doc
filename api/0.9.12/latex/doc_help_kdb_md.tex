@@ -1,0 +1,150 @@
+\label{doc_help_kdb_md_md_doc_help_kdb}%
+\Hypertarget{doc_help_kdb_md_md_doc_help_kdb}%
+ \hypertarget{doc_help_kdb_md_autotoc_md3080}{}\doxysection{INTRODUCTION}\label{doc_help_kdb_md_autotoc_md3080}
+{\bfseries{kdb}} provides access to the global key database of Elektra via command-\/line.
+
+Concepts are in man page section 7 and are prefixed with {\ttfamily elektra-\/}. If you do not yet know about Elektra, you should start reading \mbox{\hyperlink{doc_help_elektra-introduction_md}{elektra-\/introduction(7)}}. CLI Tools of Elektra are in man page section 1 and are prefixed with {\ttfamily kdb-\/}.
+
+The man pages can also be viewed online at\+: \href{https://doc.libelektra.org/api/latest/html/pages.html}{\texttt{ https\+://doc.\+libelektra.\+org/api/latest/html/pages.\+html}}
+
+And the page you are currently reading at\+: \href{https://doc.libelektra.org/api/latest/html/doc_help_kdb_md.html}{\texttt{ https\+://doc.\+libelektra.\+org/api/latest/html/doc\+\_\+help\+\_\+kdb\+\_\+md.\+html}}\hypertarget{doc_help_kdb_md_autotoc_md3081}{}\doxysection{OVERVIEW}\label{doc_help_kdb_md_autotoc_md3081}
+In this manual we give an overview of the tool suite {\ttfamily kdb}. It is part of Elektra’s tools. The tool suite {\ttfamily kdb} consists of individual commands. Most commands are independent and some commands are sharing an executable. Some commands are written as external scripts.
+
+The included commands can be listed via\+:~\newline
+ {\ttfamily kdb}
+
+External commands can be listed via\+:~\newline
+ {\ttfamily kdb list-\/tools}
+
+Only a few commands are enough for daily use. We can retrieve a key by\+:~\newline
+ {\ttfamily kdb get user\+:/key}
+
+We store a key permanently with a value given by\+:~\newline
+ {\ttfamily kdb set user\+:/key value}
+
+We list all available keys arranged below a key by\+:~\newline
+ {\ttfamily kdb ls user\+:/key}
+
+Documentation of plugins is available using the \mbox{\hyperlink{doc_help_kdb-plugin-info_md}{kdb-\/plugin-\/info(1)}} tool\+:~\newline
+ {\ttfamily kdb plugin-\/info}
+
+Run {\ttfamily kdb plugin-\/list} for a list of plugins\+:~\newline
+ {\ttfamily kdb plugin-\/list}
+
+Each of these commands has its own man page for further details.\hypertarget{doc_help_kdb_md_autotoc_md3082}{}\doxysection{BASIC OPTIONS}\label{doc_help_kdb_md_autotoc_md3082}
+Every core-\/tool has the following options\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile, see below.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/-\/}\+: Do not process any following arguments starting with {\ttfamily -\/} as options.
+\end{DoxyItemize}\hypertarget{doc_help_kdb_md_autotoc_md3083}{}\doxysection{COMMON OPTIONS}\label{doc_help_kdb_md_autotoc_md3083}
+Most tools have the following options\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Also shows Configfile and Mountpoint in case of an error/warning
+\item {\ttfamily -\/q}, {\ttfamily -\/-\/quiet}\+: Suppress non-\/error messages.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Shows the line at which an error happened in case an error or warning is issued
+\end{DoxyItemize}\hypertarget{doc_help_kdb_md_autotoc_md3084}{}\doxysection{KDB}\label{doc_help_kdb_md_autotoc_md3084}
+The {\ttfamily kdb} utility reads its own configuration from three sources within the KDB (key database)\+:
+
+
+\begin{DoxyEnumerate}
+\item /sw/kdb/$\ast$$\ast$profile$\ast$$\ast$/ (for legacy configuration)
+\item /sw/elektra/kdb/\#0/\%/ (for empty profile, {\ttfamily \%} in Elektra is used to represent emptiness)
+\item /sw/elektra/kdb/\#0/$\ast$$\ast$profile$\ast$$\ast$/ (for current profile, if no {\ttfamily -\/p} or {\ttfamily -\/-\/profile} is given, {\ttfamily current} will be used)
+\end{DoxyEnumerate}
+
+Here the last source where a configuration value is found, wins.
+
+For example, to permanently change verbosity one can use\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb set /sw/elektra/kdb/\#0/current/verbose 1}\+: Be verbose for every tool.
+\item {\ttfamily kdb set /sw/elektra/kdb/\#0/current/quiet 1}\+: Be quiet for every tool.
+\end{DoxyItemize}
+
+If {\ttfamily \%} is passed to {\ttfamily -\/p} or {\ttfamily -\/-\/profile}, the KDB will not be consulted for configuration and only the command-\/line arguments are used.\hypertarget{doc_help_kdb_md_autotoc_md3085}{}\doxysection{PROFILES}\label{doc_help_kdb_md_autotoc_md3085}
+Profiles allow users to change many/all configuration settings of a tool at once. It influences from where the KDB entries are read. Without a {\ttfamily -\/p} or {\ttfamily -\/-\/profile} argument following profiles are used (in the order of preference)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily current}\+: Is the profile to be used only if no {\ttfamily -\/p} argument was used.
+\item {\ttfamily \%}\+: Is the fallback profile. It will be used if keys cannot be found in the main profile.
+\end{DoxyItemize}
+
+For example if you use\+:~\newline
+ {\ttfamily kdb export -\/p admin system}
+
+It will read its format configuration from {\ttfamily /sw/elektra/kdb/\#0/admin/format}.
+
+If you want different configuration per user or directories, you should prefer to use the {\ttfamily user} and {\ttfamily dir} namespaces. Then the correct configuration will be chosen automatically according to the current user or current working directory.
+
+Sometimes it is useful to start with default options, for example it is not possible to invert the {\ttfamily -\/q} option. In such situations one can simply select a non-\/existing profile, then {\ttfamily -\/q} works as usual\+:~\newline
+ {\ttfamily kdb mount -\/p nonexist -\/q /abc dir\+:/abc}
+
+If {\ttfamily \%} is used as profile name for {\ttfamily -\/p}, the {\ttfamily kdb} tools disables reading from {\ttfamily KDB} for their own configuration settings. Then, they only use command-\/line arguments.
+
+To explicitly state the default behavior, we use\+:~\newline
+ {\ttfamily -\/p current}
+
+To state that we do not want to read any configuration settings for {\ttfamily kdb} from KDB, we use\+:~\newline
+ {\ttfamily -\/p \%}
+
+\begin{quote}
+Note that KDB will still be used to perform the actions you want to perform with the {\ttfamily kdb} tool. \end{quote}
+\hypertarget{doc_help_kdb_md_autotoc_md3086}{}\doxysection{BOOKMARKS}\label{doc_help_kdb_md_autotoc_md3086}
+Elektra recommends \mbox{\hyperlink{doc_tutorials_application-integration_md}{to use rather long paths}} because it ensures flexibility in the future (e.\+g. to use profiles and have a compatible path for new major versions of configuration).
+
+Long paths are, however, cumbersome to enter in the CLI. Thus one can define bookmarks. Bookmarks are keys whose key name starts with {\ttfamily +}. They are only recognized by the {\ttfamily kdb} tool or tools that explicitly have support for it. Your applications should not depend on the presence of a bookmark.
+
+Bookmarks are stored below\+:~\newline
+ {\ttfamily /sw/elektra/kdb/\#0/current/bookmarks}
+
+For every key found there, a new bookmark will be introduced.
+
+Bookmarks can be used to start key names by using {\ttfamily +} (plus) as first character. The string until the first {\ttfamily /} will be considered as bookmark.
+
+For example, if you set the bookmark kdb\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/sw/elektra/kdb/\#0/current/bookmarks}
+\DoxyCodeLine{kdb set user:/sw/elektra/kdb/\#0/current/bookmarks/kdb user:/sw/elektra/kdb/\#0/current}
+
+\end{DoxyCode}
+
+
+You are able to use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls +kdb/bookmarks}
+\DoxyCodeLine{kdb get +kdb/format}
+
+\end{DoxyCode}
+\hypertarget{doc_help_kdb_md_autotoc_md3087}{}\doxysection{RETURN VALUES}\label{doc_help_kdb_md_autotoc_md3087}
+
+\begin{DoxyItemize}
+\item 0\+: successful.
+\item 1\+: Invalid options passed.
+\item 2\+: Invalid arguments passed.
+\item 3\+: Command terminated unsuccessfully without specifying error code.
+\item 4\+: Unknown command.
+\item 5\+: KDB Error, could not read/write from/to KDB.
+\item 6\+: Reserved error code.
+\item 7\+: Unknown errors, wrong exceptions thrown.
+\item 8-\/10\+: Reserved error codes.
+\item 11-\/20\+: Command-\/specific error codes. See man page of specific command.
+\end{DoxyItemize}\hypertarget{doc_help_kdb_md_autotoc_md3088}{}\doxysection{SEE ALSO}\label{doc_help_kdb_md_autotoc_md3088}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_elektra-introduction_md}{elektra-\/introduction(7)}}
+\item \mbox{\hyperlink{doc_help_kdb_md}{kdb(1)}}
+\item Get a \mbox{\hyperlink{doc_BIGPICTURE_md}{big picture about Elektra}} 
+\end{DoxyItemize}

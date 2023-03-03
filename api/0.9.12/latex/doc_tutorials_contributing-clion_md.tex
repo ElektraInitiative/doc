@@ -1,0 +1,363 @@
+\label{doc_tutorials_contributing-clion_md_md_doc_tutorials_contributing_clion}%
+\Hypertarget{doc_tutorials_contributing-clion_md_md_doc_tutorials_contributing_clion}%
+ In this tutorial, we will go through the steps necessary to contribute to Elektra to make it easier for you to get started. We will use a Unix based OS like Linux and CLion for development, but depending on where you want to contribute code, other IDEs will also be sufficient. Before you start, please read this to get familiar with the process of contributing to Elektra.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4226}{}\doxysection{Prerequisites}\label{doc_tutorials_contributing-clion_md_autotoc_md4226}
+
+\begin{DoxyItemize}
+\item \href{https://git-scm.com/download}{\texttt{ Git}} or similar software
+\item \href{https://www.jetbrains.com/clion/}{\texttt{ CLion}} or similar software
+\item \href{https://github.com/}{\texttt{ Git\+Hub account}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4227}{}\doxysection{Forking the Repository}\label{doc_tutorials_contributing-clion_md_autotoc_md4227}
+Libelektra is hosted on Git\+Hub. You can find its repository here\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://github.com/ElektraInitiative/libelektra}{\texttt{ https\+://github.\+com/\+Elektra\+Initiative/libelektra}}
+\end{DoxyItemize}
+
+To be able to make pull requests, you need a copy of this repository inside your Git\+Hub account. You can find a tutorial about how to do this \href{https://help.github.com/en/articles/fork-a-repo}{\texttt{ here}} (remember to sign in to your account first). After this, you should see this copy in the list of your own repositories with a hint of its origin.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4228}{}\doxysection{Getting the Code}\label{doc_tutorials_contributing-clion_md_autotoc_md4228}
+To develop for libelektra, we now have to \char`\"{}download\char`\"{} your copy of its original repository. In Git this process is called \char`\"{}cloning\char`\"{}. CLion has built-\/in Git support which we will use for this tutorial. Once you have opened CLion click on the button {\itshape Get from VCS} in the welcome-\/window.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{vcs_button.png}%Get from VCS button
+\end{DoxyInlineImage}
+
+
+\begin{quote}
+Hint for WSL-\/\+Users\+: Cloning the repository into the WSL filesystem will speed up the compilation time! ~\newline
+ i.\+e. clone into {\ttfamily $\sim$/libelektra} and not into {\ttfamily /mnt/c/...} \end{quote}
+Now you should log in to your Git\+Hub account from the IDE. Click on {\itshape Git\+Hub} on the left and then on {\itshape Log In via Git\+Hub...}. A browser window should open where you can enter your Git\+Hub credentials. After successful authentication, the browser window closes and the Git\+Hub information is available within CLion.
+
+A list of repositories should be displayed. Select the entry {\itshape libelektra} to use your forked repository. At the bottom of the window, you can select a folder where you want to store your local copy and then click the button {\itshape Clone}.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{vcs_import.png}%Import from VCS
+\end{DoxyInlineImage}
+
+
+Alternatively you can also clone your repository using the command line. Open a terminal and navigate to the folder you want to save the source code into and type\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git clone https://github.com/<yourGitHubUserName>/libelektra.git}
+
+\end{DoxyCode}
+
+
+With the project now locally available we can start developing.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4229}{}\doxysection{Setting Up the Project}\label{doc_tutorials_contributing-clion_md_autotoc_md4229}
+\begin{quote}
+If you run in WSL, see \href{\#wsl-setup}{\texttt{ WSL Setup}} \end{quote}
+To import all the project configurations, right-\/click on the file {\itshape CMake\+List.\+txt} in the root directory of the repository and select {\itshape Load CMake Project}, then click on {\itshape Trust Project}.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{cmake_load.png}%Load CMake Project
+\end{DoxyInlineImage}
+
+
+If the entry is not visible in the context menu, you can try to repair the IDE via {\itshape File} -\/-\/$>$ {\itshape Repair IDE...}
+
+If you\textquotesingle{}ve cloned the project using a terminal, start CLion and once you see the main menu, click {\itshape Open} and select the {\itshape CMake\+Lists.\+txt} file inside the project\textquotesingle{}s root directory. This will import the project accordingly and populate you run configuration with some predefined values. In rare occurrences this won\textquotesingle{}t happen. If that is the case for you, simply restart CLion using\+:
+
+{\itshape File} -\/-\/$>$ {\itshape Invalidate Caches...}
+
+Now after all processes of CLion have finished, the project should be set up and the run configuration should be populated with entries.
+
+Since some {\itshape kdb}-\/operations require root access and it is not recommended to start programs (like CLion) with root access if they usually don\textquotesingle{}t require it, we have to change our CMake configurations to get rid of this requirement. To do that, open\+:
+
+{\itshape File} -\/-\/$>$ {\itshape Settings} -\/-\/$>$ {\itshape Build, Execution, Deployment} -\/-\/$>$ {\itshape CMake}
+
+There you can edit your CMake profiles. To get rid of the root requirement we\textquotesingle{}ll add the following CMake options to our \char`\"{}\+Debug\char`\"{} profile\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DKDB\_DB\_HOME="{}\string~/.config/kdb/[xyz]/home"{}}
+\DoxyCodeLine{-\/DKDB\_DB\_SYSTEM="{}\string~/.config/kdb/[xyz]/system"{}}
+\DoxyCodeLine{-\/DKDB\_DB\_SPEC="{}\string~/.config/kdb/[xyz]/spec"{}}
+\DoxyCodeLine{-\/DKDB\_DB\_USER="{}.config/kdb/[xyz]/user"{}}
+\DoxyCodeLine{-\/DCMAKE\_INSTALL\_PREFIX="{}install"{}}
+
+\end{DoxyCode}
+
+
+where \char`\"{}\mbox{[}xyz\mbox{]}\char`\"{} can be replaced by any unique identifier so that different profiles won\textquotesingle{}t clash with each other. This configuration also isolates your build of Elektra from any existing Elektra installation on your system. Note the missing {\ttfamily $\sim$/} from the argument to {\ttfamily -\/DKDB\+\_\+\+DB\+\_\+\+USER}, as libelektra internally already adds the home directory path. An additional {\ttfamily $\sim$/} would lead to a folder named {\ttfamily $\sim$} in your home directory. For debugging purposes we also recommend adding the following CMake options for debug builds to enable further logging and checks\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DENABLE\_DEBUG="{}ON"{}}
+\DoxyCodeLine{-\/DENABLE\_LOGGER="{}ON"{}}
+
+\end{DoxyCode}
+
+
+The following options can be added to build additional bindings, tools and plugins\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DBINDINGS="{}ALL;-\/DEPRECATED"{}}
+\DoxyCodeLine{-\/DPLUGINS="{}ALL;-\/DEPRECATED"{}}
+\DoxyCodeLine{-\/DTOOLS="{}ALL"{}}
+
+\end{DoxyCode}
+
+
+Another interesting option is to treat all warnings as errors\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DCOMMON\_FLAGS="{}-\/Werror"{}}
+
+\end{DoxyCode}
+
+
+The final configuration should look like this\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{cmake_edit_profile.png}%Edit CMake Profile
+\end{DoxyInlineImage}
+
+
+To increase the build speed you can also change the {\itshape Build options} to e.\+g.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/j 12}
+
+\end{DoxyCode}
+
+
+which, in this case, starts 12 build jobs in parallel. For optimal performance this value should represent the number of available cores of your CPU + few extra jobs.
+
+Take care to enter the parameter in the correct format, prefixed with \char`\"{}-\/-\/\char`\"{} as shown here\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{cmake_edit_profile_build_option.png}%Set build jobs
+\end{DoxyInlineImage}
+
+
+It remains to be noted that CLion maintains all CMake profiles in parallel. If some CMake file changes, CLion executes {\ttfamily cmake} for each profile which can put a lot of strain on your system.
+
+Finally check if {\ttfamily Clang\+Format} is enabled for the project to automatically adhere to the formatting guidelines of the project when formatting the code. You can find the settings here\+:
+
+{\itshape File} -\/-\/$>$ {\itshape Settings...} -\/-\/$>$ {\itshape Editor} -\/-\/$>$ {\itshape Code Style}
+
+Make sure the selected {\itshape Scheme} is {\itshape Project}.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4230}{}\doxysubsection{WSL Setup}\label{doc_tutorials_contributing-clion_md_autotoc_md4230}
+At this point we assume you have cloned the repository into the WSL filesystem, as stated earlier.
+
+Now we have to make sure CLion will use the WSL compiler executables or WSL toolchain.
+
+
+\begin{DoxyEnumerate}
+\item Press {\ttfamily Ctrl + Alt + S} or go to {\itshape File} -\/-\/$>$ {\itshape Settings...} -\/-\/$>$ {\itshape Build, Execution, Deployment} -\/-\/$>$ {\itshape Toolchains}
+\item If not already present, add the WSL Toolchain
+\begin{DoxyEnumerate}
+\item Click on the {\ttfamily +} in the top left corner ~\newline
+ 
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{toolchains_add.png}%Add Toolchain
+\end{DoxyInlineImage}
+
+\item Select WSL
+\item Wait for CLion to detect all executables ~\newline
+ 
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{toolchains_detected.png}%Detected executables
+\end{DoxyInlineImage}
+
+\end{DoxyEnumerate}
+\item Move the WSL toolchain to the top using the up-\/arrow in the toolbar or {\ttfamily Alt + Up} to set it as default
+\item Click {\ttfamily OK}
+\end{DoxyEnumerate}
+
+The WSL toolchain is now configured as the default. You can reload the CMake project by right-\/clicking on the root {\ttfamily CMake\+Lists.\+txt} and selecting {\ttfamily Load CMake Project} or {\ttfamily Reload CMake Project} ~\newline
+ If you need further help with setting up CLion and WSL, visit the \href{https://www.jetbrains.com/help/clion/how-to-use-wsl-development-environment-in-product.html}{\texttt{ official Tutorial}}.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4231}{}\doxysection{Development}\label{doc_tutorials_contributing-clion_md_autotoc_md4231}
+Usually the folders you have to work in to add functionality or documentation are as follows\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{doc}}~\newline
+ This folder contains mainly all documentation of the project, including almost all pages of the \href{https://www.libelektra.org}{\texttt{ homepage}} of this project. One important note is, that all Markdown-\/pages can also be used for testing using \href{https://github.com/ElektraInitiative/libelektra/tree/master/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown to Shell Recorder}} (you can find an example on how to do this \mbox{\hyperlink{doc_help_kdb-get_md}{here}}).
+\item {\bfseries{src}}~\newline
+ Almost all functionality-\/code resides here.
+\begin{DoxyItemize}
+\item {\bfseries{bindings}}~\newline
+ Here is all the code of available Bindings of libelektra.
+\item {\bfseries{plugins}}~\newline
+ You can find all developed \mbox{\hyperlink{src_plugins_README_md}{Plugins}} here. If you want to fix a bug for an existing plugin or add another one, this is the directory you have to work in. For further information on how to develop your own plugin, please visit \mbox{\hyperlink{doc_tutorials_plugins_md}{this}} tutorial.
+\item {\bfseries{tools}}~\newline
+ In this folder the source of all tools for interacting with Elektra\textquotesingle{}s global key database, e.\+g. {\itshape kdb}, can be found.
+\end{DoxyItemize}
+\item {\bfseries{tests}}~\newline
+ Here you can find all sorts of tests (excluding tests created with the {\itshape Markdown to Shell Recorder}-\/tool).
+\end{DoxyItemize}\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4232}{}\doxysection{Testing}\label{doc_tutorials_contributing-clion_md_autotoc_md4232}
+The most thorough way to test your changes is to run all tests. Therefore, navigate to your run-\/configurations ({\itshape Run} -\/-\/$>$ {\itshape Edit Configurations...}) and look for the entry {\itshape CTest Application} -\/-\/$>$ {\itshape All CTest}. The configuration should look like this\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{ctest_config.png}%CTest configuration
+\end{DoxyInlineImage}
+
+
+You can easily run the tests by clicking on the icon right to the selected configuration\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{ctest_run.png}%CTest run
+\end{DoxyInlineImage}
+
+
+Now you can execute this run configuration, which will run all enabled tests. Alternatively you can also run all tests using the terminal by executing {\ttfamily make run\+\_\+all} inside your build folder (e.\+g. /cmake-\/build-\/debug).
+
+You can also run other specific tests by setting {\ttfamily Executable} to any of the {\ttfamily testmod\+\_\+$\ast$} or {\ttfamily testkdb\+\_\+$\ast$}targets. Additionally, all tests using {\itshape Google Test} (e.\+g. tests/kdb/$\ast$) can be run directly using CLion by opening their source code and clicking on the green icon next to the class name.
+
+If you want to test various {\itshape kdb} methods separately, you can create your own run configurations. Add a new one by clicking on the \char`\"{}+\char`\"{}-\/sign on the top left of the \char`\"{}\+Edit Configurations...\char`\"{} dialog and name it. Here {\itshape Target} should be {\ttfamily all} and {\itshape Executable} should have \char`\"{}kdb\char`\"{} selected. If you for example want to test {\ttfamily kdb plugin-\/info dump}, write \char`\"{}plugin-\/info dump\char`\"{} next to {\itshape Program arguments}. That\textquotesingle{}s it, now you can just test this part of {\itshape kdb}.
+
+For further information please read \mbox{\hyperlink{doc_TESTING_md}{this}}.
+
+Another option to easily run all tests is via Docker. A tutorial about how to do this and with further information is available \mbox{\hyperlink{doc_tutorials_run_all_tests_with_docker_md}{here}}. This is also recommended before creating a pull-\/request. You get feedback promptly and reduce load on the CI build servers.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4233}{}\doxysection{Committing Your Changes}\label{doc_tutorials_contributing-clion_md_autotoc_md4233}
+Once you are satisfied with your changes, you have to commit them to your forked repository. By convention, such commits shouldn\textquotesingle{}t be too large, otherwise it will become difficult to revert some small changes if they are not working as intended. If you use the terminal for your Git operations, to be able to commit code to your repository, you have to configure your local Git installation to use your Git\+Hub credentials. You can find information about how to do this \href{https://help.github.com/en/articles/set-up-git}{\texttt{ here}}. After you\textquotesingle{}ve set up your Git configuration, you can continue with uploading your changes.
+
+By default, you are in the {\itshape master} branch of your repository. First, you should never directly work on the {\itshape master} branch, since only working code is expected to be there. This means, we now create a branch in our repository where our code changes will be published into. On the bottom right of your CLion window you can find the button {\itshape Git\+: $<$branchname$>$}. Click it and select {\itshape + New Branch}. Type in the name of your new branch (e.\+g. \char`\"{}testbranch\char`\"{}) and keep {\itshape Checkout branch} checked to automatically switch to it as your working branch.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{git_create_branch.png}%Git branch
+\end{DoxyInlineImage}
+
+
+Alternatively open a terminal, navigate to the root directory of your local code and type\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git branch testbranch}
+\DoxyCodeLine{git checkout testbranch}
+
+\end{DoxyCode}
+
+
+After you have changed some files, it is time to publish them to your repository. To do that, select\+:
+
+{\itshape Git} -\/-\/$>$ {\itshape Commit...}
+
+In the dialog you have opened you can now select the files you want to include in your commit. When you double-\/click on a file, you can view the changes that are going to be committed. Make sure to write a meaningful commit message. The first line should have the following syntax\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{module: short statement}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{git_commit.png}%Git commit
+\end{DoxyInlineImage}
+
+
+If you fixed a bug in {\ttfamily kdb cp} the first line of your commit message could be {\ttfamily KDB\+: Fixed cp not copying value}. Your commit message should also include a reference to the issue you have fixed so that the issue can be closed automatically once your code change gets included to the official repository (e.\+g. {\ttfamily Closes \#1234}). Before committing your changes please make sure that {\itshape Reformat code} and {\itshape Rearrange code} are disabled in the commit dialog. Otherwise, Clions formatter might produce files that don\textquotesingle{}t adhere to our formatting guidelines.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{git_settings.png}%Git settings
+\end{DoxyInlineImage}
+
+
+If you installed the {\ttfamily pre-\/commit-\/check-\/formatting} pre-\/commit-\/hook from the {\ttfamily scripts} directory ensure that {\itshape Run Git hooks} is enabled in the commit dialog.
+
+Alternatively, you can run the formatting and fix-\/spelling scripts inside Docker. Further information about this option can be found \mbox{\hyperlink{doc_tutorials_run_reformatting_script_with_docker_md}{here}}.
+
+Finally you can commit your changes by clicking the {\itshape Commit} button and navigate to\+:
+
+{\itshape Git} -\/-\/$>$ {\itshape Push}
+
+To do that in one step, you can also click on the button {\itshape Commit and Push...} next to the {\itshape Commit} button.
+
+Using the terminal you first have to add all files you\textquotesingle{}ve changed and also want in your commit to the {\itshape stage}. Suppose we\textquotesingle{}ve changed how {\ttfamily kdb cp} works, we now have to add it to our files we want to commit (you can add several files for a commit too)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git add ./src/tools/kdb/cp.cpp}
+
+\end{DoxyCode}
+
+
+Now we\textquotesingle{}ve staged our modified file for our commit. The final step is to actually commit it to your online repository. Therefore, type\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git commit -\/m "{}<commit message>"{}}
+\DoxyCodeLine{git push origin testbranch}
+
+\end{DoxyCode}
+
+
+With this, you\textquotesingle{}ve published your changes to your remote branch of your repository. The next step is merging this change into the original repository.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4234}{}\doxysection{Creating a Pull Request}\label{doc_tutorials_contributing-clion_md_autotoc_md4234}
+This step is most easily done using a browser. Open the web page of the Git repository of libelektra (\href{https://github.com/ElektraInitiative/libelektra}{\texttt{ https\+://github.\+com/\+Elektra\+Initiative/libelektra}}) and log in to your account if you have not already done so.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{pr_step_01.png}%Step 1 -\/ Login
+\end{DoxyInlineImage}
+
+
+Navigate to \char`\"{}\+Pull requests\char`\"{}, there you can find a green button called \char`\"{}\+New pull request\char`\"{}.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{pr_step_02.png}%Step 2 -\/ Navigate to pull requests
+\end{DoxyInlineImage}
+ 
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{pr_step_03.png}%Step 3 -\/ New pull request
+\end{DoxyInlineImage}
+
+
+By clicking it (\href{https://github.com/ElektraInitiative/libelektra/compare}{\texttt{ shortcut}}), you can now create a pull request referencing your forked repository and the branch,the modified code resides in. Click on \char`\"{}compare across forks\char`\"{} so that you can find and select your branch.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{pr_step_04.png}%Step 4 -\/ Compare branch
+\end{DoxyInlineImage}
+
+
+Choose \char`\"{}$<$username$>$/libelektra\char`\"{} as the head repository and \char`\"{}testbranch\char`\"{} as the compare-\/branch. Now the green button \char`\"{}\+Create pull requests\char`\"{} should be enabled.
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{pr_step_05.png}%Step 5 -\/ Pick branch, create PR
+\end{DoxyInlineImage}
+
+
+By clicking it you can define the title of your pull request and write a description of the work you have done. Please read the template in this form and include the information stated there if possible. Finally, by clicking \char`\"{}\+Create pull request\char`\"{} you\textquotesingle{}ve successfully created a pull request to merge your changes into the official repository! Now maintainers of libelektra will review your code and, if everything is fine, merge your changes into the official repository. Otherwise, they\textquotesingle{}ll comment on this pull request if further changes are needed. To include additional changes in this pull request, just commit new code changes to the same repository and branch you\textquotesingle{}ve referenced for this pull request, they will be added automatically to it. In any case check the output of the automated tests!
+
+If you want to use CLion for creating Pull Request, please check out \href{https://www.jetbrains.com/help/clion/work-with-github-pull-requests.html}{\texttt{ this}} link for further information.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4235}{}\doxysection{Troubleshooting}\label{doc_tutorials_contributing-clion_md_autotoc_md4235}
+\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4236}{}\doxysubsection{Resolving Missing $\ast$.\+so Library Error In Debug Mode}\label{doc_tutorials_contributing-clion_md_autotoc_md4236}
+In case you fail to run Elektra with the message like this one {\ttfamily Reason\+: of module\+: libelektra-\/resolver.\+so, because\+: libelektra-\/resolver.\+so\+: cannot open shared object file\+: No such file or directory} you can solve it by defining the LD\+\_\+\+LIBRARY\+\_\+\+PATH variable directly in CLion. Click on the debug configurations dropdown in the upper right corner and choose \textquotesingle{}Edit Configurations...\textquotesingle{}. Then find \textquotesingle{}Environmental Variables\textquotesingle{} field and add the following\+: LD\+\_\+\+LIBRARY\+\_\+\+PATH=PATH\+\_\+\+TO\+\_\+\+YOUR\+\_\+\+LIB\+\_\+\+DIRECTORY
+
+Example\+:
+
+LD\+\_\+\+LIBRARY\+\_\+\+PATH=/home/username/\+TU/libelektra/cmake-\/build-\/debug/lib
+
+If you want to run built {\ttfamily kdb} outside of CLion, the recommended way is to run this script from your build directory. The script resides in you original directory with project sources.
+
+Example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{. /PATH/TO/YOUR/PROJECT/scripts/dev/run\_env}
+
+\end{DoxyCode}
+
+
+Please keep in mind it sets the variables only in the currently opened shell window/session.
+
+Please refer to \mbox{\hyperlink{doc_COMPILE_md}{this}} tutorial to fix the problem permanently.\hypertarget{doc_tutorials_contributing-clion_md_autotoc_md4237}{}\doxysection{Hints}\label{doc_tutorials_contributing-clion_md_autotoc_md4237}
+
+\begin{DoxyItemize}
+\item Especially for not that well-\/versed programmers don\textquotesingle{}t forget that when debugging e.\+g. {\ttfamily Key\+Set}, which can contain many {\ttfamily Key} objects, you can only see that there may be more than one key stored in this set by its {\itshape size} attribute since it\textquotesingle{}s keys are referenced by a pointer. Just the first {\ttfamily Key} (referenced by the pointer) will be visible directly using the debugger. To analyse it\textquotesingle{}s stored {\ttfamily Key} objects you can either add a \href{https://www.jetbrains.com/help/clion/debug-tool-window-watches.html}{\texttt{ watch}} or use the GDB debug console (next to the \char`\"{}variables\char`\"{} tab inside the debugger view).
+\item Sometimes CLion does not rebuild changed modules accordingly by just running the test. If you think, that the modules should have been rebuilt (e.\+g. if running {\ttfamily testmod\+\_\+abc} doesn\textquotesingle{}t rebuild abc), please report the issue under \href{https://issues.libelektra.org}{\texttt{ https\+://issues.\+libelektra.\+org}}, so we can fix the CMake dependencies. As temporary fix you can try to rebuild the project and restart the test.
+\item Please add a line of changelog to \mbox{\hyperlink{doc_news__preparation_next_release_md}{this}} file and add it to your pull request, otherwise some test will fail in any case. 
+\end{DoxyItemize}

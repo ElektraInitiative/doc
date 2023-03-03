@@ -1,0 +1,47 @@
+\label{doc_markdownlinkconverter_README_md_md_doc_markdownlinkconverter_README}%
+\Hypertarget{doc_markdownlinkconverter_README_md_md_doc_markdownlinkconverter_README}%
+ The Markdown link Converter, which filters Markdown pages before the processing of doxygen, converts the links in Markdown pages. It is set up as input filter in doxygen, if a Markdown file is desired to be in the API documentation it only must have the extension {\ttfamily .md} and be in the {\ttfamily INPUT} path.
+
+The Markdown link Converter gives each Markdown file a header {\ttfamily \{ \#header \}} which is attached to a title and converts the links to refer to this headers. This conversion happens in 2 passes, which is needed because there can be files with no title.\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3126}{}\doxysection{Usage for Manual Invocation}\label{doc_markdownlinkconverter_README_md_autotoc_md3126}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{markdownlinkconverter [<cmake-\/cache-\/file>] <input-\/file>}
+
+\end{DoxyCode}
+
+
+{\bfseries{The $<$input-\/file$>$ parameter must be an absolute path!}}\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3127}{}\doxysection{Conventions}\label{doc_markdownlinkconverter_README_md_autotoc_md3127}
+
+\begin{DoxyItemize}
+\item Links starting with {\ttfamily @ref}, {\ttfamily \#} for anchors and {\ttfamily http}, {\ttfamily https} or {\ttfamily ftp} for extern links won\textquotesingle{}t be touched.
+\item All other links to Markdown or arbitrary source files will be converted.
+\item All links to folders will be altered to the README.\+md in the Folder. This feature was introduced to be compatible with Git\+Hub, where you can show the content of a folder in combination with the README.\+md of the containing folder.
+\item Anchors won\textquotesingle{}t work in imported Markdown pages.
+\end{DoxyItemize}\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3128}{}\doxysection{Git\+Hub Specialities}\label{doc_markdownlinkconverter_README_md_autotoc_md3128}
+
+\begin{DoxyItemize}
+\item Git\+Hub supports source code fences with syntax highlighting which are not recognized by Doxygen. Thus {\ttfamily sh} after the fence is removed for Doxygen.
+\end{DoxyItemize}\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3129}{}\doxysection{Link Validation}\label{doc_markdownlinkconverter_README_md_autotoc_md3129}
+\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3130}{}\doxysubsection{Internal Links}\label{doc_markdownlinkconverter_README_md_autotoc_md3130}
+The link validation works with a simple try to {\ttfamily fopen} the file, which the link refers to.\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3131}{}\doxysubsection{External Links}\label{doc_markdownlinkconverter_README_md_autotoc_md3131}
+Every link starting with {\ttfamily http}, {\ttfamily https} or {\ttfamily ftp} will be written to a file named {\ttfamily external-\/links.\+txt} located in your build folder. With the following syntax\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{<file>:<line>:0 <url>}
+
+\end{DoxyCode}
+
+
+Note\+: Due to the nature of the Markdown Link Converter the file can only be opened in append mode. So delete it and rerun the html build process ({\ttfamily make clean} could be needed) to get a list without duplicates.
+
+In the script folder is a script named {\ttfamily link-\/checker}. This script can be used to validate the links. Broken links will be printed. False positive not excluded (very rare).
+
+This link-\/checker reads the links from an input file (the synopsis is {\ttfamily link-\/checker $<$file$>$}) and prints the broken ones to the {\ttfamily stderr}. {\ttfamily wget} is used for the check so this program is required to be installed on your system.
+
+The link-\/checker includes the ability to list links on a whitelist which will not be checked and so on not printed to {\ttfamily stderr} in any case. Furthermore, this is the only way to let {\ttfamily http} links pass as they should be prevented by default. However, this does not mean that the {\ttfamily http} links are reachable as due to the lack of encryption, availability tests are not sensible in this case.\hypertarget{doc_markdownlinkconverter_README_md_autotoc_md3132}{}\doxysection{Further Improvements (\+Which Will be Introduced in a Later Version)\+:}\label{doc_markdownlinkconverter_README_md_autotoc_md3132}
+
+\begin{DoxyItemize}
+\item optimize pdf output (also UTF-\/8 encoding)
+\item if title contains --, this should be-\/ also remove other fences doxygen does not understand 
+\end{DoxyItemize}

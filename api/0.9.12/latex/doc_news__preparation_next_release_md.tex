@@ -1,0 +1,510 @@
+\label{doc_news__preparation_next_release_md_md_doc_news__preparation_next_release}%
+\Hypertarget{doc_news__preparation_next_release_md_md_doc_news__preparation_next_release}%
+
+\begin{DoxyItemize}
+\item guid\+: F2193578-\/1773-\/43\+A9-\/85\+CA-\/79\+EA8\+CE48\+D7B
+\item author\+: Mihael Pranjić
+\item pub\+Date\+: Fri, 03 Mar 2023 08\+:07\+:28 +0100
+\item short\+Desc\+: New Backend Logic, Copy-\/on-\/\+Write, FLOSS Course
+\end{DoxyItemize}
+
+We are proud to release Elektra 0.\+9.$<$$<$\+VERSION$>$$>$.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4052}{}\doxysection{What is Elektra?}\label{doc_news__preparation_next_release_md_autotoc_md4052}
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database. For more information, visit \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}.
+
+You can also read the news \href{https://www.libelektra.org/news/0.9.<<VERSION>>-release}{\texttt{ on our website}}.
+
+You can try out the latest Elektra release using our docker image \href{https://hub.docker.com/r/elektra/elektra}{\texttt{ elektra/elektra}}. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker pull elektra/elektra}
+\DoxyCodeLine{docker run -\/it elektra/elektra}
+
+\end{DoxyCode}
+\hypertarget{doc_news__preparation_next_release_md_autotoc_md4053}{}\doxysection{Highlights}\label{doc_news__preparation_next_release_md_autotoc_md4053}
+
+\begin{DoxyItemize}
+\item New Backend
+\item Copy-\/on-\/\+Write
+\item FLOSS
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4054}{}\doxysubsection{New Backend}\label{doc_news__preparation_next_release_md_autotoc_md4054}
+The entire logic for backends has been rewritten, to allow for more flexibility und an unlimited number of plugins. Instead of calling plugins directly, {\ttfamily libelektra-\/kdb} now only calls so-\/called backend plugins and special hook plugins. There is a \mbox{\hyperlink{doc_dev_backend-plugins_md}{contract}} between {\ttfamily libelektra-\/kdb} and the backend plugins. All backend plugins must adhere to this contract. To achieve this goal, most backend plugins will call other plugins (like {\ttfamily libelektra-\/kdb} did previously).
+
+The logic previously implemented in {\ttfamily libelektra-\/kdb} was moved to the new default backend plugin {\ttfamily backend}. It works like the old system, but now also allows an unlimited number of plugins in positions where that makes sense. For example, you can have unlimited {\ttfamily postgetstorage} plugins, but only a single {\ttfamily getresolver}.
+
+There have also been slight changes to {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set}. Please read their API docs to find out, if you rely on any behavior that has been altered. You can also read the \mbox{\hyperlink{doc_dev_kdb-operations_md}{new low-\/level docs}} to find out all the intricate details.
+
+The structure of {\ttfamily system\+:/elektra/mountpoints} changed as well. Take a look at the \mbox{\hyperlink{doc_dev_mountpoints_md}{new docs}}, if you need to know details.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4055}{}\doxysubsubsection{Updating config}\label{doc_news__preparation_next_release_md_autotoc_md4055}
+The mountpoint configuration format contains {\bfseries{breaking changes}} and a manual upgrade process is needed. Follow these steps to upgrade the old mountpoint configuration to the new format\+:
+
+\begin{quote}
+{\bfseries{Warning}}\+: BACK UP YOUR CONFIG FILES BEFORE UPDATING! We recommend making a backup of the file printed by {\ttfamily kdb file system\+:/elektra/mountpoints} before updating your installation. In the unlikely case that the migration script fails, you can still use the information from the backup to manually recreate your mountpoints. \end{quote}
+To update your existing {\ttfamily system\+:/elektra/mountpoints} data you can use the migration script.
+
+\begin{quote}
+{\bfseries{Note}}\+: To run the script you must have Elektra, Python ($>$= 3.\+7) and the Python binding installed. The script uses the Python binding to manipulate {\ttfamily Key}s and {\ttfamily Key\+Set}s, but it does not use the {\ttfamily kdb} CLI tool, or the {\ttfamily KDB} API. It is safe to run this script before, or after you update your Elektra installation. \end{quote}
+By default, the script loads the file {\ttfamily /etc/kdb/elektra.ecf}. If you changed where {\ttfamily system\+:/elektra/mountpoints} is stored, you can provide an alternative path\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{./migrate-\/mountpoints.py /path/to/your/mountpoints/config.file}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note}}\+: Because the script does not use the {\ttfamily KDB} API it only works, if the mountpoints config file uses the default {\ttfamily dump} format.
+
+If your mountpoints config file is not using the {\ttfamily dump} format, you may still be able to use the migration script. However, in that case, you will have to use the script {\bfseries{before}} updating your Elektra installation\+:
+
+
+\begin{DoxyEnumerate}
+\item Run {\ttfamily kdb export system\+:/elektra/mountpoints dump} to get a copy of your mountpoints config in {\ttfamily dump} format
+\item Write this data to a file and run the migration script on the file.
+\item To get the data back in your original format you can use
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{./migrate-\/mountpoints.py /path/to/file/from/step2 | kdb convert dump your-\/format > /path/to/converted/file}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Run {\ttfamily kdb file system\+:/elektra/mountpoints} to find out where your mountpoint config is stored. Make sure to back up this file, before upgrading your installation.
+\item Now upgrade your Elektra installation.
+\item Copy the file {\ttfamily /path/to/converted/file} from step 3 to the location you got in step 4. 
+\end{DoxyEnumerate}\end{quote}
+The script will read the old mountpoint configuration from the given file. It will convert the configuration and print the new version to {\ttfamily stdout}.
+
+You can inspect the output to make sure, everything is in order. When you are ready to commit the changes, you can manually edit the config file, or use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{./migrate-\/mountpoints.py -\/-\/output=/etc/kdb/elektra.ecf /etc/kdb/elektra.ecf}
+
+\end{DoxyCode}
+\hypertarget{doc_news__preparation_next_release_md_autotoc_md4056}{}\doxysubsubsection{Individual changes}\label{doc_news__preparation_next_release_md_autotoc_md4056}
+
+\begin{DoxyItemize}
+\item Implement \href{https://www.libelektra.org/decisions/hooks-in-kdb}{\texttt{ hooks}}. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Removed old global plugins code. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item New backend logic, based on PR \#2969 by @v\+Lesk. \+\_\+(@kodebach)\+\_\+
+\item Add script to migrate {\ttfamily system\+:/elektra/mountpoints} to new format. \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4057}{}\doxysubsection{Copy-\/on-\/\+Write}\label{doc_news__preparation_next_release_md_autotoc_md4057}
+Thanks to \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+ our {\ttfamily Key} and {\ttfamily Key\+Set} datastructures are now fully copy-\/on-\/write! This means noticeably reduced memory usage for cases where keys and keysets are copied and/or duplicated!
+
+We ran some very promising benchmarks, each were performed with 400,000 keys. All benchmarks were executed using {\ttfamily valgrind -\/-\/tool=massif -\/-\/time-\/unit=B -\/-\/max-\/snapshots=200 -\/-\/threshold=0.\+1}.
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{5}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Benchmark   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Copy-\/on-\/\+Write   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Size Reduction   }&\cellcolor{\tableheadbgcolor}\textbf{ Remarks    }\\\cline{1-5}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Benchmark   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Copy-\/on-\/\+Write   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Size Reduction   }&\cellcolor{\tableheadbgcolor}\textbf{ Remarks    }\\\cline{1-5}
+\endhead
+{\ttfamily createkeys.\+c}   &\PBS\raggedleft 5.\+3 MiB   &\PBS\raggedleft 6.\+5 MiB   &\PBS\raggedleft -\/22 \%   &\\\cline{1-5}
+{\ttfamily deepdup.\+c}   &\PBS\raggedleft 10.\+5 MiB   &\PBS\raggedleft 8.\+2 MiB   &\PBS\raggedleft 22 \%   &\\\cline{1-5}
+{\ttfamily large.\+c}   &\PBS\raggedleft 18.\+9 MiB   &\PBS\raggedleft 15.\+3 MiB   &\PBS\raggedleft 19 \%   &\\\cline{1-5}
+{\ttfamily \mbox{\hyperlink{kdb_8c}{kdb.\+c}}}   &\PBS\raggedleft 23.\+5 MiB   &\PBS\raggedleft 17.\+8 MiB   &\PBS\raggedleft 24 \%   &\\\cline{1-5}
+{\ttfamily kdbget.\+c}   &\PBS\raggedleft 11.\+0 MiB   &\PBS\raggedleft 8.\+8 MiB   &\PBS\raggedleft 20 \%   &\\\cline{1-5}
+{\ttfamily kdbmodify.\+c}   &\PBS\raggedleft 11.\+0 MiB   &\PBS\raggedleft 8.\+8 MiB   &\PBS\raggedleft 20 \%   &Same results as {\ttfamily kdbget.\+c}   \\\cline{1-5}
+\end{longtabu}
+
+
+First, it should be noted that a single key, without counting payload, is about 50\% larger with the copy-\/on-\/write implementation. This explains why the {\ttfamily createkeys.\+c} benchmark yields a negative reduction result. This benchmark only allocates keys, so not much improvement can be expected there. Still, as other stuff also uses heap memory, the overall memory consumption only increased by 22\%, which is far less than 50\%.
+
+All other benchmarks saw meaningful reductions of heap memory used. One interesting observation is that {\ttfamily kdbget.\+c} and {\ttfamily kdbmodify.\+c} used exactly the same memory. This can most likely be explained by internal caching within the memory allocator of {\ttfamily glibc}.
+
+We also performed runtime tests on the same benchmarks using {\ttfamily perf stat -\/-\/repeat 13} to ensure no major performance regressions occur.
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{6}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Benchmark   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Deviation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Copy-\/on-\/\+Write   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Deviation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Runtime Increase    }\\\cline{1-6}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Benchmark   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Deviation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Copy-\/on-\/\+Write   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Deviation   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Runtime Increase    }\\\cline{1-6}
+\endhead
+{\ttfamily createkeys.\+c}   &\PBS\raggedleft 0.\+209572 s   &\PBS\raggedleft 0.\+36 \%   &\PBS\raggedleft 0.\+21987 s   &\PBS\raggedleft 0.\+77 \%   &\PBS\raggedleft 4.\+9 \%    \\\cline{1-6}
+{\ttfamily deepdup.\+c}   &\PBS\raggedleft 0.\+23025 s   &\PBS\raggedleft 0.\+47 \%   &\PBS\raggedleft 0.\+231804 s   &\PBS\raggedleft 0.\+32 \%   &\PBS\raggedleft 0.\+6 \%    \\\cline{1-6}
+{\ttfamily large.\+c}   &\PBS\raggedleft 1.\+14038 s   &\PBS\raggedleft 0.\+21 \%   &\PBS\raggedleft 1.\+14837 s   &\PBS\raggedleft 0.\+21 \%   &\PBS\raggedleft 0.\+7 \%    \\\cline{1-6}
+{\ttfamily \mbox{\hyperlink{kdb_8c}{kdb.\+c}}}   &\PBS\raggedleft 1.\+9270 s   &\PBS\raggedleft 2.\+63 \%   &\PBS\raggedleft 1.\+93354 s   &\PBS\raggedleft 0.\+17 \%   &\PBS\raggedleft 0.\+3 \%    \\\cline{1-6}
+{\ttfamily kdbget.\+c}   &\PBS\raggedleft 0.\+145663 s   &\PBS\raggedleft 0.\+17 \%   &\PBS\raggedleft 0.\+15763 s   &\PBS\raggedleft 0.\+70 \%   &\PBS\raggedleft 8.\+2 \%    \\\cline{1-6}
+{\ttfamily kdbmodify.\+c}   &\PBS\raggedleft 0.\+146506 s   &\PBS\raggedleft 0.\+19 \%   &\PBS\raggedleft 0.\+156347 s   &\PBS\raggedleft 0.\+15 \%   &\PBS\raggedleft 6.\+7 \%   \\\cline{1-6}
+\end{longtabu}
+
+
+Overall, the runtime performance hit is less than 10\%. The more a program does, the less the additional overhead of the copy-\/on-\/write algorithms matter. One interesting detail is that {\ttfamily key\+Copy} and {\ttfamily key\+Dup} have become quite a bit faster. This can be seen by comparing the differences between {\ttfamily createkeys.\+c} and {\ttfamily deepdup.\+c}. The differences are 21 ms for the old implementation and 12 ms for the copy-\/on-\/write implementation.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4058}{}\doxysubsection{FLOSS}\label{doc_news__preparation_next_release_md_autotoc_md4058}
+A Free/\+Libre and Open Source Software (FLOSS) Initiative couldn\textquotesingle{}t survive with many small contributions fixing annoying problems. This release also contains all contributions done via one term of the \href{https://tiss.tuwien.ac.at/course/courseDetails.xhtml?courseNr=194114&semester=2022W}{\texttt{ FLOSS course}}. The success was tremendous, as shown in the rest of the release notes.
+
+A big thanks to the students for their contributions!\hypertarget{doc_news__preparation_next_release_md_autotoc_md4059}{}\doxysection{Plugins}\label{doc_news__preparation_next_release_md_autotoc_md4059}
+The following text lists news about the \href{https://www.libelektra.org/plugins/readme}{\texttt{ plugins}} we updated in this release.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4060}{}\doxysubsection{yajl}\label{doc_news__preparation_next_release_md_autotoc_md4060}
+
+\begin{DoxyItemize}
+\item Fix an issue where trying to set invalid meta-\/keys won\textquotesingle{}t show an error. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4061}{}\doxysubsection{list}\label{doc_news__preparation_next_release_md_autotoc_md4061}
+
+\begin{DoxyItemize}
+\item Removed the outdated {\ttfamily list} plugin. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+ (Was only needed for global plugins, which are now replaced by \href{https://www.libelektra.org/decisions/hooks-in-kdb}{\texttt{ hooks}}.)
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4062}{}\doxysubsection{logchange}\label{doc_news__preparation_next_release_md_autotoc_md4062}
+
+\begin{DoxyItemize}
+\item Made logchange a notification-\/send hook plugin. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4063}{}\doxysubsection{toml}\label{doc_news__preparation_next_release_md_autotoc_md4063}
+
+\begin{DoxyItemize}
+\item Fix bug, where meta-\/keys that cannot be inserted don\textquotesingle{}t report an error. \+\_\+(@\+Bujuhu)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4064}{}\doxysubsection{uname}\label{doc_news__preparation_next_release_md_autotoc_md4064}
+
+\begin{DoxyItemize}
+\item Add error handling if uname call fails. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4065}{}\doxysubsection{quickdump}\label{doc_news__preparation_next_release_md_autotoc_md4065}
+
+\begin{DoxyItemize}
+\item elektra\+Quickdump\+Set\+: don\textquotesingle{}t fclose if stdout. \+\_\+(@hannes99)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4066}{}\doxysubsection{blockresolver}\label{doc_news__preparation_next_release_md_autotoc_md4066}
+
+\begin{DoxyItemize}
+\item Add encoding test for blockresolver read. \+\_\+(@dtdirect)\+\_\+
+\item Refactor and restructure blockresolver. \+\_\+(@dtdirect)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4067}{}\doxysubsection{desktop}\label{doc_news__preparation_next_release_md_autotoc_md4067}
+
+\begin{DoxyItemize}
+\item Add a unit test. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4068}{}\doxysubsection{mini}\label{doc_news__preparation_next_release_md_autotoc_md4068}
+
+\begin{DoxyItemize}
+\item Fix a bug where writing meta-\/keys will fail silently. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4069}{}\doxysubsection{mmapstorage}\label{doc_news__preparation_next_release_md_autotoc_md4069}
+
+\begin{DoxyItemize}
+\item Remove code duplication in the data block calculation. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4070}{}\doxysubsection{network}\label{doc_news__preparation_next_release_md_autotoc_md4070}
+
+\begin{DoxyItemize}
+\item Add a retry mechanism. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4071}{}\doxysubsection{xfconf}\label{doc_news__preparation_next_release_md_autotoc_md4071}
+
+\begin{DoxyItemize}
+\item Add xfconf storage plugin with the ability to read and write to xfconf channels. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Make xfconf valgrind suppressions more flexible to lib updates. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4072}{}\doxysubsection{date}\label{doc_news__preparation_next_release_md_autotoc_md4072}
+
+\begin{DoxyItemize}
+\item Fix an issue with validationg RFC 822 date-\/times. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Improve Code Coverage. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4073}{}\doxysubsection{csvstorage}\label{doc_news__preparation_next_release_md_autotoc_md4073}
+
+\begin{DoxyItemize}
+\item Fix a bug where writing unkown meta-\/keys will fail silently. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4074}{}\doxysection{Libraries}\label{doc_news__preparation_next_release_md_autotoc_md4074}
+The text below summarizes updates to the \href{https://www.libelektra.org/libraries/readme}{\texttt{ C (and C++)-\/based libraries}} of Elektra.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4075}{}\doxysubsection{Compatibility}\label{doc_news__preparation_next_release_md_autotoc_md4075}
+
+\begin{DoxyItemize}
+\item Global plugins do not work anymore, use \href{https://www.libelektra.org/decisions/hooks-in-kdb}{\texttt{ hooks}} instead.
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4076}{}\doxysubsection{Core}\label{doc_news__preparation_next_release_md_autotoc_md4076}
+
+\begin{DoxyItemize}
+\item The Key and Key\+Set datastructures are now fully copy-\/on-\/write. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item {\ttfamily key\+Copy} now only allocates additional memory if {\ttfamily KEY\+\_\+\+CP\+\_\+\+META} or {\ttfamily KEY\+\_\+\+CP\+\_\+\+ALL} is used. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Check for circular links (overrides). \+\_\+(@0x6178656c)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4077}{}\doxysubsection{io}\label{doc_news__preparation_next_release_md_autotoc_md4077}
+
+\begin{DoxyItemize}
+\item Check file flags for {\ttfamily elektra\+Io\+Fd\+Set\+Flags}\+: file flags must be exactly one of\+: read only, write only or read write. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4078}{}\doxysubsection{Merge}\label{doc_news__preparation_next_release_md_autotoc_md4078}
+
+\begin{DoxyItemize}
+\item Add methods {\ttfamily elektra\+Merge\+Get\+Conflicting\+Keys} and {\ttfamily elektra\+Merge\+Is\+Key\+Conflicting} to check which keys were causing a merge conflict. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4079}{}\doxysection{Bindings}\label{doc_news__preparation_next_release_md_autotoc_md4079}
+Bindings allow you to utilize Elektra using \href{https://www.libelektra.org/bindings/readme}{\texttt{ various programming languages}}. This section keeps you up-\/to-\/date with the multi-\/language support provided by Elektra.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4080}{}\doxysubsection{intercept/env}\label{doc_news__preparation_next_release_md_autotoc_md4080}
+
+\begin{DoxyItemize}
+\item Remove fallback code. \+\_\+(\+Markus Raab)\+\_\+
+\item Command-\/line functionality is broken due to new-\/backend differences.
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4081}{}\doxysubsection{intercept/fs}\label{doc_news__preparation_next_release_md_autotoc_md4081}
+
+\begin{DoxyItemize}
+\item Use {\ttfamily KDB\+\_\+\+MAX\+\_\+\+PATH\+\_\+\+LENGTH} for better portability. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4082}{}\doxysubsection{jna}\label{doc_news__preparation_next_release_md_autotoc_md4082}
+
+\begin{DoxyItemize}
+\item Documentation\+: Improved build instructions. \+\_\+(@\+Bujuhu)\+\_\+
+\item Add validation on get for whitelist plugin. \+\_\+(@\+Bujuhu)\+\_\+
+\item Upgrade Gradle to 8.\+0.\+1. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4083}{}\doxysubsection{rust}\label{doc_news__preparation_next_release_md_autotoc_md4083}
+
+\begin{DoxyItemize}
+\item Fix \char`\"{}feature \`{}resolver\`{} is required\char`\"{} error. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4084}{}\doxysubsection{elixir}\label{doc_news__preparation_next_release_md_autotoc_md4084}
+
+\begin{DoxyItemize}
+\item Initial release of the Elixir binding. \+\_\+(@0x6178656c)\+\_\+
+\item Mark tests as {\ttfamily memleak}. \+\_\+(@0x6178656c)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4085}{}\doxysection{Tools}\label{doc_news__preparation_next_release_md_autotoc_md4085}
+\hypertarget{doc_news__preparation_next_release_md_autotoc_md4086}{}\doxysubsection{kdb}\label{doc_news__preparation_next_release_md_autotoc_md4086}
+
+\begin{DoxyItemize}
+\item Removed {\ttfamily global-\/mount} and {\ttfamily global-\/umount} commands. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Fixed SIGSEGV when using {\ttfamily kdb find} without argument. \+\_\+(Christian Jonak-\/\+Moechel @joni1993)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4087}{}\doxysubsection{elektrad}\label{doc_news__preparation_next_release_md_autotoc_md4087}
+
+\begin{DoxyItemize}
+\item Removed leftover package-\/lock.\+json file. \+\_\+(stefnotch)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4088}{}\doxysection{Scripts}\label{doc_news__preparation_next_release_md_autotoc_md4088}
+
+\begin{DoxyItemize}
+\item Added \href{https://master.libelektra.org/scripts/spelling.sed}{\texttt{ automatic spelling corrections}} for changeset. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Introduce shebang-\/conventions. \+\_\+(@0x6178656c)\+\_\+
+\item Apply auto-\/fixes from shellcheck. \+\_\+(@0x6178656c)\+\_\+
+\item Use prettier 2.\+8.\+4. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Add scripts to enable and disable pre-\/commit hooks. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Only let http links pass the check if whitelisted. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Link Checker\+: Add documentation for the usage and how it behaves. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Sed\+: Add spelling correction for \char`\"{}key-\/value storage\char`\"{}. \+\_\+(@\+Bujuhu)\+\_\+
+\item Fix/extends some shell recorder tests. \+\_\+(@\+Joni1993)\+\_\+
+\item Use clang-\/format v15. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Fix warning parsing in shell recorder. \+\_\+(@\+Joni1993)\+\_\+
+\item Replaced {\ttfamily egrep} by {\ttfamily grep -\/E}. \+\_\+(@0x6178656c and @janldeboer)\+\_\+
+\item Add audit-\/dependencies script to check for vulnerabilities for npm depndencies. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4089}{}\doxysection{Documentation}\label{doc_news__preparation_next_release_md_autotoc_md4089}
+
+\begin{DoxyItemize}
+\item Restructured contrib/api. \+\_\+(\+Markus Raab)\+\_\+.
+\item Improve page on compilation. \+\_\+(@0x6178656c)\+\_\+
+\item Improve page for bindings. \+\_\+(@0x6178656c)\+\_\+
+\item Improve page for getting started. \+\_\+(@stefnotch)\+\_\+
+\item Remove version number from docker README and replace it with latest. \+\_\+(@\+Joni1993)\+\_\+
+\item Fix grammar for {\ttfamily elektra-\/granularity.\+md}. \+\_\+(@dtdirect)\+\_\+
+\item Rephrase sections in {\ttfamily doc/dev/error-\/\textbackslash{}$\ast$}. \+\_\+(@dtdirect)\+\_\+
+\item Improve Git.\+md. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Unify spelling of man pages. \+\_\+(@stefnotch)\+\_\+ \+\_\+(@janldeboer)\+\_\+
+\item Extend consistency check {\ttfamily check\+\_\+doc.\+sh} to work for \mbox{\hyperlink{doc_contrib_README_md}{contrib}}, \mbox{\hyperlink{md_doc_dev_README_doc_dev_README_md}{dev}} and \mbox{\hyperlink{md_doc_tutorials_README_doc_tutorials_README_md}{tutorials}}. \+\_\+(@\+Joni1993)\+\_\+
+\item Fix internal links. \+\_\+(@0x6178656c)\+\_\+
+\item Update AUR Link from {\ttfamily elektra} to {\ttfamily libelektra} package. \+\_\+(@\+Bujuhu)\+\_\+
+\item Update example Ansible playbook in VISION.\+md. \+\_\+(@\+Bujuhu)\+\_\+
+\item Harmonize spelling of Git. \+\_\+(@\+Joni1993)\+\_\+
+\item Update packaging instructions for Fedora. \+\_\+(@0x6178656c)\+\_\+
+\item Improve use of gender. \+\_\+(@0x6178656c)\+\_\+
+\item Fix some minor mistakes in CONTRIBUTING.\+md. \+\_\+(@\+Joni1993)\+\_\+
+\item Fix various spelling errors. \+\_\+(@\+Joni1993)\+\_\+
+\item Denoted package names \& global variable names in \mbox{\hyperlink{doc_INSTALL_md}{INSTALL.md}} as {\ttfamily Code}. \+\_\+(@janldeboer)\+\_\+
+\item Improve readability of doc/tutorials/highlevel.\+md. \+\_\+(@deoknats861)\+\_\+
+\item Improve reference to Podman documentation. \+\_\+(@0x6178656c)\+\_\+
+\item Unify spelling. \+\_\+(@\+Joni1993)\+\_\+
+\item Fix typo in dev/hooks.\+md. \+\_\+(@dtdirect)\+\_\+
+\item Remove unused images from doc/images. \+\_\+(@dtdirect)\+\_\+
+\item Fixed Coverage Badge Link. \+\_\+(@janldeboer)\+\_\+
+\item Improve CONTRIBUTING doc. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ and \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Update Doxyfile with Doxygen 1.\+9.\+4. \+\_\+(@0x6178656c)\+\_\+
+\item Add project logo to Doxygen in Doxyfile. \+\_\+(@dtdirect)\+\_\+
+\item Add mermaid.\+js to the project using doxygen-\/mermaid. \+\_\+(@dtdirect)\+\_\+
+\item Create diagrams in mermaid.\+js to use in doxygen. \+\_\+(@dtdirect)\+\_\+
+\item Create README for Doxygen and Mermaid JS. \+\_\+(@dtdirect)\+\_\+
+\item Tutorial\+: Add automatic validation to Docker tutorial \+\_\+(Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Add mention of audit-\/dependencies script in doc/todo/\+RELEASE.\+md. \+\_\+(@\+Bujuhu)\+\_\+
+\item Move note in GETSTARTED.\+md. \+\_\+(@\+Joni1993)\+\_\+
+\item Use {\ttfamily code} blocks to prevent Markdown from falsy rendering La\+TeX. \+\_\+(@stefnotch)\+\_\+, \+\_\+(@janldeboer)\+\_\+
+\item Fix broken links in use cases for KDB after files were renamed. \+\_\+(Florian Lindner @flo91)\+\_\+
+\item Replace http links with https. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Enhance notifications.\+md in doc/tutorial. \+\_\+(@dtdirect)\+\_\+
+\item Add tutorial how to suppress memleaks in plugins from dependencies. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Write about \mbox{\hyperlink{doc_dev_history_md}{history}} to make plans of Elektra\textquotesingle{}s adoption more clear. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4090}{}\doxysubsection{Use Cases}\label{doc_news__preparation_next_release_md_autotoc_md4090}
+
+\begin{DoxyItemize}
+\item Improve use cases \mbox{\hyperlink{doc_usecases_template_md}{Template}}. \+\_\+(@kodebach and Markus Raab)\+\_\+
+\item Use cases for \mbox{\hyperlink{doc_usecases_kdb_README_md}{KDB}}. \+\_\+(@kodebach)\+\_\+
+\item Use cases for {\ttfamily libelektra-\/core}. \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4091}{}\doxysubsection{Decisions}\label{doc_news__preparation_next_release_md_autotoc_md4091}
+
+\begin{DoxyItemize}
+\item Decide and implement \mbox{\hyperlink{doc_decisions_5_partially_implemented_decision_process_md}{decision process}}. \+\_\+(\+Markus Raab)\+\_\+
+\item Decided future \mbox{\hyperlink{doc_decisions_4_decided_library_split_md}{library split}}. \+\_\+(@kodebach)\+\_\+
+\item Decided \href{https://www.libelektra.org/decisions/decision-process}{\texttt{ decision process}}. \+\_\+(\+Markus Raab)\+\_\+
+\item Draft for \mbox{\hyperlink{doc_decisions_0_drafts_man_pages_md}{man pages}}. \+\_\+(\+Markus Raab)\+\_\+
+\item Add decision for \mbox{\hyperlink{doc_decisions_1_problem_clear_change_tracking_md}{change tracking}}. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Create \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{decision}} for allowed and prohibited operation seqences. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Add decisions about \mbox{\hyperlink{doc_decisions_4_decided_header_file_structure_md}{location of headers}} and \mbox{\hyperlink{doc_decisions_4_decided_header_include_md}{use of \`{}\#include\`{}}} in the repo. \+\_\+(@kodebach)\+\_\+
+\item Add decision about \mbox{\hyperlink{doc_decisions_0_drafts_metakey_semantics_md}{metadata semantics}}. \+\_\+(@kodebach)\+\_\+
+\item Many small fixes to adapt to documentation guidelines and new decision process. \+\_\+(\+Markus Raab)\+\_\+
+\item Add decision for \mbox{\hyperlink{doc_decisions_0_drafts_readonly_keynames_md}{read-\/only keynames}}. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Revive \mbox{\hyperlink{doc_decisions_4_decided_keyname_md}{keyname decision}}. \+\_\+(@kodebach)\+\_\+
+\item Add decisions for \mbox{\hyperlink{doc_decisions_0_drafts_constructor_functions_md}{constructor functions}} and \mbox{\hyperlink{doc_decisions_0_drafts_builder_functions_md}{builder functions}}. \+\_\+(@kodebach)\+\_\+
+\item Add decision for \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{copy-\/on-\/write}} and provide implementation suggestions. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Update \mbox{\hyperlink{doc_decisions_4_decided_internal_cache_md}{internal cache}}. \+\_\+(\+Markus Raab)\+\_\+ \+\_\+(@kodebach)\+\_\+
+\item Create \mbox{\hyperlink{doc_decisions_0_drafts_transformations_md}{transformations}}. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Replace TOC-\/style \mbox{\hyperlink{doc_decisions_README_md}{README.md}} with folders and generate HTML for website. \+\_\+(@kodebach)\+\_\+
+\item Restructured decisions directories based on new agreed-\/upon \mbox{\hyperlink{doc_decisions_STEPS_md}{steps}}. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Decision for \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{types of \`{}\+Key\+Set\`{}s}}. \+\_\+(@kodebach)\+\_\+
+\item Added \href{https://master.libelektra.org/doc/contrib/documentation.md}{\texttt{ Documentation Guidelines}}. \+\_\+(\+Markus Raab)\+\_\+
+\item Add links and formatting to documents affected by PR\#4492 (Document Guidelines) and rephrase some parts. \+\_\+(Florian Lindner @flo91)\+\_\+
+\item Decisions for changes to {\ttfamily key\+Is\+Below} and new {\ttfamily key\+Get\+Next\+Part} functions. \+\_\+(@kodebach)\+\_\+
+\item Apply fix spelling to more files. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4092}{}\doxysubsection{Tutorials}\label{doc_news__preparation_next_release_md_autotoc_md4092}
+
+\begin{DoxyItemize}
+\item Add tutorial for manual installation from the AUR on Arch Linux. \+\_\+(@\+Bujuhu)\+\_\+
+\item Add Markdown shell recorder validation to install.\+webui.\+md. \+\_\+(@deoknats861)\+\_\+
+\item Fix the outdated array tutorial. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Reinstate mounting tutorial. \+\_\+(@\+Bujuhu)\+\_\+
+\item Make namespaces tutorial verifiable. \+\_\+(@0x6178656c)\+\_\+
+\item Move Podman-\/related information to a dedicated page. \+\_\+(@0x6178656c)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4093}{}\doxysubsection{Man Pages}\label{doc_news__preparation_next_release_md_autotoc_md4093}
+
+\begin{DoxyItemize}
+\item Update man page (patch) as suggested by the CI to fix CI error on master. \+\_\+(Florian Lindner @flo91)\+\_\+
+\item Added links to the website \& webui after further reading. \+\_\+(Philipp Nirnberger @nirnberger)\+\_\+
+\item Upgrade {\ttfamily ronn-\/ng} to 0.\+10.\+1.\+pre3. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4094}{}\doxysection{Tests}\label{doc_news__preparation_next_release_md_autotoc_md4094}
+
+\begin{DoxyItemize}
+\item Fix an Issue where scripts/dev/fix-\/spelling does not work, if a resolved path contains whitespaces. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Rename scripts/sed to \href{https://master.libelektra.org/scripts/spelling.sed}{\texttt{ scripts/spelling.\+sed}}. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Add {\ttfamily memleak} label to {\ttfamily test\+\_\+getenv}. \+\_\+(@0x6178656c)\+\_\+
+\item Add test using shellcheck. \+\_\+(@0x6178656c)\+\_\+
+\item Remove {\ttfamily -\/-\/rerun-\/failed} from {\ttfamily run\+\_\+$\ast$} scripts. \+\_\+(@kodebach)\+\_\+
+\item Fix paths for icheck test. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4095}{}\doxysubsection{Shell Recorder}\label{doc_news__preparation_next_release_md_autotoc_md4095}
+
+\begin{DoxyItemize}
+\item Add check if file exists. \+\_\+(@0x6178656c)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4096}{}\doxysection{Packaging}\label{doc_news__preparation_next_release_md_autotoc_md4096}
+
+\begin{DoxyItemize}
+\item Add missing new {\ttfamily backend} plugin to components of libelektra package. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4097}{}\doxysection{Build}\label{doc_news__preparation_next_release_md_autotoc_md4097}
+\hypertarget{doc_news__preparation_next_release_md_autotoc_md4098}{}\doxysubsection{CMake}\label{doc_news__preparation_next_release_md_autotoc_md4098}
+
+\begin{DoxyItemize}
+\item Fix warning for CMP0115. \+\_\+(0x6178656c)\+\_\+
+\item Change Doxygen configuration for La\+TeX. \+\_\+(0x6178656c)\+\_\+
+\item Fix developer warning for package DISCOUNT. \+\_\+(Dennis Toth @dtdirect)\+\_\+
+\item Pass {\ttfamily -\/-\/stacktrace} to gradle for the JNA builds. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Adapt npm build flags to remove reproducability issues. \+\_\+(Juri Schreib @\+Bujuhu)\+\_\+ \+\_\+(Nikola Prvulovic @\+Dynamichost96)\+\_\+
+\item Fix creation of shell recorder tests. \+\_\+(@0x6178656c)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4099}{}\doxysubsection{Docker}\label{doc_news__preparation_next_release_md_autotoc_md4099}
+
+\begin{DoxyItemize}
+\item Update packagename {\ttfamily libpcrec++-\/dev} to {\ttfamily libpcrecpp0v5} in Debian Sid. \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Add shellcheck to Debian containers. \+\_\+(@0x6178656c)\+\_\+
+\item Use {\ttfamily openjdk-\/17-\/jdk} in Debian Sid. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Add Fedora 37 images. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Update Debian Sid image to use repository Python modules instead of installing with {\ttfamily pip3} due to upstream debian changes. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Debian Bullsye\+: use clang 13. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Update Alpine Linux to 3.\+17.\+2. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4100}{}\doxysection{Gradle}\label{doc_news__preparation_next_release_md_autotoc_md4100}
+
+\begin{DoxyItemize}
+\item Use Gradle 7.\+5.\+1. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Update {\ttfamily java-\/library.\+gradle} to use {\ttfamily archive\+Classifier} \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4101}{}\doxysection{Infrastructure}\label{doc_news__preparation_next_release_md_autotoc_md4101}
+\hypertarget{doc_news__preparation_next_release_md_autotoc_md4102}{}\doxysubsection{Jenkins}\label{doc_news__preparation_next_release_md_autotoc_md4102}
+
+\begin{DoxyItemize}
+\item Add Fedora 37 builds, drop Fedora 35 builds. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Run more tests also on Master. \+\_\+(\+Markus Raab)\+\_\+
+\item Move doc to main build stage. \+\_\+(\+Markus Raab)\+\_\+
+\item Disable parallel test runs. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Upgrade Jenkins node container to Debian bullseye. \+\_\+(@0x6178656c)\+\_\+
+\item Undo previous change that added automatic {\ttfamily ctest -\/-\/rerun-\/failed} to Jenkins CI. \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4103}{}\doxysubsection{Cirrus}\label{doc_news__preparation_next_release_md_autotoc_md4103}
+
+\begin{DoxyItemize}
+\item Use Fedora 37. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Fix {\ttfamily macos\+\_\+instance} reference, upgrade to mac\+OS Ventura (by default), use Python 3.\+11 and Ruby 3.\+x. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Automatically rerun {\ttfamily testmod\+\_\+dbus$\ast$} tests on mac\+OS. \+\_\+(@kodebach)\+\_\+
+\item Fix dbus not starting on mac\+OS. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4104}{}\doxysubsection{Git\+Hub Actions}\label{doc_news__preparation_next_release_md_autotoc_md4104}
+
+\begin{DoxyItemize}
+\item Add auto-\/cancellation-\/running action. \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Automatically rerun {\ttfamily testmod\+\_\+dbus$\ast$} tests on mac\+OS. \+\_\+(@kodebach)\+\_\+
+\item Fix dbus not starting on mac\+OS. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Change stale issue/\+PR checking to Git\+Hub action. \+\_\+(@0x6178656c)\+\_\+
+\item Update configuration of stale issue/\+PR action. \+\_\+(@0x6178656c)\+\_\+
+\item Upgrade actions to recent versions and remove deprecated ruby-\/setup action. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4105}{}\doxysection{Website}\label{doc_news__preparation_next_release_md_autotoc_md4105}
+The website is generated from the repository, so all information about plugins, bindings and tools are always up-\/to-\/date. Furthermore, we changed\+:
+
+
+\begin{DoxyItemize}
+\item Fix broken {\ttfamily /pythongen} link on homepage. \+\_\+(@stefnotch)\+\_\+
+\item Fix redirect logic to not cause loops. \+\_\+(@stefnotch)\+\_\+
+\item Remove duplicated link to {\ttfamily TESTING.\+md} file. \+\_\+(@stefnotch)\+\_\+, \+\_\+(@janldeboer)\+\_\+
+\item Restructure parts of the links on the website. \+\_\+(@stefnotch)\+\_\+, \+\_\+(@janldeboer)\+\_\+
+\item Removed broken links to packages for Linux distributions. \+\_\+(@\+Dynamichost96)\+\_\+
+\item Update npm packages. \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Change URLs to say man-\/page with a dash. \+\_\+(@stefnotch)\+\_\+ \+\_\+(@janldeboer)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4106}{}\doxysection{Outlook}\label{doc_news__preparation_next_release_md_autotoc_md4106}
+We are currently working on following topics\+:
+
+
+\begin{DoxyItemize}
+\item 1.\+0 API \+\_\+(Klemens Böswirth @kodebach)\+\_\+ and \+\_\+(\+Stefan Hanreich)\+\_\+
+\item Session recording and better Ansible integration \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Change tracking \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Rewriting tools in C \+\_\+(@hannes99)\+\_\+
+\item Elektrify KDE and GNOME \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Elektrify XFCE \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Mounting SQL databases \+\_\+(Florian Lindner @flo91)\+\_\+
+\item Recording Configuration \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Ansible-\/\+Elektra \+\_\+(\+Lukas Hartl)\+\_\+ and \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Configure Olimex Base Images \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Improving Build Server Infrastructure \+\_\+(\+Lukas Hartl)\+\_\+ and \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Improve Java Development Experience \+\_\+(\+Michael Tucek)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4107}{}\doxysection{Statistics}\label{doc_news__preparation_next_release_md_autotoc_md4107}
+We closed about \href{https://github.com/ElektraInitiative/libelektra/milestone/33?closed=1}{\texttt{ 150 issues}} for this release.
+
+$<$$<${\ttfamily scripts/git-\/release-\/stats 0.\+9.\+VER-\/1 0.\+9.$<$$<$VERSION$>$$>$}$>$$>$
+
+Thanks to all authors for making this release possible!\hypertarget{doc_news__preparation_next_release_md_autotoc_md4108}{}\doxysection{Join the Initiative!}\label{doc_news__preparation_next_release_md_autotoc_md4108}
+We welcome new contributors! Read \href{https://www.libelektra.org/devgettingstarted/ideas}{\texttt{ here}} about how to get started.
+
+As first step, you could give us feedback about these release notes. Contact us via our \href{https://issues.libelektra.org}{\texttt{ issue tracker}}.\hypertarget{doc_news__preparation_next_release_md_autotoc_md4109}{}\doxysection{Get the Release!}\label{doc_news__preparation_next_release_md_autotoc_md4109}
+You can download the release from
+
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.9.<<VERSION>>.tar.gz}{\texttt{ here}} or
+\item \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.9.<<VERSION>>.tar.gz?raw=true}{\texttt{ Git\+Hub}}
+\end{DoxyItemize}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.9.<<VERSION>>.tar.gz.hashsum?raw=true}{\texttt{ hashsums are\+:}}
+
+$<$$<${\ttfamily scripts/generate-\/hashsums elektra-\/0.\+9.$<$$<$VERSION$>$$>$.tar.\+gz}$>$$>$
+
+The release tarball is also available signed using Gnu\+PG from
+
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.9.<<VERSION>>.tar.gz.gpg}{\texttt{ here}} or
+\item \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.9.<<VERSION>>.tar.gz.gpg?raw=true}{\texttt{ Git\+Hub}}
+\end{DoxyItemize}
+
+The following GPG Key was used to sign this release\+: 12CC44541\+E1\+B8\+AD9\+B66\+AFAD55262\+E7353324914A
+
+Already built API documentation can be found
+
+
+\begin{DoxyItemize}
+\item \href{https://doc.libelektra.org/api/0.9.<<VERSION>>/html/}{\texttt{ here}} or
+\item \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.9.<<VERSION>}{\texttt{ Git\+Hub}}.
+\end{DoxyItemize}\hypertarget{doc_news__preparation_next_release_md_autotoc_md4110}{}\doxysection{Stay tuned!}\label{doc_news__preparation_next_release_md_autotoc_md4110}
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\texttt{ RSS feed}} to always get the release notifications.
+
+If you also want to participate, or for any questions and comments, please contact us via our issue tracker \href{http://issues.libelektra.org}{\texttt{ on Git\+Hub}}.
+
+\href{https://www.libelektra.org/news/0.9.<<VERSION>>-release}{\texttt{ Permalink to this NEWS entry}}
+
+For more information, see \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}.
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\texttt{ Elektra Initiative}} 

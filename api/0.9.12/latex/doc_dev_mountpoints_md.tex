@@ -1,0 +1,181 @@
+\label{doc_dev_mountpoints_md_md_doc_dev_mountpoints}%
+\Hypertarget{doc_dev_mountpoints_md_md_doc_dev_mountpoints}%
+ A mountpoint is defined by adding keys below {\ttfamily system\+:/elekta/mountpoints/$<$mountpoint$>$}, where {\ttfamily $<$mountpoint$>$} is the key name for the parent key of the mountpoint with slashes properly escaped. For example for the mountpoint {\ttfamily user\+:/mymountpoint} you have to add keys below {\ttfamily system\+:/elekta/mountpoints/user\+:\textbackslash{}/mymountpoint}.
+
+Every mountpoint consists of four parts\+:
+
+
+\begin{DoxyEnumerate}
+\item A set of plugins required for the mountpoint.
+\item A single {\itshape backend plugin} within the set of plugins.
+\item The {\itshape mountpoint definition} specific to the backend plugin.
+\item The {\itshape mountpoint config} available to all plugins of this mountpoint.
+\end{DoxyEnumerate}
+
+The set of plugins is defined below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins}. The keys below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/$<$ref$>$} define a single instance of a plugin. The part {\ttfamily $<$ref$>$} will be used as name by which this plugin instance will be referenced later. The name may be arbitrary, but it must not be {\ttfamily backend}. The name {\ttfamily backend} is reserved for the backend plugin (see below).
+
+To define a plugin instance, {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/$<$ref$>$/name} must be set to the name of the plugin, i.\+e., it must be possible to open the plugin with {\ttfamily elektra\+Plugin\+Open} via this value. Optionally, the configuration keyset can be defined by the keys below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/$<$ref$>$/config}.
+
+The single {\itshape backend plugin} is the only one that the {\ttfamily libelektra-\/kdb} library communicates with. It is responsible for calling other plugins when needed. A {\itshape backend contract} exists between this plugin and {\ttfamily libelektra-\/kdb}. The backend plugin alone is responsible for upholding this contract and enforcing it upon other plugins it calls.
+
+The backend plugin is defined (like the other plugins) below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins}. Specifically, it uses {\ttfamily backend} as {\ttfamily $<$ref$>$} and is therefore defined by the keys below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/backend}.
+
+The {\itshape mountpoint definition} for the backend plugin is defined by the keys below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/definition}.
+
+The {\itshape mountpoint config} is defined by the keys below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/config}. It is merged into the configuration keyset of every plugin of this mountpoint (including the backend plugin). Specifically, the mountpoint config is put into the {\ttfamily user\+:/} namespace, while the config from {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/$<$ref$>$/config} is put into the {\ttfamily dir\+:/} namespace of the keyset passed to a plugin.
+
+Additionally, the {\ttfamily config/needs} config from plugins\textquotesingle{} contract is moved to {\ttfamily system\+:/}. This config is not stored in {\ttfamily system\+:/elektra/mountpoints} and instead loaded at runtime by {\ttfamily libelektra-\/kdb} during the {\ttfamily open} operation.
+
+This leaves the {\ttfamily default\+:/} namespace for plugins to add their own defaults before calling {\ttfamily ks\+Lookup} to access the config keyset.
+
+\begin{quote}
+{\bfseries{Note}}\+: This {\itshape mountpoint definition} is separate from the normal configuration keyset passed to a plugin. The backend plugin may still have such a keyset below its {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/$<$ref$>$/config} key. The difference between these two keyset is that the configuration keyset should be used to define the general operation of the plugin, while the mountpoint definition should specify a mountpoint.
+
+For example, a backend plugin could support a logging mode, in which it produces a log entry every time it calls another plugin. This should be configured in the configuration keyset not in the mountpoint definition, since it doesn\textquotesingle{}t change how the mountpoint works.
+
+Additionally, the config of a plugin is {\itshape always} processed for {\itshape all} mountpoints, no matter if the mountpoint is actually accessed or the plugin actually used. This is because config is processed during the {\ttfamily open} operation, which doesn\textquotesingle{}t know what parts of the whole KDB are needed for the current application. The mountpoint definition meanwhile is only processed for the mountpoints that are actually accessed. In this case the processing happens during the first {\ttfamily get} operation (within an application) that uses this mountpoint. \end{quote}
+All other keys below {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$} are ignored.
+
+To illustrate this structure, here is an example configuration\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# List of plugins with their config}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/resolver/name (="{}resolver\_fm\_hpu\_b"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/myglob/name (="{}glob"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/myglob/config/set/\#0}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/myglob/config/set/\#1}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/myglob/config/set/\#2}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/myglob/config/set/\#3}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/myglob/config/set/\#4/flags}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/store/name (="{}hosts"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/sync/name (="{}sync"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/error/name (="{}error"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/network/name (="{}network"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\# part of the list of plugins, but also defines backend plugin}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/backend/name (="{}backend"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Configuration for backend plugin}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/path (="{}myhosts"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/get/resolver (="{}resolver"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/get/storage (="{}store"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/get/poststorage/\#0 (="{}myglob"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/resolver (="{}resolver"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/prestorage/\#0 (="{}myglob"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/prestorage/\#1 (="{}error"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/prestorage/\#2 (="{}network"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/storage (="{}store"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/precommit/\#0 (="{}sync"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/commit (="{}resolver"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/rollback (="{}resolver"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Everything else below system:/elektra/mountpoints/\(\backslash\)/hosts is ignored}
+
+\end{DoxyCode}
+
+
+Explanation\+:
+
+
+\begin{DoxyItemize}
+\item This configures a mountpoint {\ttfamily /hosts} that loads the plugins {\ttfamily resolver\+\_\+fm\+\_\+hpu\+\_\+b}, {\ttfamily glob}, {\ttfamily hosts}, {\ttfamily sync}, {\ttfamily error}, {\ttfamily network} and {\ttfamily backend}. The plugin {\ttfamily glob} also has some configuration keys defined.
+\item The {\ttfamily backend} plugin is set as the backend plugin.
+\item The rest is the mountpoint definition specific to the {\ttfamily backend} plugin.
+\end{DoxyItemize}
+
+As you can see from this example, the \char`\"{}positions\char`\"{} are part of the plugin-\/specific mountpoint definition. This allows different backend plugins to use different \char`\"{}positions\char`\"{}.
+
+For example, there is the {\ttfamily version} backend plugin that always just provides a few keys with version information for Elektra. It doesn\textquotesingle{}t need to call any other plugins and requires no configuration at all. A mountpoint with this plugin could look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/version/plugins/backend/name (="{}version"{})}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note}}\+: The above example, is also the minimal setup for a mountpoint. The key {\ttfamily system\+:/elektra/mountpoints/$<$mountpoint$>$/plugins/backend/name} is the only one that must be defined. \end{quote}
+\hypertarget{doc_dev_mountpoints_md_autotoc_md2660}{}\doxysection{Operations and Phases}\label{doc_dev_mountpoints_md_autotoc_md2660}
+See KDB Operations Documentation for a description of operations and phases.
+
+In each of the phases of a {\ttfamily get} or {\ttfamily set} operation, the corresponding function of the backend plugin is called. For a description of how this works exactly read the Backend Plugins Documentation.
+
+In the first example above, the phases were mapped one-\/to-\/one to what the plugin {\ttfamily backend} called \char`\"{}positions\char`\"{}. The different terms are very much intentional, since this not a requirement.\hypertarget{doc_dev_mountpoints_md_autotoc_md2661}{}\doxysection{Further Examples}\label{doc_dev_mountpoints_md_autotoc_md2661}
+We already had two examples above. Here we will look at a few more.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# List of plugins with their config}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/resolver/name (="{}resolver\_fm\_hpu\_b"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/glob/name (="{}glob"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/glob/config/set/\#0}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/glob/config/set/\#1}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/glob/config/set/\#2}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/glob/config/set/\#3}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/glob/config/set/\#4/flags}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/hosts/name (="{}hosts"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/sync/name (="{}sync"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/network/name (="{}network"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Define backend plugin}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/backend/name (="{}other\_backend"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Configuration for backend plugin}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/path (="{}myhosts"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/get/resolver = (="{}resolver"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/get/storage = (="{}hosts"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/get/validation/\#0 (="{}glob"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/resolver = (="{}resolver"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/validation/\#0 = (="{}glob"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/validation/\#1 = (="{}network"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/storage = (="{}hosts"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/precommit/\#0 = (="{}sync"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/commit = (="{}resolver"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/positions/set/rollback (="{}resolver"{})}
+
+\end{DoxyCode}
+
+
+This example is very similar to the first one, but the plugin {\ttfamily other\+\_\+backend} doesn\textquotesingle{}t use the {\ttfamily postorage} and {\ttfamily prestorage} \char`\"{}positions\char`\"{}. Instead, there is a {\ttfamily validation} position that is (presumably) called in the appropriate phase. The plugin {\ttfamily other\+\_\+backend} may also impose its own restrictions on plugins configured for the {\ttfamily validation} position. For example, it may define that such plugins must not generate, remove or modify keys and provide a different position for plugins that do so.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/network/name (="{}network"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/backend/name (="{}db\_backend"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/db/driver (="{}postgres"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/db/server (="{}127.0.0.1"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/db/port (="{}5432"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/db/user (="{}admin"{})}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/db/password (="{}supersecret"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/definition/phases/set/prestorage/\#0 (="{}network"{})}
+
+\end{DoxyCode}
+
+
+This example shows an entirely different type of backend. The hypothetical {\ttfamily db\+\_\+backend} is backed by a database. In this case it is configured for a Postgre\+SQL database running on {\ttfamily 127.\+0.\+0.\+1\+:5432} to which we connect as user {\ttfamily admin}.
+
+We also configured the {\ttfamily network} plugin to run in the {\ttfamily prestorage} phase of the {\ttfamily set} operation. Which phases can be used and how they must be configured of course depends on {\ttfamily db\+\_\+backend}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/yajl/name (="{}yajl"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/plugins/backend/name (="{}http\_backend"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/url (="{}https://api.ipify.org/?format=JSON"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{system:/elektra/mountpoints/\(\backslash\)/hosts/decoder (="{}yajl"{})}
+
+\end{DoxyCode}
+
+
+The hypothetical {\ttfamily http\+\_\+backend} plugin is a read-\/only backend plugin. In the example above, it is configured to load the URL {\ttfamily \href{https://api.ipify.org/?format=JSON}{\texttt{ https\+://api.\+ipify.\+org/?format=\+JSON}}} and use the {\ttfamily yajl} plugin to parse the result into a keyset. Both the HTTP request and the decoding would likely happen in the {\ttfamily storage} phase of the {\ttfamily get} operation. The {\ttfamily resolver} phase could perform an HTTP cache check, for example. 

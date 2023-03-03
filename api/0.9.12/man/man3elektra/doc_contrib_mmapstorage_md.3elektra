@@ -1,0 +1,16 @@
+.TH "doc_contrib_mmapstorage_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_contrib_mmapstorage_md \- mmapstorage 
+ The \fCmmapstorage\fP plugin is a high performance storage plugin that supports full Elektra semantics\&.
+.PP
+The most important constraint for \fCmmapstorage\fP is that any structure (or bytes) that is an allocation unit (e\&.g\&. we \fCmalloc()\fP the bytes needed for \fCKeySet\fP struct, so this is an unit) needs to have a flag to determine whether those bytes are actually \fCmalloc()\fPed or they are \fCmmap()\fPed\&.
+.PP
+The \fCmmapstorage\fP plugin only calls \fCmunmap\fP in some error cases, so basically the returned keyset is never invalidated and \fCmunmap\fP is never called for its data\&.
+.PP
+During \fCkdbSet\fP the storage plugins always write to a temp file, due to how the resolver works\&. We also don't need to \fCmmap\fP the temp file here: when doing \fCkdbSet\fP we already have the \fCKeySet\fP at hand, \fCmmap\fP-ing it is not needed at all, because we have the data\&. We just want to update the cache file\&. The \fCmmap\fP/\fCmunmap\fP in \fCkdbSet\fP are just so we can write the \fCKeySet\fP to a file in our format\&. (\fCmmap()\fP is just simpler, but we could also \fCmalloc()\fP a region and then \fCfwrite()\fP the stuff)
+.PP
+Therefore the only case where we return a \fCmmap()\fPed KeySet should be in \fCkdbGet\fP\&.
+.PP
+When the \fCmmapstorage\fP was designed/implemented, not all structures had refcounters, so there was no way to know when a \fCmunmap\fP is safe\&. This was simply out of scope at that point in time\&. 

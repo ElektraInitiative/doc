@@ -1,0 +1,519 @@
+\hypertarget{group__keyvalue}{}\doxysection{Value Manipulation Methods}
+\label{group__keyvalue}\index{Value Manipulation Methods@{Value Manipulation Methods}}
+
+
+Methods to do various operations on Key values.  
+
+
+Collaboration diagram for Value Manipulation Methods\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=261pt]{group__keyvalue}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+const void $\ast$ \mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value}} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Return a pointer to the real internal {\ttfamily key} value. \end{DoxyCompactList}\item 
+const char $\ast$ \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{key\+String}} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Get a pointer to the c-\/string representing the value. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{key\+Get\+Value\+Size}} (const Key $\ast$key)
+\begin{DoxyCompactList}\small\item\em Returns the number of bytes needed to store the key value, including the NULL terminator. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String}} (const Key $\ast$key, char $\ast$returned\+String, size\+\_\+t max\+Size)
+\begin{DoxyCompactList}\small\item\em Copy the string value of a Key into {\ttfamily returned\+String}. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{key\+Set\+String}} (Key $\ast$key, const char $\ast$new\+String\+Value)
+\begin{DoxyCompactList}\small\item\em Set the value for {\ttfamily key} as {\ttfamily new\+String\+Value}. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary}} (const Key $\ast$key, void $\ast$returned\+Binary, size\+\_\+t max\+Size)
+\begin{DoxyCompactList}\small\item\em Copy the binary value of a Key into {\ttfamily returned\+Binary}. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{key\+Set\+Binary}} (Key $\ast$key, const void $\ast$new\+Binary, size\+\_\+t data\+Size)
+\begin{DoxyCompactList}\small\item\em Set the value of a Key to the binary value {\ttfamily new\+Binary}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Methods to do various operations on Key values. 
+
+A key can contain a value in different format. The most likely situation is, that the value is interpreted as text. Use \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} for that. You can save any Unicode Symbols and Elektra will take care that you get the same back, independent of your current environment.
+
+In some situations this idea fails. When you need exactly the same value back without any interpretation of the characters, there is \mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{key\+Set\+Binary()}}. If you use that, its very likely that your Configuration is not according to the standard. Also for Numbers, Booleans and Date you should use \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}}. To do so, you might use strtod() strtol() and then atol() or atof() to convert back.
+
+To use them\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <kdb.h>}}
+
+\end{DoxyCode}
+ 
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}\label{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keyGetBinary@{keyGetBinary}}
+\index{keyGetBinary@{keyGetBinary}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keyGetBinary()}{keyGetBinary()}}
+{\footnotesize\ttfamily ssize\+\_\+t key\+Get\+Binary (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key,  }\item[{void $\ast$}]{returned\+Binary,  }\item[{size\+\_\+t}]{max\+Size }\end{DoxyParamCaption})}
+
+
+
+Copy the binary value of a Key into {\ttfamily returned\+Binary}. 
+
+If the type is not binary -\/1 will be returned.
+
+When the binary data is empty (this is not the same as \char`\"{}\char`\"{}!) 0 will be returned and {\ttfamily returned\+Binary} will not be changed.
+
+For string values see \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} and \mbox{\hyperlink{group__keytest_gaea7670778abd07fee0fe8ac12a149190}{key\+Is\+String()}}.
+
+When {\ttfamily returned\+Binary} is too small to hold the data (maximum size is given by max\+Size), the returned\+Binary will not be changed and -\/1 is returned.
+
+\begin{DoxyParagraph}{Example\+:}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key *key = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}user:/keyname"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8a1ca18d4e094ae7487d35ecedda2235ff}{KEY\_BINARY}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{\textcolor{keywordtype}{char} buffer[300];}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (\mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{keyGetBinary}}(key,buffer,\textcolor{keyword}{sizeof}(buffer)) == -\/1)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{comment}{// handle error}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+\end{DoxyParagraph}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key object to get the binary value from \\
+\hline
+{\em returned\+Binary} & pre-\/allocated memory to store a copy of the Key\textquotesingle{}s value \\
+\hline
+{\em max\+Size} & number of bytes of pre-\/allocated memory in {\ttfamily returned\+Binary} \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of bytes copied to {\ttfamily returned\+Binary} 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & if the binary is empty \\
+\hline
+{\em -\/1} & on NULL pointers \\
+\hline
+{\em -\/1} & if max\+Size is 0, too small for the value or larger than SSIZE\+\_\+\+MAX \\
+\hline
+{\em -\/1} & if the Key\textquotesingle{}s value is a string\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} for getting a raw pointer to the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{key\+Get\+Value\+Size()}} for getting the size of the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{key\+Set\+Binary()}} for setting the binary value of a Key 
+
+\mbox{\hyperlink{group__keytest_ga9526b371087564e43e3dff8ad0dac949}{key\+Is\+Binary()}} for checking whether a Key\textquotesingle{}s value is binary 
+
+\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}}, \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{key\+Set\+String()}} for working with string values 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}\label{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keyGetString@{keyGetString}}
+\index{keyGetString@{keyGetString}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keyGetString()}{keyGetString()}}
+{\footnotesize\ttfamily ssize\+\_\+t key\+Get\+String (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key,  }\item[{char $\ast$}]{returned\+String,  }\item[{size\+\_\+t}]{max\+Size }\end{DoxyParamCaption})}
+
+
+
+Copy the string value of a Key into {\ttfamily returned\+String}. 
+
+When there is no value inside the string, 1 will be returned and the returned\+String will be empty (\char`\"{}\char`\"{}) to avoid programming errors where old strings are shown to the user.
+
+\begin{DoxyParagraph}{Example\+:}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key *key = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}user:/keyname"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{\textcolor{keywordtype}{char} buffer[300];}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{keyGetString}}(key,buffer,\textcolor{keyword}{sizeof}(buffer)) == -\/1)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{comment}{// handle error}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{else} \{}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}buffer: \%s\(\backslash\)n"{}}, buffer);}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+\end{DoxyParagraph}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key object to get the string from \\
+\hline
+{\em returned\+String} & pre-\/allocated memory to store a copy of the Key\textquotesingle{}s value \\
+\hline
+{\em max\+Size} & number of bytes of allocated memory in {\ttfamily returned\+String} \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of bytes actually copied to {\ttfamily returned\+String}, including final NULL 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if the string is empty \\
+\hline
+{\em -\/1} & on any NULL pointers \\
+\hline
+{\em -\/1} & if the Key\textquotesingle{}s value is binary \\
+\hline
+{\em -\/1} & max\+Size is 0, too small for the string or larger than SSIZE\+\_\+\+MAX\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{key\+Get\+Value\+Size()}} for getting the size of the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} for getting a raw pointer to the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{key\+String()}} for getting a raw char pointer to the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}}, \mbox{\hyperlink{group__keytest_ga9526b371087564e43e3dff8ad0dac949}{key\+Is\+Binary()}} for working with binary data 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}\label{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keyGetValueSize@{keyGetValueSize}}
+\index{keyGetValueSize@{keyGetValueSize}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keyGetValueSize()}{keyGetValueSize()}}
+{\footnotesize\ttfamily ssize\+\_\+t key\+Get\+Value\+Size (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Returns the number of bytes needed to store the key value, including the NULL terminator. 
+
+It returns the correct size, independent of the Key Type. If the value is binary there might be \textquotesingle{}\textbackslash{}0\textquotesingle{} values in it.
+
+For an empty string you need one byte to store the ending NULL. For that reason 1 is returned. This is not true for binary data, so 0 will be returned.
+
+A binary key has no \textquotesingle{}\textbackslash{}0\textquotesingle{} termination. String types are null-\/terminated, and the terminator will be considered for the length.
+
+This method can be used with \mbox{\hyperlink{internal_8c_a35cdc2e5caed3454cb73b4fc7f37858c}{elektra\+Malloc()}} before \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} or \mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}} is called.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{char} *buffer;}
+\DoxyCodeLine{buffer = \mbox{\hyperlink{internal_8c_a35cdc2e5caed3454cb73b4fc7f37858c}{elektraMalloc}} (\mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{keyGetValueSize}} (key));}
+\DoxyCodeLine{\textcolor{comment}{// use this buffer to store the value (binary or string)}}
+\DoxyCodeLine{\textcolor{comment}{// pass keyGetValueSize (key) for maxSize}}
+
+\end{DoxyCode}
+
+
+\begin{DoxyPostcond}{Postcondition}
+returns the exact amount of bytes needed to store {\ttfamily key\textquotesingle{}s} value (including NULL terminators)
+\end{DoxyPostcond}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key object to get the size of the value from\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of bytes needed to store the Key\textquotesingle{}s value 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & when there is no data and type is a string \\
+\hline
+{\em 0} & when there is no data and type is binary \\
+\hline
+{\em -\/1} & on null pointer\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} for getting the Key\textquotesingle{}s value as a string 
+
+\mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}} for getting the Key\textquotesingle{}s value as a binary 
+
+\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} for getting a pointer to the Key\textquotesingle{}s value 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}\label{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keySetBinary@{keySetBinary}}
+\index{keySetBinary@{keySetBinary}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keySetBinary()}{keySetBinary()}}
+{\footnotesize\ttfamily ssize\+\_\+t key\+Set\+Binary (\begin{DoxyParamCaption}\item[{Key $\ast$}]{key,  }\item[{const void $\ast$}]{new\+Binary,  }\item[{size\+\_\+t}]{data\+Size }\end{DoxyParamCaption})}
+
+
+
+Set the value of a Key to the binary value {\ttfamily new\+Binary}. 
+
+A private copy of {\ttfamily new\+Binary} will be allocated and saved inside {\ttfamily key}, so the parameter can be deallocated after the call.
+
+Binary values might be encoded in another way than string values depending on the plugin. Typically character encodings should not take place on binary data. Consider using a string Key instead, if encoding should occur.
+
+When {\ttfamily new\+Binary} is a NULL pointer the value will be freed and 0 will be returned.
+
+Read-\/only keys will stay unchanged after calling this function.
+
+\begin{DoxyNote}{Note}
+The metadata \char`\"{}binary\char`\"{} will be set to mark that the key is binary from now on. When the Key is already binary the metadata won\textquotesingle{}t be changed. This will only happen in the successful case, but not when -\/1 is returned.
+\end{DoxyNote}
+\begin{DoxyPrecond}{Precondition}
+{\ttfamily data\+Size} matches the length of {\ttfamily new\+Binary} 
+
+{\ttfamily new\+Binary} is not NULL and {\ttfamily data\+Size} $>$ 0 
+
+{\ttfamily key} is not read-\/only 
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+{\ttfamily key\textquotesingle{}s} value set exactly to the data in {\ttfamily new\+Binary} 
+
+\char`\"{}binary\char`\"{} key set in {\ttfamily key\textquotesingle{}s} metadata
+\end{DoxyPostcond}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key object where the value should be set \\
+\hline
+{\em new\+Binary} & a pointer to any binary data or NULL (to clear the stored value) \\
+\hline
+{\em data\+Size} & number of bytes to copy from {\ttfamily new\+Binary} \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of bytes actually copied to internal struct storage 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & when the internal binary was freed and is now a null pointer \\
+\hline
+{\em -\/1} & if {\ttfamily key} is NULL \\
+\hline
+{\em -\/1} & when {\ttfamily data\+Size} is 0 (and new\+Binary not NULL) or larger than SSIZE\+\_\+\+MAX \\
+\hline
+{\em -\/1} & if {\ttfamily key} is read-\/only\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}} for getting a Key\textquotesingle{}s value as binary 
+
+\mbox{\hyperlink{group__keytest_ga9526b371087564e43e3dff8ad0dac949}{key\+Is\+Binary()}} to check if the Key\textquotesingle{}s value is binary 
+
+\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} and \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{key\+Set\+String()}} for working with string values 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}\label{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keySetString@{keySetString}}
+\index{keySetString@{keySetString}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keySetString()}{keySetString()}}
+{\footnotesize\ttfamily ssize\+\_\+t key\+Set\+String (\begin{DoxyParamCaption}\item[{Key $\ast$}]{key,  }\item[{const char $\ast$}]{new\+String\+Value }\end{DoxyParamCaption})}
+
+
+
+Set the value for {\ttfamily key} as {\ttfamily new\+String\+Value}. 
+
+The function will allocate and save a private copy of {\ttfamily new\+String\+Value}, so the parameter can be freed after the call.
+
+String values will be saved in backend storage in UTF-\/8 universal encoding, regardless of the program\textquotesingle{}s current encoding (if the iconv plugin is available).
+
+\begin{DoxyPrecond}{Precondition}
+{\ttfamily new\+String\+Value} is a NULL terminated string 
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+Value of the Key is set to the UTF-\/8 encoded value of {\ttfamily new\+String\+Value} 
+
+Metakey {\ttfamily meta\+:/binary} is cleared
+\end{DoxyPostcond}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key for which to set the string value \\
+\hline
+{\em new\+String\+Value} & NULL-\/terminated string to be set as {\ttfamily key\textquotesingle{}s} value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the number of bytes actually saved in private struct including final NULL 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & if {\ttfamily new\+String\+Value} is a NULL pointer, this will make the string empty (string only containing null termination) \\
+\hline
+{\em -\/1} & if {\ttfamily key} is a NULL pointer\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{key\+String()}} for getting a pointer to the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} for getting a copy of the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{key\+Set\+Binary()}} for setting binary data 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}\label{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keyString@{keyString}}
+\index{keyString@{keyString}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keyString()}{keyString()}}
+{\footnotesize\ttfamily const char$\ast$ key\+String (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Get a pointer to the c-\/string representing the value. 
+
+Will return \char`\"{}(null)\char`\"{} on null pointers. Will return \char`\"{}(binary)\char`\"{} on binary data not ended with a null byte.
+
+\begin{DoxyNote}{Note}
+You must not change or delete the returned value. Use the respective functions for that (\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{key\+Set\+String()}}, \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}})
+\end{DoxyNote}
+It is not checked if it is actually a string, only if it terminates for security reasons.
+
+\begin{DoxyPostcond}{Postcondition}
+returned pointer points to the real internal value 
+
+value is NULL terminated
+\end{DoxyPostcond}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key object to get the string value from\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+pointer to the c-\/string representing the Key\textquotesingle{}s value 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em \char`\"{}\char`\"{}} & if no data found \\
+\hline
+{\em (null)} & on null Key \\
+\hline
+{\em (binary)} & on binary Key\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} for getting a copy of the Key\textquotesingle{}s value as string 
+
+\mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}} for getting a copy of the Key\textquotesingle{}s value as binary 
+
+\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} for getting a pointer to the Key\textquotesingle{}s value as binary 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}\label{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}} 
+\index{Value Manipulation Methods@{Value Manipulation Methods}!keyValue@{keyValue}}
+\index{keyValue@{keyValue}!Value Manipulation Methods@{Value Manipulation Methods}}
+\doxysubsubsection{\texorpdfstring{keyValue()}{keyValue()}}
+{\footnotesize\ttfamily const void$\ast$ key\+Value (\begin{DoxyParamCaption}\item[{const Key $\ast$}]{key }\end{DoxyParamCaption})}
+
+
+
+Return a pointer to the real internal {\ttfamily key} value. 
+
+This is a much more efficient version of \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} \mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}}. You should use it if you are responsible enough to not mess up things. You are not allowed to modify anything in the returned string. If you need a copy of the Value, consider to use \mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} or \mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}} instead.\hypertarget{group__keyvalue_string}{}\doxysubsection{String Handling}\label{group__keyvalue_string}
+If {\ttfamily key} is string (\mbox{\hyperlink{group__keytest_gaea7670778abd07fee0fe8ac12a149190}{key\+Is\+String()}}), you may cast the returned as a {\ttfamily \char`\"{}char $\ast$\char`\"{}} because you\textquotesingle{}ll get a NULL terminated regular string.
+
+\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} returns \char`\"{}\char`\"{} in string mode when there is no value. The reason is 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key=\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(0);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}}(key,\textcolor{stringliteral}{"{}"{}});}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(key); \textcolor{comment}{// you would expect "{}"{} here}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}}(key);}
+
+\end{DoxyCode}
+\hypertarget{group__keyvalue_binary}{}\doxysubsection{Binary Data Handling}\label{group__keyvalue_binary}
+If the data is binary, the size of the value must be determined by \mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{key\+Get\+Value\+Size()}}, any strlen() operations are not suitable to determine the size.
+
+\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} returns 0 in binary mode when there is no value. The reason is 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key=\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(0);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{keySetBinary}}(key, 0, 0);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(key); \textcolor{comment}{// you would expect 0 here}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{keySetBinary}}(key,\textcolor{stringliteral}{"{}"{}}, 1);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(key); \textcolor{comment}{// you would expect "{}"{} (a pointer to '\(\backslash\)0') here}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} i=23;}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{keySetBinary}}(key, (\textcolor{keywordtype}{void}*)\&i, 4);}
+\DoxyCodeLine{(\textcolor{keywordtype}{int}*)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(key); \textcolor{comment}{// you would expect a pointer to (int)23 here}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}}(key);}
+
+\end{DoxyCode}
+
+
+\begin{DoxyNote}{Note}
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{key\+Value()}} method to set a new value. Use \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{key\+Set\+String()}} or \mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{key\+Set\+Binary()}} instead.
+\end{DoxyNote}
+\begin{DoxyWarning}{Warning}
+Binary keys will return a NULL pointer when there is no data in contrast to \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{key\+Name()}}, \mbox{\hyperlink{group__keyname_gaaff35e7ca8af5560c47e662ceb9465f5}{key\+Base\+Name()}} and \mbox{\hyperlink{group__meta_gac89fd319783b3457db45b4c09e55274a}{key\+Comment()}}. For string value the behaviour is the same.
+\end{DoxyWarning}
+\begin{DoxyParagraph}{Example\+:}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB *handle = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}}();}
+\DoxyCodeLine{KeySet *ks=\mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{kdbGetByName(handle,ks,\textcolor{stringliteral}{"{}system:/sw/my"{}},KDB\_O\_SORT|KDB\_O\_RECURSIVE);}
+\DoxyCodeLine{}
+\DoxyCodeLine{ \textcolor{keywordflow}{for} (elektraCursor it = 0; it < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (ks); ++it)}
+\DoxyCodeLine{ \{}
+\DoxyCodeLine{        Key * current = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (ks, it);}
+\DoxyCodeLine{        \textcolor{keywordtype}{size\_t} size=0;}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{keywordflow}{if} (\mbox{\hyperlink{group__keytest_ga9526b371087564e43e3dff8ad0dac949}{keyIsBinary}}(current)) \{}
+\DoxyCodeLine{                size=\mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{keyGetValueSize}}(current);}
+\DoxyCodeLine{                printf(\textcolor{stringliteral}{"{}Key \%s has a value of size \%d bytes. Value: <BINARY>\(\backslash\)nComment: \%s"{}},}
+\DoxyCodeLine{                        \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(current),}
+\DoxyCodeLine{                        size,}
+\DoxyCodeLine{                        \mbox{\hyperlink{group__meta_gac89fd319783b3457db45b4c09e55274a}{keyComment}}(current));}
+\DoxyCodeLine{        \} \textcolor{keywordflow}{else} \{}
+\DoxyCodeLine{                size=\mbox{\hyperlink{internal_8c_afd676487565d083a6ad5a1381095acd8}{elektraStrLen}}((\textcolor{keywordtype}{char} *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(current));}
+\DoxyCodeLine{                printf(\textcolor{stringliteral}{"{}Key \%s has a value of size \%d bytes. Value: \%s\(\backslash\)nComment: \%s"{}},}
+\DoxyCodeLine{                        \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(current),}
+\DoxyCodeLine{                        size,}
+\DoxyCodeLine{                        (\textcolor{keywordtype}{char} *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}}(current),}
+\DoxyCodeLine{                        \mbox{\hyperlink{group__meta_gac89fd319783b3457db45b4c09e55274a}{keyComment}}(current));}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (ks);}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (handle);}
+
+\end{DoxyCode}
+
+\end{DoxyParagraph}
+\begin{DoxyPrecond}{Precondition}
+{\ttfamily key} is not NULL and has stored data 
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+returned pointer points to the stored internal value 
+
+if the value is a string, the value is NULL terminated
+\end{DoxyPostcond}
+
+\begin{DoxyParams}{Parameters}
+{\em key} & the Key from which to get the value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to the Key\textquotesingle{}s internal value 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em \char`\"{}\char`\"{}} & when there is no value and Key is not binary \\
+\hline
+{\em 0} & where there is no value and Key is binary \\
+\hline
+{\em 0} & on NULL pointer\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyvalue_gae326672fffb7474abfe9baf53b73217e}{key\+Get\+Value\+Size()}} to get the size of the Key\textquotesingle{}s value 
+
+\mbox{\hyperlink{group__keyvalue_ga41b9fac5ccddafe407fc0ae1e2eb8778}{key\+Get\+String()}} for getting the Key\textquotesingle{}s value as string 
+
+\mbox{\hyperlink{group__keyvalue_ga4c0d8a4a11174197699c231e0b5c3c84}{key\+Get\+Binary()}} for getting the Key\textquotesingle{}s value as binary 
+\end{DoxySeeAlso}

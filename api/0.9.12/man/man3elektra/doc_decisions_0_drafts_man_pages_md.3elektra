@@ -1,0 +1,115 @@
+.TH "doc_decisions_0_drafts_man_pages_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_0_drafts_man_pages_md \- Man Pages 
+ 
+.SH "Problem"
+.PP
+Our man pages are written as Markdown in \fCdoc/help\fP and then converted to roff and stored in \fCdoc/man\fP\&. These are the only generated files in our version control system\&. Having such files is a problematic workaround, which was introduced because \fCronn-ng\fP is not available on most distributions\&. The poor availability of the package \fCronn-ng\fP is a problem because distributions usually build packages by exclusively relying on other packages of the distribution\&. E\&.g\&. \fCdpkg-buildpackage\fP must work with only \fCdeb\fP packages installed (and not any packages via \fCgem\fP, as would be needed to get \fCronn-ng v0\&.10\&.1\fP)\&.
+.PP
+We have a mechanism to automatically disable (re)building man pages\&. But we want to avoid that distributions build packages without man pages, hence we added the generated files\&.
+.PP
+Storing generated files, however, is problematic, as it requires:
+.PP
+.IP "\(bu" 2
+developers to always update generated files if the sources are changed
+.IP "\(bu" 2
+developers not committing irrelevant changes to generated files (e\&.g\&. as may occur with different \fCCMAKE_INSTALL_PREFIX\fP etc\&.)
+.IP "\(bu" 2
+require extra effort for continuous integration, e\&.g\&. \fC#4542\fP
+.PP
+.PP
+TODO: everything below is draft, please don't comment on it\&.
+.SH "Constraints"
+.PP
+.IP "1." 4
+we want beautiful rendered man pages, e\&.g\&., OPTIONS section looks like normal man pages, see in Notes¹ below
+.IP "2." 4
+we cannot require rare tools for the build process: the man pages must be present in every package
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+0\&. staying with \fCronn-ng\fP but add the man pages only in the release tarballs but not to \fCgit\fP
+.IP "1." 4
+Write a tool that converts our specification, similar to \fBpythongen\fP
+.IP "2." 4
+Write a tool that parses gopts \fC--help\fP output
+.IP "3." 4
+\fChelp2man\fP
+.IP "4." 4
+Doxygen:
+.IP "  \(bu" 4
+Constraint 1 probably broken
+.PP
+
+.IP "5." 4
+Pandoc:
+.IP "  \(bu" 4
+has a few standard dependencies
+.IP "  \(bu" 4
+would need rewrite of the current documentation in doc/help:
+.IP "    \(bu" 6
+To fulfill Constraint 1 \fCdefinition lists\fP would be needed
+.IP "    \(bu" 6
+would need YAML metadata/front matter for every file (It would be possible, but not advisable, to:
+.IP "      \(bu" 8
+also pass information as command-line arguments via \fC--variable\fP but then we would move meta-information about man pages to the build system
+.IP "      \(bu" 8
+that we use the current (non-standard) front matter and convert it to Pandoc's frontmatter but this makes the build system more complicated)
+.PP
+
+.PP
+
+.PP
+
+.PP
+.SH "Decision"
+.PP
+Not yet done except spelling of man pages, see \fC#4567\fP\&.
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+[](\fBdoc_decisions_0_drafts__README_md\fP)
+.IP "\(bu" 2
+[](\fBdoc_decisions_0_drafts__README_md\fP)
+.IP "\(bu" 2
+[](\fBdoc_decisions_0_drafts__README_md\fP)
+.PP
+.SH "Notes"
+.PP
+¹ ronn-ng converts:
+.PP
+.PP
+.nf
+- `-H`, `--help`:
+  Show the man page\&.
+- `-V`, `--version`:
+  Print version info\&.
+- `-p`, `--profile <profile>`:
+  Use a different kdb profile\&.
+.fi
+.PP
+.PP
+to:
+.PP
+.PP
+.nf
+OPTIONS
+       -H, --help
+              Show the man page\&.
+
+       -V, --version
+              Print version info\&.
+
+       -p, --profile <profile>
+              Use a different kdb profile\&.
+.fi
+.PP
+ 

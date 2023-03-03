@@ -1,0 +1,79 @@
+.TH "doc_decisions_0a_postponed_plugin_struct_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_0a_postponed_plugin_struct_md \- Plugin Struct 
+ 
+.SH "Problem"
+.PP
+\fCstruct _Plugin\fP contains some unnecessary data\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.RS 4
+\fBNote\fP: Not all of these are alternatives, most of them could be combined\&. 
+.RE
+.PP
+.IP "1." 4
+Replace \fCKeySet * global\fP and \fCKeySet * modules\fP with \fCKDB * kdb\fP\&.
+.PP
+This would require changing the \fCelektraPluginOpen\fP API to take a \fCKDB * kdb\fP, or a \fCPlugin * existing\fP from which we extract the \fCKDB *\fP (the first plugin could use a stack allocated \fCPlugin\fP with just \fCKDB *\fP set)\&.
+.IP "2." 4
+Replace all the \fCkdb*\fP function pointers and \fCchar * name\fP with a \fCKeySet * contract\fP\&.
+.PP
+The contract also contains the function pointers, so this avoids duplication and should reduce memory usage\&. This could potentially affect runtime performance, because instead of having a pointer directly, we need to first do a lookup in a keyset\&.
+.IP "3." 4
+Remove \fCsize_t refcounter\fP\&.
+.PP
+Plugins are never shared between mountpoints\&. There is also no way of increasing \fCrefcounter\fP via the API\&.
+.IP "4." 4
+(Based on all above) Change how \fCstruct _Plugin\fP is used\&.
+.PP
+This is the most comprehensive change, it combines all the above to remove as much duplication as possible\&. It consists of these parts:
+.IP "  \(bu" 4
+Create a \fCstruct _PluginData\fP that will be used in \fCstruct _BackendData\fP instead of \fCstruct _Plugin\fP\&.
+.PP
+```c struct _PluginData { KeySet * config; // config of plugin void * data; // private data of plugin char * name; // name of the plugin }; ```
+.PP
+The \fCname\fP is needed to get the correct functions from \fCkdb->contracts\fP (see below)\&.
+.IP "  \(bu" 4
+Change \fCstruct _Plugin\fP to the following and use stack allocated instances created when calling a plugin function\&.
+.PP
+```c struct _Plugin { KeySet * config; // copied from struct _PluginData void * data; // copied from struct _PluginData KDB * kdb; // pointer to KDB instance calling this plugin right now, may be copied from other plugin calling this plugin }; ```
+.IP "  \(bu" 4
+Add a \fCKeySet * contracts\fP to \fCstruct _KDB\fP\&. This contains all the contracts for all the plugins currently loaded\&.
+.PP
+To call a plugin function you need an existing \fCPlugin *\fP from which the \fCKDB * kdb\fP will be taken\&. Then the function will be looked up in \fCkdb->contracts\fP\&. Inside \fClibelektra-kdb\fP the existing \fCPlugin *\fP is faked with a stack allocated \fCstruct _Plugin\fP containing only a \fCKDB *\fP\&.
+.PP
+> \fBNote\fP If the changes to \fCKeySet * modules\fP from the \fBPlugin Contract Function\fPPlugin Contract Function'' decision are implemented, then \fCkdb->contracts\fP becomes \fCkdb->modules\fP\&.
+.PP
+
+.IP "5." 4
+Introduce a new \fCKeySet * shared\fP for sharing data among plugins of a single backend\&.
+.PP
+This is similar to \fCKeySet * global\fP, but not shared between different mountpoints\&. The \fCKeySet * shared\fP would be a copy of the one in \fCstruct _BackendData\fP (also new field), which owns the \fCKeySet\fP\&.
+.PP
+This solves the issue that \fClibelektra-kdb\fP must currently use \fCKeySet * global\fP to communicate extra data like the plugins belonging to a backend (for access in backend plugins)\&.
+.PP
+When combined with the stack allocated \fCstruct _Plugin\fP from option 4, this would not affect memory usage as much as otherwise\&. In that case, it would only be one \fCstruct _KeySet\fP per backend, when otherwise we would also add one pointer for every loaded plugin instance\&.
+.PP
+.SH "Decision"
+.PP
+Don't do anything for 1\&.0\&.
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBPlugin Contract Function\fP
+.IP "\(bu" 2
+\fBCommit Function\fP
+.PP
+.SH "Notes"
+.PP
+

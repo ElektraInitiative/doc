@@ -1,0 +1,91 @@
+.TH "doc_contrib_copy_on_write_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_contrib_copy_on_write_md \- Copy-on-Write 
+ The two basic Elektra datastructures \fCKey\fP and \fCKeySet\fP implement full copy-on-write (COW) functionality\&. If a key or a keyset gets copied, only a shallow copy with references to the original data (name, value, contained keys, etc\&.) is created\&. When this shared data is modified, new memory is allocated to keep the shared version in tact\&. Each piece of data (name, value, etc\&.) has a separate reference count to facilitate this\&. As a consequence, duplicated keys or keysets only require a fraction of the memory compared to their source counterparts\&.
+.SH "Working principle"
+.PP
+The main principle for the copy-on-write approach is simple: separate the data from the identity of a \fCKey\fP or \fCKeySet\fP\&. Developers using Elektra only get references to \fCKey\fP and \fCKeySet\fP objects\&. Those objects themselves do not hold any data\&. They only contain references to other entities holding the data\&. This allows transparently sharing the data-holding entities between multiple identifying entities\&.
+.PP
+The main entities for copy-on-write are depicted in the following diagram:
+.PP
+.PP
+.nf
+classDiagram
+    Key *-- "0\&.\&.1" KeyName : keyName
+    Key *-- "0\&.\&.1" KeyData : keyData
+
+    KeySet *-- "0\&.\&.1" KeySetData : data
+
+    Key o-- "0\&.\&.1" KeySet : meta
+    KeySetData o-- "*" Key : array
+
+    Key : - uint16_t refs
+    Key : - keyflag_t flags
+
+    KeyName : - char * name
+    KeyName : - char * uname
+    KeyName : - uint16_t refs
+    KeyName : - uint16_t flags
+
+    KeyData : - void * data
+    KeyData : - uint16_t refs
+    KeyData : - uint16_t flags
+
+    KeySet : - uint16_t refs
+    KeySet : - ksflag_t flags
+
+    KeySetData : - uint16_t refs
+    KeySetData : - uint16_t flags
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+\fCKey\fP: logically represents a key\&. No data is actually stored in it\&.
+.IP "  \(bu" 4
+\fCKeyName\fP: holds the name of a key\&. May be shared between multiple \fCKey\fP objects\&.
+.IP "  \(bu" 4
+\fCKeyData\fP: holds the value of a key\&. May be shared between multiple \fCKey\fP objects\&.
+.PP
+
+.IP "\(bu" 2
+\fCKeySet\fP: logically represents a collection of keys\&. No data is actually stored in it\&.
+.IP "  \(bu" 4
+\fCKeySetData\fP: holds an array of \fCKey\fP objects\&. May be shared between multiple \fCKeySet\fP objects\&.
+.PP
+
+.PP
+.PP
+When creating instances of \fCKey\fP and \fCKeySet\fP via \fCkeyNew\fP or \fCksNew\fP, we allocate the least amount possible\&. For \fCKey\fP, we only allocate a \fCKeyName\fP entity (while not technically necessary, it significantly simplifies some internal uses)\&. For \fCKeySet\fP, we allocate no other entities\&. The missing entities will get allocated when needed\&.
+.PP
+If the name of a key gets modified, we first ensure that the \fCKey\fP holds the only reference to its \fCKeyName\fP\&. If it isn't, then a new \fCKeyName\fP object is allocated for it\&. Depending on the type of modification, the value of the name is also copied\&. The modifications to the name are then performed on the new \fCKeyName\fP entity\&.
+.PP
+The same applies for the value of a key, and for the data contained in keysets\&.
+.PP
+When copying the name or value of a key, or data of a keyset, via \fCkeyCopy\fP, \fCksCopy\fP, \fCkeyDup\fP or \fCksDup\fP, we point the according references in the \fCdestination\fP object to the entities of the \fCsource\fP object\&. The reference counter of those entities is increased accordingly\&. The previous entities of the \fCdestination\fP object will get their reference count decreased, and if they reach 0 they will be \fCfree\fPd\&.
+.SH "Reference counting"
+.PP
+All entities are reference counted\&. The reference count is stored in each entity in an unsigned 16-bit integer variable \fCrefs\fP\&. The special value \fCUINT16_MAX\fP is reserved as an error indicator, so the maximum number of references for each entity is \fCUINT16_MAX - 1\fP or 65534\&.
+.PP
+The reference counting mechanisms for \fCKey\fP and \fCKeySet\fP are part of the public API\&.
+.PP
+A reference count of 0 for \fCKeyName\fP, \fCKeyData\fP and \fCKeySetData\fP is illegal outside the public API function calls that cause the creation/deletion these structures\&.
+.SH "Integration with <tt>mmapstorage</tt>"
+.PP
+The \fCmmapstorage\fP plugin needs a flag for every entity to indicate whether the entity is stored via \fCmmap\fP or normally allocated via \fCmalloc\fP\&. If an entity is flagged as being stored in \fCmmap\fP, it must \fBnever\fP be freed using \fCfree\fP\&.
+.PP
+The following flags are responsible for each entity:
+.PP
+.IP "\(bu" 2
+\fCKey\fP: \fCKEY_FLAG_MMAP_STRUCT\fP is set on the \fCflags\fP field
+.IP "\(bu" 2
+\fCKeyName\fP: \fCKEY_FLAG_MMAP_KEY\fP is set on the \fCflags\fP field
+.IP "\(bu" 2
+\fCKeyData\fP: \fCKS_FLAG_MMAP_Data\fP is set on the \fCflags\fP field
+.IP "\(bu" 2
+\fCKeySet\fP: \fCKS_FLAG_MMAP_STRUCT\fP is set on the \fCflags\fP field
+.IP "\(bu" 2
+\fCKeySetData\fP: \fCKS_FLAG_MMAP_ARRAY\fP is set on the \fCflags\fP field 
+.PP
+

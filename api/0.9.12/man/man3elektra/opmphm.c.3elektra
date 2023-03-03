@@ -1,0 +1,352 @@
+.TH "opmphm.c" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+opmphm.c \- The Order Preserving Minimal Perfect Hash Map\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdbassert\&.h>\fP
+.br
+\fC#include <kdbconfig\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <kdblogger\&.h>\fP
+.br
+\fC#include <kdbmacros\&.h>\fP
+.br
+\fC#include <kdbopmphm\&.h>\fP
+.br
+\fC#include <kdbprivate\&.h>\fP
+.br
+\fC#include <kdbrand\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "size_t \fBopmphmLookup\fP (\fBOpmphm\fP *opmphm, size_t n, const void *name)"
+.br
+.RI "Looks up a element in the OPMPHM\&. "
+.ti -1c
+.RI "int \fBopmphmAssignment\fP (\fBOpmphm\fP *opmphm, OpmphmGraph *graph, size_t n, int defaultOrder)"
+.br
+.RI "Assigns the vertices of the r-uniform r-partite hypergraph\&. "
+.ti -1c
+.RI "int \fBopmphmMapping\fP (\fBOpmphm\fP *opmphm, OpmphmGraph *graph, OpmphmInit *init, size_t n)"
+.br
+.RI "Maps the elements to edges in the r-uniform r-partite hypergraph\&. "
+.ti -1c
+.RI "double \fBopmphmMinC\fP (uint8_t r)"
+.br
+.RI "Provides the minimal \fCc\fP value for a given \fCr\fP "
+.ti -1c
+.RI "uint8_t \fBopmphmOptR\fP (size_t n)"
+.br
+.RI "Provides the optimal \fCr\fP value for a given \fCn\fP "
+.ti -1c
+.RI "double \fBopmphmOptC\fP (size_t n)"
+.br
+.RI "Provides the optimal \fCc\fP value for a given \fCn\fP "
+.ti -1c
+.RI "OpmphmGraph * \fBopmphmGraphNew\fP (\fBOpmphm\fP *opmphm, uint8_t r, size_t n, double c)"
+.br
+.RI "Allocates and initializes the OpmphmGraph\&. "
+.ti -1c
+.RI "void \fBopmphmGraphClear\fP (const \fBOpmphm\fP *opmphm, OpmphmGraph *graph)"
+.br
+.RI "Clears the OpmphmGraph\&. "
+.ti -1c
+.RI "void \fBopmphmGraphDel\fP (OpmphmGraph *graph)"
+.br
+.RI "Deletes the OpmphmGraph\&. "
+.ti -1c
+.RI "\fBOpmphm\fP * \fBopmphmNew\fP (void)"
+.br
+.RI "Allocates and initializes the OPMPHM\&. "
+.ti -1c
+.RI "int \fBopmphmCopy\fP (\fBOpmphm\fP *dest, const \fBOpmphm\fP *source)"
+.br
+.RI "Copies OPMPHM from source to destination\&. "
+.ti -1c
+.RI "int \fBopmphmIsBuild\fP (const \fBOpmphm\fP *opmphm)"
+.br
+.RI "OPMPHM is build\&. "
+.ti -1c
+.RI "void \fBopmphmDel\fP (\fBOpmphm\fP *opmphm)"
+.br
+.RI "Deletes the OPMPHM\&. "
+.ti -1c
+.RI "void \fBopmphmClear\fP (\fBOpmphm\fP *opmphm)"
+.br
+.RI "Clears the OPMPHM\&. "
+.ti -1c
+.RI "ELEKTRA_NO_SANITIZE_UNDEFINED ELEKTRA_NO_SANITIZE_INTEGER ELEKTRA_NO_SANITIZE_ADDRESS uint32_t \fBopmphmHashfunction\fP (const void *key, size_t length, uint32_t initval)"
+.br
+.RI "Hash function By Bob Jenkins, May 2006 http://burtleburtle.net/bob/c/lookup3.c Original name: hashlitte\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+The Order Preserving Minimal Perfect Hash Map\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int opmphmAssignment (\fBOpmphm\fP * opmphm, OpmphmGraph * graph, size_t n, int defaultOrder)"
+
+.PP
+Assigns the vertices of the r-uniform r-partite hypergraph\&. Allocs the memory for the final OPMPHM \fCOpmphm->graph\fP\&. Uses the remove sequence \fCOpmphmGraph->removeSequence\fP, generated during cycle check, to assign each vertex\&. Either with \fCOpmphmEdge->order\fP or the default order, default is the order of \fCOpmphmInit->data\fP\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIgraph\fP the OpmphmGraph 
+.br
+\fIn\fP the number of elements 
+.br
+\fIdefaultOrder\fP boolean flag
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on memory error 
+.RE
+.PP
+
+.SS "void opmphmClear (\fBOpmphm\fP * opmphm)"
+
+.PP
+Clears the OPMPHM\&. The OPMPHM must be successfully created with \fCopmphmNew ()\fP\&. Clears and frees all internal memory of \fBOpmphm\fP, but not \fCOpmphm->hashFunctionSeeds\fP and the \fBOpmphm\fP instance\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.RE
+.PP
+
+.SS "int opmphmCopy (\fBOpmphm\fP * dest, const \fBOpmphm\fP * source)"
+
+.PP
+Copies OPMPHM from source to destination\&. Clears the dest and copies memory and values from source\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIdest\fP the OPMPHM destination 
+.br
+\fIsource\fP the OPMPHM source
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on memory error 
+.RE
+.PP
+
+.SS "void opmphmDel (\fBOpmphm\fP * opmphm)"
+
+.PP
+Deletes the OPMPHM\&. Clears and frees all memory in \fBOpmphm\fP\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.RE
+.PP
+
+.SS "void opmphmGraphClear (const \fBOpmphm\fP * opmphm, OpmphmGraph * graph)"
+
+.PP
+Clears the OpmphmGraph\&. Sets all vertices to 0\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIgraph\fP the OpmphmGraph 
+.RE
+.PP
+
+.SS "void opmphmGraphDel (OpmphmGraph * graph)"
+
+.PP
+Deletes the OpmphmGraph\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIgraph\fP the OpmphmGraph 
+.RE
+.PP
+
+.SS "OpmphmGraph* opmphmGraphNew (\fBOpmphm\fP * opmphm, uint8_t r, size_t n, double c)"
+
+.PP
+Allocates and initializes the OpmphmGraph\&. Graph functions\&.
+.PP
+The OpmphmGraph represents a r-uniform r-partite hypergraph\&. Lazy initializes the \fCopmphm->hashFunctionSeeds\fP with r\&. Calculates also the size of one partition in the r-uniform r-partite hypergraph and stores it in \fCopmphm->componentSize\fP\&. Allocates all memory for the OpmphmGraph\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIr\fP the rUniPar 
+.br
+\fIn\fP the number of elements 
+.br
+\fIc\fP space influencing parameter
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIOpmphmGraph\fP * success 
+.br
+\fINULL\fP memory error 
+.RE
+.PP
+
+.SS "int opmphmIsBuild (const \fBOpmphm\fP * opmphm)"
+
+.PP
+OPMPHM is build\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on false 
+.br
+\fI-1\fP on true or NULL 
+.RE
+.PP
+
+.SS "size_t opmphmLookup (\fBOpmphm\fP * opmphm, size_t n, const void * name)"
+
+.PP
+Looks up a element in the OPMPHM\&. Lookup functions\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIn\fP the number of elements 
+.br
+\fIname\fP the name of the element
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIsize_t\fP the order of the element\&. 
+.RE
+.PP
+
+.SS "int opmphmMapping (\fBOpmphm\fP * opmphm, OpmphmGraph * graph, OpmphmInit * init, size_t n)"
+
+.PP
+Maps the elements to edges in the r-uniform r-partite hypergraph\&. Build functions\&.
+.PP
+Sets the seeds for the opmphmHashfunctions, \fCOpmphmInit->initSeed\fP will be changed\&. Inserts each element as edge in the r-uniform r-partite hypergraph and checks if the graph contains a cycle\&. If there are cycles the \fCgraph\fP will be cleaned
+.PP
+\fBParameters\fP
+.RS 4
+\fIopmphm\fP the OPMPHM 
+.br
+\fIgraph\fP the OpmphmGraph 
+.br
+\fIinit\fP the OpmphmInit 
+.br
+\fIn\fP the number of elements
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP mapping not possible 
+.RE
+.PP
+
+.SS "double opmphmMinC (uint8_t r)"
+
+.PP
+Provides the minimal \fCc\fP value for a given \fCr\fP Functions providing \fCr\fP and \fCc\fP
+.PP
+This minimal values come from Fabiano Cupertino Botelho, Near-Optimal Space Perfect Hashing Algorithms, 2008\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIr\fP the rUniPar
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIc\fP the minimal c value 
+.RE
+.PP
+
+.SS "\fBOpmphm\fP* opmphmNew (void)"
+
+.PP
+Allocates and initializes the OPMPHM\&. Basic functions\&.
+.PP
+\fBReturn values\fP
+.RS 4
+\fI\fBOpmphm\fP\fP * success 
+.br
+\fINULL\fP memory error 
+.RE
+.PP
+
+.SS "double opmphmOptC (size_t n)"
+
+.PP
+Provides the optimal \fCc\fP value for a given \fCn\fP This is a heuristic, the return values follow from the mapping benchmark\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIn\fP the number of elements to hash
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIc\fP the optimal \fCc\fP value 
+.RE
+.PP
+
+.SS "uint8_t opmphmOptR (size_t n)"
+
+.PP
+Provides the optimal \fCr\fP value for a given \fCn\fP This is a heuristic, the return values follow from the mapping benchmark\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIn\fP the number of elements to hash
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIr\fP the optimal rUniPar 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

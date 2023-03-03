@@ -1,0 +1,536 @@
+.TH "kdbprivate.h" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbprivate.h \- Private declarations\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <elektra\&.h>\fP
+.br
+\fC#include <elektra/error\&.h>\fP
+.br
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbextension\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <kdbio\&.h>\fP
+.br
+\fC#include <kdbmacros\&.h>\fP
+.br
+\fC#include <kdbnotificationinternal\&.h>\fP
+.br
+\fC#include <kdbplugin\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+\fC#include <limits\&.h>\fP
+.br
+
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBKEYSET_SIZE\fP   16"
+.br
+.RI "The minimal allocation size of a keyset inclusive NULL byte\&. "
+.ti -1c
+.RI "#define \fBAPPROXIMATE_NR_OF_BACKENDS\fP   16"
+.br
+.RI "Trie optimization\&. "
+.ti -1c
+.RI "#define \fBKDB_MAX_UCHAR\fP   (UCHAR_MAX + 1)"
+.br
+.RI "The maximum value of unsigned char+1, needed for iteration over trie children/values: "
+.ti -1c
+.RI "#define \fBMAX_LEN_INT\fP   31"
+.br
+.RI "The maximum of how many characters an integer needs as decimal number\&. "
+.ti -1c
+.RI "#define \fBKDB_SYSTEM_ELEKTRA\fP   'system:/elektra'"
+.br
+.RI "Backend mounting information\&. "
+.ti -1c
+.RI "#define \fBKDB_CACHE_PREFIX\fP   'system:/elektra/cache'"
+.br
+.RI "All keys below this are used for cache metadata in the global keyset\&. "
+.ti -1c
+.RI "#define \fBtest_bit\fP(var,  bit)   (((unsigned long long) (var)) & ((unsigned long long) (bit)))"
+.br
+.RI "Test a bit\&. "
+.ti -1c
+.RI "#define \fBset_bit\fP(var,  bit)   ((var) |= ((unsigned long long) (bit)))"
+.br
+.RI "Set a bit\&. "
+.ti -1c
+.RI "#define \fBclear_bit\fP(var,  bit)   ((var) &= ~((unsigned long long) (bit)))"
+.br
+.RI "Clear a bit\&. "
+.in -1c
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef struct _BackendData \fBBackendData\fP"
+.br
+.RI "Holds all data for one backend\&. "
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Plugin * \fBelektraPluginOpen\fP (const char *backendname, KeySet *modules, KeySet *config, Key *errorKey)"
+.br
+.RI "Opens a plugin\&. "
+.ti -1c
+.RI "size_t \fBelektraPluginGetFunction\fP (Plugin *plugin, const char *name)"
+.br
+.RI "Retrieves a function exported by a plugin\&. "
+.ti -1c
+.RI "int \fBinitHooks\fP (KDB *kdb, const KeySet *config, KeySet *modules, const KeySet *contract, Key *errorKey)"
+.br
+.RI "Initializes the hooks stored in the passed KDB handle\&. "
+.ti -1c
+.RI "void \fBfreeHooks\fP (KDB *kdb, Key *errorKey)"
+.br
+.RI "Uninitializes and frees all hooks in the passed KDB handle\&. "
+.ti -1c
+.RI "Plugin * \fBelektraFindInternalNotificationPlugin\fP (KDB *kdb)"
+.br
+.RI "This method looks for the hook plugin 'internalnotification'\&. "
+.ti -1c
+.RI "int \fBkeyReplacePrefix\fP (Key *key, const Key *oldPrefix, const Key *newPrefix)"
+.br
+.RI "Replaces a prefix of the key name of \fCkey\fP\&. "
+.ti -1c
+.RI "Key * \fBelektraKsPopAtCursor\fP (KeySet *ks, elektraCursor pos)"
+.br
+.RI "Pop key at given cursor position\&. "
+.ti -1c
+.RI "KeySet * \fBksRenameKeys\fP (KeySet *config, const char *name)"
+.br
+.RI "Takes the first key and cuts off this common part for all other keys, instead name will be prepended\&. "
+.ti -1c
+.RI "ssize_t \fBksRename\fP (KeySet *ks, const Key *root, const Key *newRoot)"
+.br
+.RI "Moves all keys below \fCroot\fP to below \fCnewRoot\fP\&. "
+.ti -1c
+.RI "elektraCursor \fBksFindHierarchy\fP (const KeySet *ks, const Key *root, elektraCursor *end)"
+.br
+.RI "Searches for the start and optionally end of the key hierarchy rooted at \fCroot\fP in \fCks\fP\&. "
+.ti -1c
+.RI "KeySet * \fBksBelow\fP (const KeySet *ks, const Key *root)"
+.br
+.RI "Retrieves all Keys from KeySet \fCks\fP that are below or at \fCroot\fP\&. "
+.ti -1c
+.RI "ssize_t \fBelektraMemcpy\fP (Key **array1, Key **array2, size_t size)"
+.br
+.RI "Internal Methods for Elektra\&. "
+.ti -1c
+.RI "ssize_t \fBelektraMemmove\fP (Key **array1, Key **array2, size_t size)"
+.br
+.RI "Copies the key array2 into where array1 points\&. "
+.ti -1c
+.RI "bool \fBelektraKeyNameValidate\fP (const char *name, bool isComplete)"
+.br
+.RI "Takes an escaped key name and validates it\&. "
+.ti -1c
+.RI "void \fBelektraKeyNameCanonicalize\fP (const char *name, char **canonicalName, size_t *canonicalSizePtr, size_t offset, size_t *usizePtr)"
+.br
+.RI "Takes a valid (non-)canonical key name and produces its canonical form\&. "
+.ti -1c
+.RI "void \fBelektraKeyNameUnescape\fP (const char *name, char *unescapedName)"
+.br
+.RI "Takes a canonical key name and unescapes it\&. "
+.ti -1c
+.RI "size_t \fBelektraKeyNameEscapePart\fP (const char *part, char **escapedPart)"
+.br
+.RI "Takes a single key name part and produces its escaped form\&. "
+.ti -1c
+.RI "int \fBelektraIsArrayPart\fP (const char *namePart)"
+.br
+.RI "Checks if the given key name part is an array part\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorCreate\fP (const char *code, const char *description, const char *module, const char *file, kdb_long_t line)"
+.br
+.RI "Creates a new ElektraError using the provided values\&. "
+.ti -1c
+.RI "void \fBelektraErrorAddWarning\fP (ElektraError *error, ElektraError *warning)"
+.br
+.RI "Adds a warning to an existing ElektraError struct\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorFromKey\fP (Key *key)"
+.br
+.RI "Extracts the error and all warnings from the given key\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorKeyNotFound\fP (const char *keyname)"
+.br
+.RI "Creates a 'Key not found' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorWrongType\fP (const char *keyname, KDBType expectedType, KDBType actualType)"
+.br
+.RI "Creates a 'Wrong type' error\&. "
+.ti -1c
+.RI "ElektraError * \fBelektraErrorNullError\fP (const char *function)"
+.br
+.RI "Creates a 'Null error argument' error\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Private declarations\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define clear_bit(var, bit)   ((var) &= ~((unsigned long long) (bit)))"
+
+.PP
+Clear a bit\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBset_bit()\fP 
+.RE
+.PP
+
+.SS "#define KDB_MAX_UCHAR   (UCHAR_MAX + 1)"
+
+.PP
+The maximum value of unsigned char+1, needed for iteration over trie children/values: for (i=0; i<KDB_MAX_UCHAR; ++i) 
+.SS "#define KDB_SYSTEM_ELEKTRA   'system:/elektra'"
+
+.PP
+Backend mounting information\&. This key directory tells you where each backend is mounted to which mountpoint\&. 
+.SS "#define KEYSET_SIZE   16"
+
+.PP
+The minimal allocation size of a keyset inclusive NULL byte\&. ksGetAlloc() will return one less because it says how much can actually be stored\&. 
+.SS "#define set_bit(var, bit)   ((var) |= ((unsigned long long) (bit)))"
+
+.PP
+Set a bit\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBclear_bit()\fP 
+.RE
+.PP
+
+.SS "#define test_bit(var, bit)   (((unsigned long long) (var)) & ((unsigned long long) (bit)))"
+
+.PP
+Test a bit\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBset_bit()\fP, \fBclear_bit()\fP 
+.RE
+.PP
+
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef struct _BackendData \fBBackendData\fP"
+
+.PP
+Holds all data for one backend\&. This struct is used for the key values in \fB_KDB\&.backends\fP 
+.SH "Function Documentation"
+.PP 
+.SS "void elektraErrorAddWarning (ElektraError * error, ElektraError * warning)"
+
+.PP
+Adds a warning to an existing ElektraError struct\&. If you want to report a warning without an error, create a dummy error with \fBelektraErrorPureWarning()\fP and then add a warning to it\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIerror\fP The error to which \fCwarning\fP shall be added\&. 
+.br
+\fIwarning\fP The warning to add\&. Once added it is owned by \fCerror\fP\&. DO NOT call \fBelektraErrorReset()\fP on it afterwards\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorCreate (const char * code, const char * description, const char * module, const char * file, kdb_long_t line)"
+
+.PP
+Creates a new ElektraError using the provided values\&. The returned value will be allocated with \fBelektraCalloc()\fP\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIcode\fP The error code of the error\&. Will be copied and stored in the struct\&. 
+.br
+\fIdescription\fP The description of the error\&. Will be copied and stored in the struct\&. 
+.br
+\fImodule\fP The module that raised the error\&. Will be copied and stored in the struct\&. 
+.br
+\fIfile\fP The file that raised the error\&. Will be copied and stored in the struct\&. 
+.br
+\fIline\fP The line in which the error was raised\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorFromKey (Key * key)"
+
+.PP
+Extracts the error and all warnings from the given key\&. If no error exists, a pure warning error will be used\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBelektraErrorPureWarning\fP
+.RE
+.PP
+\fBNote\fP
+.RS 4
+Use the functions in \fBsrc/libs/elektra/errors\&.c\fP to add errors to a key\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP The to extract error and warnings from\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorKeyNotFound (const char * keyname)"
+
+.PP
+Creates a 'Key not found' error\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkeyname\fP The name of the key that wasn't found\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorNullError (const char * function)"
+
+.PP
+Creates a 'Null error argument' error\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIfunction\fP The name of the function that was called with a null pointer error argument\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "ElektraError* elektraErrorWrongType (const char * keyname, KDBType expectedType, KDBType actualType)"
+
+.PP
+Creates a 'Wrong type' error\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkeyname\fP The name of the key that had the wrong type\&. 
+.br
+\fIexpectedType\fP The type that was expected\&. 
+.br
+\fIactualType\fP The type that was actually found\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+A newly allocated ElektraError (free with \fBelektraErrorReset()\fP)\&. 
+.RE
+.PP
+
+.SS "Plugin* elektraFindInternalNotificationPlugin (KDB * kdb)"
+
+.PP
+This method looks for the hook plugin 'internalnotification'\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkdb\fP the KDB instance in which to search 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+NULL if not loaded, pointer to the plugin otherwise 
+.RE
+.PP
+
+.SS "Key* elektraKsPopAtCursor (KeySet * ks, elektraCursor pos)"
+
+.PP
+Pop key at given cursor position\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIks\fP the keyset to pop key from 
+.br
+\fIc\fP where to pop
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the popped key 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if ks is 0 
+.RE
+.PP
+
+.SS "ssize_t elektraMemcpy (Key ** array1, Key ** array2, size_t size)"
+
+.PP
+Internal Methods for Elektra\&. To use them: 
+.PP
+.nf
+#include <kdbinternal\&.h>
+
+.fi
+.PP
+.PP
+There are some areas where libraries have to reimplement some basic functions to archive support for non-standard systems, for testing purposes or to provide a little more convenience\&. Copies the key array2 into where array1 points\&. It copies size elements\&.
+.PP
+Overlapping is prohibited, use \fBelektraMemmove()\fP instead\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIarray1\fP the destination 
+.br
+\fIarray2\fP the source 
+.br
+\fIsize\fP how many pointer to Keys to copy 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on null pointers 
+.br
+\fI0\fP if nothing was done 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+size how many keys were copied 
+.RE
+.PP
+
+.SS "ssize_t elektraMemmove (Key ** array1, Key ** array2, size_t size)"
+
+.PP
+Copies the key array2 into where array1 points\&. It copies size elements\&.
+.PP
+Overlapping is ok\&. If they do not overlap consider \fBelektraMemcpy()\fP instead\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIarray1\fP the destination 
+.br
+\fIarray2\fP the source 
+.br
+\fIsize\fP how many pointer to Keys to copy 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on null pointers 
+.br
+\fI0\fP if nothing was done 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+size how many keys were copied 
+.RE
+.PP
+
+.SS "size_t elektraPluginGetFunction (Plugin * plugin, const char * name)"
+
+.PP
+Retrieves a function exported by a plugin\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIplugin\fP Plugin handle 
+.br
+\fIname\fP Function name\&. Must be a valid key name suffix\&. May not contain the sequence '\&.\&.' 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+Pointer to function\&. NULL if function not found or not enough memory available 
+.RE
+.PP
+
+.SS "Plugin* elektraPluginOpen (const char * name, KeySet * modules, KeySet * config, Key * errorKey)"
+
+.PP
+Opens a plugin\&. The config will be used as is\&. So be sure to transfer ownership of the config to it, with e\&.g\&. \fBksDup()\fP\&. elektraPluginClose() will delete the config\&.
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to a new created plugin or 0 on error 
+.RE
+.PP
+
+.SS "void freeHooks (KDB * kdb, Key * errorKey)"
+
+.PP
+Uninitializes and frees all hooks in the passed KDB handle\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkdb\fP the KDB handle where the hooks should be freed 
+.br
+\fIerrorKey\fP the key which holds errors and warnings which were issued 
+.RE
+.PP
+
+.SS "int initHooks (KDB * kdb, const KeySet * config, KeySet * modules, const KeySet * contract, Key * errorKey)"
+
+.PP
+Initializes the hooks stored in the passed KDB handle\&. If the handle already contains initialized hooks, they will be reinitialized, including unloading and loading of their plugins\&. Parameters \fCconfig\fP and \fCcontract\fP will be used to determine which hooks to populate\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkdb\fP the KDB instance where the hooks should be initialized 
+.br
+\fIconfig\fP KeySet containing the current config in \fCsystem:/elektra\fP namespace 
+.br
+\fImodules\fP the current list of loaded modules 
+.br
+\fIcontract\fP the contract passed to \fCkdbOpen\fP 
+.br
+\fIerrorKey\fP the key which holds errors and warnings which were issued 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on failure 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

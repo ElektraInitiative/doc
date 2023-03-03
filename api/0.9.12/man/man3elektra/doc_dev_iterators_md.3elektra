@@ -1,0 +1,132 @@
+.TH "doc_dev_iterators_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_iterators_md \- Migrating from internal to external KeySet iterators 
+ The deprecated internal iterator are removed and replaced with external iteration\&.
+.SH "Interactions with users"
+.PP
+Developers of plugins should already use the external iterators instead of the internal ones\&. However, following functions will be removed:
+.PP
+.PP
+.nf
+int ksRewind (KeySet *ks);
+Key *ksNext (KeySet *ks);
+Key *ksCurrent (const KeySet *ks);
+
+elektraCursor ksGetCursor (const KeySet *ks);
+int ksSetCursor (KeySet *ks, elektraCursor cursor);
+
+int keyRewindMeta (Key *key);
+const Key *keyNextMeta (Key *key);
+const Key *keyCurrentMeta (const Key *key);
+.fi
+.PP
+.SH "The Architecture"
+.PP
+Every occurrence of using the internal iterator has to be replaced with the external iterator (see #4281)\&. The functions of the internal iterator are listed in #3171\&. There are also some uses of the internal iterator found in the SWIG bindings (Lua, Ruby, Python) that also need removal (see #4279)\&.
+.SS "Internal vs\&. external Iterators"
+When the client (i\&.e\&. the programmer) controls the iteration, the iterator is called external iterator\&. Otherwise, when the iterator controls the iteration, it is called internal iterator\&. Due to the fact that external iterators are more flexible the internal iterators are the way to go\&.
+.SH "Examples"
+.PP
+An example for using an external iterator is:
+.PP
+.PP
+.nf
+for (elektraCursor it = 0; it < ksGetSize (ks); ++it)
+{
+    Key * cur = ksAtCursor (ks, it);
+    // [loop body]
+}
+.fi
+.PP
+.PP
+You can obtain the \fCKey\fP at a specific position in the \fCKeySet\fP and the overall size of the \fCKeySet\fP\&.
+.PP
+If you want to delete \fCKey\fPs during the iteration of a \fCKeySet\fP, be aware that all keys after the deleted \fCKey\fP are moved one slot forward, so maybe you have to change to value of \fCit\fP after deleting a \fCKey\fP:
+.PP
+.PP
+.nf
+for (elektraCursor it = 0; it < ksGetSize (ks); ++it)
+{
+    Key * cur = ksAtCursor (ks, it);
+    if ( shouldKeyGetDeleted (cur))
+    {
+            keyDel (cur);
+            --it; //next key is now at the position of the current key which was deleted
+    }
+}
+.fi
+.PP
+.PP
+For such scenarios, it is also important that you recalculate the size with \fCksGetSize ()\fP within the loop-header or explicitly after changing the \fCKeySet\fP, e\&.g\&. by deleting a \fCKey\fP\&.
+.PP
+That should be all you need for iterating over keys\&. For future releases, the function \fCksAtCursor\fP will be renamed to \fCksAt\fP\&. (see issue #3976)
+.PP
+You can iterate over metakeys in a similar fashion as long as you iterate over a \fCKeySet\fP, e\&.g\&., \fCkeyMeta('my_key')\fP returns a \fCKeySet\fP of metakeys\&.
+.PP
+The following is a comprehension of how to use iterators in various languages\&.
+.SS "C"
+.PP
+.nf
+for (elektraCursor it = 0; it < ksGetSize (ks); ++it)
+{
+    Key * cur = ksAtCursor (ks, it);
+    // \&.\&.\&.
+}
+.fi
+.PP
+.SS "C++"
+C-style fashioned loop:
+.PP
+.PP
+.nf
+for (elektraCursor it = 0; it < ks\&.size (); ++it)
+{
+        Key key = ks\&.at(it);
+        // \&.\&.\&.
+}
+.fi
+.PP
+.PP
+Real iterators the C++ interface supports:
+.PP
+.PP
+.nf
+for (KeySet::iterator i = ks3\&.begin(); i != ks3\&.end(); ++i)
+{
+        Key key(*i);
+        // \&.\&.\&.
+}
+.fi
+.PP
+.SS "Python"
+.PP
+.nf
+size = ksSize(keySet)
+for cursor in range(size):
+        key = ksAt(keySet, cursor)
+        # \&.\&.\&.
+.fi
+.PP
+.SS "Lua"
+.PP
+.nf
+size = kdb\&.ksSize(keySet);
+if size > 0 then
+        for i = 1, size do
+                key = kdb\&.ksAt(keySet, i - 1)
+                -- \&.\&.\&.
+        end
+end
+.fi
+.PP
+.SS "Ruby"
+.PP
+.nf
+keySet\&.each do |key|
+        # \&.\&.\&.
+end
+.fi
+.PP
+ 

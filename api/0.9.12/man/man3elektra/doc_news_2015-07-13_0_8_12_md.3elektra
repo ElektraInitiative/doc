@@ -1,0 +1,272 @@
+.TH "doc_news_2015-07-13_0_8_12_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2015-07-13_0_8_12_md \- 0\&.8\&.12 Release 
+
+.IP "\(bu" 2
+guid: 98770541-32a1-486a-98a1-d02f26afc81a
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Sun, 12 Jul 2015 20:14:09 +0200
+.IP "\(bu" 2
+shortDesc: adds directory namespace & other improvements and fixes
+.PP
+.PP
+Again we managed to release with new features, many build system fixes and also other improvements\&.
+.SH "dir namespace"
+.PP
+This namespace adds per-project or per-directory (hence the name) configurations\&. E\&.g\&. think how Git works: not only /etc and ~ are relevant sources for configuration but also the nearest \&.git directory\&.
+.PP
+This technique is, however, much more widely useful than just for git repositories! Nearly every application can benefit from such a per-dir configuration\&. Its almost certain that you have already run into the problem that different projects have different guidelines (e\&.g\&. coding conventions, languages, whitespace requirements, line breaks, \&.\&.)\&. Obviously, thats not a per-user configuration and its also not a per-file issue (thats how its usually solved today)\&. So in fact you want, e\&.g\&., your editor to have an additional per-project layer to choose between such settings\&.
+.PP
+The technique is useful for nearly every other tool:
+.PP
+.IP "\(bu" 2
+different color palettes in gimp, inkscape,\&.\&.
+.IP "\(bu" 2
+different languages for LibreOffice
+.IP "\(bu" 2
+different security settings for media players, interpreters (e\&.g\&. when in Download folder)
+.IP "\(bu" 2
+per-folder \&.htaccess in apache or other web servers
+.IP "\(bu" 2
+any other per-dir configuration you can imagine\&.\&.
+.PP
+.PP
+It is simple to use, also for the administrative side\&. First, change to the folder to your folder (e\&.g\&. where a project is):
+.PP
+.PP
+.nf
+cd ~/projects/abc
+.fi
+.PP
+.PP
+Then add some user (or system or spec) configuration to have some default\&.
+.PP
+.PP
+.nf
+kdb set user/sw/editor/textwidth 72
+.fi
+.PP
+.PP
+Then verify that we get this value back when we do a cascading lookup:
+.PP
+.PP
+.nf
+kdb get /sw/editor/textwidth
+.fi
+.PP
+.PP
+The default configuration file for the dir-namespace is \fCpwd\fP/KDB_DB_DIR/filename:
+.PP
+.PP
+.nf
+kdb file dir/sw/editor/textwidth
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+KDB_DB_DIR can be modified at compile-time and is \fC\&.dir\fP per default
+.IP "\(bu" 2
+filename can be modified by mounting, see below, and is \fCdefault\&.ecf\fP by default
+.PP
+.PP
+We assume, that the project abc has the policy to use textwidth 120, so we change the dir-configuration:
+.PP
+.PP
+.nf
+kdb set dir/sw/editor/textwidth 120
+.fi
+.PP
+.PP
+Now we will get the value 120 in the folder ~/projects/abc and its subdirectories (!), but everywhere else we still get 72:
+.PP
+.PP
+.nf
+kdb get /sw/editor/textwidth
+.fi
+.PP
+.PP
+Obviously, that does not only work with kdb, but with every elektrified tool\&.
+.SS "mount files in dir namespaces"
+For cascading mountpoints, the dir name is also automatically mounted, e\&.g\&.:
+.PP
+.PP
+.nf
+kdb mount editor\&.ini /sw/editor ini
+.fi
+.PP
+.PP
+But its also possible to only mount for the namespace dir if no cascading mountpoint is present already:
+.PP
+.PP
+.nf
+kdb mount app\&.ini dir/sw/app tcl
+.fi
+.PP
+.PP
+In both cases keys below dir/sw/editor would be in the INI file \fC\&.dir/editor\&.ini\fP and not in the file \fC\&.dir/default\&.ecf\fP\&.
+.SS "dir together with spec namespace"
+In the project P we had the following issue: We needed on a specific computer the configuration in /etc to be used in favor of the dir config\&.
+.PP
+We could easily solve the problem using the specification:
+.PP
+.PP
+.nf
+kdb setmeta spec/sw/P/current/org/base override/#0 /sw/P/override/org/base
+.fi
+.PP
+.PP
+Hence, we could create system/sw/P/override/org/base which would be in favor of dir/sw/P/current/org/base\&. So we get system/sw/P/override/org/base when we do:
+.PP
+.PP
+.nf
+kdb get /sw/P/current/org/base
+.fi
+.PP
+.PP
+Alternatively, one could also use the specification:
+.PP
+.PP
+.nf
+kdb setmeta spec/sw/P/current/org/base namespace/#0 user
+kdb setmeta spec/sw/P/current/org/base namespace/#1 system
+kdb setmeta spec/sw/P/current/org/base namespace/#2 dir
+.fi
+.PP
+.PP
+Which makes dir the namespace with the least priority and system would be preferred\&. This was less suitable for our purpose, because we needed the override only on one computer\&. For all other computers we wanted dir to be preferred with only one specification\&.
+.SS "Conclusion"
+The great thing is, that every elektrified application, automatically gets all the mentioned features\&. Not even a recompilation of the application is necessary\&.
+.PP
+Especially the specification provides flexibility not present in other configuration systems\&.
+.SH "Qt-Gui 0\&.0\&.7"
+.PP
+Raffael Pancheri again did a lot of stabilizing work:
+.PP
+.IP "\(bu" 2
+show errormessage on exception when starting gui
+.IP "\(bu" 2
+Correctly update keyAreaView property when selecting item in TreeView
+.IP "\(bu" 2
+Fix crash when creating key in MountingWizard
+.IP "\(bu" 2
+Remove information on successful export
+.IP "\(bu" 2
+Show error dialog on failed import
+.IP "\(bu" 2
+Remove namefilters (every syntax can have any file extension)
+.IP "\(bu" 2
+other namespaces (including dir) are included
+.PP
+.PP
+The GUI can be handy for many purposes, e\&.g\&. we use it already as xml and json editor\&. Note that there are still \fCsome bugs\fP\&.
+.SH "Other fixes"
+.PP
+.IP "\(bu" 2
+constants now additionally gives information about SPEC and DIR\&.
+.IP "\(bu" 2
+Doku about CMake variables \fCELEKTRA_DEBUG_BUILD\fP and \fCELEKTRA_VERBOSE_BUILD\fP fixed, thanks to Kurt Micheli
+.IP "\(bu" 2
+Fixed compilation of \fCELEKTRA_DEBUG_BUILD\fP and \fCELEKTRA_VERBOSE_BUILD\fP, thanks to Manuel Mausz
+.IP "\(bu" 2
+Example with error handling added, thanks to Kurt Micheli
+.IP "\(bu" 2
+Add design decision about global plugins
+.IP "\(bu" 2
+Split dependencies document to individual README\&.md, thanks to Ian Donnelly
+.IP "\(bu" 2
+Fix nearly all compilation warnings of SWIG, thanks to Manuel Mausz
+.IP "\(bu" 2
+CMake: Fix gtest to be build if \fCBUILD_TESTING\fP activated, but not \fCENABLE_TESTING\fP
+.IP "\(bu" 2
+CMake: Allow compilation without BUILD_STATIC
+.IP "\(bu" 2
+Explain compilation options more, thanks to Kai-Uwe Behrmann for asking the question
+.IP "\(bu" 2
+CMake: always build examples, allow one to only build documentation
+.IP "\(bu" 2
+add common header file for C++ plugins (used by plugins struct and type)
+.IP "\(bu" 2
+fix compilation of race tool under oS-11\&.4 thanks to Kai-Uwe Behrmann
+.IP "\(bu" 2
+CMake: find python3 correctly
+.IP "\(bu" 2
+CMake: fix BUILD_SHARED_LIBS
+.IP "\(bu" 2
+Doxygen: remove \fCHTML_TIMESTAMP\fP to make build reproduceable
+.IP "\(bu" 2
+Doxygen: rewrite of main page+add info about all five namespaces
+.IP "\(bu" 2
+CMake: allow one to use qt-gui with qt built with -reduce-relocations
+.IP "\(bu" 2
+fix kdb ls, get to list warnings during open
+.IP "\(bu" 2
+during \fBkdbOpen()\fP use Configfile: to state phase
+.IP "\(bu" 2
+add -f option to kdb check+improve docu
+.IP "\(bu" 2
+improve readability of warning output
+.IP "\(bu" 2
+run_all always uses dump for backups
+.IP "\(bu" 2
+line plugin round-trips correctly
+.IP "\(bu" 2
+untypical resolvers have their non-existant filename handled correctly + sync ignored them correctly
+.IP "\(bu" 2
+cmake-3\&.0 fixes
+.IP "\(bu" 2
+cascading merging, a big thanks to Felix Berlakovich for the last minute fix
+.PP
+.SH "Compatibility"
+.PP
+As always, the API and API is fully compatible\&. Because nothing was added, its even possible to link against an older version of Elektra (if compiled against 0\&.8\&.12)\&.
+.PP
+In plugins some small changes may effect compatibility:
+.PP
+.IP "\(bu" 2
+in rename the handling of parent key is different (see #206)
+.IP "\(bu" 2
+resolving of spec absolute and relative paths are no more handled identical\&. Instead absolute paths will be searched absolutely, while relatives are below KDB_DB_SPEC (as before)\&. This behavior is consistent to the behavior of the other namespaces\&.
+.PP
+.PP
+These two points are also the only unit tests that fail when Elektra 0\&.8\&.12 is used with 0\&.8\&.11 unit tests\&.
+.SH "Build Server"
+.PP
+.IP "\(bu" 2
+special GitHub command to build bindings 'jenkins build bindings please', thanks to Manuel Mausz
+.IP "\(bu" 2
+open build service update For \fCOpenSUSE, CentOS, Fedora, RHEL and SLE\fP Kai-Uwe Behrmann kindly provides packages \fCfor download\fP\&.
+.PP
+.SH "Get It!"
+.PP
+You can download the release from \fChere\fP and now also \fChere on GitHub\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.12\&.tar\&.gz
+.IP "\(bu" 2
+size: 2102450
+.IP "\(bu" 2
+md5sum: a40a33ae6661ebfa096378f0986ede6c
+.IP "\(bu" 2
+sha1: 3594ef58b6e3b0ffa9589d787679b6e739fbb0dd
+.IP "\(bu" 2
+sha256: 562432bea9455a61ff6e6b3263078ea9b26bef2ed177a04b5f9b181d605bc021
+.PP
+.PP
+This release tarball now is also available \fCsigned by me using gpg\fP
+.PP
+already built API documentation can be found \fChere\fP
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the \fCMailing List\fP the issue tracker \fCon GitHub\fP or by mail elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see https://libelektra.org
+.PP
+Best regards, Markus 

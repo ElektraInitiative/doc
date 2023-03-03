@@ -1,0 +1,48 @@
+\label{doc_help_kdb-mount-java_md_md_doc_help_kdb_mount_java}%
+\Hypertarget{doc_help_kdb-mount-java_md_md_doc_help_kdb_mount_java}%
+ \hypertarget{doc_help_kdb-mount-java_md_autotoc_md2964}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-mount-java_md_autotoc_md2964}
+{\ttfamily kdb mount-\/java \mbox{[}$<$path$>$ $<$mount point$>$\mbox{]} \mbox{[}$<$plugin$>$ \mbox{[}$<$config$>$\mbox{]} \mbox{[}..\mbox{]}\mbox{]}}
+
+All options except {\ttfamily $<$plugin$>$} are passed directly to {\ttfamily kdb mount}. For details on these options see \mbox{\hyperlink{doc_help_kdb-mount_md}{\`{}kdb-\/mount(1)\`{}}}.
+
+The {\ttfamily $<$plugin$>$} arguments are preprocessed before they are passed to {\ttfamily kdb mount}. If a {\ttfamily $<$plugin$>$} argument starts with {\ttfamily java\+:}, it is interpreted as a fully-\/qualified Java class name. The script replaces these {\ttfamily java\+:$\ast$} arguments with the appropriate arguments for {\ttfamily kdb mount} (see below).
+
+{\ttfamily $<$plugin$>$} arguments that start with {\ttfamily kdb\+:} or have no prefix, are passed to {\ttfamily kdb mount} as is (after removing the optional {\ttfamily kdb\+:} prefix). The {\ttfamily kdb\+:} prefix exists to avoid potential name collisions between a Java plugin and C plugin.\hypertarget{doc_help_kdb-mount-java_md_autotoc_md2965}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-mount-java_md_autotoc_md2965}
+This helper command exists, because (unlike a \char`\"{}normal\char`\"{} C plugin) mounting a Java plugin requires multiple arguments. This is because you actually need to mount the {\ttfamily process} plugin with the correct configuration for a Java plugin.
+
+The following command mounts the C plugins {\ttfamily dump} and {\ttfamily type} together with the Java plugin {\ttfamily org.\+libelektra.\+plugin.\+Whitelist\+Plugin} with the file {\ttfamily config.\+file} at {\ttfamily user\+:/tests/process}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount-\/java config.file user:/tests/process kdb:dump java:org.libelektra.plugin.WhitelistPlugin type}
+
+\end{DoxyCode}
+
+
+This internally expands to (something like) this complicated snippet\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB\_VERSION="{}\$(kdb -\/-\/version | sed -\/nE 's/KDB\_VERSION: (.+)/\(\backslash\)1/gp')"{}}
+\DoxyCodeLine{sudo kdb mount config.file user:/tests/process dump process "{}executable=\$(command -\/v java)"{} 'args=\#3' 'args/\#0=-\/cp' "{}args/\#1=/usr/share/java/libelektra-\/\$KDB\_VERSION-\/all.jar:/usr/share/java/process-\/\$KDB\_VERSION.jar:/usr/share/java/whitelist-\/\$KDB\_VERSION.jar"{} 'args/\#2=org.libelektra.process.PluginProcess' 'args/\#3=org.libelektra.plugin.WhitelistPlugin' type}
+
+\end{DoxyCode}
+
+
+As you can see, every argument for a Java plugin is replaced by several arguments. Even worse, the arguments depend on how Elektra is installed on your system. The {\ttfamily mount-\/java} knows where Elektra\textquotesingle{}s JARs are installed ({\ttfamily /usr/share/java} above) and constructs a classpath argument for the JVM. It also chooses the {\ttfamily Plugin\+Process} class as the main class and finally instructs this class to load the {\ttfamily Whitelist\+Plugin}.
+
+However, {\ttfamily mount-\/java} isn\textquotesingle{}t magic and it only works this smoothly for plugins that come bundled with Elektra. If you have external plugins, you must also specify the additional classpath for these plugins like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export CLASSPATH=/path/to/foo.jar:/path/to/bar.jar}
+\DoxyCodeLine{sudo -\/-\/preserve-\/env=CLASSPATH kdb mount-\/java config.file user:/tests/foobar java:org.example.Foo java:org.example.Bar java:org.libelektra.plugin.WhitelistPlugin}
+
+\end{DoxyCode}
+
+
+Here we added {\ttfamily /path/to/foo.jar} and {\ttfamily /path/to/bar.jar} to the classpath, so that the classes {\ttfamily org.\+example.\+Foo} and {\ttfamily org.\+example.\+Bar} can be found. We can still use {\ttfamily org.\+libelektra.\+plugin.\+Whitelist\+Plugin}, because Elektra\textquotesingle{}s JARs are always added to the classpath.\hypertarget{doc_help_kdb-mount-java_md_autotoc_md2966}{}\doxysection{SEE ALSO}\label{doc_help_kdb-mount-java_md_autotoc_md2966}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_kdb-mount_md}{kdb-\/mount(1)}}. 
+\end{DoxyItemize}

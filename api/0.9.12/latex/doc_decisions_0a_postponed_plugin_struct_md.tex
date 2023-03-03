@@ -1,0 +1,53 @@
+\label{doc_decisions_0a_postponed_plugin_struct_md_md_doc_decisions_0a_postponed_plugin_struct}%
+\Hypertarget{doc_decisions_0a_postponed_plugin_struct_md_md_doc_decisions_0a_postponed_plugin_struct}%
+ \hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1834}{}\doxysection{Problem}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1834}
+{\ttfamily struct \+\_\+\+Plugin} contains some unnecessary data.\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1835}{}\doxysection{Constraints}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1835}
+\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1836}{}\doxysection{Assumptions}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1836}
+\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1837}{}\doxysection{Considered Alternatives}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1837}
+\begin{quote}
+{\bfseries{Note}}\+: Not all of these are alternatives, most of them could be combined. \end{quote}
+
+\begin{DoxyEnumerate}
+\item Replace {\ttfamily Key\+Set $\ast$ global} and {\ttfamily Key\+Set $\ast$ modules} with {\ttfamily KDB $\ast$ kdb}.
+
+This would require changing the {\ttfamily elektra\+Plugin\+Open} API to take a {\ttfamily KDB $\ast$ kdb}, or a {\ttfamily Plugin $\ast$ existing} from which we extract the {\ttfamily KDB $\ast$} (the first plugin could use a stack allocated {\ttfamily Plugin} with just {\ttfamily KDB $\ast$} set).
+\item Replace all the {\ttfamily kdb$\ast$} function pointers and {\ttfamily char $\ast$ name} with a {\ttfamily Key\+Set $\ast$ contract}.
+
+The contract also contains the function pointers, so this avoids duplication and should reduce memory usage. This could potentially affect runtime performance, because instead of having a pointer directly, we need to first do a lookup in a keyset.
+\item Remove {\ttfamily size\+\_\+t refcounter}.
+
+Plugins are never shared between mountpoints. There is also no way of increasing {\ttfamily refcounter} via the API.
+\item (Based on all above) Change how {\ttfamily struct \+\_\+\+Plugin} is used.
+
+This is the most comprehensive change, it combines all the above to remove as much duplication as possible. It consists of these parts\+:
+\begin{DoxyItemize}
+\item Create a {\ttfamily struct \+\_\+\+Plugin\+Data} that will be used in {\ttfamily struct \+\_\+\+Backend\+Data} instead of {\ttfamily struct \+\_\+\+Plugin}.
+
+\`{}\`{}\`{}c struct \+\_\+\+Plugin\+Data \{ Key\+Set $\ast$ config; // config of plugin void $\ast$ data; // private data of plugin char $\ast$ name; // name of the plugin \}; \`{}\`{}\`{}
+
+The {\ttfamily name} is needed to get the correct functions from {\ttfamily kdb-\/$>$contracts} (see below).
+\item Change {\ttfamily struct \+\_\+\+Plugin} to the following and use stack allocated instances created when calling a plugin function.
+
+\`{}\`{}\`{}c struct \+\_\+\+Plugin \{ Key\+Set $\ast$ config; // copied from struct \+\_\+\+Plugin\+Data void $\ast$ data; // copied from struct \+\_\+\+Plugin\+Data KDB $\ast$ kdb; // pointer to KDB instance calling this plugin right now, may be copied from other plugin calling this plugin \}; \`{}\`{}\`{}
+\item Add a {\ttfamily Key\+Set $\ast$ contracts} to {\ttfamily struct \+\_\+\+KDB}. This contains all the contracts for all the plugins currently loaded.
+
+To call a plugin function you need an existing {\ttfamily Plugin $\ast$} from which the {\ttfamily KDB $\ast$ kdb} will be taken. Then the function will be looked up in {\ttfamily kdb-\/$>$contracts}. Inside {\ttfamily libelektra-\/kdb} the existing {\ttfamily Plugin $\ast$} is faked with a stack allocated {\ttfamily struct \+\_\+\+Plugin} containing only a {\ttfamily KDB $\ast$}.
+
+$>$ {\bfseries{Note}} If the changes to {\ttfamily Key\+Set $\ast$ modules} from the \mbox{\hyperlink{doc_decisions_0_drafts_plugin_contract_function_md}{Plugin Contract Function}}Plugin Contract Function\char`\"{}\char`\"{} decision are implemented, then {\ttfamily kdb-\/$>$contracts} becomes {\ttfamily kdb-\/$>$modules}.
+\end{DoxyItemize}
+\item Introduce a new {\ttfamily Key\+Set $\ast$ shared} for sharing data among plugins of a single backend.
+
+This is similar to {\ttfamily Key\+Set $\ast$ global}, but not shared between different mountpoints. The {\ttfamily Key\+Set $\ast$ shared} would be a copy of the one in {\ttfamily struct \+\_\+\+Backend\+Data} (also new field), which owns the {\ttfamily Key\+Set}.
+
+This solves the issue that {\ttfamily libelektra-\/kdb} must currently use {\ttfamily Key\+Set $\ast$ global} to communicate extra data like the plugins belonging to a backend (for access in backend plugins).
+
+When combined with the stack allocated {\ttfamily struct \+\_\+\+Plugin} from option 4, this would not affect memory usage as much as otherwise. In that case, it would only be one {\ttfamily struct \+\_\+\+Key\+Set} per backend, when otherwise we would also add one pointer for every loaded plugin instance.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1838}{}\doxysection{Decision}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1838}
+Don\textquotesingle{}t do anything for 1.\+0.\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1839}{}\doxysection{Rationale}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1839}
+\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1840}{}\doxysection{Implications}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1840}
+\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1841}{}\doxysection{Related Decisions}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1841}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_0_drafts_plugin_contract_function_md}{Plugin Contract Function}}
+\item \mbox{\hyperlink{doc_decisions_0_drafts_commit_function_md}{Commit Function}}
+\end{DoxyItemize}\hypertarget{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1842}{}\doxysection{Notes}\label{doc_decisions_0a_postponed_plugin_struct_md_autotoc_md1842}

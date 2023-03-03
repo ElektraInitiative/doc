@@ -1,0 +1,73 @@
+.TH "md_src_plugins_ipaddr_README" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_ipaddr_README \- Plugin: ipaddr 
+
+.IP "\(bu" 2
+infos = Information about the ipaddr plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep
+.IP "\(bu" 2
+infos/metadata = check/ipaddr
+.IP "\(bu" 2
+infos/description = Validation for IP addresses
+.PP
+.SH "IP Address Validation"
+.PP
+.SS "Introduction"
+This plugin validates IP addresses using regular expressions\&.
+.SS "Installation"
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SS "Usage"
+.PP
+.nf
+# Mount `ipaddr` plugin to cascading namespace `/tests/ipaddr`
+kdb mount config\&.dump /tests/ipaddr dump ipaddr
+
+# Check the validity of the IP stored in `system:/tests/ipaddr/ipv4`
+kdb meta-set spec:/tests/ipaddr/ipv4 check/ipaddr ipv4
+
+# Try to set an incorrect IP address
+kdb set system:/tests/ipaddr/ipv4 127\&.0\&.0\&.1337
+# STDERR: \&.*Validation Semantic\&.*
+# ERROR:  C03200
+# RET:    5
+
+# Set a correct IPv4 address
+kdb set system:/tests/ipaddr/ipv4 127\&.0\&.0\&.1
+kdb get system:/tests/ipaddr/ipv4
+#> 127\&.0\&.0\&.1
+
+# By default the plugin allows both IPv4 and IPv6 addresses
+kdb meta-set spec:/tests/ipaddr/address check/ipaddr ""
+
+# Set correct IP addresses
+kdb set system:/tests/ipaddr/address 1\&.2\&.3\&.4
+kdb set system:/tests/ipaddr/address ::1
+
+# Try to set incorrect addresses
+kdb set system:/tests/ipaddr/address bad::ip
+# RET: 5
+kdb set system:/tests/ipaddr/address 1\&.2\&.-3\&.4
+# RET: 5
+
+# Undo modifications to the database
+kdb rm -r /tests/ipaddr
+kdb umount /tests/ipaddr
+.fi
+.PP
+.SS "Limitations"
+The plugin only checks IP addresses for validity\&. It is not able to resolve hostnames\&. If you are looking for a plugin that supports hostnames, check out the \fBnetwork plugin\fP\&. 

@@ -1,0 +1,87 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the blacklist plugin is in keys below
+\item infos/author = Robert Sowula \href{mailto:robert@sowula.at}{\texttt{ robert@sowula.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = check
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep
+\item infos/metadata = check/blacklist/\#
+\item infos/description = blacklisting key values
+\end{DoxyItemize}\hypertarget{md_src_plugins_blacklist_README_src_plugins_blacklist_README_md}{}\doxysection{Introduction}\label{md_src_plugins_blacklist_README_src_plugins_blacklist_README_md}
+This plugin is a blacklist plugin that blocks the assignment of specific values to a key.\hypertarget{md_src_plugins_blacklist_README_autotoc_md68}{}\doxysection{Usage}\label{md_src_plugins_blacklist_README_autotoc_md68}
+The plugin looks for the metadata array {\ttfamily check/blacklist/\#} and reject all matching key values.
+
+For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{check/blacklist = \#2}
+\DoxyCodeLine{check/blacklist/\#0 = water}
+\DoxyCodeLine{check/blacklist/\#1 = fire}
+\DoxyCodeLine{check/blacklist/\#2 = air}
+
+\end{DoxyCode}
+
+
+All values in the array will be rejected. The array indices don\textquotesingle{}t have to be continuous, using e.\+g. only {\ttfamily \#1}, {\ttfamily \#2} and {\ttfamily \#4} is also allowed. Just make sure {\ttfamily check/blacklist} is set to the largest index in the array.\hypertarget{md_src_plugins_blacklist_README_autotoc_md69}{}\doxysection{Installation}\label{md_src_plugins_blacklist_README_autotoc_md69}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_blacklist_README_autotoc_md70}{}\doxysection{Examples}\label{md_src_plugins_blacklist_README_autotoc_md70}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount blacklist.ecf /tests/blacklist blacklist}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# valid initial value + setup valid blacklist list}
+\DoxyCodeLine{kdb set user:/tests/blacklist "{}"{}}
+\DoxyCodeLine{kdb set user:/tests/blacklist/value water}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/blacklist/value check/blacklist '\#2'}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/blacklist/value check/blacklist/\#0 fire}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/blacklist/value check/blacklist/\#1 air}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/blacklist/value check/blacklist/\#2 cold/water}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should succeed}
+\DoxyCodeLine{kdb set user:/tests/blacklist/value earth}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set user:/tests/blacklist/value fire}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set user:/tests/blacklist/value air}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set user:/tests/blacklist/value cold/water}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+
+\end{DoxyCode}
+
+
+It is also possible to blacklist empty values\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/blacklist/empty water}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/blacklist/empty check/blacklist '\#0'}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/blacklist/empty check/blacklist/\#0 ''}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should succeed}
+\DoxyCodeLine{kdb set user:/tests/blacklist/empty earth}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set user:/tests/blacklist/empty ''}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{\# ERROR:C03200}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo changes}
+\DoxyCodeLine{kdb rm -\/r spec:/tests/blacklist}
+\DoxyCodeLine{kdb rm -\/r user:/tests/blacklist || kdb rm -\/r system:/tests/blacklist}
+\DoxyCodeLine{\# sudo kdb umount spec:/tests/blacklist}
+\DoxyCodeLine{sudo kdb umount /tests/blacklist}
+
+\end{DoxyCode}
+ 

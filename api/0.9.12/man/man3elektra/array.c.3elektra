@@ -1,0 +1,212 @@
+.TH "array.c" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+array.c \- Array methods\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbease\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <kdbprivate\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+\fC#include <ctype\&.h>\fP
+.br
+\fC#include <errno\&.h>\fP
+.br
+\fC#include <limits\&.h>\fP
+.br
+\fC#include <stdio\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraArrayValidateName\fP (const Key *key)"
+.br
+.RI "validate array syntax "
+.ti -1c
+.RI "int \fBelektraArrayValidateBaseNameString\fP (const char *baseName)"
+.br
+.RI "validate array syntax "
+.ti -1c
+.RI "int \fBelektraArrayIncName\fP (Key *key)"
+.br
+.RI "Increment the name of the key by one\&. "
+.ti -1c
+.RI "int \fBelektraArrayDecName\fP (Key *key)"
+.br
+.RI "Decrement the name of an array key by one\&. "
+.ti -1c
+.RI "KeySet * \fBelektraArrayGet\fP (const Key *arrayParent, KeySet *keys)"
+.br
+.RI "Return all the array keys below the given array parent\&. "
+.ti -1c
+.RI "Key * \fBelektraArrayGetNextKey\fP (KeySet *arrayKeys)"
+.br
+.RI "Return the next key in the given array\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Array methods\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraArrayDecName (Key * key)"
+
+.PP
+Decrement the name of an array key by one\&. The alphabetical order will remain intact\&. For example, \fCuser:/abc/\\#_10\fP will be changed to \fCuser:/abc/\\#9\fP\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIThis\fP parameter determines the key name this function decrements\&.
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on error (e\&.g\&. new array index too small, non-valid array) 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "KeySet* elektraArrayGet (const Key * arrayParent, KeySet * keys)"
+
+.PP
+Return all the array keys below the given array parent\&. The array parent itself is not returned\&. For example, if \fCuser:/config/#\fP is an array, \fCuser:/config\fP is the array parent\&. Only the direct array keys will be returned\&. This means that for example \fCuser:/config/#1/key\fP will not be included, but only \fCuser:/config/#1\fP\&.
+.PP
+A new keyset will be allocated for the resulting keys\&. This means that the caller must \fCksDel\fP the resulting keyset\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIarrayParent\fP the parent of the array to be returned 
+.br
+\fIkeys\fP the keyset containing the array keys
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a keyset containing the array keys (if any) 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fINULL\fP on \fCNULL\fP pointers 
+.RE
+.PP
+
+.SS "Key* elektraArrayGetNextKey (KeySet * arrayKeys)"
+
+.PP
+Return the next key in the given array\&. The function will automatically allocate memory for a new key and name it accordingly\&.
+.PP
+\fBPrecondition\fP
+.RS 4
+The supplied keyset must contain only valid array keys\&.
+.RE
+.PP
+The caller has to keyDel the resulting key\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIarrayKeys\fP the array where the new key will belong to
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the new array key on success 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fINULL\fP if the passed array is empty 
+.br
+\fINULL\fP on NULL pointers or if an error occurs 
+.RE
+.PP
+
+.SS "int elektraArrayIncName (Key * key)"
+
+.PP
+Increment the name of the key by one\&. Alphabetical order will remain
+.PP
+e\&.g\&. user:/abc/#9 will be changed to user:/abc/#_10
+.PP
+For the start: user:/abc/# will be changed to user:/abc/#0
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP which base name will be incremented
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on error (e\&.g\&. array too large, non-valid array) 
+.br
+\fI0\fP on success 
+.RE
+.PP
+
+.SS "int elektraArrayValidateBaseNameString (const char * baseName)"
+
+.PP
+validate array syntax 
+.PP
+\fBParameters\fP
+.RS 4
+\fIbaseName\fP the supposed array element basename
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if no array element/syntax error/no key 
+.br
+\fI0\fP if start 
+.br
+\fIoffsetIndex\fP otherwise, where \fCoffsetIndex\fP stores the offset to the first digit of the array index of \fCbaseName\fP 
+.RE
+.PP
+
+.SS "int elektraArrayValidateName (const Key * key)"
+
+.PP
+validate array syntax 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP an element of an array
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP if no array element/syntax error/no key 
+.br
+\fI0\fP if start 
+.br
+\fI1\fP if array element 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

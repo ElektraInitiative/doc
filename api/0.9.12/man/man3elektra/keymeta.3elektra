@@ -1,0 +1,517 @@
+.TH "keymeta" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keymeta \- Meta Info Manipulation Methods
+.PP
+ \- Methods to do various operations on Key metadata\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const Key * \fBkeyNextMeta\fP (Key *key)"
+.br
+.RI "Get the next metadata entry of a Key\&. "
+.ti -1c
+.RI "int \fBkeyCopyMeta\fP (Key *dest, const Key *source, const char *metaName)"
+.br
+.RI "Do a shallow copy of metadata with name \fCmetaName\fP from source to dest\&. "
+.ti -1c
+.RI "int \fBkeyCopyAllMeta\fP (Key *dest, const Key *source)"
+.br
+.RI "Do a shallow copy of all metadata from source to dest\&. "
+.ti -1c
+.RI "const Key * \fBkeyGetMeta\fP (const Key *key, const char *metaName)"
+.br
+.RI "Returns the Key for a metadata entry with name \fCmetaName\fP\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetMeta\fP (Key *key, const char *metaName, const char *newMetaString)"
+.br
+.RI "Set a new metadata Key\&. "
+.ti -1c
+.RI "KeySet * \fBkeyMeta\fP (Key *key)"
+.br
+.RI "Returns the KeySet holding the given Key's metadata\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to do various operations on Key metadata\&. 
+
+To use them: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+.PP
+Next to \fBName (key and owner) \fP and \fBvalue (data and comment) \fP there is the so called meta information inside every key\&.
+.PP
+Key meta information are an unlimited number of key/value pairs strongly related to a key\&. It main purpose is to give keys special semantics, so that plugins can treat them differently\&.
+.PP
+Metakey, as opposed to Key, deliberately has following limitations:
+.IP "\(bu" 2
+no null values
+.IP "\(bu" 2
+no binary data
+.IP "\(bu" 2
+no modification of references (COW)
+.IP "\(bu" 2
+no guarantee of ordering
+.PP
+.SS "Examples for metadata"
+File system information (see stat(2) for more information):
+.IP "\(bu" 2
+uid: the user id (positive number)
+.IP "\(bu" 2
+gid: the group id (positive number)
+.IP "\(bu" 2
+mode: filesystem-like mode permissions (positive octal number)
+.IP "\(bu" 2
+atime: When was the key accessed the last time\&.
+.IP "\(bu" 2
+mtime: When was the key modified the last time\&.
+.IP "\(bu" 2
+ctime: When the uid, gid or mode of a key changes\&. (times are represented through a positive number as unix timestamp)
+.PP
+.PP
+The comment can contain userdata which directly belong to that key\&. The name of the meta information is 'comment' for a general purpose comment about the key\&. Multi-Language comments are also supported by appending [LANG] to the name\&.
+.PP
+Validators are regular expressions which are tested against the key value\&. The metakey 'validator' can hold a regular expression which will be matched against\&.
+.PP
+Types can be expressed with the meta information 'type'\&.
+.PP
+The relevance of the key can be tagged with a value from -20 to 20\&. Negative numbers are the more important and must be present in order to start the program\&.
+.PP
+A version of a key may be stored with 'version'\&. Its format is full\&.major\&.minor where all of these are integers\&.
+.PP
+The order inside a persistent storage can be described with the tag 'order' which contains a positive number\&.
+.PP
+The metakey 'app' describes to which application a key belongs\&. It can be used to remove keys from an application no longer installed\&.
+.PP
+The metakey 'path' describes where the key is physically stored\&.
+.PP
+The 'owner' is the user that owns the key\&. It only works for the user:/ hierarchy\&. It rather says where the key is stored and says nothing about the filesystem properties\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int keyCopyAllMeta (Key * dest, const Key * source)"
+
+.PP
+Do a shallow copy of all metadata from source to dest\&. The key dest will additionally have all metadata the source had\&. Metadata not present in source will not be changed\&. Metadata which was present in source and dest will be overwritten\&. If the \fCdest\fP Key is read-only it will not be changed\&.
+.PP
+For example the metadata type is copied into the Key k:
+.PP
+.PP
+.nf
+void l (Key * k)
+{
+        // receive copy
+        keyCopyAllMeta (k, copy);
+        // the caller will see the changed key k
+        // with all the metadata from copy
+}
+.fi
+.PP
+ The main purpose of this function is for plugins or applications which want to add the same metadata to n keys\&. When you do that with \fBkeySetMeta()\fP it will take n times the memory for the key\&. This can be considerable amount of memory for many keys with some metadata for each\&.
+.PP
+To avoid that problem you can use \fBkeyCopyAllMeta()\fP or \fBkeyCopyMeta()\fP:
+.PP
+.PP
+.nf
+void o (KeySet * ks)
+{
+        Key * current;
+        Key * shared = keyNew ("/", KEY_END);
+        keySetMeta (shared, "shared1", "this metadata should be shared among many keys");
+        keySetMeta (shared, "shared2", "this metadata should be shared among many keys also");
+        keySetMeta (shared, "shared3", "this metadata should be shared among many keys too");
+
+        for (elektraCursor it = 0; it < ksGetSize (ks); ++it)
+        {
+                current = ksAtCursor (ks, it);
+                if (needsSharedData (current)) keyCopyAllMeta (current, shared);
+        }
+
+        keyDel (shared);
+}
+.fi
+.PP
+ 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCdest's\fP metadata is not read-only 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+for every metaName present in source: keyGetMeta(source, metaName) == keyGetMeta(dest, metaName)
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIdest\fP the destination where the metadata should be copied too 
+.br
+\fIsource\fP the key where the metadata should be copied from
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if metadata was successfully copied 
+.br
+\fI0\fP if source did not have any metadata 
+.br
+\fI-1\fP on null pointer of dest or source 
+.br
+\fI-1\fP on memory problems
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyCopyMeta()\fP for copying one metadata Key from \fCdest\fP to \fCsource\fP 
+.RE
+.PP
+
+.SS "int keyCopyMeta (Key * dest, const Key * source, const char * metaName)"
+
+.PP
+Do a shallow copy of metadata with name \fCmetaName\fP from source to dest\&. Afterwards \fCsource\fP and \fCdest\fP will have the same metadata referred with \fCmetaName\fP\&. If the Key with name \fCmetaName\fP doesn't exist in \fCsource\fP - it gets deleted in \fCdest\fP\&.
+.PP
+For example the metadata type is copied into the Key k\&.
+.PP
+.PP
+.nf
+void l(Key *k)
+{
+        // receive c
+        keyCopyMeta(k, c, "type");
+        // the caller will see the changed key k
+        // with the metadata "type" from c
+}
+.fi
+.PP
+.PP
+The main purpose of this function is for plugins or applications, which want to add the same metadata to n keys\&. When you do that \fBkeySetMeta()\fP will take n times the memory for the key\&. This can be a considerable amount of memory for many keys with some metadata for each\&.
+.PP
+To avoid that problem you can use \fBkeyCopyAllMeta()\fP or \fBkeyCopyMeta()\fP\&.
+.PP
+.PP
+.nf
+void o(KeySet *ks)
+{
+        Key *shared = keyNew ("/", KEY_END);
+        keySetMeta(shared, "shared", "this metadata should be shared among many keys");
+
+        for (elektraCursor it = 0; it < ksGetSize (ks); ++it)
+        {
+                Key * current = ksAtCursor (ks, it);
+                if (needs_shared_data(current)) keyCopyMeta(current, shared, "shared");
+        }
+}
+.fi
+.PP
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCdest's\fP metadata is not read-only 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+keyGetMeta(source, metaName) == keyGetMeta(dest, metaName)
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIdest\fP the destination where the metadata should be copied to 
+.br
+\fIsource\fP the key where the metadata should be copied from 
+.br
+\fImetaName\fP the name of the metadata Key which should be copied
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if was successfully copied 
+.br
+\fI0\fP if the metadata in dest was removed too 
+.br
+\fI-1\fP on null pointers (source or dest) 
+.br
+\fI-1\fP on memory problems 
+.br
+\fI-1\fP if metadata is read-only
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyCopyAllMeta()\fP copies all metadata from \fCdest\fP to \fCsrc\fP 
+.RE
+.PP
+
+.SS "const Key* keyGetMeta (const Key * key, const char * metaName)"
+
+.PP
+Returns the Key for a metadata entry with name \fCmetaName\fP\&. You are not allowed to modify the resulting key\&.
+.PP
+If \fCmetaName\fP does not start with 'meta:/', it will be prefixed with 'meta:/'\&.
+.PP
+.PP
+.nf
+Key metaData = keyGetMeta(k, "type")
+// keyType == "boolean"
+char keyType[] = keyValue(metaData)
+.fi
+.PP
+.PP
+\fBNote\fP
+.RS 4
+You must not delete or change the returned key, use \fBkeySetMeta()\fP if you want to delete or change it\&.
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCkey\fP contains metadata 
+.PP
+\fCmetaName\fP is prefixed with 'meta:/'
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key from which to get metadata 
+.br
+\fImetaName\fP the name of the meta information you want the Key from\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+value of meta-information if meta-information is found 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if key or metaName is NULL 
+.br
+\fI0\fP if no such metaName is found
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeySetMeta()\fP for setting metadata 
+.PP
+\fBkeyMeta()\fP for getting the KeySet containing metadata 
+.RE
+.PP
+
+.SS "KeySet* keyMeta (Key * key)"
+
+.PP
+Returns the KeySet holding the given Key's metadata\&. Use \fBkeySetMeta()\fP to populate the metadata KeySet of a Key\&.
+.PP
+.PP
+.nf
+     Key * key = keyNew ("user:/test/key", KEY_END);
+
+        keySetMeta (key, "meta1", "value1");
+        keySetMeta (key, "meta2", "value2");
+.fi
+.PP
+ Iterate the returned metadata KeySet like any other KeySet\&.
+.PP
+.PP
+.nf
+        Key * cur;
+        KeySet * metaKeys;
+        ssize_t ksSize;
+
+        metaKeys = keyMeta (key);
+        ksSize = ksGetSize (metaKeys);
+
+        for (elektraCursor it = 0; it < ksSize; ++it)
+        {
+                cur = ksAtCursor (metaKeys, it);
+                printf ("meta name: %s, meta value: %s\n", keyName (cur), keyString (cur));
+        }
+.fi
+.PP
+ Use \fBksLookup()\fP or \fBkeyGetMeta()\fP to retrieve a single value for a given Key\&.
+.PP
+.PP
+.nf
+        Key * lookupKey = ksLookupByName (keyMeta (key), "meta2", 0);
+        printf ("meta name: %s, meta value: %s\n", keyName (lookupKey), keyString (lookupKey));
+        keyDel (key);
+.fi
+.PP
+ 
+.PP
+\fBNote\fP
+.RS 4
+You are not allowed to modify the name of KeySet's Keys or delete them\&. 
+.PP
+You must not delete the returned KeySet\&. 
+.PP
+Adding a key with metadata to the KeySet is an error\&.
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+for the returned KeySet ks: keyGetMeta(key, metaName) == ksLookupByName(ks, metaName) 
+.PP
+\fCkey\fP contains a KeySet for the metadata
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key from which to get the metadata KeySet
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the KeySet holding the metadata 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if the Key is 0 
+.br
+\fI0\fP if the Key has no metadata
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeySetMeta()\fP for setting a metadata Key 
+.PP
+\fBkeyGetMeta()\fP for getting a metadata Key 
+.RE
+.PP
+
+.SS "const Key* keyNextMeta (Key * key)"
+
+.PP
+Get the next metadata entry of a Key\&. Keys have an internal cursor\&. Every time \fBkeyNextMeta()\fP is called the cursor is incremented and the new current Name of Meta Information is returned\&.
+.PP
+You'll get a NULL pointer if the metadata after the end of the Key was reached\&. On subsequent calls of \fBkeyNextMeta()\fP it will still return the NULL pointer\&.
+.PP
+The \fCkey\fP internal cursor will be changed, so it is not const\&.
+.PP
+\fBNote\fP
+.RS 4
+That the resulting key is guaranteed to have a value, because meta information has no binary or null pointer semantics\&.
+.PP
+You must not delete or change the returned key, use \fBkeySetMeta()\fP if you want to delete or change it\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object to work with
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a key containing metadata 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP when the last Key has been reached 
+.br
+\fI0\fP when Key is a NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0 
+.RE
+.PP
+
+.SS "ssize_t keySetMeta (Key * key, const char * metaName, const char * newMetaString)"
+
+.PP
+Set a new metadata Key\&. Will set a new metadata pair with name \fCmetaName\fP and value \fCnewMetaString\fP\&.
+.PP
+Will add a new metadata Key, if \fCmetaName\fP was unused until now\&.
+.PP
+It will modify an existing Pair of metadata if \fCmetaName\fP was already present\&.
+.PP
+It will remove a metadata Key if \fCnewMetaString\fP is 0\&.
+.PP
+If \fCmetaName\fP does not start with 'meta:/', it will be prefixed with 'meta:/'\&.
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCmetaName\fP is prefixed with 'meta:/' 
+.PP
+\fCkey's\fP metadata is not read-only 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+The value in \fCkey's\fP metadata Keyset for \fCmetaName\fP is \fCnewMetaString\fP 
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP Key whose metadata should be set 
+.br
+\fImetaName\fP name of the metadata Key that should be set 
+.br
+\fInewMetaString\fP new value for the metadata Key
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+size (>0) of \fCnewMetaString\fP if metadata has been successfully added 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if the meta-information for metaName was removed 
+.br
+\fI-1\fP if key or metaName is 0 
+.br
+\fI-1\fP if system is out of memory 
+.br
+\fI-1\fP if \fCmetaName\fP is not a valid metadata name
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetMeta()\fP for getting the value of a metadata Key 
+.PP
+\fBkeyMeta()\fP for getting the KeySet containing metadata 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

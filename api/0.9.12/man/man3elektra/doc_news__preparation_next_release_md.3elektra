@@ -1,0 +1,660 @@
+.TH "doc_news__preparation_next_release_md" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news__preparation_next_release_md \- 0\&.9\&.<<VERSION>> Release 
+
+.IP "\(bu" 2
+guid: F2193578-1773-43A9-85CA-79EA8CE48D7B
+.IP "\(bu" 2
+author: Mihael Pranjić
+.IP "\(bu" 2
+pubDate: Fri, 03 Mar 2023 08:07:28 +0100
+.IP "\(bu" 2
+shortDesc: New Backend Logic, Copy-on-Write, FLOSS Course
+.PP
+.PP
+We are proud to release Elektra 0\&.9\&.<<VERSION>>\&.
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP\&.
+.PP
+You can try out the latest Elektra release using our docker image \fCelektra/elektra\fP\&. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run:
+.PP
+.PP
+.nf
+docker pull elektra/elektra
+docker run -it elektra/elektra
+.fi
+.PP
+.SH "Highlights"
+.PP
+.IP "\(bu" 2
+New Backend
+.IP "\(bu" 2
+Copy-on-Write
+.IP "\(bu" 2
+FLOSS
+.PP
+.SS "New Backend"
+The entire logic for backends has been rewritten, to allow for more flexibility und an unlimited number of plugins\&. Instead of calling plugins directly, \fClibelektra-kdb\fP now only calls so-called backend plugins and special hook plugins\&. There is a \fBcontract\fP between \fClibelektra-kdb\fP and the backend plugins\&. All backend plugins must adhere to this contract\&. To achieve this goal, most backend plugins will call other plugins (like \fClibelektra-kdb\fP did previously)\&.
+.PP
+The logic previously implemented in \fClibelektra-kdb\fP was moved to the new default backend plugin \fCbackend\fP\&. It works like the old system, but now also allows an unlimited number of plugins in positions where that makes sense\&. For example, you can have unlimited \fCpostgetstorage\fP plugins, but only a single \fCgetresolver\fP\&.
+.PP
+There have also been slight changes to \fCkdbGet\fP and \fCkdbSet\fP\&. Please read their API docs to find out, if you rely on any behavior that has been altered\&. You can also read the \fBnew low-level docs\fP to find out all the intricate details\&.
+.PP
+The structure of \fCsystem:/elektra/mountpoints\fP changed as well\&. Take a look at the \fBnew docs\fP, if you need to know details\&.
+.SS "Updating config"
+The mountpoint configuration format contains \fBbreaking changes\fP and a manual upgrade process is needed\&. Follow these steps to upgrade the old mountpoint configuration to the new format:
+.PP
+.RS 4
+\fBWarning\fP: BACK UP YOUR CONFIG FILES BEFORE UPDATING! We recommend making a backup of the file printed by \fCkdb file system:/elektra/mountpoints\fP before updating your installation\&. In the unlikely case that the migration script fails, you can still use the information from the backup to manually recreate your mountpoints\&. 
+.RE
+.PP
+To update your existing \fCsystem:/elektra/mountpoints\fP data you can use the \fBmigration script\fP\&.
+.PP
+.RS 4
+\fBNote\fP: To run the script you must have Elektra, Python (>= 3\&.7) and the Python binding installed\&. The script uses the Python binding to manipulate \fCKey\fPs and \fCKeySet\fPs, but it does not use the \fCkdb\fP CLI tool, or the \fCKDB\fP API\&. It is safe to run this script before, or after you update your Elektra installation\&. 
+.RE
+.PP
+By default, the script loads the file \fC/etc/kdb/elektra\&.ecf\fP\&. If you changed where \fCsystem:/elektra/mountpoints\fP is stored, you can provide an alternative path:
+.PP
+.PP
+.nf
+\&./migrate-mountpoints\&.py /path/to/your/mountpoints/config\&.file
+.fi
+.PP
+.PP
+.RS 4
+\fBNote\fP: Because the script does not use the \fCKDB\fP API it only works, if the mountpoints config file uses the default \fCdump\fP format\&.
+.PP
+If your mountpoints config file is not using the \fCdump\fP format, you may still be able to use the migration script\&. However, in that case, you will have to use the script \fBbefore\fP updating your Elektra installation:
+.PP
+.IP "1." 4
+Run \fCkdb export system:/elektra/mountpoints dump\fP to get a copy of your mountpoints config in \fCdump\fP format
+.IP "2." 4
+Write this data to a file and run the migration script on the file\&.
+.IP "3." 4
+To get the data back in your original format you can use
+.PP
+.PP
+.PP
+.nf
+\&./migrate-mountpoints\&.py /path/to/file/from/step2 | kdb convert dump your-format > /path/to/converted/file
+.fi
+.PP
+.PP
+.IP "4." 4
+Run \fCkdb file system:/elektra/mountpoints\fP to find out where your mountpoint config is stored\&. Make sure to back up this file, before upgrading your installation\&.
+.IP "5." 4
+Now upgrade your Elektra installation\&.
+.IP "6." 4
+Copy the file \fC/path/to/converted/file\fP from step 3 to the location you got in step 4\&. 
+.PP
+.RE
+.PP
+The script will read the old mountpoint configuration from the given file\&. It will convert the configuration and print the new version to \fCstdout\fP\&.
+.PP
+You can inspect the output to make sure, everything is in order\&. When you are ready to commit the changes, you can manually edit the config file, or use:
+.PP
+.PP
+.nf
+\&./migrate-mountpoints\&.py --output=/etc/kdb/elektra\&.ecf /etc/kdb/elektra\&.ecf
+.fi
+.PP
+.SS "Individual changes"
+.IP "\(bu" 2
+Implement \fChooks\fP\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Removed old global plugins code\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+New backend logic, based on PR #2969 by @vLesk\&. _(@kodebach)_
+.IP "\(bu" 2
+Add script to migrate \fCsystem:/elektra/mountpoints\fP to new format\&. _(@kodebach)_
+.PP
+.SS "Copy-on-Write"
+Thanks to _(Maximilian Irlinger @atmaxinger)_ our \fCKey\fP and \fCKeySet\fP datastructures are now fully copy-on-write! This means noticeably reduced memory usage for cases where keys and keysets are copied and/or duplicated!
+.PP
+We ran some very promising benchmarks, each were performed with 400,000 keys\&. All benchmarks were executed using \fCvalgrind --tool=massif --time-unit=B --max-snapshots=200 --threshold=0\&.1\fP\&.
+.PP
+Benchmark   Old Implementation   Copy-on-Write   Size Reduction   Remarks    \fCcreatekeys\&.c\fP   5\&.3 MiB   6\&.5 MiB   -22 %   \fCdeepdup\&.c\fP   10\&.5 MiB   8\&.2 MiB   22 %   \fClarge\&.c\fP   18\&.9 MiB   15\&.3 MiB   19 %   \fC\fBkdb\&.c\fP\fP   23\&.5 MiB   17\&.8 MiB   24 %   \fCkdbget\&.c\fP   11\&.0 MiB   8\&.8 MiB   20 %   \fCkdbmodify\&.c\fP   11\&.0 MiB   8\&.8 MiB   20 %   Same results as \fCkdbget\&.c\fP   
+.PP
+First, it should be noted that a single key, without counting payload, is about 50% larger with the copy-on-write implementation\&. This explains why the \fCcreatekeys\&.c\fP benchmark yields a negative reduction result\&. This benchmark only allocates keys, so not much improvement can be expected there\&. Still, as other stuff also uses heap memory, the overall memory consumption only increased by 22%, which is far less than 50%\&.
+.PP
+All other benchmarks saw meaningful reductions of heap memory used\&. One interesting observation is that \fCkdbget\&.c\fP and \fCkdbmodify\&.c\fP used exactly the same memory\&. This can most likely be explained by internal caching within the memory allocator of \fCglibc\fP\&.
+.PP
+We also performed runtime tests on the same benchmarks using \fCperf stat --repeat 13\fP to ensure no major performance regressions occur\&.
+.PP
+Benchmark   Old Implementation   Deviation   Copy-on-Write   Deviation   Runtime Increase    \fCcreatekeys\&.c\fP   0\&.209572 s   0\&.36 %   0\&.21987 s   0\&.77 %   4\&.9 %    \fCdeepdup\&.c\fP   0\&.23025 s   0\&.47 %   0\&.231804 s   0\&.32 %   0\&.6 %    \fClarge\&.c\fP   1\&.14038 s   0\&.21 %   1\&.14837 s   0\&.21 %   0\&.7 %    \fC\fBkdb\&.c\fP\fP   1\&.9270 s   2\&.63 %   1\&.93354 s   0\&.17 %   0\&.3 %    \fCkdbget\&.c\fP   0\&.145663 s   0\&.17 %   0\&.15763 s   0\&.70 %   8\&.2 %    \fCkdbmodify\&.c\fP   0\&.146506 s   0\&.19 %   0\&.156347 s   0\&.15 %   6\&.7 %   
+.PP
+Overall, the runtime performance hit is less than 10%\&. The more a program does, the less the additional overhead of the copy-on-write algorithms matter\&. One interesting detail is that \fCkeyCopy\fP and \fCkeyDup\fP have become quite a bit faster\&. This can be seen by comparing the differences between \fCcreatekeys\&.c\fP and \fCdeepdup\&.c\fP\&. The differences are 21 ms for the old implementation and 12 ms for the copy-on-write implementation\&.
+.SS "FLOSS"
+A Free/Libre and Open Source Software (FLOSS) Initiative couldn't survive with many small contributions fixing annoying problems\&. This release also contains all contributions done via one term of the \fCFLOSS course\fP\&. The success was tremendous, as shown in the rest of the release notes\&.
+.PP
+A big thanks to the students for their contributions!
+.SH "Plugins"
+.PP
+The following text lists news about the \fCplugins\fP we updated in this release\&.
+.SS "yajl"
+.IP "\(bu" 2
+Fix an issue where trying to set invalid meta-keys won't show an error\&. _(Juri Schreib @Bujuhu)_
+.PP
+.SS "list"
+.IP "\(bu" 2
+Removed the outdated \fClist\fP plugin\&. _(Maximilian Irlinger @atmaxinger)_ (Was only needed for global plugins, which are now replaced by \fChooks\fP\&.)
+.PP
+.SS "logchange"
+.IP "\(bu" 2
+Made logchange a notification-send hook plugin\&. _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "toml"
+.IP "\(bu" 2
+Fix bug, where meta-keys that cannot be inserted don't report an error\&. _(@Bujuhu)_
+.PP
+.SS "uname"
+.IP "\(bu" 2
+Add error handling if uname call fails\&. _(Richard Stöckl @Eiskasten)_
+.PP
+.SS "quickdump"
+.IP "\(bu" 2
+elektraQuickdumpSet: don't fclose if stdout\&. _(@hannes99)_
+.PP
+.SS "blockresolver"
+.IP "\(bu" 2
+Add encoding test for blockresolver read\&. _(@dtdirect)_
+.IP "\(bu" 2
+Refactor and restructure blockresolver\&. _(@dtdirect)_
+.PP
+.SS "desktop"
+.IP "\(bu" 2
+Add a unit test\&. _(Richard Stöckl @Eiskasten)_
+.PP
+.SS "mini"
+.IP "\(bu" 2
+Fix a bug where writing meta-keys will fail silently\&. _(Juri Schreib @Bujuhu)_
+.PP
+.SS "mmapstorage"
+.IP "\(bu" 2
+Remove code duplication in the data block calculation\&. _(Richard Stöckl @Eiskasten)_
+.PP
+.SS "network"
+.IP "\(bu" 2
+Add a retry mechanism\&. _(Richard Stöckl @Eiskasten)_
+.PP
+.SS "xfconf"
+.IP "\(bu" 2
+Add xfconf storage plugin with the ability to read and write to xfconf channels\&. _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Make xfconf valgrind suppressions more flexible to lib updates\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SS "date"
+.IP "\(bu" 2
+Fix an issue with validationg RFC 822 date-times\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Improve Code Coverage\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.PP
+.SS "csvstorage"
+.IP "\(bu" 2
+Fix a bug where writing unkown meta-keys will fail silently\&. _(Juri Schreib @Bujuhu)_
+.PP
+.SH "Libraries"
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.SS "Compatibility"
+.IP "\(bu" 2
+Global plugins do not work anymore, use \fChooks\fP instead\&.
+.PP
+.SS "Core"
+.IP "\(bu" 2
+The Key and KeySet datastructures are now fully copy-on-write\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+\fCkeyCopy\fP now only allocates additional memory if \fCKEY_CP_META\fP or \fCKEY_CP_ALL\fP is used\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Check for circular links (overrides)\&. _(@0x6178656c)_
+.PP
+.SS "io"
+.IP "\(bu" 2
+Check file flags for \fCelektraIoFdSetFlags\fP: file flags must be exactly one of: read only, write only or read write\&. _(Richard Stöckl @Eiskasten)_
+.PP
+.SS "Merge"
+.IP "\(bu" 2
+Add methods \fCelektraMergeGetConflictingKeys\fP and \fCelektraMergeIsKeyConflicting\fP to check which keys were causing a merge conflict\&. _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SH "Bindings"
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up-to-date with the multi-language support provided by Elektra\&.
+.SS "intercept/env"
+.IP "\(bu" 2
+Remove fallback code\&. _(Markus Raab)_
+.IP "\(bu" 2
+Command-line functionality is broken due to new-backend differences\&.
+.PP
+.SS "intercept/fs"
+.IP "\(bu" 2
+Use \fCKDB_MAX_PATH_LENGTH\fP for better portability\&. _(Markus Raab)_
+.PP
+.SS "jna"
+.IP "\(bu" 2
+Documentation: Improved build instructions\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Add validation on get for whitelist plugin\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Upgrade Gradle to 8\&.0\&.1\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SS "rust"
+.IP "\(bu" 2
+Fix 'feature `resolver` is required' error\&. _(Markus Raab)_
+.PP
+.SS "elixir"
+.IP "\(bu" 2
+Initial release of the Elixir binding\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Mark tests as \fCmemleak\fP\&. _(@0x6178656c)_
+.PP
+.SH "Tools"
+.PP
+.SS "kdb"
+.IP "\(bu" 2
+Removed \fCglobal-mount\fP and \fCglobal-umount\fP commands\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Fixed SIGSEGV when using \fCkdb find\fP without argument\&. _(Christian Jonak-Moechel @joni1993)_
+.PP
+.SS "elektrad"
+.IP "\(bu" 2
+Removed leftover package-lock\&.json file\&. _(stefnotch)_
+.PP
+.SH "Scripts"
+.PP
+.IP "\(bu" 2
+Added \fCautomatic spelling corrections\fP for changeset\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Introduce shebang-conventions\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Apply auto-fixes from shellcheck\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Use prettier 2\&.8\&.4\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Add scripts to enable and disable pre-commit hooks\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Only let http links pass the check if whitelisted\&. _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Link Checker: Add documentation for the usage and how it behaves\&. _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Sed: Add spelling correction for 'key-value storage'\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Fix/extends some shell recorder tests\&. _(@Joni1993)_
+.IP "\(bu" 2
+Use clang-format v15\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Fix warning parsing in shell recorder\&. _(@Joni1993)_
+.IP "\(bu" 2
+Replaced \fCegrep\fP by \fCgrep -E\fP\&. _(@0x6178656c and @janldeboer)_
+.IP "\(bu" 2
+Add \fBaudit-dependencies\fP script to check for vulnerabilities for npm depndencies\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.PP
+.SH "Documentation"
+.PP
+.IP "\(bu" 2
+Restructured \fBcontrib/api\fP\&. _(Markus Raab)_\&.
+.IP "\(bu" 2
+Improve page on compilation\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Improve page for bindings\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Improve page for getting started\&. _(@stefnotch)_
+.IP "\(bu" 2
+Remove version number from docker README and replace it with latest\&. _(@Joni1993)_
+.IP "\(bu" 2
+Fix grammar for \fCelektra-granularity\&.md\fP\&. _(@dtdirect)_
+.IP "\(bu" 2
+Rephrase sections in \fCdoc/dev/error-\\*\fP\&. _(@dtdirect)_
+.IP "\(bu" 2
+Improve Git\&.md\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Unify spelling of man pages\&. _(@stefnotch)_ _(@janldeboer)_
+.IP "\(bu" 2
+Extend consistency check \fCcheck_doc\&.sh\fP to work for \fBcontrib\fP, \fBdev\fP and \fBtutorials\fP\&. _(@Joni1993)_
+.IP "\(bu" 2
+Fix internal links\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Update AUR Link from \fCelektra\fP to \fClibelektra\fP package\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Update example Ansible playbook in VISION\&.md\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Harmonize spelling of Git\&. _(@Joni1993)_
+.IP "\(bu" 2
+Update packaging instructions for Fedora\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Improve use of gender\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Fix some minor mistakes in CONTRIBUTING\&.md\&. _(@Joni1993)_
+.IP "\(bu" 2
+Fix various spelling errors\&. _(@Joni1993)_
+.IP "\(bu" 2
+Denoted package names & global variable names in \fBINSTALL\&.md\fP as \fCCode\fP\&. _(@janldeboer)_
+.IP "\(bu" 2
+Improve readability of doc/tutorials/highlevel\&.md\&. _(@deoknats861)_
+.IP "\(bu" 2
+Improve reference to Podman documentation\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Unify spelling\&. _(@Joni1993)_
+.IP "\(bu" 2
+Fix typo in dev/hooks\&.md\&. _(@dtdirect)_
+.IP "\(bu" 2
+Remove unused images from doc/images\&. _(@dtdirect)_
+.IP "\(bu" 2
+Fixed Coverage Badge Link\&. _(@janldeboer)_
+.IP "\(bu" 2
+Improve CONTRIBUTING doc\&. _(Juri Schreib @Bujuhu)_ and _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Update Doxyfile with Doxygen 1\&.9\&.4\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Add project logo to Doxygen in Doxyfile\&. _(@dtdirect)_
+.IP "\(bu" 2
+Add mermaid\&.js to the project using doxygen-mermaid\&. _(@dtdirect)_
+.IP "\(bu" 2
+Create diagrams in mermaid\&.js to use in doxygen\&. _(@dtdirect)_
+.IP "\(bu" 2
+Create README for Doxygen and Mermaid JS\&. _(@dtdirect)_
+.IP "\(bu" 2
+Tutorial: Add automatic validation to Docker tutorial _(Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Add mention of audit-dependencies script in doc/todo/RELEASE\&.md\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Move note in GETSTARTED\&.md\&. _(@Joni1993)_
+.IP "\(bu" 2
+Use \fCcode\fP blocks to prevent Markdown from falsy rendering LaTeX\&. _(@stefnotch)_, _(@janldeboer)_
+.IP "\(bu" 2
+Fix broken links in use cases for KDB after files were renamed\&. _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Replace http links with https\&. _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Enhance notifications\&.md in doc/tutorial\&. _(@dtdirect)_
+.IP "\(bu" 2
+Add tutorial how to suppress memleaks in plugins from dependencies\&. _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Write about \fBhistory\fP to make plans of Elektra's adoption more clear\&. _(Markus Raab)_
+.PP
+.SS "Use Cases"
+.IP "\(bu" 2
+Improve use cases \fBTemplate\fP\&. _(@kodebach and Markus Raab)_
+.IP "\(bu" 2
+Use cases for \fBKDB\fP\&. _(@kodebach)_
+.IP "\(bu" 2
+Use cases for \fClibelektra-core\fP\&. _(@kodebach)_
+.PP
+.SS "Decisions"
+.IP "\(bu" 2
+Decide and implement \fBdecision process\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Decided future \fBlibrary split\fP\&. _(@kodebach)_
+.IP "\(bu" 2
+Decided \fCdecision process\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Draft for \fBman pages\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add decision for \fBchange tracking\fP\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Create \fBdecision\fP for allowed and prohibited operation seqences\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Add decisions about \fBlocation of headers\fP and \fBuse of `#include`\fP in the repo\&. _(@kodebach)_
+.IP "\(bu" 2
+Add decision about \fBmetadata semantics\fP\&. _(@kodebach)_
+.IP "\(bu" 2
+Many small fixes to adapt to documentation guidelines and new decision process\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add decision for \fBread-only keynames\fP\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Revive \fBkeyname decision\fP\&. _(@kodebach)_
+.IP "\(bu" 2
+Add decisions for \fBconstructor functions\fP and \fBbuilder functions\fP\&. _(@kodebach)_
+.IP "\(bu" 2
+Add decision for \fBcopy-on-write\fP and provide implementation suggestions\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Update \fBinternal cache\fP\&. _(Markus Raab)_ _(@kodebach)_
+.IP "\(bu" 2
+Create \fBtransformations\fP\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Replace TOC-style \fBREADME\&.md\fP with folders and generate HTML for website\&. _(@kodebach)_
+.IP "\(bu" 2
+Restructured decisions directories based on new agreed-upon \fBsteps\fP\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Decision for \fBtypes of `KeySet`s\fP\&. _(@kodebach)_
+.IP "\(bu" 2
+Added \fCDocumentation Guidelines\fP\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add links and formatting to documents affected by PR#4492 (Document Guidelines) and rephrase some parts\&. _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Decisions for changes to \fCkeyIsBelow\fP and new \fCkeyGetNextPart\fP functions\&. _(@kodebach)_
+.IP "\(bu" 2
+Apply fix spelling to more files\&. _(Markus Raab)_
+.PP
+.SS "Tutorials"
+.IP "\(bu" 2
+Add tutorial for manual installation from the AUR on Arch Linux\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Add Markdown shell recorder validation to install\&.webui\&.md\&. _(@deoknats861)_
+.IP "\(bu" 2
+Fix the outdated array tutorial\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Reinstate mounting tutorial\&. _(@Bujuhu)_
+.IP "\(bu" 2
+Make namespaces tutorial verifiable\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Move Podman-related information to a dedicated page\&. _(@0x6178656c)_
+.PP
+.SS "Man Pages"
+.IP "\(bu" 2
+Update man page (patch) as suggested by the CI to fix CI error on master\&. _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Added links to the website & webui after further reading\&. _(Philipp Nirnberger @nirnberger)_
+.IP "\(bu" 2
+Upgrade \fCronn-ng\fP to 0\&.10\&.1\&.pre3\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Tests"
+.PP
+.IP "\(bu" 2
+Fix an Issue where scripts/dev/fix-spelling does not work, if a resolved path contains whitespaces\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Rename scripts/sed to \fCscripts/spelling\&.sed\fP\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Add \fCmemleak\fP label to \fCtest_getenv\fP\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Add test using shellcheck\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Remove \fC--rerun-failed\fP from \fCrun_*\fP scripts\&. _(@kodebach)_
+.IP "\(bu" 2
+Fix paths for icheck test\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SS "Shell Recorder"
+.IP "\(bu" 2
+Add check if file exists\&. _(@0x6178656c)_
+.PP
+.SH "Packaging"
+.PP
+.IP "\(bu" 2
+Add missing new \fCbackend\fP plugin to components of libelektra package\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Build"
+.PP
+.SS "CMake"
+.IP "\(bu" 2
+Fix warning for CMP0115\&. _(0x6178656c)_
+.IP "\(bu" 2
+Change Doxygen configuration for LaTeX\&. _(0x6178656c)_
+.IP "\(bu" 2
+Fix developer warning for package DISCOUNT\&. _(Dennis Toth @dtdirect)_
+.IP "\(bu" 2
+Pass \fC--stacktrace\fP to gradle for the JNA builds\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Adapt npm build flags to remove reproducability issues\&. _(Juri Schreib @Bujuhu)_ _(Nikola Prvulovic @Dynamichost96)_
+.IP "\(bu" 2
+Fix creation of shell recorder tests\&. _(@0x6178656c)_
+.PP
+.SS "Docker"
+.IP "\(bu" 2
+Update packagename \fClibpcrec++-dev\fP to \fClibpcrecpp0v5\fP in Debian Sid\&. _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Add shellcheck to Debian containers\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Use \fCopenjdk-17-jdk\fP in Debian Sid\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Add Fedora 37 images\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Update Debian Sid image to use repository Python modules instead of installing with \fCpip3\fP due to upstream debian changes\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Debian Bullsye: use clang 13\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Update Alpine Linux to 3\&.17\&.2\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Gradle"
+.PP
+.IP "\(bu" 2
+Use Gradle 7\&.5\&.1\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Update \fCjava-library\&.gradle\fP to use \fCarchiveClassifier\fP _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SH "Infrastructure"
+.PP
+.SS "Jenkins"
+.IP "\(bu" 2
+Add Fedora 37 builds, drop Fedora 35 builds\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Run more tests also on Master\&. _(Markus Raab)_
+.IP "\(bu" 2
+Move doc to main build stage\&. _(Markus Raab)_
+.IP "\(bu" 2
+Disable parallel test runs\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Upgrade Jenkins node container to Debian bullseye\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Undo previous change that added automatic \fCctest --rerun-failed\fP to Jenkins CI\&. _(@kodebach)_
+.PP
+.SS "Cirrus"
+.IP "\(bu" 2
+Use Fedora 37\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Fix \fCmacos_instance\fP reference, upgrade to macOS Ventura (by default), use Python 3\&.11 and Ruby 3\&.x\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Automatically rerun \fCtestmod_dbus*\fP tests on macOS\&. _(@kodebach)_
+.IP "\(bu" 2
+Fix dbus not starting on macOS\&. _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "GitHub Actions"
+.IP "\(bu" 2
+Add auto-cancellation-running action\&. _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Automatically rerun \fCtestmod_dbus*\fP tests on macOS\&. _(@kodebach)_
+.IP "\(bu" 2
+Fix dbus not starting on macOS\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Change stale issue/PR checking to GitHub action\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Update configuration of stale issue/PR action\&. _(@0x6178656c)_
+.IP "\(bu" 2
+Upgrade actions to recent versions and remove deprecated ruby-setup action\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Website"
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up-to-date\&. Furthermore, we changed:
+.PP
+.IP "\(bu" 2
+Fix broken \fC/pythongen\fP link on homepage\&. _(@stefnotch)_
+.IP "\(bu" 2
+Fix redirect logic to not cause loops\&. _(@stefnotch)_
+.IP "\(bu" 2
+Remove duplicated link to \fCTESTING\&.md\fP file\&. _(@stefnotch)_, _(@janldeboer)_
+.IP "\(bu" 2
+Restructure parts of the links on the website\&. _(@stefnotch)_, _(@janldeboer)_
+.IP "\(bu" 2
+Removed broken links to packages for Linux distributions\&. _(@Dynamichost96)_
+.IP "\(bu" 2
+Update npm packages\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Change URLs to say man-page with a dash\&. _(@stefnotch)_ _(@janldeboer)_
+.PP
+.SH "Outlook"
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+1\&.0 API _(Klemens Böswirth @kodebach)_ and _(Stefan Hanreich)_
+.IP "\(bu" 2
+Session recording and better Ansible integration _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Change tracking _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Rewriting tools in C _(@hannes99)_
+.IP "\(bu" 2
+Elektrify KDE and GNOME _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Elektrify XFCE _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Mounting SQL databases _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Recording Configuration _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Ansible-Elektra _(Lukas Hartl)_ and _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Configure Olimex Base Images _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Improving Build Server Infrastructure _(Lukas Hartl)_ and _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Improve Java Development Experience _(Michael Tucek)_
+.PP
+.SH "Statistics"
+.PP
+We closed about \fC150 issues\fP for this release\&.
+.PP
+<<\fCscripts/git-release-stats 0\&.9\&.VER-1 0\&.9\&.<<VERSION>>\fP>>
+.PP
+Thanks to all authors for making this release possible!
+.SH "Join the Initiative!"
+.PP
+We welcome new contributors! Read \fChere\fP about how to get started\&.
+.PP
+As first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.
+.SH "Get the Release!"
+.PP
+You can download the release from
+.PP
+.IP "\(bu" 2
+\fChere\fP or
+.IP "\(bu" 2
+\fCGitHub\fP
+.PP
+.PP
+The \fChashsums are:\fP
+.PP
+<<\fCscripts/generate-hashsums elektra-0\&.9\&.<<VERSION>>\&.tar\&.gz\fP>>
+.PP
+The release tarball is also available signed using GnuPG from
+.PP
+.IP "\(bu" 2
+\fChere\fP or
+.IP "\(bu" 2
+\fCGitHub\fP
+.PP
+.PP
+The following GPG Key was used to sign this release: 12CC44541E1B8AD9B66AFAD55262E7353324914A
+.PP
+Already built API documentation can be found
+.PP
+.IP "\(bu" 2
+\fChere\fP or
+.IP "\(bu" 2
+\fCGitHub\fP\&.
+.PP
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments, please contact us via our issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP\&.
+.PP
+Best regards, \fCElektra Initiative\fP 

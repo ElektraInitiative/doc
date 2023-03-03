@@ -1,0 +1,92 @@
+\label{doc_help_kdb-export_md_md_doc_help_kdb_export}%
+\Hypertarget{doc_help_kdb-export_md_md_doc_help_kdb_export}%
+ \hypertarget{doc_help_kdb-export_md_autotoc_md2859}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-export_md_autotoc_md2859}
+{\ttfamily kdb export $<$source$>$ \mbox{[}$<$format$>$\mbox{]}}~\newline
+\hypertarget{doc_help_kdb-export_md_autotoc_md2860}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-export_md_autotoc_md2860}
+This command allows a user to export keys from the key database.~\newline
+ Keys are exported to {\ttfamily stdout} in whichever format is specified.~\newline
+ This command can also be used to view full key(s) including their values.~\newline
+\hypertarget{doc_help_kdb-export_md_autotoc_md2861}{}\doxysection{USAGE}\label{doc_help_kdb-export_md_autotoc_md2861}
+Where {\ttfamily source} is the path of the key(s) you want to export. Additionally, the user can specify a format to use by passing it as the option argument {\ttfamily format}.~\newline
+ The {\ttfamily format} attribute relies on Elektra’s plugin system to export the keys in the desired format.\+The user can view all plugins available for use by running the kdb-\/plugin-\/list(1) command. To learn about any plugin, the user can simply use the kdb-\/plugin-\/info(1) command.~\newline
+ The {\ttfamily storage} plugin can be configured at compile-\/time or changed by the link {\ttfamily libelektra-\/storage.\+so}.\hypertarget{doc_help_kdb-export_md_autotoc_md2862}{}\doxysection{OPTIONS}\label{doc_help_kdb-export_md_autotoc_md2862}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/E}, {\ttfamily -\/-\/without-\/elektra}\+: Omit the {\ttfamily system\+:/elektra} directory.
+\item {\ttfamily -\/c}, {\ttfamily -\/-\/plugins-\/config $<$plugins-\/config$>$}\+: Add a configuration to the format plugin.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional debug information in case of errors/warnings.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-export_md_autotoc_md2863}{}\doxysection{KDB}\label{doc_help_kdb-export_md_autotoc_md2863}
+
+\begin{DoxyItemize}
+\item {\ttfamily /sw/elektra/kdb/\#0/current/format} Change default format (if none is given at commandline) and built-\/in default {\ttfamily storage} is not your preferred format.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-export_md_autotoc_md2864}{}\doxysection{EXAMPLES}\label{doc_help_kdb-export_md_autotoc_md2864}
+To view your full key database in Elektra’s {\ttfamily storage} format\+:~\newline
+ {\ttfamily kdb export /}~\newline
+
+
+To backup your full key database in Elektra’s {\ttfamily storage} format to a file called {\ttfamily full-\/backup.\+ecf}\+:~\newline
+ {\ttfamily kdb export / $>$ full-\/backup.\+ecf}~\newline
+
+
+To backup a keyset stored in {\ttfamily user\+:/keyset} in the {\ttfamily ini} format to a file called {\ttfamily keyset.\+ini}\+:~\newline
+ {\ttfamily kdb export user\+:/keyset ini $>$ keyset.\+ini}~\newline
+
+
+Change default format to {\ttfamily simpleini}\+:~\newline
+ {\ttfamily kdb set /sw/elektra/kdb/\#0/current/format simpleini}
+
+Create two key values and export them as {\ttfamily xml}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/kdb-\/export/one one}
+\DoxyCodeLine{kdb set user:/tests/kdb-\/export/two two}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/kdb-\/export/ xml}
+\DoxyCodeLine{\#> <?xml version="{}1.0"{} encoding="{}UTF-\/8"{} standalone="{}no"{} ?>}
+\DoxyCodeLine{\#> <kdb-\/export>}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#>   <one>one</one>}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#>   <two>two</two>}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#> </kdb-\/export>}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests}
+\DoxyCodeLine{\# cleanup}
+
+\end{DoxyCode}
+
+
+Create two key values and export them with the {\ttfamily xerces} plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/kdb-\/export/one one}
+\DoxyCodeLine{kdb set user:/tests/kdb-\/export/two two}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/kdb-\/export/ xerces}
+\DoxyCodeLine{\#> <?xml version="{}1.0"{} encoding="{}UTF-\/8"{} standalone="{}no"{} ?>}
+\DoxyCodeLine{\#> <kdb-\/export>}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#>   <one>one</one>}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#>   <two>two</two>}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{\#> </kdb-\/export>}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests}
+\DoxyCodeLine{\# cleanup}
+
+\end{DoxyCode}
+\hypertarget{doc_help_kdb-export_md_autotoc_md2865}{}\doxysection{Note}\label{doc_help_kdb-export_md_autotoc_md2865}
+
+\begin{DoxyItemize}
+\item Only storage plugins can be used for formatting. 
+\end{DoxyItemize}

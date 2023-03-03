@@ -1,0 +1,78 @@
+\label{doc_tutorials_install-config-files_md_md_doc_tutorials_install_config_files}%
+\Hypertarget{doc_tutorials_install-config-files_md_md_doc_tutorials_install_config_files}%
+ The {\ttfamily install-\/config-\/file} tool makes using Elektra for a configuration file easier. Please refer to its man page for details on its syntax.
+
+It is especially useful in the context of package upgrades. In this case
+
+
+\begin{DoxyItemize}
+\item {\ttfamily their} is the current version of the maintainer\textquotesingle{}s copy of a configuration file,
+\item {\ttfamily base} is the previous version of the maintainer\textquotesingle{}s copy of the configuration file.
+\item {\ttfamily our} is the user\textquotesingle{}s copy of the configuration file, derived from {\ttfamily base}
+\end{DoxyItemize}
+
+First of all, we create a small example configuration file. To do so, we first create a temporary file and store its location in Elektra.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/tempfiles/firstFile \$(mktemp)}
+\DoxyCodeLine{echo -\/e "{}keyA=a\(\backslash\)nkeyB=b\(\backslash\)nkeyC=c"{} > `kdb get user:/tests/tempfiles/firstFile`}
+
+\end{DoxyCode}
+
+
+The following call to {\ttfamily kdb install-\/config-\/file} will mount it at {\ttfamily system\+:/tests/installing} and additionally create a copy of it. The copy will be required for a three-\/way merge later on.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb install-\/config-\/file system:/tests/installing `kdb get user:/tests/tempfiles/firstFile` mini}
+
+\end{DoxyCode}
+
+
+We can now safely make changes to our configuration.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system:/tests/installing/keyB X}
+
+\end{DoxyCode}
+
+
+Let\textquotesingle{}s assume that we\textquotesingle{}ve downloaded a different version of this file from the internet and placed it into the directory {\ttfamily /tmp/new}. At this point we can use {\ttfamily kdb install-\/config-\/file} to merge the changes of this downloaded version into the configuration that we currently store in Elektra.
+
+Note the slash {\ttfamily /} in the beginning of the second parameter of the call to {\ttfamily kdb install-\/config-\/file}. This tool uses {\ttfamily kdb mount} and in consequence also the resolver. You have to enter the paths accordingly. Read the tutorials on mounting and namespaces if you are not sure what this means.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/tempfiles/secondFile \$(echo \$(mktemp -\/d)/\$(basename \$(kdb get user:/tests/tempfiles/firstFile)))}
+\DoxyCodeLine{echo -\/e "{}keyA=a\(\backslash\)nkeyB=b\(\backslash\)nkeyC=Y"{} > `kdb get user:/tests/tempfiles/secondFile`}
+\DoxyCodeLine{kdb install-\/config-\/file system:/tests/installing \$(kdb get user:/tests/tempfiles/secondFile) mini}
+
+\end{DoxyCode}
+
+
+We can check that this worked by calling
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get system:/tests/installing/keyB}
+\DoxyCodeLine{\#> X}
+\DoxyCodeLine{kdb get system:/tests/installing/keyC}
+\DoxyCodeLine{\#> Y}
+
+\end{DoxyCode}
+
+
+Finally, we use the following commands to clean up our tutorial.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb umount system:/tests/installing}
+\DoxyCodeLine{rm -\/rf \$(kdb get user:/tests/tempfiles/firstFile)}
+\DoxyCodeLine{rm -\/rf \$(kdb get user:/tests/tempfiles/secondFile)}
+\DoxyCodeLine{kdb rm -\/rf user:/tests/tempfiles}
+\DoxyCodeLine{kdb rm -\/rf user:/elektra/merge/preserve}
+
+\end{DoxyCode}
+ 

@@ -1,0 +1,83 @@
+\label{doc_tutorials_contributing-windows_md_md_doc_tutorials_contributing_windows}%
+\Hypertarget{doc_tutorials_contributing-windows_md_md_doc_tutorials_contributing_windows}%
+ \hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4238}{}\doxysection{Introduction}\label{doc_tutorials_contributing-windows_md_autotoc_md4238}
+In this tutorial, you will learn how to set up a development environment for Elektra using Windows Subsystem for Linux (WSL) and Visual Studio 2019.
+
+Visual Studio 2022 (VS2022) Community is free but requires a registration after a couple of days. \href{https://visualstudio.microsoft.com/downloads/}{\texttt{ Download it}} and install the Linux development with C++ workload.
+
+Elektra development mainly happens on GNU/\+Linux distributions. Therefore, it makes sense to use WSL if you have Windows 10 installed on your PC. For the beginning, it does not matter if you choose WSL 1 or WSL 2. It is possible to convert them later.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4239}{}\doxysection{Download and Installation}\label{doc_tutorials_contributing-windows_md_autotoc_md4239}
+We assume you use Ubuntu as WSL distribution. Install the packages required for building from VS2022\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apt install g++ gdb make ninja-\/build rsync zip}
+
+\end{DoxyCode}
+
+
+Then clone the libelektra Git repository\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git clone git@github.com:ElektraInitiative/libelektra.git}
+
+\end{DoxyCode}
+
+
+and open it in VS2022.
+
+\begin{quote}
+{\bfseries{Note\+:}} This command should work both in a Windows Terminal and in a WSL Shell. If you do encounter problems (especially related to line endings), please \href{https://issues.libelektra.org}{\texttt{ report the issue}}. Running the command from a WSL Shell should always work, because that uses the Linux version of git. \end{quote}
+It will complain that Intelli\+Sense is out of date. In addition, the {\ttfamily Error List} at the bottom will show CMake errors about missing compilers. To solve this, you have to configure a Linux CMake project.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4240}{}\doxysection{Configure a Linux CMake project}\label{doc_tutorials_contributing-windows_md_autotoc_md4240}
+Microsoft has \href{https://docs.microsoft.com/en-us/cpp/linux/cmake-linux-configure?view=msvc-160}{\texttt{ even more information}} about this task.
+
+In the drop-\/down menu that says {\ttfamily x64-\/\+Debug (Default)} click {\ttfamily Manage Configurations...}. Add {\ttfamily WSL-\/\+GCC-\/\+Debug} and save the configuration.
+
+\begin{quote}
+You can remove {\ttfamily x64-\/\+Debug (Default)}. \end{quote}
+CMake generation will automatically restart. When it has completed, you can click the drop-\/down {\ttfamily Select Startup Item...} (by the green {\itshape Play} button).
+
+A long list of targets should appear. Choose {\ttfamily hello (bin\textbackslash{}hello)} and click the green {\itshape Play} button. You should now see the output {\ttfamily Hello world} in the Linux Console Window at the bottom.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4241}{}\doxysection{Why choose VS2022}\label{doc_tutorials_contributing-windows_md_autotoc_md4241}
+One advantage of using VS2022 is the graphical debugger. Search for {\ttfamily hello.\+c} in the Solution Explorer to the right. Create a breakpoint in the main function and run the program again using the green {\itshape Play} button.
+
+On the bottom-\/left you will see the windows {\ttfamily Autos}, {\ttfamily Locals} and {\ttfamily Watch 1}. Click on {\ttfamily Locals} to inspect the {\ttfamily Key $\ast$ k}. Right-\/click {\ttfamily key\+New} to access functions like {\ttfamily Peek Definition}.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4242}{}\doxysection{Disadvantages of VS2022}\label{doc_tutorials_contributing-windows_md_autotoc_md4242}
+One problem with VS2022 is that it currently doesn\textquotesingle{}t support opening project that are stored in the WSL filesystem. Accessing files on the Windows filesystem via WSL (required for compiling) is much slower. This means that compiling Elektra this way may take longer than expected.
+
+As an alternative you may want to consider using \href{https://code.visualstudio.com/}{\texttt{ Visual Studio Code}} (VSCode). VSCode doesn\textquotesingle{}t have as much graphical IDE features, but it has good C/\+C++ support and also includes a graphical debugger. Most importantly, developing in the WSL (including within the WSL filesystem) is explicitly supported via the \href{https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl}{\texttt{ WSL Remote Extension}}.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4243}{}\doxysection{Choosing your WSL version}\label{doc_tutorials_contributing-windows_md_autotoc_md4243}
+It makes sense to compare WSL 1 and WSL 2 and make an informed decision for one of them. Your setup may require adaptions, such as installing an SSH server in your Linux distribution.
+
+Good sources of information are\+:
+
+
+\begin{DoxyItemize}
+\item the article \href{https://docs.microsoft.com/en-us/windows/wsl/compare-versions}{\texttt{ Comparing WSL 1 and WSL 2}} from the official WSL documentation
+\item the blog post \href{https://devblogs.microsoft.com/cppblog/c-with-visual-studio-and-wsl2/}{\texttt{ C++ with Visual Studio and WSL2}}
+\item the official \href{https://docs.microsoft.com/en-us/cpp/linux/?view=msvc-160}{\texttt{ Linux with Visual Studio C++ documentation}}
+\end{DoxyItemize}
+
+Commands to change your WSL version can be found, for example, in the blog post \href{https://devblogs.microsoft.com/commandline/wsl-2-is-now-available-in-windows-insiders/}{\texttt{ WSL 2 is now available in Windows Insiders}}
+
+Like Microsoft, we generally recommend you start with WSL2 (the default). It should provide better performance and more complete support for many use cases.\hypertarget{doc_tutorials_contributing-windows_md_autotoc_md4244}{}\doxysection{Troubleshooting}\label{doc_tutorials_contributing-windows_md_autotoc_md4244}
+For further information, consider the official \href{https://docs.microsoft.com/en-us/cpp/linux/?view=msvc-160}{\texttt{ Linux with Visual Studio C++ documentation}}.
+
+If you choose to work with source code residing on a Windows filesystem mounted in WSL (e.\+g.{\ttfamily /mnt/c/...}), please enable the {\ttfamily metadata} option to prevent problems due to permissions not being persisted\+:
+
+
+\begin{DoxyItemize}
+\item Create or modify {\ttfamily /etc/wsl.conf} to contain the following section and setting\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[automount]}
+\DoxyCodeLine{options = "{}metadata"{}}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Restart the WSL VM by issuing {\ttfamily wsl -\/-\/shutdown} in your window console.
+\end{DoxyItemize}
+
+Building from sources residing on a mounted Windows file system may incur a significant performance penalty. Consider using your WSL home directory (e.\+g. {\ttfamily $\sim$/}) as your location for the Elektra sources. 

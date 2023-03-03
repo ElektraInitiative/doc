@@ -1,0 +1,911 @@
+.TH "key" 3elektra "Fri Mar 3 2023" "Version 0.9.12" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+key \- Key
+.PP
+ \- Key is an essential class that encapsulates key \fBname \fP, \fBvalue \fP and \fBmetainfo \fP\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Modules"
+
+.in +1c
+.ti -1c
+.RI "\fBMeta Info Manipulation Methods\fP"
+.br
+.RI "Methods to do various operations on Key metadata\&. "
+.ti -1c
+.RI "\fBMethods for Making Tests\fP"
+.br
+.RI "Methods to do various tests on Keys\&. "
+.ti -1c
+.RI "\fBName Manipulation Methods\fP"
+.br
+.RI "Methods to do various operations on Key names\&. "
+.ti -1c
+.RI "\fBValue Manipulation Methods\fP"
+.br
+.RI "Methods to do various operations on Key values\&. "
+.in -1c
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBKDB_PATH_SEPARATOR\fP   '/'"
+.br
+.RI "\fC/\fP is used to separate key names\&. "
+.ti -1c
+.RI "#define \fBKDB_PATH_ESCAPE\fP   '\\\\'"
+.br
+.RI "\fC\\\fP is used as escape character in the key name\&. "
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBelektraKeyFlags\fP { \fBKEY_VALUE\fP = 1 << 1, \fBKEY_FLAGS\fP = 3, \fBKEY_BINARY\fP = 1 << 4, \fBKEY_SIZE\fP = 1 << 11, \fBKEY_META\fP = 1 << 15, \fBKEY_NULL\fP = 1 << 16, \fBKEY_END\fP = 0 }"
+.br
+.RI "Allows \fBkeyNew()\fP to determine which information comes next\&. "
+.ti -1c
+.RI "enum \fBelektraCopyFlags\fP { \fBKEY_CP_NAME\fP = 1 << 0, \fBKEY_CP_STRING\fP = 1 << 1, \fBKEY_CP_VALUE\fP = 1 << 2, \fBKEY_CP_META\fP = 1 << 3, \fBKEY_CP_ALL\fP = KEY_CP_NAME | KEY_CP_VALUE | KEY_CP_META }"
+.br
+.RI "Copy options\&. "
+.ti -1c
+.RI "enum \fBelektraLockFlags\fP { \fBKEY_LOCK_NAME\fP = 1 << 17, \fBKEY_LOCK_VALUE\fP = 1 << 18, \fBKEY_LOCK_META\fP = 1 << 19 }"
+.br
+.RI "Lock options\&. "
+.ti -1c
+.RI "enum \fBelektraNamespace\fP { \fBKEY_NS_NONE\fP = 0, \fBKEY_NS_CASCADING\fP = 1, \fBKEY_NS_META\fP = 2, \fBKEY_NS_SPEC\fP = 3, \fBKEY_NS_PROC\fP = 4, \fBKEY_NS_DIR\fP = 5, \fBKEY_NS_USER\fP = 6, \fBKEY_NS_SYSTEM\fP = 7, \fBKEY_NS_DEFAULT\fP = 8 }"
+.br
+.RI "Elektra currently supported Key namespaces\&. "
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "Key * \fBkeyNew\fP (const char *name,\&.\&.\&.)"
+.br
+.RI "A practical way to fully create a Key object in one step\&. "
+.ti -1c
+.RI "Key * \fBkeyCopy\fP (Key *dest, const Key *source, \fBelektraCopyFlags\fP flags)"
+.br
+.RI "Copy or clear a key\&. "
+.ti -1c
+.RI "int \fBkeyDel\fP (Key *key)"
+.br
+.RI "A destructor for Key objects\&. "
+.ti -1c
+.RI "int \fBkeyClear\fP (Key *key)"
+.br
+.RI "Will clear all internal data of a Key\&. "
+.ti -1c
+.RI "uint16_t \fBkeyIncRef\fP (Key *key)"
+.br
+.RI "Increment the reference counter of a Key object\&. "
+.ti -1c
+.RI "uint16_t \fBkeyDecRef\fP (Key *key)"
+.br
+.RI "Decrement the reference counter of a Key object\&. "
+.ti -1c
+.RI "uint16_t \fBkeyGetRef\fP (const Key *key)"
+.br
+.RI "Return the current reference counter value of a Key object\&. "
+.ti -1c
+.RI "int \fBkeyLock\fP (Key *key, \fBelektraLockFlags\fP what)"
+.br
+.RI "Permanently lock parts of a Key\&. "
+.ti -1c
+.RI "int \fBkeyIsLocked\fP (const Key *key, \fBelektraLockFlags\fP what)"
+.br
+.RI "Checks which parts of a Key are locked\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Key is an essential class that encapsulates key \fBname \fP, \fBvalue \fP and \fBmetainfo \fP\&. 
+
+To use it include: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+.PP
+Key properties are:
+.IP "\(bu" 2
+\fBKey name \fP
+.IP "\(bu" 2
+\fBKey value \fP
+.IP "\(bu" 2
+\fBKey metadata \fP, including but not limited to:
+.IP "  \(bu" 4
+\fBKey comment \fP
+.IP "  \(bu" 4
+\fBKey owner \fP
+.IP "  \(bu" 4
+\fBUID, GID and filesystem-like mode permissions \fP
+.IP "  \(bu" 4
+\fBMode, change and modification times \fP
+.PP
+
+.PP
+.PP
+\fBABI\fP
+.RS 4
+Due to ABI compatibility, the \fCKey\fP structure is not defined in kdb\&.h, only declared\&. So you can only declare \fCpointers\fP to \fCKeys\fP in your program, and allocate and free memory for them with \fBkeyNew()\fP and \fBkeyDel()\fP respectively\&.
+.RE
+.PP
+\fBReference Counting\fP
+.RS 4
+Every key has its reference counter (see \fBkeyGetRef()\fP for longer explanation) that will be initialized with 0, that means a subsequent call of \fBkeyDel()\fP will delete the key\&. If you append the key to a keyset the reference counter will be incremented by one (see \fBkeyIncRef()\fP) and the key can't be deleted by a \fBkeyDel()\fP\&.
+.RE
+.PP
+\fB\fP
+.RS 4
+As you can imagine this refcounting allows you to put the Key in your own data structures\&. It can be a very powerful feature, e\&.g\&. if you need your own-defined ordering or different Models of your configuration\&.
+.RE
+.PP
+\fBCopy-On-Write\fP
+.RS 4
+Keys employ copy-on-write techniques to minimize memory footprint\&. If keys are copied or duplicated, they will point at the same name and value as the source key\&. Only if this data is changed, additional memory is allocated\&. 
+.RE
+.PP
+
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define KDB_PATH_ESCAPE   '\\\\'"
+
+.PP
+\fC\\\fP is used as escape character in the key name\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBdescription about key names \fP\&. 
+.RE
+.PP
+
+.SS "#define KDB_PATH_SEPARATOR   '/'"
+
+.PP
+\fC/\fP is used to separate key names\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBdescription about key names \fP\&. 
+.RE
+.PP
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBelektraCopyFlags\fP"
+
+.PP
+Copy options\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyCopy()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKEY_CP_NAME \fP\fP
+Flag for copying the key name 
+.TP
+\fB\fIKEY_CP_STRING \fP\fP
+Flag for copying the key value, if it is a string 
+.TP
+\fB\fIKEY_CP_VALUE \fP\fP
+Flag for copying the key value 
+.TP
+\fB\fIKEY_CP_META \fP\fP
+Flag for copying the key metadata 
+.TP
+\fB\fIKEY_CP_ALL \fP\fP
+Shorthand for copying name, value and metadata 
+.SS "enum \fBelektraKeyFlags\fP"
+
+.PP
+Allows \fBkeyNew()\fP to determine which information comes next\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyNew()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKEY_VALUE \fP\fP
+Flag for the key data 
+.TP
+\fB\fIKEY_FLAGS \fP\fP
+Allows to define multiple flags at once\&. 
+.TP
+\fB\fIKEY_BINARY \fP\fP
+Flag if the key is binary 
+.TP
+\fB\fIKEY_SIZE \fP\fP
+Flag for maximum size to limit value 
+.TP
+\fB\fIKEY_META \fP\fP
+Flag for metadata 
+.TP
+\fB\fIKEY_NULL \fP\fP
+Is \fInot\fP a flag, only as return value 
+.PP
+\fBDeprecated\fP
+.RS 4
+do not use 
+.RE
+.PP
+
+.TP
+\fB\fIKEY_END \fP\fP
+Used as a parameter terminator to \fBkeyNew()\fP 
+.SS "enum \fBelektraLockFlags\fP"
+
+.PP
+Lock options\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyLock()\fP, \fBkeyIsLocked()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKEY_LOCK_NAME \fP\fP
+lock the name of a key 
+.TP
+\fB\fIKEY_LOCK_VALUE \fP\fP
+lock the value of a key 
+.TP
+\fB\fIKEY_LOCK_META \fP\fP
+lock the meta data of a key 
+.SS "enum \fBelektraNamespace\fP"
+
+.PP
+Elektra currently supported Key namespaces\&. 
+.PP
+\fBSee also\fP
+.RS 4
+\fBkdbGet()\fP, \fBkeyGetNamespace()\fP 
+.RE
+.PP
+
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIKEY_NS_NONE \fP\fP
+no key given as parameter to \fBkeyGetNamespace()\fP 
+.TP
+\fB\fIKEY_NS_CASCADING \fP\fP
+cascading key, starts with /, abstract name for any of the namespaces below 
+.TP
+\fB\fIKEY_NS_META \fP\fP
+metakey, i\&.e\&. any key name not under other categories 
+.TP
+\fB\fIKEY_NS_SPEC \fP\fP
+spec contains the specification of the other namespaces 
+.TP
+\fB\fIKEY_NS_PROC \fP\fP
+proc contains process-specific configuration 
+.TP
+\fB\fIKEY_NS_DIR \fP\fP
+dir contains configuration from a specific directory 
+.TP
+\fB\fIKEY_NS_USER \fP\fP
+user key in the home directory of the current user 
+.TP
+\fB\fIKEY_NS_SYSTEM \fP\fP
+system key is shared for a computer system 
+.TP
+\fB\fIKEY_NS_DEFAULT \fP\fP
+default key used as a fallback if no other key is found 
+.SH "Function Documentation"
+.PP 
+.SS "int keyClear (Key * key)"
+
+.PP
+Will clear all internal data of a Key\&. After this call you will receive a fresh Key - with no value, metadata or name\&.
+.PP
+The reference counter will stay unmodified\&.
+.PP
+\fBNote\fP
+.RS 4
+that you might also clear() all aliases with this operation\&.
+.RE
+.PP
+.PP
+.nf
+int f (Key *k)
+{
+        keyClear (k);
+        // you have a fresh Key k here
+        keySetString (k, "value");
+        // the caller will get an empty Key k with an value
+}
+.fi
+.PP
+.PP
+\fBPostcondition\fP
+.RS 4
+\fCkey's\fP name is '/' 
+.PP
+\fCkey's\fP metadata is empty
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key that should be cleared
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP on success 
+.br
+\fI-1\fP on NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyDel()\fP for completely deleting a Key 
+.RE
+.PP
+
+.SS "Key* keyCopy (Key * dest, const Key * source, \fBelektraCopyFlags\fP flags)"
+
+.PP
+Copy or clear a key\&. Depending on the chosen \fCflags\fP \fBkeyCopy()\fP only copies certain parts of \fCsource\fP into \fCdest\fP\&.
+.PP
+.IP "\(bu" 2
+If \fBKEY_CP_NAME\fP is set, the key name will be copied from \fCsource\fP to \fCdest\fP\&.
+.IP "\(bu" 2
+If \fBKEY_CP_META\fP is set, the meta keys will be copied from \fCsource\fP to \fCdest\fP\&.
+.IP "\(bu" 2
+If \fBKEY_CP_VALUE\fP is set, the key value will be copied from \fCsource\fP to \fCdest\fP\&. Additionally, if \fCsource\fP is a binary key (\fBkeyIsBinary()\fP), \fCdest\fP will also be marked as binary\&. This means that even if \fBKEY_CP_META\fP is not set, the \fCbinary\fP meta key will be copied with \fBKEY_CP_VALUE\fP\&.
+.IP "\(bu" 2
+If \fBKEY_CP_STRING\fP is set, the key value will be copied from \fCsource\fP to \fCdest\fP, but only, if \fCsource\fP is \fInot\fP a binary key (\fBkeyIsBinary()\fP)\&. If \fCsource\fP is binary, \fBkeyCopy()\fP fails\&. If \fCdest\fP is binary, it will still be marked as binary after the copy\&. This cannot be used together with \fBKEY_CP_VALUE\fP\&. The main purpose of \fBKEY_CP_STRING\fP is for copying \fIinto\fP known string keys\&. It ensure that you don't accidentally convert string keys into binary keys\&.
+.PP
+.PP
+There is also the shorthand \fBKEY_CP_ALL\fP\&. It is equivalent to \fCKEY_CP_NAME | KEY_CP_VALUE | KEY_CP_META\fP, i\&.e\&. all key data supported by \fBkeyCopy()\fP will be copied from \fCsource\fP to \fCdest\fP\&.
+.PP
+Use this function when you need to copy into an existing key, e\&.g\&. because it was passed by a pointer in a function you can do so:
+.PP
+.PP
+.nf
+keyCopy (copy, orig, KEY_CP_ALL);
+.fi
+.PP
+ Most often you will want to duplicate an existing key\&. For this purpose the alias keyDup() exists\&. Calling
+.PP
+.PP
+.nf
+copy = keyDup (orig, KEY_CP_ALL);
+.fi
+.PP
+ is equivalent to
+.PP
+.PP
+.nf
+copy = keyCopy (keyNew ("/", KEY_END), orig, KEY_CP_ALL);
+.fi
+.PP
+ The reference counter will not be changed for both keys\&. Affiliation to keysets are also not affected\&.
+.PP
+Since metadata uses copy-on-write semantics there is only a constant memory cost to copying metadata\&.
+.PP
+When you pass a NULL-pointer as \fCsource\fP the pieces of \fCdest\fP specified by \fCflags\fP will be cleared\&.
+.PP
+Calling \fCkeyCopy (dest, NULL, KEY_CP_ALL)\fP is different from calling \fBkeyClear()\fP\&. The key will not be fully reset, the reference counter and internal flags will remain unchanged\&. Additionally, \fBkeyCopy()\fP respects \fBkeyLock()\fP state, while \fBkeyClear()\fP always works\&.
+.PP
+.PP
+.nf
+keyCopy (k, NULL, KEY_CP_ALL);
+// name, value and metadata of k have now been clear
+// lock flags, reference count, etc\&. remain unchanged
+.fi
+.PP
+ 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCdest\fP must be a valid Key (created with keyNew) 
+.PP
+\fCdest\fP must not have read-only flags set 
+.PP
+\fCsource\fP must be a valid Key or NULL 
+.RE
+.PP
+\fBInvariant\fP
+.RS 4
+Key name stays valid until delete 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+Value from Key source is written to Key dest
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIdest\fP the key which will be written to 
+.br
+\fIsource\fP the key which should be copied or NULL to clear the data of \fCdest\fP 
+.br
+\fIflags\fP specifies which parts of the key should be copied
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+\fCdest\fP 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fINULL\fP on memory allocation problems 
+.br
+\fINULL\fP when a part of \fCdest\fP that should be modified (e\&.g\&. name, value) was marked read-only, e\&.g\&. the name of \fCdest\fP will be read-only if \fCdest\fP is part of a KeySet 
+.br
+\fINULL\fP when \fCdest\fP is NULL 
+.br
+\fINULL\fP when both \fBKEY_CP_VALUE\fP and \fBKEY_CP_STRING\fP are set in \fCflags\fP 
+.br
+\fINULL\fP when both \fBKEY_CP_STRING\fP is set in \fCflags\fP and \fCsource\fP is a binary key (\fBkeyIsBinary()\fP)
+.RE
+.PP
+\fBSince\fP
+.RS 4
+0\&.9\&.5
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+keyDup() for duplicating an existing Key 
+.RE
+.PP
+
+.SS "uint16_t keyDecRef (Key * key)"
+
+.PP
+Decrement the reference counter of a Key object\&. As long as the reference counter is non-zero, \fC\fBkeyDel()\fP\fP operations on \fCkey\fP will be a no-op and return an error code\&.
+.PP
+\fBPostcondition\fP
+.RS 4
+\fCkey's\fP reference counter is >= 0 
+.PP
+\fCkey's\fP reference counter is < SSIZE_MAX
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object whose reference counter should get decreased
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the updated value of the reference counter 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIUINT16_MAX\fP on NULL pointer 
+.br
+\fI0\fP when the reference counter already was the minimum value 0, the reference counter will not be modified in this case
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetRef()\fP to retrieve the current reference count 
+.PP
+\fBkeyIncRef()\fP for increasing the reference counter and for a more complete explanation of the reference counting system 
+.PP
+\fBkeyDel()\fP for deleting a Key 
+.RE
+.PP
+
+.SS "int keyDel (Key * key)"
+
+.PP
+A destructor for Key objects\&. Every Key created by \fBkeyNew()\fP must be deleted with \fBkeyDel()\fP\&.
+.PP
+When the reference counter of \fCkey\fP is non-zero, this function will do nothing and simply return the current value of the reference counter\&.
+.PP
+It is therefore safe to call \fCkeyDel (k)\fP on any \fCKey * k\fP\&.
+.PP
+\fBPostcondition\fP
+.RS 4
+all memory related to \fCkey\fP will be freed
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object to delete
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP when the Key was freed 
+.br
+\fI-1\fP on NULL pointers 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the value of the reference counter, if it was non-zero
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyNew()\fP for creating a new Key 
+.PP
+\fBkeyIncRef()\fP for more information about the reference counter 
+.RE
+.PP
+
+.SS "uint16_t keyGetRef (const Key * key)"
+
+.PP
+Return the current reference counter value of a Key object\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key whose reference counter to retrieve
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the value of the \fCkey's\fP reference counter 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI-1\fP on NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyIncRef()\fP for increasing the reference counter and for a more complete explanation of the reference counting system 
+.PP
+\fBkeyDecRef()\fP for decreasing the reference counter 
+.RE
+.PP
+
+.SS "uint16_t keyIncRef (Key * key)"
+
+.PP
+Increment the reference counter of a Key object\&. As long as the reference counter is non-zero, \fC\fBkeyDel()\fP\fP operations on \fCkey\fP will be a no-op and return an error code\&.
+.PP
+Elektra's system for reference counting is not based on a concept of shared ownership\&. It is more similar to a shared lock, where the counter is used to keep track of how many clients hold the lock\&.
+.PP
+Initially, the reference counter will be 0\&. This is can be interpreted as the lock being unlocked\&. When you increment the reference counter, the lock becomes locked and \fC\fBkeyDel()\fP\fP is blocked and fails\&. Only when the reference counter is fully decremented back down to 0 again, will \fC\fBkeyDel()\fP\fP work again\&.
+.PP
+\fBNote\fP
+.RS 4
+The reference counter can never exceed \fCUINT16_MAX - 1\fP\&. \fCUINT16_MAX\fP is reserved as an error code\&.
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+\fCkey's\fP reference counter is > 0 
+.PP
+\fCkey's\fP reference counter is <= UINT16_MAX - 1
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object whose reference counter should be increased
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the updated value of the reference counter 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fIUINT16_MAX\fP on NULL pointer 
+.br
+\fIUINT16_MAX\fP when the reference counter already was the maximum value \fCUINT16_MAX - 1\fP, the reference counter will not be modified in this case
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetRef()\fP to retrieve the current reference count 
+.PP
+\fBkeyDecRef()\fP for decreasing the reference counter 
+.PP
+\fBkeyDel()\fP for deleting a Key 
+.RE
+.PP
+
+.SS "int keyIsLocked (const Key * key, \fBelektraLockFlags\fP what)"
+
+.PP
+Checks which parts of a Key are locked\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key that should be checked for locks 
+.br
+\fIwhat\fP the parts of the Key that should checked for locks
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the bits that are locked 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if nothing is locked 
+.br
+\fI-1\fP on error (NULL pointer)
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyLock()\fP for locking a Key 
+.RE
+.PP
+
+.SS "int keyLock (Key * key, \fBelektraLockFlags\fP what)"
+
+.PP
+Permanently lock parts of a Key\&. This can be:
+.IP "\(bu" 2
+KEY_LOCK_NAME to lock the name
+.IP "\(bu" 2
+KEY_LOCK_VALUE to lock the value
+.IP "\(bu" 2
+KEY_LOCK_META to lock the metadata
+.PP
+.PP
+To unlock the Key, duplicate it\&.
+.PP
+It is also possible to lock the Key when it is created with \fBkeyNew()\fP\&.
+.PP
+Some data structures need to lock the Key (most likely its name), so that the ordering does not get confused\&.
+.PP
+\fBPostcondition\fP
+.RS 4
+keyIsLocked(key, what) == what
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key that should be locked 
+.br
+\fIwhat\fP the parts of the Key that should be locked (see above)
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the bits that were successfully locked 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if everything was locked before 
+.br
+\fI-1\fP if it could not be locked (NULL pointer)
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyIsLocked()\fP for checking whether a Key is locked 
+.PP
+\fBkeyNew()\fP for creating a new Key 
+.PP
+keyDup() for duplicating an existing Key 
+.PP
+\fBksAppendKey()\fP appends a Key to a \fBKeySet\fP (and locks it) 
+.RE
+.PP
+
+.SS "Key* keyNew (const char * name,  \&.\&.\&.)"
+
+.PP
+A practical way to fully create a Key object in one step\&. To just get a key object, simple do:
+.PP
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user:/some/example", KEY_END);
+// work with it
+keyDel (k);
+.fi
+.PP
+ \fBkeyNew()\fP allocates memory for a key object and \fBkeyDel()\fP cleans everything up\&.
+.PP
+If you want the key object to contain a name, value, comment and other meta info read on\&.
+.PP
+\fBNote\fP
+.RS 4
+When you already have a key with similar properties its easier to keyDup() the key\&.
+.RE
+.PP
+You can call \fBkeyNew()\fP in many different ways depending on the attribute tags you pass as parameters\&. Tags are represented as \fBelektraKeyFlags\fP values, and tell \fBkeyNew()\fP which Key attribute comes next\&. The Key attribute tags are the following:
+.IP "\(bu" 2
+\fBKEY_VALUE\fP 
+.br
+ Next parameter is a pointer to the value that will be used\&. If no \fBKEY_BINARY\fP was used before, a string is assumed\&. 
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user:/tmp/ex0",
+        KEY_VALUE, "some data",    // set a string value
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_SIZE\fP 
+.br
+ Define a maximum length of the value\&. This is only used when setting a binary key\&. 
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user:/tmp/ex1",
+        KEY_SIZE, 4,               // has no effect on strings
+        KEY_VALUE, "some data",    // set a string value
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_META\fP 
+.br
+ Next two parameter is a metaname and a metavalue\&. See \fBkeySetMeta()\fP\&. 
+.PP
+.nf
+Key *k=keyNew("user:/tmp/ex3",
+        KEY_META, "comment/#0", "a comment",  // with a comment
+        KEY_META, "owner", "root",         // and an owner
+        KEY_META, "special", "yes",        // and any other metadata
+        KEY_END);                  // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_END\fP 
+.br
+ Must be the last parameter passed to \fBkeyNew()\fP\&. It is always required, unless the \fCkeyName\fP is 0\&.
+.IP "\(bu" 2
+\fBKEY_FLAGS\fP 
+.br
+ Bitwise disjunction of flags, which don't require one or more values\&. recommended way to set multiple flags\&. overrides previously defined flags\&. 
+.PP
+.nf
+Key *k=keyNew("user:/tmp/ex3",
+        KEY_BINARY,                     // binary key
+        KEY_SIZE, 7,                    // assume binary length 7
+        KEY_VALUE, "some data",         // value that will be truncated in 7 bytes
+        KEY_END);                       // end of args
+
+.fi
+.PP
+
+.IP "\(bu" 2
+\fBKEY_BINARY\fP 
+.br
+ Allows one to change the key to a binary key\&. Make sure that you also pass \fBKEY_SIZE\fP before you set the value\&. Otherwise it will be cut off with first \\0 in the string\&. So this flag toggle from \fBkeySetString()\fP to \fBkeySetBinary()\fP\&. If no value (nor size) is given, it will be a NULL key\&. 
+.PP
+.nf
+// Create and initialize a key with a name and nothing else
+Key *k=keyNew("user:/tmp/ex2",
+        KEY_BINARY,
+        KEY_SIZE, 4,               // now the size is important
+        KEY_VALUE, "some data",    // sets the binary value ("some")
+        KEY_END);                  // end of args
+
+.fi
+.PP
+.PP
+.PP
+.nf
+Key *k=keyNew("user:/tmp/ex4",
+        KEY_BINARY,                     // key type
+        KEY_SIZE, 7,                    // assume binary length 7
+        KEY_VALUE, "some data",         // value that will be truncated in 7 bytes
+        KEY_META, "comment/#0", "value is truncated",
+        KEY_END);                       // end of args
+.fi
+.PP
+ 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCname\fP is a valid Key name 
+.PP
+Variable arguments are a valid combination 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+returns a new, fully initialized Key object with the valid Key name and all data given by variable arguments
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIname\fP a valid name to the key (see \fBkeySetName()\fP)
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to a new allocated and initialized Key object\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fINULL\fP on allocation error or if an invalid \fCname\fP was passed (see \fBkeySetName()\fP)\&.
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyDel()\fP for deallocating a created Key object 
+.PP
+\fBkeySetName()\fP for rules about which names are considered valid 
+.RE
+.PP
+
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.
