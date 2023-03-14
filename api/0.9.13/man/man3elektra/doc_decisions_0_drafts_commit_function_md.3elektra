@@ -1,0 +1,59 @@
+.TH "doc_decisions_0_drafts_commit_function_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_0_drafts_commit_function_md \- Commit Function 
+ 
+.SH "Problem"
+.PP
+When \fC\fBkdbSet()\fP\fP is called, plugins implementing the commit role, need to internally track their state to distinguish between carrying out that role and carrying out potential other roles (commit and setresolver for the resolver plugin, for example)\&. This limits the possibilities of plugin reuse and the ways plugins can be combined\&.
+.PP
+More generally, this problem applies to all plugins with one function that is called multiple times for different reasons\&.
+.PP
+Between \fClibelektra-kdb\fP and a backend plugins there is a \fBcontract\fP that uses 'phases' for this\&.
+.PP
+With the introduction of the new backend, a new \fCkdbCommit\fP function was introduced to \fCstruct _Plugin\fP (matching \fCkdbError\fP)\&. We also added a \fCkdbInit\fP\&. Therefore, some phases of \fCkdbGet\fP/\fCkdbSet\fP now use separate functions, but not all of them do\&. This partial use of separate functions can be weird and unintuitive\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+Plugins should not have internal state that tracks how often a function has been called to determine what the function should do next\&.
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "1." 4
+Keep the current 'partial separation' approach\&.
+.PP
+So far, there has been no technical reason why some phases use separate functions and others do not\&. At least there has been no explanation, why separate \fCkdbCommit\fP/\fCkdbError\fP would be better than having some other way of knowing the phase\&.
+.IP "2." 4
+Fully separate the functions with one function for each of the phases \fClibelektra-kdb\fP knows\&.
+.PP
+This would introduce a lot of symbols, which would bloat \fCstruct _Plugin\fP\&. The bloat could be avoided by choosing the approach in the \fBPlugin Contract Function\fPPlugin Contract Function'' decision that removes the function pointers from \fCstruct _Plugin\fP\&.
+.IP "3." 4
+Only use \fCkdbOpen\fP, \fCkdbGet\fP, \fCkdbSet\fP and \fCkdbClose\fP functions matching the ones in \fClibelektra-kdb\fP\&. Communicate the current phase via the \fCelektraPluginGetPhase\fP function\&.
+.PP
+Matching the functions from \fClibelektra-kdb\fP makes it clear, which plugin function gets used for which \fCkdb*\fP call\&. The API does not make it obvious that phases exist\&. Plugins that handle multiple phases must call \fCelektraPluginGetPhase\fP to know what phase is being executed\&. Also using a single \fCelektraPluginGetPhase\fP function means all phases must share a single type, even if not all phases are shared between \fCkdbGet\fP and \fCkdbSet\fP\&.
+.IP "4." 4
+Like 3, but instead of using a \fCelektraPluginGetPhase\fP function, directly pass a \fCElektraGetPhase phase\fP/\fCElektraSetPhase phase\fP parameter\&.
+.PP
+This API makes it very clear that phases exist and that the plugin might need to handle them\&. It also allows using separate types for the phases of \fCkdbGet\fP and \fCkdbSet\fP\&. However, a big downside of this approach is that it adds an extra parameter to the API that will be unused by many plugins\&.
+.PP
+This API also allows plugins to call other plugins to execute a different phase\&. This could be a good thing or a bad thing\&.
+.PP
+.SH "Decision"
+.PP
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBPlugin Contract Function\fP
+.IP "\(bu" 2
+\fBPlugin Struct\fP
+.PP
+.SH "Notes"
+.PP
+

@@ -1,0 +1,109 @@
+.TH "doc_doxygen_README_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_doxygen_README_md \- Doxygen 
+ \fCDoxygen\fP is used to generate documentation of the API and Markdown files\&. The output formats can be:
+.PP
+.IP "\(bu" 2
+HTML sites (online documentation)
+.IP "\(bu" 2
+Latex files (offline documentation)
+.IP "\(bu" 2
+RTFs (MS-Word)
+.IP "\(bu" 2
+PostScript files
+.IP "\(bu" 2
+hyperlinked PDFs
+.IP "\(bu" 2
+Unix man pages
+.PP
+.PP
+When referencing Markdown files, the links between them will be resolved with the \fBMarkdown Link Converter\fP\&.
+.SH "Usage"
+.PP
+To invoke the generation with Doxygen, the so-called Doxyfile is needed:
+.PP
+.PP
+.nf
+doxygen Doxyfile
+.fi
+.PP
+.PP
+Elektra's Doxyfile is located at \fC<PROJECT_ROOT>/doc/Doxyfile\fP\&. This file is used for the configuration of the whole documentation generation process\&. The documentation for the Doxyfile can either be found within the file or at the \fCDoxygen Website\fP\&.
+.SH "Mermaid JS"
+.PP
+\fCMermaid JS\fP is used for generating diagrams within the API\&. The graphs and diagrams are stored as \fC\&.mmd\fP files and are located at \fC<PROJECT_ROOT>/doc/images/mermaid\fP\&.
+.PP
+Mermaid files can be included using the configured alias in the Doxyfile:
+.PP
+.PP
+.nf
+ALIASES += mermaid{1}="@htmlonly <div class=\"mermaid\"> ^^ @endhtmlonly @htmlinclude \"\1\&.mmd\" @htmlonly ^^ </div> @endhtmlonly"
+.fi
+.PP
+.PP
+The alias shows that the new command \fCmermaid\fP needs one parameter\&. This parameter is the name of the Mermaid file \fBwithout\fP the file extension\&.
+.PP
+The command can be used inside the API documentation as follows:
+.PP
+.PP
+.nf
+
+.fi
+.PP
+.PP
+In Markdown files there is currently no support for including Mermaid files within them easily\&. One solution is to write Mermaid code within Markdown:
+.PP
+````sMarkdown 
+.PP
+.nf
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+
+.fi
+.PP
+ ````s
+.PP
+The other solution would be to convert the Mermaid files to SVGs and including them automatically\&. For this task, \fCMermaid CLI\fP could be used\&.
+.PP
+\fBNOTE\fP: Mermaid CLI is currently not integrated in Elektra\&.
+.PP
+For further information on Mermaid JS and Doxygen, \fCthis tutorial\fP had been used to include Mermaid JS\&.
+.SH "Working Locally"
+.PP
+When working with Doxygen locally, some obstacles have to be overcome\&.
+.PP
+First of all, CMake variables are used all over the Doxyfile:
+.PP
+.PP
+.nf
+\&.\&.\&.
+PROJECT_LOGO = @PROJECT_SOURCE_DIR@/doc/images/logo/logo_color_doxygen\&.svg
+\&.\&.\&.
+.fi
+.PP
+.PP
+\fC@PROJECT_SOURCE_DIR@\fP is such a variable, they can be detected by the leading and ending @ sign\&. CMake replaces those variables with meaningful values within the make process of the project\&.
+.PP
+As developers do not tend to execute the make process each time before testing some changes in the Doxyfile, it is recommended to maintain a copy of the Doxyfile, a local version\&.
+.PP
+As the main goal is that Doxygen generates useful output, the local version needs to be adapted\&. This can either be done by searching and replacing variables in the local Doxyfile or using the Doxywizard:
+.PP
+.PP
+.nf
+doxywizard Doxyfile-local
+.fi
+.PP
+.PP
+The \fCDoxywizard\fP is a GUI that helps to set values in the Doxyfile\&. The benefit of using the GUI is that each possible command is explained and invalid values for commands are highlighted red\&. This helps to find those values that lead to exceptions\&.
+.PP
+.PP
+.PP
+\fBNOTE\fP: The local Doxyfile should never be integrated in the version control system\&. Each change made to the local Doxyfile needs to be integrated to the actual Doxyfile by \fBusing the CMake variables\fP of the project\&.
+.PP
+.PP
+ 

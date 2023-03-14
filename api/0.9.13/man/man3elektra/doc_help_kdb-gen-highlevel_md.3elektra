@@ -1,0 +1,102 @@
+.TH "doc_help_kdb-gen-highlevel_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-gen-highlevel_md \- kdb-gen-highlevel(1) -- High-level API code-generator template 
+ 
+.SH "SYNOPSIS"
+.PP
+\fCkdb gen highlevel <parentKey> <outputName> [parameters\&.\&.\&.]\fP
+.PP
+.IP "\(bu" 2
+\fC<parentKey>\fP: the parent key to use, MUST be in the \fCspec\fP namespace
+.IP "\(bu" 2
+\fC<outputName>\fP: the base name of the output files\&. \fC\&.c\fP will be appended for the source file and \fC\&.h\fP for the header file\&.
+.IP "\(bu" 2
+\fC[parameters\&.\&.\&.]\fP: see \fCbelow\fP
+.PP
+.SH "DESCRIPTION"
+.PP
+This command invokes the code-generator with the template for the high-level API\&.
+.PP
+The input for this template is a specification\&. Keys below the \fCparentKey\fP which have a \fCtype\fP metakey are considered part of this specification\&. Every such key must also either have a \fCdefault\fP metadata or alternatively must be marked with the \fCrequire\fP metakey\&. Keys marked with \fCrequire\fP must be set by the user, otherwise the initialization of the Elektra handle will fail\&.
+.PP
+The \fCtype\fP metakey may only have one of the following values: \fCenum\fP, \fCstring\fP, \fCboolean\fP, \fCchar\fP, \fCoctet\fP, \fCshort\fP, \fCunsigned_short\fP, \fClong\fP, \fCunsigned_long\fP, \fClong_long\fP, \fCunsigned_long_long\fP, \fCfloat\fP, \fCdouble\fP, \fClong_double\fP, \fCstruct\fP, \fCstruct_ref\fP and \fCdiscriminator\fP\&. Most of these values correspond to the values supported by the high-level API, the remaining values (\fCenum\fP, \fCstruct\fP, \fCstruct_ref\fP, \fCdiscriminator\fP) are treated specially and are part of advanced concepts\&. For more information on these concepts take a look at \fBelektra-highlevel-gen(7)\fP\&. If one of the advanced \fCtype\fP values is used, you should also set \fCcheck/type = any\fP; otherwise the \fCtype\fP plugin may produce an error\&.
+.PP
+The template produces at least three output files: \fC<outputName>\&.c\fP, \fC<outputName>\&.h\fP and \fC<outputName>\&.mount\&.sh\fP\&. The \fC\&.c\fP file only contains implementations, therefore its precise content will not be documented\&.
+.PP
+The header (\fC\&.h\fP) file contains the following parts:
+.PP
+.IP "1." 4
+Generated \fCenum\fPs and \fCstruct\fPs
+.IP "2." 4
+Declarations for generated accessor functions
+.IP "3." 4
+Tags for accessing keys
+.IP "4." 4
+\fCstatic inline\fP accessor functions for all tags
+.IP "5." 4
+Declarations of initialization functions
+.IP "6." 4
+Convenience accessor macros
+.PP
+.PP
+Anything else that may be part of the header file is not considered public API and may be subject to change at any point in time\&. There is also no guarantee of full compatibility between Elektra version for the documented parts of the header, however, we try to have as little breaking changes as possible for the six parts listed above\&.
+.PP
+The \fC\&.mount\&.sh\fP file is a shell script that can be used to mount the specification for the application\&. You can either use it as a basis for your own script, or wrap it in another script that correctly sets \fCAPP_PATH\fP or \fCSPEC_FILE\fP (depending on your configuration)\&. If the generated script happens to use the correct paths already, you can of course use it directly as well\&.
+.PP
+For detailed information about the contents of the header file see \fBelektra-highlevel-gen(7)\fP\&.
+.SH "PARAMETERS"
+.PP
+.IP "\(bu" 2
+\fCinitFn\fP: Changes the name of the initialization function (default: \fCloadConfiguration\fP)
+.IP "\(bu" 2
+\fChelpFn\fP: Changes the name of the function that prints the generated help message (default: \fCprintHelpMessage\fP)
+.IP "\(bu" 2
+\fCspecloadFn\fP: Changes the name of the function that checks for 'specload mode' (default: \fCexitForSpecload\fP)
+.IP "\(bu" 2
+\fCtagPrefix\fP: Changes the prefix of the generated tags (default: \fCELEKTRA_TAG_\fP)
+.IP "\(bu" 2
+\fCembedHelpFallback\fP: Switches whether a fallback help message should be embedded; allowed values: \fC1\fP (default), \fC0\fP If enabled (\fC1\fP), a help message will be generated from the specification passed to the code-generator and embedded into the application\&. This message will be used, if the normal help message could not be generated at runtime\&.
+.IP "\(bu" 2
+\fCenumConv\fP: Switches how enum conversion should be done; allowed values: \fCdefault\fP (default), \fCswitch\fP, \fCstrcmp\fP
+.IP "  \(bu" 4
+\fCstrcmp\fP: uses a simple series of \fCif (strcmp(*, *) == 0)\fP to convert strings into enums
+.IP "  \(bu" 4
+\fCswitch\fP: constructs a series of \fCswitch\fP statements to convert strings into enums
+.IP "  \(bu" 4
+\fCauto\fP: uses a \fCswitch\fP up to a depth of 2, then switches to \fCstrcmp\fP
+.PP
+
+.IP "\(bu" 2
+\fCheaders\fP: Comma-separated (\fC,\fP) list of additional header files to include\&. For each of the listed headers we will generate an \fC#include '*'\fP statement
+.IP "\(bu" 2
+\fCgenSetters\fP: Switches whether setters should be generated at all; allowed values: \fC1\fP (default), \fC0\fP
+.IP "\(bu" 2
+\fCembeddedSpec\fP: Changes how much of the specification is embedded into the application; allowed values: \fCfull\fP (default), \fCdefaults\fP, \fCnone\fP\&. see \fBelektra-highlevel-gen(7)\fP
+.PP
+.SH "EXAMPLES"
+.PP
+The simplest invocation is:
+.PP
+\fCkdb gen highlevel /sw/org/app/#0/current config\fP
+.PP
+However, it is not recommended having the code-generator read from the KDB, so one should instead use:
+.PP
+\fCkdb gen -F ni=spec\&.ini highlevel /sw/org/app/#0/current config\fP
+.PP
+If you don't want to embed the full specification in your binary, we recommend:
+.PP
+\fCkdb gen -F ni=spec\&.ini highlevel /sw/org/app/#0/current config embeddedSpec=defaults\fP
+.PP
+For the minimal binary size you may use (this comes with its own drawbacks, see \fBelektra-highlevel-gen(7)\fP):
+.PP
+\fCkdb gen -F ni=spec\&.ini highlevel /sw/org/app/#0/current config embeddedSpec=none\fP
+.SH "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBkdb(1)\fP for general information about the \fCkdb\fP tool\&.
+.IP "\(bu" 2
+\fBelektra-spec(7)\fP for an explanation of the \fCspec\fP namespace\&. 
+.PP
+

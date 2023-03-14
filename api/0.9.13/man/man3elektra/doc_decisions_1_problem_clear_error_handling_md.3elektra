@@ -1,0 +1,49 @@
+.TH "doc_decisions_1_problem_clear_error_handling_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_1_problem_clear_error_handling_md \- Error Handling 
+ 
+.SH "Problem"
+.PP
+There are ambiguous cases where the same return value can refer to multiple problems:
+.PP
+.IP "\(bu" 2
+name modifications which can be either invalid name or locking the key name
+.IP "\(bu" 2
+getting values of (non-)binary keys
+.PP
+.SH "Constraints"
+.PP
+We also have to consider that many parts of the API very constrained in what values they can use for error codes\&. If a function returns a pointer the only possible error value by definition is NULL\&.
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Change return types for many functions across the API
+.PP
+.SH "Decision"
+.PP
+.IP "\(bu" 2
+Update documentation in \fCdoc/dev/error-*\fP and link to them in the documentation for the module \fCkdb\fP
+.IP "\(bu" 2
+Add second channel for getting information about errors
+.IP "\(bu" 2
+Return error codes directly from functions where failures are expected, e\&.g\&. \fCkdbGet\fP, \fCkeySetName\fP
+.IP "\(bu" 2
+Harmonize return values from all functions and move error reporting to second channel
+.PP
+.SH "Rationale"
+.PP
+This simplifies and unifies error reporting across all functions\&. It also introduces a default way for the developers to handle error reporting\&. Developers of bindings for Elektra can rely on the existing error reporting feature without having to introduce custom error messages, that can vary wildly between different bindings\&.
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+Binary metadata vs flag #4194
+.PP
+.SH "Notes"
+.PP
+

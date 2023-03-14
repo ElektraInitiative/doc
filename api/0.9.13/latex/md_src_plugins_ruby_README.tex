@@ -1,0 +1,136 @@
+
+\begin{DoxyItemize}
+\item infos = Information about RUBY plugin is in keys below
+\item infos/author = Bernhard Denner \href{mailto:bernhard.denner@gmail.com}{\texttt{ bernhard.\+denner@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage
+\item infos/placements = getstorage setstorage
+\item infos/recommends =
+\item infos/status = maintained reviewed tested configurable global preview memleak experimental
+\item infos/description = Ruby plugin bridge, implement Elektra plugins with Ruby
+\end{DoxyItemize}\hypertarget{md_src_plugins_ruby_README_src_plugins_ruby_README_md}{}\doxysection{Introduction}\label{md_src_plugins_ruby_README_src_plugins_ruby_README_md}
+This plugin is an Elektra to Ruby bridge and makes is possible to implement Elektra plugins with Ruby. This plugin requires the {\ttfamily ruby} binding.\hypertarget{md_src_plugins_ruby_README_autotoc_md507}{}\doxysection{Installation}\label{md_src_plugins_ruby_README_autotoc_md507}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/ruby}.\hypertarget{md_src_plugins_ruby_README_autotoc_md508}{}\doxysection{Configuration Options}\label{md_src_plugins_ruby_README_autotoc_md508}
+The plugin has the following configuration options\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily script}\+: path to the Ruby plugin to use (mandatory)
+\end{DoxyItemize}\hypertarget{md_src_plugins_ruby_README_autotoc_md509}{}\doxysection{Usage}\label{md_src_plugins_ruby_README_autotoc_md509}
+Mount a configuration file using this plugin, which specifying the concrete Ruby Elektra plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount /.ssh/authorized\_keys user:/ssh/authorized\_keys ruby script=<path to elektra}
+\DoxyCodeLine{source>/src/plugins/ruby/ruby/ssh\_authorized\_keys.rb}
+\DoxyCodeLine{kdb ls user:/ssh/authorized\_keys}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_ruby_README_autotoc_md510}{}\doxysection{Implementing Ruby Plugins}\label{md_src_plugins_ruby_README_autotoc_md510}
+The following example illustrates how to implement a Elektra plugin with Ruby\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{require 'kdb'}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# call the static function 'define' to define a new Plugin. This}
+\DoxyCodeLine{\# function expects one argument and a block, which implements the plugin}
+\DoxyCodeLine{Kdb::Plugin.define :somename do}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# this is automatically defined}
+\DoxyCodeLine{  \#@plugin\_name = "{}somename"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# 'Open' method, called during Elektra plugin initialization}
+\DoxyCodeLine{  \# parameter:}
+\DoxyCodeLine{  \#  -\/ errorKey: Kdb::Key, add error information if required}
+\DoxyCodeLine{  \# returns:}
+\DoxyCodeLine{  \#  -\/ nil or 0: no error}
+\DoxyCodeLine{  \#  -\/ -\/1      : error during initialization}
+\DoxyCodeLine{  def open(errorKey)}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \# perform plugin initialization}
+\DoxyCodeLine{    \# if an error occurs it is save to simply throw an exception. This has the same}
+\DoxyCodeLine{    \# semantic as returning -\/1}
+\DoxyCodeLine{  end}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# the close method is currently not supported, since this will crash the}
+\DoxyCodeLine{  \# Ruby-\/VM if this method should be called during the VM.finalization !!!}
+\DoxyCodeLine{  \#def close(errorKey)}
+\DoxyCodeLine{  \#}
+\DoxyCodeLine{  \#end}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# 'check\_conf' method, called before this plugin is used for mounting to check}
+\DoxyCodeLine{  \# if the supplied config is valid. Missing or invalid config settings can be}
+\DoxyCodeLine{  \# 'corrected' or added.}
+\DoxyCodeLine{  \# Parameter:}
+\DoxyCodeLine{  \#  -\/ errorKey: Kdb::Key, to add error information}
+\DoxyCodeLine{  \#  -\/ config: Kdb::KeySet, holds all plugin configuration setting}
+\DoxyCodeLine{  \# returns:}
+\DoxyCodeLine{  \#  -\/ nil or 1 : success and the plugin configuration was NOT changed}
+\DoxyCodeLine{  \#  -\/        0 : the plugin configuration was changed and is now OK}
+\DoxyCodeLine{  \#  -\/       -\/1 : the configuration is NOT OK}
+\DoxyCodeLine{  def check\_conf(errorKey, config)}
+\DoxyCodeLine{}
+\DoxyCodeLine{  end}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# 'get' method, is called during a get cycle, to query all keys}
+\DoxyCodeLine{  \#}
+\DoxyCodeLine{  \# Parameter:}
+\DoxyCodeLine{  \#  -\/ returned : Kdb::KeySet, already holding keys to be manipulated or to be}
+\DoxyCodeLine{  \#               filled by a storage plugin. All added keys have to have the same}
+\DoxyCodeLine{  \#               key name prefix as given by parentKey.}
+\DoxyCodeLine{  \#  -\/ parentKey: Kdb::Key, defining the current Elektra path. The value of this key}
+\DoxyCodeLine{  \#               holds the configuration file name to read from}
+\DoxyCodeLine{  \# Returns:}
+\DoxyCodeLine{  \#  -\/ nil or 1 : on success}
+\DoxyCodeLine{  \#  -\/        0 : OK but nothing was to do}
+\DoxyCodeLine{  \#  -\/       -\/1 : failure}
+\DoxyCodeLine{  def get(returned, parentKey)}
+\DoxyCodeLine{}
+\DoxyCodeLine{  end}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# 'set' method, is called when writing a configuration file}
+\DoxyCodeLine{  \#}
+\DoxyCodeLine{  \# Parameter:}
+\DoxyCodeLine{  \#  -\/ returned : Kdb::KeySet, holding all keys which should be written to the}
+\DoxyCodeLine{  \#               config file.}
+\DoxyCodeLine{  \#  -\/ parentKey: Kdb::Key, defining the current Elektra path. The value of this key}
+\DoxyCodeLine{  \#               holds the configuration file name to write to}
+\DoxyCodeLine{  \# Returns:}
+\DoxyCodeLine{  \#  -\/ nil or 1 : on success}
+\DoxyCodeLine{  \#           0 : on success with no changed keys in database}
+\DoxyCodeLine{  \#          -\/1 : failure}
+\DoxyCodeLine{  def set(returned, parentKey)}
+\DoxyCodeLine{}
+\DoxyCodeLine{  end}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{  \# 'error' method, is called when some plugin had a problem during a write cycle}
+\DoxyCodeLine{  \#}
+\DoxyCodeLine{  \# Parameter:}
+\DoxyCodeLine{  \#  -\/ returned : Kdb::KeySet, holding all keys which should be written to the}
+\DoxyCodeLine{  \#               config file.}
+\DoxyCodeLine{  \#  -\/ parentKey: Kdb::Key, defining the current Elektra path. The value of this key}
+\DoxyCodeLine{  \#               holds the configuration file name to write to}
+\DoxyCodeLine{  \# Returns:}
+\DoxyCodeLine{  \#  -\/ nil or 1 : on success}
+\DoxyCodeLine{  \#           0 : on success with no action}
+\DoxyCodeLine{  \#          -\/1 : failure}
+\DoxyCodeLine{  def error(returned, parentKey)}
+\DoxyCodeLine{}
+\DoxyCodeLine{  end}
+\DoxyCodeLine{}
+\DoxyCodeLine{end}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_ruby_README_autotoc_md511}{}\doxysection{Known Issues}\label{md_src_plugins_ruby_README_autotoc_md511}
+
+\begin{DoxyItemize}
+\item The plugin might cause a SIGSEGV crash on application shutdown. This is a result of missing Ruby\+VM de initialization, which is silently ignored as we can\textquotesingle{}t determine if the Ruby VM is still needed or not (libelektra might be used by an Ruby application).
+\item The plugin does not work correctly with Ruby version managers like {\ttfamily rbenv} or {\ttfamily rvm} and is intended to be used with the Ruby ecosystem installed in system context. 
+\end{DoxyItemize}

@@ -1,0 +1,349 @@
+\label{doc_tutorials_highlevel_md_md_doc_tutorials_highlevel}%
+\Hypertarget{doc_tutorials_highlevel_md_md_doc_tutorials_highlevel}%
+ Most applications don\textquotesingle{}t need the flexibility of the low-\/level API (with {\ttfamily kdb\+Get}, {\ttfamily kdb\+Set}, etc.). In most cases an easy and safe way to access the configuration values is preferred. This is why we created the high-\/level API.
+
+There are two different ways of using the high-\/level API\+:
+
+
+\begin{DoxyEnumerate}
+\item directly
+\item via code-\/generation
+\end{DoxyEnumerate}
+
+The recommended way is via code-\/generation (which will be explained below). If you want to use the high-\/level API directly take a look at \mbox{\hyperlink{src_libs_highlevel_README_md}{its documentation}}. Please note, however, that certain features are only available through code-\/generation.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4288}{}\doxysection{Overview}\label{doc_tutorials_highlevel_md_autotoc_md4288}
+The code-\/generation API builds on Elektra\textquotesingle{}s specifications. Instead of just using specifications at runtime, the code-\/generator parses them when invoked (ideally right before compiling) and utilizes the specification when generating configuration accessor functions.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4289}{}\doxysection{Writing a specification}\label{doc_tutorials_highlevel_md_autotoc_md4289}
+The process of writing a full specification for your application is beyond the scope of this guide. We will just focus on the parts that are necessary for using the code-\/generation API.
+
+We will use this specification in the format of the {\ttfamily ni} plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[]}
+\DoxyCodeLine{mountpoint = myapp.ini}
+\DoxyCodeLine{}
+\DoxyCodeLine{[mydouble]}
+\DoxyCodeLine{type = double}
+\DoxyCodeLine{default = 0.0}
+\DoxyCodeLine{}
+\DoxyCodeLine{[myfloatarray/\#]}
+\DoxyCodeLine{type = float}
+\DoxyCodeLine{default = 1.1}
+
+\end{DoxyCode}
+
+
+In Elektra a specification is defined through the metadata of keys in the {\ttfamily spec} namespace. The specification above contains metadata for three keys\+:
+
+
+\begin{DoxyEnumerate}
+\item the parent key ({\ttfamily @})
+\item {\ttfamily @/mydouble}
+\item {\ttfamily @/myfloatarray/\#} (The {\ttfamily \#} at the end of {\ttfamily myfloatarray/\#} indicates that it is an array)
+\end{DoxyEnumerate}
+
+The {\ttfamily mountpoint} metadata on the parent key sets the name of our application\textquotesingle{}s config file (the location is defined by Elektra), it should be unique.
+
+The {\ttfamily type} metadata specifies the type of key. The available types can be found in the high-\/level API \mbox{\hyperlink{src_libs_highlevel_README_md}{Readme}} under \char`\"{}\+Data Types\char`\"{}. It is important to set the {\ttfamily type}, because the code-\/generator will ignore all keys that don\textquotesingle{}t have a {\ttfamily type}.
+
+Because we want our getters to be unable to fail (makes error handling trivial), we need to provide a {\ttfamily default} value as well. Note that {\ttfamily default}s for array keys like {\ttfamily myfloatarray/\#} only work via the {\ttfamily spec} plugin. If you didn\textquotesingle{}t mount everything correctly, you will get an error.
+
+That\textquotesingle{}s it. The code-\/generator just requires that each key (that you want to access) has a {\ttfamily type} and a {\ttfamily default} value.
+
+{\itshape Note\+:} You can also mark keys with the {\ttfamily require} metadata, if there is no reasonable default value. This is only recommended as a last resort, but still preserves the guarantee that {\ttfamily elektra\+Get$\ast$} calls won\textquotesingle{}t fail. If a {\ttfamily require}d key is missing, the initialization of the {\ttfamily Elektra} handle will fail.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4290}{}\doxysection{Invoking the code-\/generator}\label{doc_tutorials_highlevel_md_autotoc_md4290}
+The code-\/generator is a very powerful and flexible tool and has many options to tweak its output. If you want to know more about how to set up everything just the way you want to, take a look at the man-\/pages \mbox{\hyperlink{doc_help_kdb-gen_md}{\`{}kdb-\/gen(1)\`{}}} and \mbox{\hyperlink{doc_help_kdb-gen-highlevel_md}{\`{}kdb-\/gen-\/highlevel(1)\`{}}}.
+
+To get started the basic invocation of the code-\/generator should be enough\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb gen -\/F ni=spec.ini highlevel "{}/sw/example/myapp/\#0/current"{} conf}
+
+\end{DoxyCode}
+
+
+This tells the code-\/generator that your application uses the parent key {\ttfamily /sw/example/myapp/\#0/current} and that the output files should be called {\ttfamily conf.$\ast$}. The argument {\ttfamily highlevel} just specifies which template to use and the option {\ttfamily -\/F ni=spec.\+ini} indicates that the file {\ttfamily spec.\+ini} (in the {\ttfamily ni} plugin\textquotesingle{}s format) contains the specification. While the code-\/generator can read a specification from the KDB, we recommend you use the {\ttfamily -\/F} option. It keeps the KDB clean and can avoid troubles later on, when installing your application.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4291}{}\doxysection{Using the generated code}\label{doc_tutorials_highlevel_md_autotoc_md4291}
+You can now take a look at {\ttfamily conf.\+h} and {\ttfamily conf.\+c} (the files generated by the compiler). Depending on the specification you used, these files may be very long. They might also be formatted strangely, because of limitations in the code-\/generator. Feel free to reformat them with your tool of choice, before inspecting them.
+
+To explain how to use the generated code, lets take a look at some of {\ttfamily conf.\+h}. For brevity\textquotesingle{}s sake some parts of the file have been replaced by placeholder comments.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{/* file header ... */}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifndef CONF\_H}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define CONF\_H}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
+\DoxyCodeLine{\textcolor{keyword}{extern} \textcolor{stringliteral}{"{}C"{}} \{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{/* includes ... */}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{/* helper macros ... */}}
+
+\end{DoxyCode}
+
+
+First there is some boilerplate, including the copyright header, include statements and some helper macros.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define ELEKTRA\_TAG\_MYDOUBLE Mydouble}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define ELEKTRA\_TAG\_MYFLOATARRAY Myfloatarray}}
+
+\end{DoxyCode}
+
+
+Next we see all the \textquotesingle{}tag macros\textquotesingle{} used to refer to config values. These are essentially just aliases, but they allow for some flexibility in how we generate the names of the {\ttfamily static inline} functions further down. You should always refer to your config values via these macros, even if they are just aliases. This is because we might have to change the naming scheme for the functions, but we will try to keep the tag macros unchanged.
+
+Additionally, the comments for these macros contain the documentation on what arguments are needed for accessing the tag in question. For example to access the elements of the array {\ttfamily myfloatarray/\#}, we obviously need to provide an index.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define elektra\_len19(x) ((x) < 10000000000000000000ULL ? 19 : 20)}}
+\DoxyCodeLine{\textcolor{comment}{/* local macros ... */}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define elektra\_len(x) elektra\_len00 (x)}}
+
+\end{DoxyCode}
+
+
+Then we see some local helper macros only used in this file.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keyword}{inline} kdb\_double\_t ELEKTRA\_GET (Mydouble) (Elektra * elektra) \{ \textcolor{comment}{/* ... */} \}}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keyword}{inline} \textcolor{keywordtype}{void} ELEKTRA\_SET (Mydouble) (Elektra * elektra, kdb\_double\_t value, ElektraError ** error) \{ \textcolor{comment}{/* ... */} \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keyword}{inline} kdb\_float\_t ELEKTRA\_GET (Myfloatarray) (Elektra * elektra, kdb\_long\_long\_t index1) \{  \textcolor{comment}{/* ... */} \}}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keyword}{inline} \textcolor{keywordtype}{void} ELEKTRA\_SET (Myfloatarray) (Elektra * elektra, kdb\_float\_t value, kdb\_long\_long\_t index1, ElektraError ** error) \{ \textcolor{comment}{/* ... */} \}}
+
+\end{DoxyCode}
+
+
+This is the most important part of the header. It is what makes the API work.
+
+For each config value we generate an {\ttfamily ELEKTRA\+\_\+\+GET($\ast$)} and an {\ttfamily ELEKTRA\+\_\+\+SET($\ast$)} accessor function. All these functions are {\ttfamily static inline}, because they just call other getter/setter functions with partially fixed arguments. In fact many of these functions will only be a single line.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#undef elektra\_len19}}
+\DoxyCodeLine{\textcolor{comment}{/* local macros ... */}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#undef elektra\_len}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} loadConfiguration (Elektra ** elektra, \textcolor{keywordtype}{int} argc, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} * argv, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} * envp, ElektraError ** error);}
+\DoxyCodeLine{\textcolor{keywordtype}{void} printHelpMessage (Elektra * elektra, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * usage, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * prefix);}
+\DoxyCodeLine{\textcolor{keywordtype}{void} exitForSpecload (\textcolor{keywordtype}{int} argc, \textcolor{keyword}{const} \textcolor{keywordtype}{char} ** argv);}
+
+\end{DoxyCode}
+
+
+Then we undefine the local macros we defined before and declare the three initialization functions {\ttfamily load\+Configuration}, {\ttfamily print\+Help\+Message} and {\ttfamily exit\+For\+Specload}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{/* elektra* macros ... */}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#endif }\textcolor{comment}{// CONF\_H}}
+
+\end{DoxyCode}
+
+
+At the end of the file you will find the {\ttfamily elektra$\ast$} convenience macros. These macros can be used to make accessing config values look more like normal function calls and avoid the ugly double parentheses in e.\+g. {\ttfamily ELEKTRA\+\_\+\+GET (...) (...)}.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4292}{}\doxysubsection{Obtaining an $<$tt$>$\+Elektra$<$/tt$>$ handle}\label{doc_tutorials_highlevel_md_autotoc_md4292}
+We start at the bottom of our {\ttfamily conf.\+h} excerpt. {\ttfamily exit\+For\+Specload} is used to initiate specload mode, if needed. This mode makes your application provide its specification to Elektra. How this works exactly is not so important (see \mbox{\hyperlink{md_src_plugins_specload_README_src_plugins_specload_README_md}{specload plugin}}). You only need to know, that {\ttfamily exit\+For\+Specload} should be called immediately at the start of your {\ttfamily main} function and that it only returns, when your application is not in specload mode.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main}} (\textcolor{keywordtype}{int} argc, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} * argv, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * \textcolor{keyword}{const} * envp) \{}
+\DoxyCodeLine{    exitForSpecload (argc, argv);}
+\DoxyCodeLine{    \textcolor{comment}{// ...}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+To access your configuration, you first need to call {\ttfamily load\+Configuration} to get an {\ttfamily Elektra} handle for your application. This is done via a snippet that is more or less the same for all applications\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ElektraError * error = NULL;}
+\DoxyCodeLine{Elektra * elektra = NULL;}
+\DoxyCodeLine{\textcolor{keywordtype}{int} rc = loadConfiguration (\&elektra, argc, argv, envp, \&error);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (rc == -\/1)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    fprintf (stderr, \textcolor{stringliteral}{"{}An error occurred while opening Elektra: \%s"{}}, \mbox{\hyperlink{group__highlevel_ga781cda83af3981a55321e7c613afbef0}{elektraErrorDescription}} (error));}
+\DoxyCodeLine{    \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}} (\&error);}
+\DoxyCodeLine{    exit (EXIT\_FAILURE);}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (rc == 1)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    \textcolor{comment}{// help mode -\/ application was called with '-\/-\/help'}}
+\DoxyCodeLine{    \textcolor{comment}{// for more information see "{}Command line options"{} below}}
+\DoxyCodeLine{    printHelpMessage (elektra, NULL, NULL);}
+\DoxyCodeLine{    \mbox{\hyperlink{group__highlevel_ga9b688b7250e5f9d8ea6701cc2cc269af}{elektraClose}} (elektra);}
+\DoxyCodeLine{    exit (EXIT\_SUCCESS);}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Next it is recommended, you change the default handler for fatal errors. By default, we just call {\ttfamily exit (EXIT\+\_\+\+FAILURE)}, since we don\textquotesingle{}t know how you log your errors and what cleanup may be needed.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__highlevel_ga496441e9e1dd80ed14a239dfc4c08c40}{elektraFatalErrorHandler}} (elektra, onFatalError);}
+
+\end{DoxyCode}
+
+
+{\ttfamily on\+Fatal\+Error} will receive the fatal {\ttfamily Elektra\+Error $\ast$}. It must at least call {\ttfamily elektra\+Error\+Reset} on the error and then call {\ttfamily exit()}.
+
+If you want to try out the application immediately, skip down to the \href{\#compiling-your-application}{\texttt{ section about compiling}}. You may also have to follow the section on \href{\#running-your-application}{\texttt{ running your application}} to get everything up and running.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4293}{}\doxysubsection{Reading config values}\label{doc_tutorials_highlevel_md_autotoc_md4293}
+Once you have your {\ttfamily Elektra} instance, reading config values is easy. You just call one of the getter functions.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb\_double\_t mydouble = elektraGet (elektra, ELEKTRA\_TAG\_MYDOUBLE);}
+
+\end{DoxyCode}
+
+
+Here we used the convenience macro {\ttfamily elektra\+Get}. You could also invoke the {\ttfamily static inline} accessor function directly\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb\_double\_t mydouble = ELEKTRA\_GET (ELEKTRA\_TAG\_MYDOUBLE) (elektra);}
+
+\end{DoxyCode}
+
+
+No error handling is required, because getter functions are designed to not fail. In a correct setup, either the initialization fails and getters are never called, or getter calls always succeed.
+
+To access config values that don\textquotesingle{}t have a static key name, like arrays, you have to supply additional arguments (and use {\ttfamily elektra\+GetV})\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb\_float\_t myfloat0 = elektraGetV (elektra, ELEKTRA\_TAG\_MYFLOATARRAY, 0);}
+\DoxyCodeLine{kdb\_float\_t myfloat1 = elektraGetV (elektra, ELEKTRA\_TAG\_MYFLOATARRAY, 1);}
+\DoxyCodeLine{\textcolor{comment}{// or}}
+\DoxyCodeLine{kdb\_float\_t myfloat0 = ELEKTRA\_GET (ELEKTRA\_TAG\_MYFLOATARRAY) (elektra, 0);}
+\DoxyCodeLine{\textcolor{keywordtype}{float} myfloat1 = ELEKTRA\_GET (ELEKTRA\_TAG\_MYFLOATARRAY) (elektra, 1);}
+
+\end{DoxyCode}
+
+
+Of course, we also need to know how big the {\ttfamily myfloatarray/\#} array actually is. To that end we can use {\ttfamily ELEKTRA\+\_\+\+SIZE} or {\ttfamily elektra\+Size}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb\_long\_long\_t myfloat\_size = elektraSize (elektra, ELEKTRA\_TAG\_MYFLOATARRAY);}
+\DoxyCodeLine{\textcolor{comment}{// or}}
+\DoxyCodeLine{kdb\_long\_long\_t myfloat\_size = ELEKTRA\_SIZE (ELEKTRA\_TAG\_MYFLOATARRAY) (elektra);}
+
+\end{DoxyCode}
+
+
+{\ttfamily ELEKTRA\+\_\+\+SIZE} functions like their {\ttfamily ELEKTRA\+\_\+\+GET} counterparts are designed to not fail.
+
+Please note that even if you set up everything correctly, calling a getter on a non-\/existent, wrongly typed or otherwise inconvertible key is a fatal error. All fatal errors result in a call to the fatal error handler and therefore will exit the application.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4294}{}\doxysubsection{Writing config values}\label{doc_tutorials_highlevel_md_autotoc_md4294}
+Writing config values is not quite as easy as reading, but it is still quite simple\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ElektraError * error = NULL;}
+\DoxyCodeLine{ELEKTRA\_SET (ELEKTRA\_TAG\_MYDOUBLE) (elektra, 3.141593, \&error);}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (error == NULL) \{}
+\DoxyCodeLine{    \textcolor{comment}{// handle error}}
+\DoxyCodeLine{    \mbox{\hyperlink{group__highlevel_ga591f7ed4b57a341928bf7bb3d7adb693}{elektraErrorReset}} (\&error);}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+As you can see the complexity stems from the necessary error handling. Because setting values involves IO and other uncontrollable factors, setter calls cannot be designed to not fail. This is why they accept an additional {\ttfamily Elektra\+Error $\ast$$\ast$} argument. It is important to call {\ttfamily elektra\+Error\+Reset}, if an error was set. Calling a setter with a non-\/null {\ttfamily Elektra\+Error $\ast$$\ast$} parameter is a fatal error.
+
+Of course, you can also use {\ttfamily elektra\+Set} (error handling omitted)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{elektraSet (elektra, ELEKTRA\_TAG\_MYDOUBLE, 3.141593, \&error);}
+\DoxyCodeLine{elektraSetV (elektra, ELEKTRA\_TAG\_MYFLOATARRAY, 2.718282f, \&error, 2);}
+
+\end{DoxyCode}
+
+
+Note that {\ttfamily elektra\+SetV} takes the {\ttfamily Elektra\+Error} argument before the variable arguments, while in {\ttfamily ELEKTA\+\_\+\+SET} the error is always the last argument. This is because of limitations in the C macro system.
+
+There is no setter for array sizes. Since Elektra\textquotesingle{}s low-\/level part supports discontinuous arrays, we simply change the array size whenever necessary, if an array element setter is called. However, the high-\/level API has no support for discontinuous arrays, so take care not to create holes in your arrays, if you want to iterate over them. Remember, accessing non-\/existent keys (and this includes array elements) is a fatal error.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4295}{}\doxysubsection{Command-\/line options}\label{doc_tutorials_highlevel_md_autotoc_md4295}
+The generated {\ttfamily load\+Configuration} function automatically mounts the {\ttfamily gopts} plugin. This means that command-\/line options (as described \mbox{\hyperlink{doc_tutorials_command-line-options_md}{here}}) are parsed and their values are set on the corresponding keys. You don\textquotesingle{}t have to do anything, apart from setting the {\ttfamily opt} metadata. The only exception to that is the {\itshape help mode}.
+
+When your application is called with {\ttfamily -\/h} or {\ttfamily -\/-\/help}, we enter help mode. This is indicated by the return value {\ttfamily 1} of {\ttfamily load\+Configuration}. As you can see in the example above, you should call {\ttfamily print\+Help\+Message} to print an appropriate help message to {\ttfamily stdout} and then close the allocated {\ttfamily Elektra} instance and {\ttfamily exit}. {\bfseries{Beware}} an {\ttfamily Elektra} instance created in help mode may not be fully functional, which is why you should immediately close it once you called {\ttfamily print\+Help\+Message}.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4296}{}\doxysubsection{Advanced concepts}\label{doc_tutorials_highlevel_md_autotoc_md4296}
+The code-\/generator has some more advanced features that are supported out of the box. For example, you can read multiple config values at once by utilizing structs. The use of structs also allows for recursive configurations like menus (a menu can have submenus).
+
+For more information take a look at the man-\/page \mbox{\hyperlink{doc_help_kdb-gen-highlevel_md}{\`{}kdb-\/gen-\/highlevel(1)\`{}}}.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4297}{}\doxysection{Compiling your application}\label{doc_tutorials_highlevel_md_autotoc_md4297}
+Once you\textquotesingle{}ve written your application, you will want to compile it. This requires linking some libraries and adding to your include path. The easiest way is to use CMake or pkg-\/config to find the needed compiler options. Examples on how set this up can be found in here and here.
+
+The compiler invocation should look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cc myapp.c conf.c `pkg-\/config -\/-\/cflags -\/-\/libs elektra-\/codegen` -\/I. -\/o myapp -\/Wl,-\/rpath `pkg-\/config -\/-\/variable=libdir elektra-\/codegen`}
+
+\end{DoxyCode}
+
+
+Note\+: At least C99 is required, so if your compiler defaults to an older version you\textquotesingle{}ll need to add {\ttfamily -\/std=c99}.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4298}{}\doxysection{Running your application}\label{doc_tutorials_highlevel_md_autotoc_md4298}
+Running your application is easy, just run the executable (e.\+g. {\ttfamily myapp}). While this might work out of the box, you will just get the default configuration. To change the configuration you need to use {\ttfamily kdb}, which doesn\textquotesingle{}t know about your specification yet. This means you would need to set the {\ttfamily type} metadata and all the other stuff that your application expects by hand. For every single key. Obviously this is not the right solution.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4299}{}\doxysubsection{Mounting the specification}\label{doc_tutorials_highlevel_md_autotoc_md4299}
+A better solution is to inform Elektra (and {\ttfamily kdb}) about our specification. Then Elektra automatically copies metadata to where it should be.
+
+First you need to mount your specification itself into the KDB. Mounting is basically the process of informing Elektra about a new part of the KDB, similar to how mounting an external hard drive informs the OS about a new part of the file system.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount -\/R noresolver /etc/myapp\_spec.eqd "{}spec:/sw/example/myapp/\#0/current"{} specload app="{}\$PWD/myapp"{}}
+
+\end{DoxyCode}
+
+
+The command above assumes that you also used the {\ttfamily kdb gen} command from \href{\#invoking-the-code-generator}{\texttt{ above}} and that the {\ttfamily myapp} executable is located in {\ttfamily \$\+PWD}.
+
+\begin{quote}
+{\bfseries{Note\+:}} Because of a limitation in {\ttfamily specload}, we have to use the {\ttfamily noresolver} resolver. This also means that the path to the config file (here {\ttfamily /etc/myapp\+\_\+spec.eqd}) has to be absolute. Otherwise, it will always be relative to the current working directory in which {\ttfamily kdb} or your application was executed. The file {\itshape should not} exist when calling {\ttfamily kdb mount}. {\ttfamily specload} works different to other plugins. The given config file is only used, if the user makes changes to the specification via {\ttfamily kdb set}. \end{quote}
+Now that Elektra knows about your specification, calling your application might work better since metadata should now be copied when you set a config value via {\ttfamily kdb set}. However, there won\textquotesingle{}t be any type checking. For that we need to enable the {\ttfamily type} plugin. While this could be done manually, we can just let Elektra figure out which plugins we need and activate all of them.
+
+This can be done with the {\ttfamily spec-\/mount} command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb spec-\/mount "{}/sw/example/myapp/\#0/current"{}}
+
+\end{DoxyCode}
+
+
+Now finally your application is all setup.\hypertarget{doc_tutorials_highlevel_md_autotoc_md4300}{}\doxysubsection{Configuring your application}\label{doc_tutorials_highlevel_md_autotoc_md4300}
+To configure your application you can use {\ttfamily kdb}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set "{}/sw/example/myapp/\#0/current/mydouble"{} 15.4}
+
+\end{DoxyCode}
+
+
+If you want to set a value system-\/wide (not just for your user) you can use the system namespace\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set "{}system:/sw/example/myapp/\#0/current/mydouble"{} 15.4}
+
+\end{DoxyCode}
+
+
+Always use the cascading version of {\ttfamily kdb set} (i.\+e. the keyname begins with a slash {\ttfamily /}), otherwise type checking and other plugins might not be called correctly. 

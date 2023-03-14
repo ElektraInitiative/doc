@@ -1,0 +1,64 @@
+.TH "doc_decisions_5_partially_implemented_reference_counting_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_5_partially_implemented_reference_counting_md \- Reference Counting 
+ 
+.SH "Problem"
+.PP
+.IP "\(bu" 2
+locking is not reset when ref counting again gets 0 (adding to keyset and pop again) #2202
+.IP "\(bu" 2
+C++ API for KeySet and Key has unexpected differences: also use ref counting for KeySets (also suggested in #1332)
+.PP
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+make ref counting thread safe (probably useful for JNI)
+.IP "\(bu" 2
+start with 1 for reference counting and let keyDecRef do keyDel
+.PP
+.SH "Decision"
+.PP
+.IP "\(bu" 2
+add second counter to Key
+.IP "\(bu" 2
+One counter is for references, the other one is for locking the keyname\&. The keyname is thereby protected with a re-entrant lock\&.
+.IP "\(bu" 2
+introduce reference counter for KeySets (for external keyset references, e\&.g\&. in bindings)
+.IP "\(bu" 2
+limit number of references to \fCUINT16_MAX - 1\fP and use \fCUINT16_MAX\fP as an error value
+.IP "\(bu" 2
+return error on reference count overflow
+.IP "\(bu" 2
+no error on underflow (decrement when zero), instead stay at zero
+.IP "\(bu" 2
+use fixed sized types (\fCuint16_t\fP) for reference counters
+.IP "\(bu" 2
+increment/decrement references before/after passing instances to plugins
+.PP
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+Adding a second reference counter to Key and reducing the size of both significantly (\fCsize_t\fP to \fCuint16_t\fP) actually saves memory (32 vs 64bit on 64-bit machines) compared to the previous solution\&.
+.IP "\(bu" 2
+The added complexity of maintaining two reference counters is worth the trade-off for the gained functionality\&.
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+Not implemented yet:
+.PP
+.IP "\(bu" 2
+Update bindings to use KeySet reference counter (especially C++)
+.IP "\(bu" 2
+Second counter for automatic keyname (un)locking 
+.PP
+

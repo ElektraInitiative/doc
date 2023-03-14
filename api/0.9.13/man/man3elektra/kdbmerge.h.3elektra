@@ -1,0 +1,341 @@
+.TH "kdbmerge.h" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbmerge.h \- Kdb merge tool\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'kdb\&.h'\fP
+.br
+\fC#include 'kdbtypes\&.h'\fP
+.br
+
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBMergeStrategy\fP { \fBMERGE_STRATEGY_ABORT\fP = 1, \fBMERGE_STRATEGY_OUR\fP = 3, \fBMERGE_STRATEGY_THEIR\fP = 4 }"
+.br
+.RI "The strategy to use when a merge conflict occurs\&. "
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "KeySet * \fBelektraMerge\fP (KeySet *our, Key *ourRoot, KeySet *their, Key *theirRoot, KeySet *base, Key *baseRoot, Key *resultKey, enum \fBMergeStrategy\fP strategy, Key *informationKey)"
+.br
+.RI "This function can incorporate changes from two modified versions (our and their) into a common preceding version (base) of a key set\&. "
+.ti -1c
+.RI "int \fBelektraMergeGetConflicts\fP (Key *informationKey)"
+.br
+.RI "This function returns the number of conflicts that is store in the key\&. "
+.ti -1c
+.RI "KeySet * \fBelektraMergeGetConflictingKeys\fP (Key *informationKey, Key *root)"
+.br
+.RI "Returns a keyset with all conflicting keys under the specified root\&. "
+.ti -1c
+.RI "bool \fBelektraMergeIsKeyConflicting\fP (Key *informationKey, Key *root, Key *key)"
+.br
+.RI "Check whether the given key was part of a conflict\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Kdb merge tool\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://ww.libelektra.org) 
+.RE
+.PP
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBMergeStrategy\fP"
+
+.PP
+The strategy to use when a merge conflict occurs\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIMERGE_STRATEGY_ABORT \fP\fP
+Abort merging if a conflict occurs 
+.TP
+\fB\fIMERGE_STRATEGY_OUR \fP\fP
+Prefer our keys in case of conflict 
+.TP
+\fB\fIMERGE_STRATEGY_THEIR \fP\fP
+Prefer their keys in case of conflict 
+.SH "Function Documentation"
+.PP 
+.SS "KeySet* elektraMerge (KeySet * our, Key * ourRoot, KeySet * their, Key * theirRoot, KeySet * base, Key * baseRoot, Key * resultRoot, enum \fBMergeStrategy\fP strategy, Key * informationKey)"
+
+.PP
+This function can incorporate changes from two modified versions (our and their) into a common preceding version (base) of a key set\&. This lets you merge the sets of changes represented by the two newer key sets\&. This is called a three-way merge between key sets\&.
+.PP
+.PP
+.nf
+
+#include <kdb\&.h>
+#include <kdbmerge\&.h>
+#include <stdio\&.h>
+
+static void print_results (KeySet * result, Key * resultRoot, Key * informationKey)
+{
+        KeySet * conflictingKeys = elektraMergeGetConflictingKeys (informationKey, resultRoot);
+
+        for (elektraCursor i = 0; i < ksGetSize (conflictingKeys); i++)
+        {
+                printf ("Conflict in key %s\n", keyName (ksAtCursor (conflictingKeys, i)));
+        }
+
+        printf ("Result:\n");
+
+        for (elektraCursor i = 0; i < ksGetSize (result); i++)
+        {
+                Key * k = ksAtCursor (result, i);
+                printf ("%s = %s\n", keyName (k), keyString (k));
+        }
+
+        if (result == NULL)
+        {
+                printf ("Aborted\&.\n");
+        }
+
+        ksDel (conflictingKeys);
+}
+
+int main (void)
+{
+        Key * baseRoot = keyNew ("user:/screen", KEY_END);
+        KeySet * base = ksNew (1, keyNew ("user:/screen/background", KEY_VALUE, "blue", KEY_END), KS_END);
+
+        Key * theirRoot = keyDup (baseRoot, KEY_CP_ALL);
+        KeySet * their = ksNew (2, keyNew ("user:/screen/background", KEY_VALUE, "red", KEY_END),
+                                keyNew ("user:/screen/brightness", KEY_VALUE, "100", KEY_END), KS_END);
+
+        Key * ourRoot = keyDup (baseRoot, KEY_CP_ALL);
+        KeySet * our = ksNew (2, keyNew ("user:/screen/background", KEY_VALUE, "purple", KEY_END),
+                              keyNew ("user:/screen/standby", KEY_VALUE, "on", KEY_END), KS_END);
+
+        Key * resultRoot = keyDup (baseRoot, KEY_CP_ALL);
+        Key * informationKey = keyDup (baseRoot, KEY_CP_ALL);
+
+        // Strategy: Abort
+        // Will abort due to user:/screen/background changes in both their and our
+        printf ("Trying merge strategy ABORT\n");
+        KeySet * result = elektraMerge (our, ourRoot, their, theirRoot, base, baseRoot, resultRoot, MERGE_STRATEGY_ABORT, informationKey);
+        print_results (result, resultRoot, informationKey);
+
+        ksDel (result);
+
+        // Strategy: Our
+        // Will take value of our for user:/screen/background
+        printf ("\nTrying merge strategy OUR\n");
+        result = elektraMerge (our, ourRoot, their, theirRoot, base, baseRoot, resultRoot, MERGE_STRATEGY_OUR, informationKey);
+        print_results (result, resultRoot, informationKey);
+
+        ksDel (result);
+
+        // Strategy: Their
+        // Will take value of their for user:/screen/background
+        printf ("\nTrying merge strategy THEIR\n");
+        result = elektraMerge (our, ourRoot, their, theirRoot, base, baseRoot, resultRoot, MERGE_STRATEGY_THEIR, informationKey);
+        print_results (result, resultRoot, informationKey);
+
+        ksDel (result);
+
+        ksDel (base);
+        ksDel (their);
+        ksDel (our);
+
+        keyDel (baseRoot);
+        keyDel (theirRoot);
+        keyDel (ourRoot);
+        keyDel (informationKey);
+        keyDel (resultRoot);
+
+        return 0;
+}
+.fi
+.PP
+.PP
+Join three key sets together 
+.PP
+\fBParameters\fP
+.RS 4
+\fIour\fP our key set 
+.br
+\fIourRoot\fP key that has the root of our as name 
+.br
+\fItheir\fP their key set 
+.br
+\fItheirRoot\fP key that has the root of their as name 
+.br
+\fIbase\fP base key set 
+.br
+\fIbaseRoot\fP key that has the root of base as name 
+.br
+\fIresultRoot\fP the name of this key determines where the resulting key set will be stored 
+.br
+\fIstrategy\fP specify which merge strategy to choose in case of a conflict 
+.br
+\fIinformationKey\fP stores errors as well as statistics 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the merged key set and NULL on error 
+.RE
+.PP
+
+.SS "KeySet* elektraMergeGetConflictingKeys (Key * informationKey, Key * root)"
+
+.PP
+Returns a keyset with all conflicting keys under the specified root\&. 
+.PP
+.nf
+
+#include <kdb\&.h>
+#include <kdbmerge\&.h>
+#include <stdio\&.h>
+
+static void print_results (KeySet * result, Key * resultRoot, Key * informationKey)
+{
+        KeySet * conflictingKeys = elektraMergeGetConflictingKeys (informationKey, resultRoot);
+
+        for (elektraCursor i = 0; i < ksGetSize (conflictingKeys); i++)
+        {
+                printf ("Conflict in key %s\n", keyName (ksAtCursor (conflictingKeys, i)));
+        }
+
+        printf ("Result:\n");
+
+        for (elektraCursor i = 0; i < ksGetSize (result); i++)
+        {
+                Key * k = ksAtCursor (result, i);
+                printf ("%s = %s\n", keyName (k), keyString (k));
+        }
+
+        if (result == NULL)
+        {
+                printf ("Aborted\&.\n");
+        }
+
+        ksDel (conflictingKeys);
+}
+
+int main (void)
+{
+        Key * baseRoot = keyNew ("user:/screen", KEY_END);
+        KeySet * base = ksNew (1, keyNew ("user:/screen/background", KEY_VALUE, "blue", KEY_END), KS_END);
+
+        Key * theirRoot = keyDup (baseRoot, KEY_CP_ALL);
+        KeySet * their = ksNew (2, keyNew ("user:/screen/background", KEY_VALUE, "red", KEY_END),
+                                keyNew ("user:/screen/brightness", KEY_VALUE, "100", KEY_END), KS_END);
+
+        Key * ourRoot = keyDup (baseRoot, KEY_CP_ALL);
+        KeySet * our = ksNew (2, keyNew ("user:/screen/background", KEY_VALUE, "purple", KEY_END),
+                              keyNew ("user:/screen/standby", KEY_VALUE, "on", KEY_END), KS_END);
+
+        Key * resultRoot = keyDup (baseRoot, KEY_CP_ALL);
+        Key * informationKey = keyDup (baseRoot, KEY_CP_ALL);
+
+        // Strategy: Abort
+        // Will abort due to user:/screen/background changes in both their and our
+        printf ("Trying merge strategy ABORT\n");
+        KeySet * result = elektraMerge (our, ourRoot, their, theirRoot, base, baseRoot, resultRoot, MERGE_STRATEGY_ABORT, informationKey);
+        print_results (result, resultRoot, informationKey);
+
+        ksDel (result);
+
+        // Strategy: Our
+        // Will take value of our for user:/screen/background
+        printf ("\nTrying merge strategy OUR\n");
+        result = elektraMerge (our, ourRoot, their, theirRoot, base, baseRoot, resultRoot, MERGE_STRATEGY_OUR, informationKey);
+        print_results (result, resultRoot, informationKey);
+
+        ksDel (result);
+
+        // Strategy: Their
+        // Will take value of their for user:/screen/background
+        printf ("\nTrying merge strategy THEIR\n");
+        result = elektraMerge (our, ourRoot, their, theirRoot, base, baseRoot, resultRoot, MERGE_STRATEGY_THEIR, informationKey);
+        print_results (result, resultRoot, informationKey);
+
+        ksDel (result);
+
+        ksDel (base);
+        ksDel (their);
+        ksDel (our);
+
+        keyDel (baseRoot);
+        keyDel (theirRoot);
+        keyDel (ourRoot);
+        keyDel (informationKey);
+        keyDel (resultRoot);
+
+        return 0;
+}
+
+.fi
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIinformationKey\fP stores errors as well as statistics 
+.br
+\fIroot\fP The root key (either for base, theirs, ours or result) that was used in the merge 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+KeySet containing all keys that are part of a merge conflict\&. Will be empty if the specified root key was not part of the merge\&. 
+.RE
+.PP
+
+.SS "int elektraMergeGetConflicts (Key * informationKey)"
+
+.PP
+This function returns the number of conflicts that is store in the key\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIinformationKey\fP contains the statistics in its meta information 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of conflicts stored in the key 
+.RE
+.PP
+
+.SS "bool elektraMergeIsKeyConflicting (Key * informationKey, Key * root, Key * key)"
+
+.PP
+Check whether the given key was part of a conflict\&. NOTE: Even if the conflict was resolved via the provided conflict strategy, the key will still be marked as being part of a conflict\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIinformationKey\fP stores errors as well as statistics 
+.br
+\fIroot\fP The root key (either for base, theirs, ours or result) that was used in the merge 
+.br
+\fIkey\fP That key that should be checked\&. Must be located under the specified root key 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if the key was part of a conflict 
+.br
+\fI0\fP if the key was not part of a conflict or the given root was not part of the merge 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

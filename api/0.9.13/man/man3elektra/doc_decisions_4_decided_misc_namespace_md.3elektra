@@ -1,0 +1,58 @@
+.TH "doc_decisions_4_decided_misc_namespace_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_4_decided_misc_namespace_md \- Namespace for miscellaneous data 
+ 
+.SH "Problem"
+.PP
+A \fCKeySet\fP is powerful data structure, which could be use for data other than configuration data\&. Especially with the hashmap implementation, using a \fCKeySet\fP for generic data can be useful\&. For this generic data we do not care about the namespace-related features\&.
+.PP
+However, because a \fCKey\fP cannot exist without a namespace, we need to choose a namespace\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+The outcome must be compatible with the \fBTypes of \fCKeySet\fPs\fPTypes of `KeySet`s' decision'\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+The \fBTypes of \fCKeySet\fPs\fPTypes of `KeySet`s' decision' leads to separate types of \fCKeySet\fPs that are restricted w\&.r\&.t\&. the namespaces they may contain\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.SS "Use cascading <tt>Key</tt>s"
+We could use the existing \fCKEY_NS_CASCADING\fP for one of the types of \fCKeySet\fPs\&.
+.PP
+This may be confusing to users of the APIs\&. The purpose of \fCKEY_NS_CASCADING\fP becomes muddied\&. It is no longer just for lookup, but would now have a secondary purpose\&.
+.SS "Introduce separate <tt>KEY_NS_MISC</tt> namespace"
+We introduce a new \fCKEY_NS_MISC\fP, which is used exclusively for generic and miscellaneous data\&. It implies a separate \fBtype of `KeySet`\fP\&.
+.PP
+This leaves \fCKEY_NS_CASCADING\fP for its original purpose, while still solving the issue with generic data\&.
+.SH "Decision"
+.PP
+Introduce separate \fCKEY_NS_MISC\fP namespace\&.
+.PP
+In the unescaped form this will be \fC\\x09\fP (byte with decimal value \fC9\fP)\&. In the escaped form it will be \fCmisc:/\fP\&.
+.PP
+\fCKEY_NS_MISC\fP has a separate \fBtype of `KeySet`\fP\&. Such a \fCKeySet\fP can only contain \fCKEY_NS_MISC\fP keys\&. It may not be used for metadata or with \fCkdbGet\fP/\fCkdbSet\fP\&.
+.PP
+A cascading lookup is still allowed for such \fCKeySet\fPs\&. However, the \fCKEY_NS_CASCADING\fP will simply be replaced with \fCKEY_NS_MISC\fP and then an exact name lookup is performed, as if the \fCKEY_NS_MISC\fP namespace was given directly\&.
+.SH "Rationale"
+.PP
+Introducing a new namespace is much cleaner than reusing one of the existing ones\&. It fits better with the separate \fBtypes of `KeySet`s\fP\&.
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+Some code already uses cascading keys for general data\&. It must be updated to the new \fCKEY_NS_MISC\fP\&.
+.IP "\(bu" 2
+The cascading logic for \fCksLookup\fP needs to adapted for \fCKEY_NS_MISC\fP\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBTypes of \fCKeySet\fPs\fPTypes of `KeySet`s''\&.
+.PP
+.SH "Notes"
+.PP
+

@@ -1,0 +1,226 @@
+.TH "md_src_plugins_directoryvalue_README" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_directoryvalue_README \- Plugin: directoryvalue 
+
+.IP "\(bu" 2
+infos = Information about the directoryvalue plugin is in keys below
+.IP "\(bu" 2
+infos/author = René Schwaiger sanssecours@me.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = unittest nodep preview
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = This plugin converts directory keys to leaf keys in the set direction
+.PP
+.SH "Directory Value"
+.PP
+.SS "Introduction"
+The Directory Value plugin converts
+.PP
+.IP "1." 4
+directory (non-leaf) keys to leaf keys in the “set” direction, and
+.IP "2." 4
+converts them back to directory keys in the “get” direction\&.
+.PP
+.PP
+A directory key is a key that has children\&. For example in the key set:
+.PP
+.PP
+.nf
+user:/grandparent                = Grandparent
+user:/grandparent/leaf           = Leaf
+user:/grandparent/parent         = Parent
+user:/grandparent/parent/child   = Child
+user:/mother                     = Mother
+user:/mother/daughter            = Daughter
+user:/mother/son                 = Son
+.fi
+.PP
+.PP
+the keys
+.PP
+.PP
+.nf
+user:/grandparent
+user:/grandparent/parent
+user:/mother
+.fi
+.PP
+.PP
+represent directory keys, while the keys
+.PP
+.PP
+.nf
+user:/grandparent/leaf
+user:/grandparent/parent/child
+user:/mother/daughter
+user:/mother/son
+.fi
+.PP
+.PP
+are leaf keys\&. You can easily check this by drawing the key set in the form of a rooted tree:
+.PP
+.PP
+.nf
+             user
+      /               \
+  granparent        mother
+  /      |          /    \
+leaf  parent    daughter son
+         |
+       child
+.fi
+.PP
+.PP
+\&. The Directory Value plugin converts all directory keys to leaf keys in the “set” direction by adding new keys with the postfix \fC___dirdata\fP\&. Theses keys then store the old value of their parent keys
+.PP
+.PP
+.nf
+user:/grandparent                    =
+user:/grandparent/___dirdata         = Grandparent
+user:/grandparent/leaf               = Leaf
+user:/grandparent/parent             =
+user:/grandparent/parent/___dirdata  = Parent
+user:/grandparent/parent/child       = Child
+user:/mother                         =
+user:/mother/___dirdata              = Mother
+user:/mother/daughter                = Daughter
+user:/mother/son                     = Son
+.fi
+.PP
+.PP
+\&. You might ask why we need the Directory Value plugin at all\&. The reason why we created this plugin is that some storage plugins like \fB`yajl`\fP or \fB`yamlcpp`\fP are only able to save values inside leaf keys\&. By loading the Directory Value plugin these storage plugins are also able to represent directory values properly\&.
+.SS "Array Values"
+The Directory value plugin also converts array values\&. Let us take a look at an example key set:
+.PP
+.PP
+.nf
+user:/array    = Array Value
+user:/array/#0 = Firt Value
+user:/array/#1 = Second Value
+user:/array/#2 = Third Value
+.fi
+.PP
+.PP
+\&. The plugin \fBdoes not\fP convert this key set into:
+.PP
+.PP
+.nf
+user:/array            =
+user:/array/___dirdata = Array Value
+user:/array/#0         = First Value
+user:/array/#1         = Second Value
+user:/array/#2         = Third Value
+.fi
+.PP
+.PP
+, since then \fCuser:/array\fP \fBwould not be an array\fP any more\&. Instead the plugin inserts a new element at index 0 with the \fBvalue prefix\fP \fC___dirdata:\fP:
+.PP
+.PP
+.nf
+user:/array            =
+user:/array/#0         = ___dirdata: Array Value
+user:/array/#1         = First Value
+user:/array/#2         = Second Value
+user:/array/#3         = Third Value
+.fi
+.PP
+.PP
+\&. This way a storage plugin such as YAJL or YAML CPP are still able to store \fCuser:/array\fP as an array\&.
+.SS "Remarks"
+.IP "\(bu" 2
+The plugin only converts array parents that store \fBstring values\fP
+.IP "\(bu" 2
+The \fBarray metakey\fP of the array parent (increased by one) will still be stored in the original parent key after conversion\&. This is important, since otherwise the storage plugin would lose information about which key represents an array\&.
+.PP
+.SS "Usage"
+To mount the plugin use the command:
+.PP
+.PP
+.nf
+# Mount plugin at `user:/tests/directoryvalue`
+sudo kdb mount config\&.file user:/tests/directoryvalue directoryvalue
+.fi
+.PP
+.PP
+\&. To unmount the plugin use the command
+.PP
+.PP
+.nf
+sudo kdb umount user:/tests/directoryvalue
+.fi
+.PP
+.SS "Example"
+.PP
+.nf
+# Mount plugin
+sudo kdb mount config\&.file user:/tests/directoryvalue directoryvalue
+
+# Add a directory value
+kdb set user:/tests/directoryvalue/harold 'Father of SpongeBob SquarePants'
+# Add a leaf value
+kdb set user:/tests/directoryvalue/harold/spongebob 'I am ready!'
+
+# Add an array
+kdb set user:/tests/directoryvalue/patrick Star
+kdb set user:/tests/directoryvalue/patrick/#0 'Being grown-up is boring\&. Besides, I don’t get Jazz\&.'
+# Elektra requires that the array parent contains the metakey `array`\&.
+# If this key is not present, then `user:/tests/directoryvalue/patrick`
+# is **not an array**\&.
+kdb meta-set user:/tests/directoryvalue/patrick array ''
+
+# Since the plugin converts values back in the get direction
+# a user of the database will not notice any changes\&.
+
+kdb ls user:/tests/directoryvalue
+#> user:/tests/directoryvalue/harold
+#> user:/tests/directoryvalue/harold/spongebob
+#> user:/tests/directoryvalue/patrick
+#> user:/tests/directoryvalue/patrick/#0
+
+kdb get user:/tests/directoryvalue/harold
+#> Father of SpongeBob SquarePants
+kdb get user:/tests/directoryvalue/harold/spongebob
+#> I am ready!
+
+kdb get user:/tests/directoryvalue/patrick
+#> Star
+kdb get user:/tests/directoryvalue/patrick/#0
+#> Being grown-up is boring\&. Besides, I don’t get Jazz\&.
+
+# Retrieve index of last element in array\&.
+# This also works if the storage plugin does not store this index\&.
+kdb meta-get user:/tests/directoryvalue/patrick array
+#> #0
+
+# Undo changes to the key database
+kdb rm -r user:/tests/directoryvalue
+sudo kdb umount user:/tests/directoryvalue
+.fi
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+\fBEscaping\fP is currently \fBnot possible\fP\&. If you use the Directory Value plugin you can not
+.IP "  \(bu" 4
+use the name \fC___dirdata\fP as the last part of a normal key,
+.IP "  \(bu" 4
+use \fC___dirdata:\fP at the beginning of a normal value in the first array element
+.PP
+.PP
+! 
+.PP
+

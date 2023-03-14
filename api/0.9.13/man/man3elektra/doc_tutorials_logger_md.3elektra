@@ -1,0 +1,155 @@
+.TH "doc_tutorials_logger_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_logger_md \- How-To: Logging 
+ 
+.SH "Quickstart"
+.PP
+Enable logging by compiling with the CMake option \fCENABLE_LOGGER=ON\fP (e\&.g\&. \fCcmake -DENABLE_LOGGER=ON\fP)\&.
+.PP
+By default errors and warnings are logged to stderr and syslog, while notice and info message are only logged to syslog\&. Debug level message are not logged by default, but will be logged to syslog, if \fCENABLE_DEBUG=ON\fP is set in CMake\&.
+.PP
+The file sink behaves like syslog, if it has been enabled (see below)\&.
+.SH "Step by Step Guide"
+.PP
+.SS "Preparation"
+.IP "1." 4
+Import the logging library in your code:
+.PP
+.PP
+.PP
+.nf
+#include <kdblogger\&.h>
+.fi
+.PP
+.PP
+.IP "2." 4
+Insert logging statements:
+.PP
+.PP
+.PP
+.nf
+ELEKTRA_LOG("Hello, %s!", "🌎");
+.fi
+.PP
+.SS "Log Everything"
+If Elektra should display all log messages, then please follow the steps below\&.
+.PP
+.IP "1." 4
+Uncomment the line:
+.PP
+.PP
+.PP
+.nf
+// #define NO_FILTER
+.fi
+.PP
+.PP
+in the file \fC\fBsrc/libs/elektra/log\&.c\fP\fP\&. (Alternatively you may define this macro via CMake\&.)
+.PP
+.IP "2." 4
+Optional: The logging levels are set in \fC\fBsrc/include/kdblogger\&.h\fP\fP\&. For example, if you want to see everything (including debug messages) on stderr, then change the line
+.PP
+.PP
+.PP
+.nf
+static const int ELEKTRA_LOG_LEVEL_STDERR = ELEKTRA_LOG_LEVEL_WARNING;
+.fi
+.PP
+.PP
+to
+.PP
+.PP
+.nf
+static const int ELEKTRA_LOG_LEVEL_STDERR = ELEKTRA_LOG_LEVEL_DEBUG;
+.fi
+.PP
+.SS "File Specific Logging"
+If you want to only log messages below a specific directory prefix, then please follow the steps below\&.
+.PP
+.IP "1." 4
+Search for the code:
+.PP
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     // XXX Filter level …
+#endif
+.fi
+.PP
+.PP
+in the file \fC\fBsrc/libs/elektra/log\&.c\fP\fP\&.
+.PP
+.IP "2." 4
+Replace the code with something like:
+.PP
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     if (strncmp (file, "src/postfix/", sizeof ("src/postfix"))) return -1;
+#endif
+.fi
+.PP
+.PP
+, where \fCsrc/postfix\fP contains all source files with logging statements that Elektra should log\&. For example, if you want to log everything from the \fCyamlcpp\fP plugin, then use the following code\&.
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     if (strncmp (file, "src/plugins/yamlcpp/", sizeof ("src/plugins/yamlcpp"))) return -1;
+#endif
+.fi
+.PP
+.PP
+\&. To log messages from multiple source you can use the operator \fC&&\fP to chain multiple calls to \fCstrncmp\fP\&. For example, to log messages from the \fCdirectoryvalue\fP and \fCyamlcpp\fP plugin use the code:
+.PP
+.PP
+.nf
+#ifndef NO_FILTER
+     if (strncmp (file, "src/plugins/directoryvalue/", sizeof ("src/plugins/directoryvalue")) &&
+         strncmp (file, "src/plugins/yamlcpp/", sizeof ("src/plugins/yamlcpp")))
+             return -1;
+#endif
+.fi
+.PP
+.SS "Enabling and Disabling Sinks"
+The logging framework has 3 sinks: stderr, syslog and file\&.
+.PP
+The first to are enabled by default, while file is disabled\&. To enable it uncomment the line
+.PP
+.PP
+.nf
+// #define USE_FILE_SINK
+.fi
+.PP
+.PP
+in \fC\fBsrc/libs/elektra/log\&.c\fP\fP\&. The file that log messages are written to is defined in this line
+.PP
+.PP
+.nf
+elektraLoggerFileHandle = fopen ("elektra\&.log", "a");
+.fi
+.PP
+.SS "Compilation"
+.IP "1." 4
+Enable the logger: e\&.g\&. run \fCcmake\fP with the switch \fC-DENABLE_LOGGER=ON\fP
+.IP "2." 4
+Build Elektra
+.PP
+.SH "Log Levels"
+.PP
+There are four log levels (ERROR is reserved for aborts within \fCELEKTRA_ASSERT\fP):
+.PP
+.IP "\(bu" 2
+\fCELEKTRA_LOG_WARNING\fP, something critical that should be shown to the user (e\&.g\&. API misuse), see \fBELEKTRA_LOG_LEVEL_WARNING\fP
+.IP "\(bu" 2
+\fCELEKTRA_LOG_NOTICE\fP, something important developers are likely interested in, see \fBELEKTRA_LOG_LEVEL_NOTICE\fP
+.IP "\(bu" 2
+\fCELEKTRA_LOG\fP, standard level gives information what the code is doing without flooding the log, see \fBELEKTRA_LOG_LEVEL_INFO\fP
+.IP "\(bu" 2
+\fCELEKTRA_LOG_DEBUG\fP, for less important logs, see \fBELEKTRA_LOG_LEVEL_DEBUG\fP 
+.PP
+

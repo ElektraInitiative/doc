@@ -1,0 +1,40 @@
+\label{doc_decisions_5_partially_implemented_reference_counting_md_md_doc_decisions_5_partially_implemented_reference_counting}%
+\Hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_md_doc_decisions_5_partially_implemented_reference_counting}%
+ \hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2200}{}\doxysection{Problem}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2200}
+
+\begin{DoxyItemize}
+\item locking is not reset when ref counting again gets 0 (adding to keyset and pop again) \#2202
+\item C++ API for Key\+Set and Key has unexpected differences\+: also use ref counting for Key\+Sets (also suggested in \#1332)
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2201}{}\doxysection{Constraints}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2201}
+\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2202}{}\doxysection{Assumptions}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2202}
+\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2203}{}\doxysection{Considered Alternatives}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2203}
+
+\begin{DoxyItemize}
+\item make ref counting thread safe (probably useful for JNI)
+\item start with 1 for reference counting and let key\+Dec\+Ref do key\+Del
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2204}{}\doxysection{Decision}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2204}
+
+\begin{DoxyItemize}
+\item add second counter to Key
+\item One counter is for references, the other one is for locking the keyname. The keyname is thereby protected with a re-\/entrant lock.
+\item introduce reference counter for Key\+Sets (for external keyset references, e.\+g. in bindings)
+\item limit number of references to {\ttfamily UINT16\+\_\+\+MAX -\/ 1} and use {\ttfamily UINT16\+\_\+\+MAX} as an error value
+\item return error on reference count overflow
+\item no error on underflow (decrement when zero), instead stay at zero
+\item use fixed sized types ({\ttfamily uint16\+\_\+t}) for reference counters
+\item increment/decrement references before/after passing instances to plugins
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2205}{}\doxysection{Rationale}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2205}
+
+\begin{DoxyItemize}
+\item Adding a second reference counter to Key and reducing the size of both significantly ({\ttfamily size\+\_\+t} to {\ttfamily uint16\+\_\+t}) actually saves memory (32 vs 64bit on 64-\/bit machines) compared to the previous solution.
+\item The added complexity of maintaining two reference counters is worth the trade-\/off for the gained functionality.
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2206}{}\doxysection{Implications}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2206}
+\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2207}{}\doxysection{Related Decisions}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2207}
+\hypertarget{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2208}{}\doxysection{Notes}\label{doc_decisions_5_partially_implemented_reference_counting_md_autotoc_md2208}
+Not implemented yet\+:
+
+
+\begin{DoxyItemize}
+\item Update bindings to use Key\+Set reference counter (especially C++)
+\item Second counter for automatic keyname (un)locking 
+\end{DoxyItemize}

@@ -1,0 +1,26 @@
+\label{doc_decisions_6_implemented_multiple_file_backends_md_md_doc_decisions_6_implemented_multiple_file_backends}%
+\Hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_md_doc_decisions_6_implemented_multiple_file_backends}%
+ A file backend refers to exactly one file per namespace. This file can be returned using {\ttfamily kdb file}.\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2432}{}\doxysection{Problem}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2432}
+In some situations a single mountpoint refers to more than one file per namespace\+:
+
+
+\begin{DoxyItemize}
+\item For XDG in the {\ttfamily system} namespace may contain several files (XDG\+\_\+\+CONFIG\+\_\+\+DIRS).
+\item A fallback file if some data cannot be stored in some format (Idea from @kodebach\+: writing the same content to several files, merging when reading)
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2433}{}\doxysection{Constraints}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2433}
+\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2434}{}\doxysection{Assumptions}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2434}
+\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2435}{}\doxysection{Considered Alternatives}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2435}
+\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2436}{}\doxysection{Decision}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2436}
+Multiple File Backends are not supported in the case of writing files.
+
+Multiple sources in one namespace only work, if the fallback Key\+Set is part of the mountpoint config. That way any change to the fallback Key\+Set would essentially make the whole thing a different mountpoint and thereby invalidate all guarantees.\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2437}{}\doxysection{Rationale}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2437}
+Writeable multiple file backends would\+:
+
+
+\begin{DoxyItemize}
+\item make it impossible for admins to modify content of all files using Elektra
+\item do not work atomically (a journal would be needed)
+\item do not work together with mmap (as it only checks one file for cache misses)
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2438}{}\doxysection{Implications}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2438}
+See Rationale.\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2439}{}\doxysection{Related Decisions}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2439}
+\hypertarget{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2440}{}\doxysection{Notes}\label{doc_decisions_6_implemented_multiple_file_backends_md_autotoc_md2440}

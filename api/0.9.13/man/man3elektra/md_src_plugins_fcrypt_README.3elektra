@@ -1,0 +1,162 @@
+.TH "md_src_plugins_fcrypt_README" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_fcrypt_README \- Plugin: fcrypt 
+
+.IP "\(bu" 2
+infos = Information about fcrypt plugin is in keys below
+.IP "\(bu" 2
+infos/author = Peter Nirschl peter.nirschl@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = sync filefilter crypto
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = pregetstorage postgetstorage precommit
+.IP "\(bu" 2
+infos/ordering = sync
+.IP "\(bu" 2
+infos/status = unittest nodep configurable
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = File Encryption
+.PP
+.SH "fcrypt Plugin"
+.PP
+.SS "Introduction"
+This plugin enables file-based encryption and decryption using GPG\&. Also an option for signing and verifying files using GPG is provided\&.
+.PP
+This plugin encrypts backend files before the commit is executed (thus \fCprecommit\fP)\&. The plugin decrypts the backend files before the getstorage opens it (thus \fCpregetstorage\fP)\&. After the getstorage plugin has read the backend file, the plugin decrypts the backend file again (thus \fCpostgetstorage\fP)\&.
+.SS "Installation"
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SS "Security Considerations"
+There are two things to consider when using the \fCfcrypt\fP plugin:
+.PP
+.IP "1." 4
+Decrypted data is visible on the file system for a short period of time\&.
+.IP "2." 4
+Decrypted data might end up on a hard disk or some other persistent storage\&.
+.PP
+.PP
+The plugin directs GPG to write its (decrypted) output to a temporary directory\&. From there on the data can be processed by other plugins\&. After the \fCget\fP phase is over, \fCfcrypt\fP overwrites the temporary file and unlinks it afterwards\&. However, if the application crashes during \fCget\fP the decrypted data may remain in the temporary directory\&.
+.PP
+If the temporary directory is mounted on a hard disk, GPG writes the decrypted data on that disk\&. Thus we recommend to either mount \fC/tmp\fP to a RAM disk or specify another path as temporary directory within the plugin configuration (see Configuration below)\&.
+.SS "Known Issues"
+If you encounter the following error at \fCkdb mount\fP:
+.PP
+.PP
+.nf
+The command kdb mount terminated unsuccessfully with the info:
+Too many plugins!
+The plugin sync can't be positioned at position precommit anymore\&.
+Try to reduce the number of plugins!
+
+Failed because precommit with 7 is larger than 6
+Please report the issue at https://issues\&.libelektra\&.org/
+.fi
+.PP
+.PP
+you might want to consider disabling the sync plugin by entering:
+.PP
+.PP
+.nf
+kdb set /sw/elektra/kdb/#0/current/plugins ""
+kdb set system:/sw/elektra/kdb/#0/current/plugins ""
+.fi
+.PP
+.PP
+Please note that this is a workaround until a more sustainable solution is found\&.
+.SS "Dependencies"
+.SS "Crypto Plugin"
+This plugin uses parts of the \fCcrypto\fP plugin\&.
+.SS "GnuPG (GPG)"
+Please refer to \fBcrypto\fP\&.
+.SS "Restrictions"
+Please refer to \fBcrypto\fP\&.
+.SS "Examples"
+You can mount the plugin with encryption enabled like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf /t fcrypt "encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D"
+.fi
+.PP
+.PP
+If you only want to sign the configuration file, you can mount the plugin like this:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf /t fcrypt "sign/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D"
+.fi
+.PP
+.PP
+Both options \fCencrypt/key\fP and \fCsign/key\fP can be combined:
+.PP
+.PP
+.nf
+kdb mount test\&.ecf /t fcrypt \
+  "encrypt/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D,sign/key=DDEBEF9EE2DC931701338212DAF635B17F230E8D"
+.fi
+.PP
+.PP
+If you create a key under \fC/t\fP
+.PP
+.PP
+.nf
+kdb set /t/a "hello world"
+.fi
+.PP
+.PP
+you will notice that you can not read the plain text of \fCtest\&.ecf\fP because it has been encrypted by GPG\&.
+.PP
+But you can still access \fC/t/a\fP with \fCkdb get\fP:
+.PP
+.PP
+.nf
+kdb get /t/a
+.fi
+.PP
+.PP
+If you are looking for a more interactive example, have a look at the following ASCIIcast at:
+.PP
+\fChttps://asciinema\&.org/a/153014\fP
+.SS "Configuration"
+.SS "Signatures"
+The GPG signature keys can be specified as \fCsign/key\fP directly\&. If you want to use more than one key for signing, just enumerate like:
+.PP
+.PP
+.nf
+sign/key/#0
+sign/key/#1
+.fi
+.PP
+.PP
+If more than one key is defined, every private key is used to sign the file of the backend\&.
+.PP
+If a signature is attached to a file, \fCfcrypt\fP automatically verifies its content whenever the file is being read\&.
+.PP
+Note that the signed file is stored in the internal format of GPG\&. So you only see binary data when opening the signed configuration file directly\&. However, you can simply display the plain text content of the file by using GPG:
+.PP
+.PP
+.nf
+gpg2 -d signed\&.ecf
+.fi
+.PP
+.SS "GPG Configuration"
+The GPG Configuration is described in \fBcrypto\fP\&.
+.SS "Textmode"
+\fCfcrypt\fP operates in textmode per default\&. In textmode \fCfcrypt\fP uses the \fC--armor\fP option of GPG, thus the output of \fCfcrypt\fP is ASCII armored\&. If no encryption key is provided (i\&.e\&. only signature is requested) \fCfcrypt\fP uses the \fC--clearsign\fP option of GPG\&.
+.PP
+Textmode can be disabled by setting \fCfcrypt/textmode\fP to \fC0\fP in the plugin configuration\&.
+.SS "Temporary Directory"
+\fCfcrypt\fP uses the configuration option \fCfcrypt/tmpdir\fP to generate paths for temporary files during encryption and decryption\&. If no such configuration option is provided, \fCfcrypt\fP will try to use the environment variable \fCTMPDIR\fP\&. If \fCTMPDIR\fP is not set in the environment, \fC/tmp\fP is used as default directory\&.
+.PP
+The path of the temporary directory is forwarded to GPG via the \fC-o\fP option, so GPG will output to this path\&. The directory must be readable and writable by the user\&.
+.PP
+We recommend to specify a path that is mounted to a RAM disk\&. It is advisable to set restrictive access rules to this path, so that other users on the system can not access it\&. 

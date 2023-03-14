@@ -1,0 +1,111 @@
+\label{doc_decisions_4_decided_keyname_md_md_doc_decisions_4_decided_keyname}%
+\Hypertarget{doc_decisions_4_decided_keyname_md_md_doc_decisions_4_decided_keyname}%
+ \hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2108}{}\doxysection{Problem}\label{doc_decisions_4_decided_keyname_md_autotoc_md2108}
+A {\ttfamily Key} in Elektra is identified by its name, which consists of a namespace and a number of name parts. There are two common representations for the name\+: escaped and unescaped.
+
+The unescaped form is essentially a single namespace byte plus and arbitrary-\/length sequence of arbitrary bytes, in which a {\ttfamily \textbackslash{}0} byte separates parts. The escaped name is a {\ttfamily \textbackslash{}0}-\/terminated string that maps 1\+:1 onto unescaped names. More details can be found in \mbox{\hyperlink{doc_KEYNAMES_md}{the relevant docs}}.
+
+There is a conflict between these two forms in terms of API convenience and efficient execution. Generally, the escaped form is more convenient to use, since it is entirely human-\/readable and just a \char`\"{}normal\char`\"{} string. Implementing many tasks (like order comparisons) is, however, much simpler when using the unescaped name. Additionally, using the unescaped name often results in more performant code as well.
+
+A particularly common example that highlights the difficulties in handling escaped names is splitting the name into parts. In the escaped name, this task requires correct handling of escape sequences, whereas in the unescaped name parts are always delimited by a {\ttfamily \textbackslash{}0} byte.
+
+Before this decision, we stored both versions in every {\ttfamily Key}. However, this resulted in too much memory use, so we need to find another solution.
+
+The question now is, which representations should be used by {\ttfamily libelektra-\/core} and how.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2109}{}\doxysection{Constraints}\label{doc_decisions_4_decided_keyname_md_autotoc_md2109}
+
+\begin{DoxyItemize}
+\item Because {\ttfamily Key\+Set} is ordered by name and stores {\ttfamily Key}, the order comparison between the name of two {\ttfamily Key}s must be \char`\"{}fast enough\char`\"{}. (see assumption below)
+\item We need a single pointer to a single buffer that contains the entire name of a {\ttfamily Key}. While there are other options, some of which could even save memory (e.\+g., split into parts and deduplicate), much of the {\ttfamily Key\+Set} internals rely on the fact that the name is a single buffer. Changing this would require major redesigns.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2110}{}\doxysection{Assumptions}\label{doc_decisions_4_decided_keyname_md_autotoc_md2110}
+
+\begin{DoxyItemize}
+\item In most cases the escaped name is used for convenience and not because of actual requirements.
+\item The most common case for using the escaped name is UI\+: reading names from or displaying them in a user interface (e.\+g., {\ttfamily kdb} CLI)
+\item In the constraint about order comparisons above, we assume that \char`\"{}fast enough\char`\"{} means \char`\"{}comparable to a single \`{}memcmp\`{}\char`\"{}. Profiling for previous implementations, not based on a single {\ttfamily memcmp} of unescaped names, showed the comparison as a bottleneck, while the current single-\/{\ttfamily memcmp} implementation does not show the bottleneck. That said, it may be possible to find a solution slower than the current one that is still fast enough to avoid the previous bottleneck.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2111}{}\doxysection{Considered Alternatives}\label{doc_decisions_4_decided_keyname_md_autotoc_md2111}
+\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2112}{}\doxysubsection{Only escaped name}\label{doc_decisions_4_decided_keyname_md_autotoc_md2112}
+Because the escaped name is a simple {\ttfamily \textbackslash{}0}-\/terminated string, it can be represented as a single {\ttfamily char $\ast$}.
+
+Storing the name as a single {\ttfamily char $\ast$} would be the most space efficient. But resizing would require counting the length every time. Therefore, for storage the better solution may be a {\ttfamily char $\ast$} and a {\ttfamily size\+\_\+t}.
+
+However, in the API the name could always be a single {\ttfamily char $\ast$}, making for a very easy to use API.
+
+The biggest problem with this approach is that comparing two escaped names is not trivial. The comparison needs to account for namespaces, parts and escaping. Previous benchmarks showed that it is very hard or even impossible to make the comparison of escaped names fast enough for our use cases.
+
+Similarly, iterating over the individual parts of a name (and/or manipulating them) is non-\/trivial, because it requires logic to handle escape sequences.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2113}{}\doxysubsection{Only unescaped name}\label{doc_decisions_4_decided_keyname_md_autotoc_md2113}
+The unescaped name contains {\ttfamily \textbackslash{}0} bytes. It therefore must be represented as a pointer and a size.
+
+This can make for less convenient API, but there are mitigation strategies using additional types. Using unescaped names in code can be inconvenient, especially regarding the namespace. Without a namespace a name could be written as e.\+g., {\ttfamily \char`\"{}foo\textbackslash{}0bar\char`\"{}}. But with a namespace it would be something like {\ttfamily \char`\"{}\textbackslash{}1\textbackslash{}0\textbackslash{}foo\textbackslash{}0bar\char`\"{}} and developers would need to remember what namespace {\ttfamily \textbackslash{}1} is. Using the {\ttfamily KEY\+\_\+\+NS\+\_\+$\ast$} constants like this is not easily possible.
+
+Both order and hierarchy comparisons are very simple in this case and can be implemented with a single {\ttfamily memcmp} and a tiny amount of extra logic (e.\+g., to handle cascading names). Iterating over the individual parts is also trivial, since all parts are separated by {\ttfamily \textbackslash{}0} bytes.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2114}{}\doxysubsection{Only unescaped name, with separate namespace}\label{doc_decisions_4_decided_keyname_md_autotoc_md2114}
+In the above solution, the entire unescaped name (including the namespace) would always be considered one unit. As such, there would only be a single pointer and a size in an API that needs a name. This can be inconvenient, because it makes using the {\ttfamily KEY\+\_\+\+NS\+\_\+$\ast$} constants more difficult.
+
+This solution enhances the above, by considering the namespace a separate thing. Above the namespace is intrinsically part of the name. It is essentially just a restriction on the first part of the name and sometimes the namespace must be considered specially. In this solution, we consider the namespace a separate entity from the start. A key does not have a name, which starts with a namespace. Instead, a key has a namespace {\itshape and} a name.
+
+This is mostly a theoretical distinction, but it makes it easier to argue in favor of APIs that use separate arguments for the namespace. It also makes it more obvious that sometimes the namespace on its own can have an influence on the behavior of a function.
+
+In the API the name could now be given as separated into namespace and the rest of the name. Instead of taking a single pointer and size, which receive values like {\ttfamily \char`\"{}\textbackslash{}1\textbackslash{}0foo\textbackslash{}0bar\char`\"{}} and {\ttfamily 10}, the API would take a namespace, a pointer, and a size, with values like {\ttfamily KEY\+\_\+\+NS\+\_\+\+CASCADING}, {\ttfamily \char`\"{}foo\textbackslash{}0bar\char`\"{}} and {\ttfamily 8}.
+
+Internally, we don\textquotesingle{}t necessarily need to store this as separate fields. The namespace could be combined into one buffer with the rest of the name, and stored as a single pointer and size. However, depending on the API there can also be benefits to keeping the namespace as a separate field.
+
+Even with a separate namespace field, most benefits of \char`\"{}\+Only unescaped name\char`\"{} are retained. The memory consumption is near minimal (alignment padding can cause a difference). Comparisons are exactly the same, just with an additional namespace byte comparison beforehand.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2115}{}\doxysubsection{Both escaped and unescaped name}\label{doc_decisions_4_decided_keyname_md_autotoc_md2115}
+The previous approach used both to combine the advantages of escaped and unescaped name.
+
+The API could largely rely on the escaped name, while e.\+g., comparisons can use the unescaped name.
+
+The issue with this approach is the insane memory consumption. Keynames can already be quite long and {\ttfamily Key} is at the base of Elektra. Storing every name twice in only slightly different forms essentially doubles the memory consumption.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2116}{}\doxysubsection{Both escaped and unescaped name, but only unescaped stored}\label{doc_decisions_4_decided_keyname_md_autotoc_md2116}
+Instead of storing both escaped and unescaped name, only the unescaped name could be stored.
+
+APIs that use the escaped name would do conversion on the fly.
+
+This approach has several downsides. First, while the conversion may be optimized, it will never be free in terms of runtime. But more importantly, if an escaped name should be returned by an API, it must be stored somewhere. This means extra allocations and crucially somebody needs to do the cleanup. In other words, it complicates the API.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2117}{}\doxysubsection{Escaped and unescaped name in single buffer}\label{doc_decisions_4_decided_keyname_md_autotoc_md2117}
+Another variant of the above. The escaped and unescaped name are stored in a single buffer. This avoids extra allocations and extra pointers and sizes in structs.
+
+The escaped name could also be stored lazily only when needed. This would solve the cleanup problem.
+
+While this may seem like the ideal solution, there are still some downsides. The biggest problem is the API design. If the API uses escaped names a lot (because it is more convenient), then this essentially degrades into the \char`\"{}\+Both escaped and unescaped name\char`\"{} solution. Even if APIs exist for both escaped and unescaped names, the convenience benefit, will lead to more use of escaped names. This means the escaped name will be stored for many keys and therefore the benefit of the lazy allocation is negated.
+
+Without the lazy allocation benefit, the only difference to \char`\"{}\+Both escaped and unescaped name\char`\"{} is that we have fewer pointers and sizes in structs. This saves some amount of memory and allocations, but makes internal code more difficult to write and understand.\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2118}{}\doxysection{Decision}\label{doc_decisions_4_decided_keyname_md_autotoc_md2118}
+Go with \char`\"{}\+Only unescaped name, with separate namespace\char`\"{} from above\+:
+
+
+\begin{DoxyItemize}
+\item Store only unescaped name with size inside {\ttfamily struct \+\_\+\+Key}
+\item API of {\ttfamily libelektra-\/core} will use unescaped name exclusively
+\item Convenience functions using escaped names, will be provided via other libraries
+\item Where appropriate the API will take the namespace as a separate argument to allow using {\ttfamily KEY\+\_\+\+NS\+\_\+$\ast$} constants.
+\item Whether namespace is stored separately in {\ttfamily struct \+\_\+\+Key} will be decided at a later point, when the scope of all API changes and changes to {\ttfamily struct \+\_\+\+Key} is clear.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2119}{}\doxysection{Rationale}\label{doc_decisions_4_decided_keyname_md_autotoc_md2119}
+
+\begin{DoxyItemize}
+\item Largest memory savings among the proposed options
+\item Option to use separate namespace argument leads to more convenient API ({\ttfamily KEY\+\_\+\+NS\+\_\+$\ast$} constants).
+\item Simple internal code
+\item Escaped name requirements can easily be solved by an additional library (e.\+g., {\ttfamily libelektra-\/ease}, {\ttfamily libelektra-\/extra} or new standalone library for names), because not every caller will need those functions.
+\item Full API and internal struct layout aren\textquotesingle{}t designed yet, so deciding how to store namespace is difficult.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2120}{}\doxysection{Implications}\label{doc_decisions_4_decided_keyname_md_autotoc_md2120}
+
+\begin{DoxyItemize}
+\item {\ttfamily key\+New} needs to change
+\item {\ttfamily key\+Name} returns unescaped name
+\item functions for escaped name move out of core
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2121}{}\doxysection{Related Decisions}\label{doc_decisions_4_decided_keyname_md_autotoc_md2121}
+\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2122}{}\doxysection{Notes}\label{doc_decisions_4_decided_keyname_md_autotoc_md2122}
+\hypertarget{doc_decisions_4_decided_keyname_md_autotoc_md2123}{}\doxysubsection{Printing unescaped name in GDB}\label{doc_decisions_4_decided_keyname_md_autotoc_md2123}
+In GDB (and probably others) the unescaped name of a {\ttfamily Key $\ast$ key} can be printed with (assuming the name is in {\ttfamily key-\/$>$ukey} and its size in {\ttfamily key-\/$>$key\+USize})\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{p *key-\/>ukey@key-\/>keyUSize}
+
+\end{DoxyCode}
+
+
+This prints {\ttfamily key-\/$>$ukey} as a fixed-\/length string of length {\ttfamily key-\/$>$key\+USize}, e.\+g., for {\ttfamily user\+:/abc} it prints\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\$1 = "{}\(\backslash\)006\(\backslash\)000abc"{}}
+
+\end{DoxyCode}
+ 

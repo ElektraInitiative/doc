@@ -1,0 +1,93 @@
+.TH "md_src_plugins_xfconf_README" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_xfconf_README \- Plugin: xfconf 
+
+.IP "\(bu" 2
+infos = Information about the xfconf plugin is in keys below
+.IP "\(bu" 2
+infos/author = Richard Stöckl e11908080@student.tuwien.ac.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/xfconf
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = maintained libc configurable experimental unfinished concept limited memleak
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = storage plugin for xfconf
+.PP
+.SH "Introduction"
+.PP
+The xfconf plugin is a storage plugin to mount the xfconf configuration settings\&. This allows to operate on the XFCE configuration with libelektra\&. As usual, this allows the plugin to read and write to the XFCE configuration\&.
+.PP
+You can refer to the \fCofficial XFCE documentation of xfconf\fP to learn more about it\&.
+.SH "Xfconf Terminology"
+.PP
+.SS "Property"
+A property in xfconf is the same as a key in libelektra i\&.e\&. it has a name and can hold a value\&. In contrast to libelektra, the value can be more complex i\&.e\&. it can be an array\&. In this case, the value of the property is mapped as multiple keys in libelektra using the array structure\&.
+.SS "Channel"
+A channel is a type of namespace used in the xfconf library\&. Usually, it is used to separate the properties of different applications which is helpful if different applications rely on a property with the same name but require them to hold different values\&. For example Thunar uses a channel named \fCthunar\fP, Xfwm uses a channel named \fCxfwm4\fP and so on\&. Keep in mind that channels are only used to separate the properties such as namespaces\&. They are not a security feature i\&.e\&. every application has read/write access to every channel\&.
+.PP
+The list of all channels is stored in the \fCsystem:/elektra/modules/xfconf/channels\fP which is an array of all channel names\&. Channels cannot be created manually with libelektra\&. Instead, when mounting a channel (see \fCPlugin Configuration\fP how to specify a channel) and setting a key value below the mount, it will be automatically created\&.
+.SS "Locks"
+Xfconf uses so-called locks to prevent users or applications to set properties to a new value\&. They can be referred as a type of constant\&. As of now, locks cannot be set or unset in xfconf which makes locked properties read-only forever\&.
+.SH "Dependencies"
+.PP
+The xfconf library from the XFCE project is the main dependency of this plugin\&. Usually, this library is called something such as \fCxfconf\fP (Arch, Fedora, \fCxfconf-devel\fP for compiling), \fClibxfconf-0\fP (Debian, \fClibxfconf-0-dev\fP for compmiling) or \fCxfce4-conf\fP (FreeBSD) in the package manager\&. As xfconf itself depends on dbus and glib, these are dependecies too but should be installed with the package manager automatically\&. This plugin is tested with the xfconf versions \fC4\&.16\fP and above\&.
+.PP
+Before you can start working with the plugin, you have to make sure dbus is running\&. If you use a common desktop environment this should already be fulfilled\&. Otherwise, \fCexport $(dbus-launch)\fP can be used to start it\&.
+.PP
+Note that this plugin does not support macOS since Xfce is not commonly used there, Mac Ports only provides a very old version (\fC4\&.12\fP) and Brew does not provide Xfce at all\&.
+.SH "Usage"
+.PP
+The usage is identical to most storage plugins except that the channel option during mount must be defined in order to tell xfconf which channel to mount\&.
+.SH "Plugin Configuration"
+.PP
+The required \fCchannel\fP configuration option is used to tell xfconf which channel to mount\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# Backup-and-Restore: user:/tests/xfconf
+
+# mount the xfwm channel
+kdb mount /dev/null /test/xfwm xfconf "channel=xfwm4"
+
+# store old button layout
+set "OLD_LAYOUT=$(kdb get /test/xfwm/general/button_layout)"
+
+# set only a close button
+kdb set system:/test/xfwm/general/button_layout "C|"
+
+# read the new layout
+kdb get /test/xfwm/general/button_layout
+#> C|
+
+# restore old layout
+kdb set /test/xfwm/general/button_layout "$OLD_LAYOUT"
+
+# umount the channel
+kdb umount /test/xfwm
+.fi
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+usage of a dummy file such as \fC/dev/null\fP
+.IP "\(bu" 2
+xfconf locks can only be read but not set as this is not possible in xfconf
+.IP "\(bu" 2
+comments and sorting are not implemented due the lack of both in xfconf
+.IP "\(bu" 2
+due to memory leaks in xfconf upstream, valgrind reports errors when running the tests 
+.PP
+

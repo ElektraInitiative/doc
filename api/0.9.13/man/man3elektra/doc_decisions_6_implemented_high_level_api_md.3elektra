@@ -1,0 +1,114 @@
+.TH "doc_decisions_6_implemented_high_level_api_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_6_implemented_high_level_api_md \- High-level API 
+ 
+.SH "Problem"
+.PP
+Projects usually do not want to use low-level APIs\&. \fCKDB\fP and \fCKeySet\fP is useful for plugins and to implement APIs but not to be directly used in applications\&.
+.SH "Constraints"
+.PP
+.IP "1." 4
+should be extremely easy to get started with
+.IP "2." 4
+should be very hard to use it wrong
+.IP "3." 4
+all high-level APIs should work together very nicely
+.IP "  \(bu" 4
+same principles
+.IP "  \(bu" 4
+same API style
+.IP "  \(bu" 4
+same error handling
+.IP "  \(bu" 4
+can be arbitrarily intermixed
+.PP
+
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Thread-safety: a handle is the accepted better solution than having to care about whether it is reentrant, thread-safe, \&.\&.\&.
+.IP "\(bu" 2
+assumes that spec is available (either by compiled-in \fCKeySet\fP or exit after elektraOpen)
+.IP "\(bu" 2
+many projects do not care about some limitations (no binary, no metadata) but prefer a straightforward way to get/set config
+.IP "\(bu" 2
+when people hit limitations they fall back to direct use of \fCKeySet\fP, \fCKey\fP
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+storing errors in the handle:
+.IP "  \(bu" 4
+Maintenance problem if error handling is added later
+.PP
+
+.IP "\(bu" 2
+only provide \fCKDB\fP, applications need to implement their own APIs:
+.IP "  \(bu" 4
+reduces consistency of how the API is used
+.PP
+
+.IP "\(bu" 2
+only provide generated API
+.IP "\(bu" 2
+assume type as \fCstring\fP if not given
+.IP "\(bu" 2
+force \fCdefault\fP to be part of parameters
+.PP
+.SH "Decision"
+.PP
+We provide two high-level C APIs:
+.PP
+.IP "1." 4
+libelektra-highlevel (generic key-value getter/setter)
+.IP "2." 4
+code generator (specified key-value getter/setter with function names, KeySets, or strings from specifications)
+.PP
+.PP
+Furthermore, we will:
+.PP
+.IP "\(bu" 2
+have as goal that no errors in specified keys with default can occur
+.IP "\(bu" 2
+if you use \fCelektraGetType\fP before getting a value, no error can occur when getting it later
+.IP "\(bu" 2
+enforce that every key has a type
+.IP "\(bu" 2
+use \fCelektraError\fP as extra parameter (for prototyping and examples you can pass 0)
+.PP
+.SH "Rationale"
+.PP
+.IP "1." 4
+Very easy to get started with, to get a key needs 3 lines of codes (without error handling):
+.PP
+.PP
+.PP
+.nf
+Elektra *handle = elektraOpen ("/sw/elektra/kdb/#0/current", 0);
+printf ("number /mykey is " ELEKTRA_LONG_F "\n", elektraGetLong (handle, "/mykey"));
+elektraClose (handle);
+.fi
+.PP
+.PP
+.IP "2." 4
+It is also easier to get started with writing new bindings\&.
+.IP "3." 4
+User can combine the different APIs\&.
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+.IP "\(bu" 2
+Currently it is not possible to combine low-level and high-level API\&.
+.IP "\(bu" 2
+Hierarchical version not implemented and probably not needed\&.
+.IP "\(bu" 2
+\fC#1359\fP 
+.PP
+

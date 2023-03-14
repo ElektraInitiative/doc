@@ -1,0 +1,138 @@
+.TH "md_src_plugins_hexnumber_README" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_hexnumber_README \- Plugin: hexnumber 
+
+.IP "\(bu" 2
+infos = Information about the hexnumber plugin is in keys below
+.IP "\(bu" 2
+infos/author = Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = conv check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep configurable
+.IP "\(bu" 2
+infos/metadata = unit/base
+.IP "\(bu" 2
+infos/ordering = type
+.IP "\(bu" 2
+infos/description = converts hexadecimal values into decimal and back
+.PP
+.SH "Introduction"
+.PP
+This plugin is used to read configuration files that use hexadecimal values\&. All 'hex-values' (see below) will be converted into decimal when Elektra reads values from the mounted file\&. When Elektra writes back to the file the converted values will be converted back and stored as before (\fC0X\fP will be replaced with \fC0x\fP)\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-extra\fP\&.
+.SS "What are 'hex-values'?"
+There are multiple ways you can signal to the hexnumber plugin, that a value should be converted:
+.PP
+.IP "1." 4
+If a Key has the metadata \fCunit/base\fP set to \fChex\fP it will always be interpreted as a hex-value\&. The plugin will also produce an error, if the value contained in such a Key does not start with \fC0x\fP (or \fC0X\fP)\&.
+.IP "2." 4
+If \fCunit/base\fP is not present and
+.IP "  \(bu" 4
+the \fCtype\fP metadata is set to one of the recognized integer-types (default: \fCbyte\fP, \fCshort\fP, \fCunsigned_short\fP, \fClong\fP, \fCunsigned_long\fP, \fClong_long\fP, \fCunsigned_long_long\fP)
+.IP "  \(bu" 4
+AND the configuration value itself starts with \fC0x\fP (or \fC0X\fP) it will be interpreted as a hex-value\&.
+.PP
+
+.IP "3." 4
+If forced conversion mode (\fC/force\fP plugin configuration, see below) is enabled all values starting with \fC0x\fP (or \fC0X\fP) are considered hex-values\&.
+.PP
+.SH "Configuration"
+.PP
+When mounting a backend with the hexnumber plugin, a few settings can be configured\&.
+.PP
+.IP "1." 4
+To enable forced conversion mode set \fC/force\fP to any value\&. In forced conversion mode the plugin tries to convert \fBALL\fP strings starting with \fC0x\fP (or \fC0X\fP) into decimal before passing the value on to the rest of Elektra\&. This can be useful for importing a configuration file that uses hexadecimal values into Elektra without writing a specification for the file\&.
+.PP
+NOTE: be careful when using this option, as any configuration value that contains invalid non-hexadecimal characters (i\&.e\&. does not match \fC0[xX][0-9A-Fa-f]+\fP) will result in an error\&.
+.PP
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ecf /examples/hexnumber/forced hexnumber /force=1
+.fi
+.PP
+.PP
+.IP "2." 4
+The types recognized as integers can be configured\&. For this purpose specify all \fIadditional\fP types you want to be considered for possible hexadecimal conversion as an Elektra array\&. All keys with a type from \fC/accept/types/#\fP, or one of the default types, will be converted to hexadecimal if the value starts with \fC0x\fP (or \fC0X\fP)\&.
+.PP
+.PP
+.PP
+.nf
+sudo kdb mount test\&.ecf /examples/hexnumber/customtypes hexnumber /accept/types/#0=customint /accept/types/#1=othercustomint
+.fi
+.PP
+.SH "Usage & Example"
+.PP
+.IP "\(bu" 2
+To mount a simple backend that uses hexadecimal numbers, you can use: 
+.PP
+.nf
+sudo kdb mount test\&.ecf user:/tests/hexnumber hexnumber
+
+.fi
+.PP
+
+.IP "\(bu" 2
+A few examples on how to use the plugin:
+.PP
+.PP
+.PP
+.nf
+# Example 1: read hex value
+kdb set user:/tests/hexnumber/hex 0x1F
+kdb meta-set user:/tests/hexnumber/hex type long
+
+kdb get user:/tests/hexnumber/hex
+#> 31
+
+# Example 2: decimal value not converted
+kdb set user:/tests/hexnumber/dec 26
+kdb meta-set user:/tests/hexnumber/dec type long
+
+kdb get user:/tests/hexnumber/dec
+#> 26
+
+# Example 3: string untouched
+kdb set user:/tests/hexnumber/string value
+kdb meta-set user:/tests/hexnumber/string type string
+
+kdb get user:/tests/hexnumber/string
+#> value
+
+# Example 4: read hex value with unit/base
+kdb set user:/tests/hexnumber/hex2 0xF
+kdb meta-set user:/tests/hexnumber/hex2 unit/base hex
+
+kdb get user:/tests/hexnumber/hex2
+#> 15
+
+# Undo changes
+kdb rm -r user:/tests/hexnumber
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+To unmount the plugin use the following command: 
+.PP
+.nf
+kdb umount user:/tests/hexnumber
+#>
+
+.fi
+.PP
+ 
+.PP
+

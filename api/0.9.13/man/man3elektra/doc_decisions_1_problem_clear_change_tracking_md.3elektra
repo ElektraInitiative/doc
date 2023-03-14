@@ -1,0 +1,221 @@
+.TH "doc_decisions_1_problem_clear_change_tracking_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_1_problem_clear_change_tracking_md \- Change Tracking 
+ 
+.SH "Problem"
+.PP
+Currently, a range of Elektra plugins are implementing some sort of change tracking for configuration data\&. This includes, but is not limited to, the \fBinternalnotification\fP and \fBdbus\fP plugins\&. In the near future, Elektra shall also be extended with session recording\&.
+.PP
+KDB itself also has some rudimentary change tracking (via the \fCkeyNeedsSync\fP flag) to determine whether \fCkdbSet\fP needs to actually do something\&.
+.PP
+These competing change tracking implementations create multiple problems:
+.PP
+.IP "1." 4
+pointless waste of resources, as data is duplicated in each plugin,
+.IP "2." 4
+multiplication of code, generating a maintenance burden\&.
+.IP "3." 4
+various subtle differences in change tracking behavior, e\&.g\&., \fCkdbSet\fP might write a config file but notification is not sent out
+.IP "4." 4
+the current approach to change tracking in plugins is fragile, which is outlined in \fBa separate decision about valid kdbGet/kdbSet sequences\fP\&.
+.PP
+.PP
+For \fCKeySet\fP we need to track which of the keys:
+.PP
+.IP "\(bu" 2
+have been removed
+.IP "\(bu" 2
+have been added
+.PP
+.PP
+For \fCKey\fP we need to track:
+.PP
+.IP "\(bu" 2
+original value of the key
+.IP "\(bu" 2
+size of the original value (for binary keys)
+.IP "\(bu" 2
+metadata, which is a combination of the tracking of keysets and keys
+.IP "\(bu" 2
+tracking should only be done on the following namespaces:
+.IP "  \(bu" 4
+\fCsystem:/\fP
+.IP "  \(bu" 4
+\fCuser:/\fP
+.IP "  \(bu" 4
+\fCdir:/\fP
+.IP "  \(bu" 4
+\fCmeta:/\fP
+.IP "  \(bu" 4
+\fCspec:/\fP
+.PP
+
+.PP
+.SH "Constraints"
+.PP
+Change tracking must:
+.PP
+.IP "\(bu" 2
+be transparent for applications using the public Elektra API
+.IP "\(bu" 2
+be transparent to users changing configuration data
+.IP "\(bu" 2
+if overhead is not negligible: only do tracking as required, i\&.e\&., a plugin specifically requests it
+.IP "\(bu" 2
+have negligible overhead if disabled
+.IP "\(bu" 2
+not duplicate data for each plugin that wants change tracking
+.IP "\(bu" 2
+work with all allowed sequences of \fCkdbGet\fP and \fCkdbSet\fP as \fBper this decision\fP
+.PP
+.PP
+We only want to track changes that are done by the user, not changes that are done by plugins\&. I\&.e\&. the scope of change tracking is on what happens \fIoutside\fP of \fCkdbGet\fP and \fCkdbSet\fP\&.
+.PP
+The library \fClibelektra-core\fP must be kept minimal\&.
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+It is possible to do change tracking with reasonable memory and computation overhead
+.IP "\(bu" 2
+It is possible to design a single change tracking API that is useful for all existing and future plugins
+.IP "\(bu" 2
+False positivies are okay
+.IP "  \(bu" 4
+this may happend when some keys have been changed by the user, but have subsequentially been 'unchanged' by a transformation plugin Scenario: plugin that converts \fCfalse\fP<->\fC0\fP and \fCtrue\fP<->\fC1\fP
+.IP "    \(bu" 6
+\fCsystem:/background\fP is stored with value \fCfalse\fP
+.IP "    \(bu" 6
+user gets key \fCsystem:/background\fP with value \fC0\fP (after conversion by plugin)
+.IP "    \(bu" 6
+user changes it to \fCfalse\fP
+.IP "    \(bu" 6
+changetracking detects that value has been changed, because \fCfalse\fP != \fC0\fP
+.IP "    \(bu" 6
+plugin changes value from \fCfalse\fP to \fC0\fP
+.IP "    \(bu" 6
+consumers of the changetracking API will now get a false positive if they query whether \fCsystem:/background\fP has been changed
+.IP "    \(bu" 6
+We assume consumers of the changetracking API have access to both the previous and the new value of a changed key\&. Therefore, they could detect these false positive cases, if the need to\&.
+.PP
+
+.PP
+
+.IP "\(bu" 2
+False negatives (missed changes) are not okay
+.PP
+.SH "Solutions - Storage"
+.PP
+.SS "Utilize already existing <tt>backendData->keys</tt>"
+We already store which keys have been returned by \fCkdbGet\fP for each backend within KDB\&. Currently, those are shallow copies\&. To be useful for changetracking, we need to perform deep copies instead\&. As keys and keysets are already utilizing copy-on-write, this would not add too much memory overhead\&.
+.PP
+A problem with this approach is that the internally stored keys are recreated as new instances every time \fCkdbGet\fP is called\&.
+.SS "Combine with internal cache"
+We already decided that we want to have an internal deep-duped keysets of all the keys we returned\&. See \fBinternal cache decision\fP\&.
+.PP
+The difference to \fCbackendData->keys\fP is that this cache is not recreated each time \fCkdbGet\fP is called\&.
+.SS "Have a seperate storage for changetracking"
+Have a global keyset with deep-duped keys that is purely used for changetracking and nothing else\&.
+.SS "Store changes as meta keys"
+When something changes for the first time, store the original value as a metakey to every key\&. Not yet clear how we handle changes to metadata then\&. Also not really possible for keysets\&.
+.SS "Implement changetracking as a mechanismn on the <tt>Key</tt> and <tt>KeySet</tt> datastructures"
+The idea here is that we extend the \fCKeySet\fP and \fCKey\fP structs with additional fields\&.
+.PP
+The tracking itself would be done within the \fCks*\fP and \fCkey*\fP methods, after checking if it is enabled\&. It would also transparently work for metadata, as metadata itself is implemented as a keyset with keys\&.
+.PP
+Downsides of this approach:
+.PP
+.IP "\(bu" 2
+It adds functionality to \fClibelektra-core\fP which may violate the constraint above\&. It may, however, be debatable whatever 'minimal' means in this context\&.
+.IP "\(bu" 2
+Adding fields to the structs causes a slight memory overhead, even with tracking turned off\&. While negligible for \fCKeySet\fP due to the low amount of keysets in typical applications, it may be noticable for \fCKey\fP\&. On a 64-bit system we'd add 16 bytes to it\&. 8 bytes for the pointer to the original value, 8 bytes for the size of the original value\&. To put this in perspective, the current size of the \fCKey\fP struct is 64 bytes, so we'd add 25% overhead to an empty key\&. However, this percentage will be much lower in a real-world application, as the usefulness of an empty key is very low\&.
+.IP "\(bu" 2
+Another downside here is that it is not so easy to determine what the 'original' value is\&. Some part of \fClibelektra-kdb\fP would need to mark the keys as original (after transformations etc\&.)
+.PP
+.SH "Solutions - Implementation"
+.PP
+.SS "Implement directly within <tt>libelektra-kdb</tt>"
+Implement all the logic for changetracking directly within \fClibelektra-kdb\fP\&.
+.SS "Implement as a seperate plugin"
+Implement changetracking as a hooks plugin that will be called within \fCkdbGet\fP and \fCkdbSet\fP accordingly\&.
+.PP
+The following hooks will be needed:
+.PP
+.IP "\(bu" 2
+\fCtracking/get\fP: will be called at the end of \fCkdbGet\fP, directly before the result is returned\&.
+.IP "\(bu" 2
+\fCtracking/set\fP: will be called at the beginning of \fCkdbSet\fP\&.
+.IP "\(bu" 2
+\fCtracking/changeset\fP: compute the changeset for the requested parent key and return it\&.
+.PP
+.PP
+As every hook plugin can define its own contract, in theory all storage forms mentioned in the previous chapter should be possible to implement\&. We could just point the plugin to \fCbackendsData->keys\fP or the internal cache if we go down that route\&.
+.SH "Solutions - Query"
+.PP
+.SS "Provide an API within <tt>libelektra-kdb</tt>"
+The API should be useable both by plugins and applications utilizing ELektra\&. It does not matter whether the changetracking is implemented as part of \fClibelektra-kdb\fP or as a seperate plugin\&. The API may look something like this:
+.PP
+.PP
+.nf
+bool elektraChangeTrackingIsEnabled (KDB * kdb);
+ChangeTrackingContext * elektraChangeTrackingGetContext (KDB * kdb, Key * parentKey);
+
+KeySet * elektraChangeTrackingGetAddedKeys (ChangeTrackingContext * context);
+KeySet * elektraChangeTrackingGetRemovedKeys (ChangeTrackingContext * context);
+KeySet * elektraChangeTrackingGetModifiedKeys (ChangeTrackingContext * context); // Returns old keys (pre-modification)
+
+bool elektraChangeTrackingValueChanged (ChangeTrackingContext * context, Key * key);
+bool elektraChangeTrackingMetaChanged (ChangeTrackingContext * context, Key * key);
+
+KeySet * elektraChangeTrackingGetAddedMetaKeys (ChangeTrackingContext * context, Key * key);
+KeySet * elektraChangeTrackingGetRemovedMetaKeys (ChangeTrackingContext * context, Key * key);
+KeySet * elektraChangeTrackingGetModifiedMetaKeys (ChangeTrackingContext * context, Key * key); // Returns old meta keys (pre-modification)
+.fi
+.PP
+.SS "Provide query methods as part of a seperat plugin"
+This solution only makes sense if changetrackig is implemented as part of a seperate plugin\&. It will be a bit challenging to use for applications, as it would require that applications have access to the plugin contracts\&.
+.PP
+The changetracking plugin needs to export at least functions for the following things in its contract:
+.PP
+.IP "\(bu" 2
+Get added keys
+.IP "\(bu" 2
+Get removed keys
+.IP "\(bu" 2
+Get modified keys
+.IP "\(bu" 2
+Get added meta keys for a key
+.IP "\(bu" 2
+Get removed meta keys for a key
+.IP "\(bu" 2
+Get modified meta keys for a key
+.PP
+.SH "Decision"
+.PP
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+
+.IP "\(bu" 2
+
+.IP "\(bu" 2
+
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBValid kdbGet/kdbSet sequences\fP from \fC#4574\fP\&.
+.IP "\(bu" 2
+\fBCopy On Write\fP
+.PP
+.SH "Notes"
+.PP
+.IP "\(bu" 2
+Issue \fC#4514\fP uncovered a problem in the current change tracking approach
+.IP "\(bu" 2
+Issue \fC#4520\fP already explored some of the considered alternatives 
+.PP
+

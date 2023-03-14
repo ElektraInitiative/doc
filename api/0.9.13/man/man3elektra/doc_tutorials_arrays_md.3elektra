@@ -1,0 +1,142 @@
+.TH "doc_tutorials_arrays_md" 3elektra "Tue Mar 14 2023" "Version 0.9.13" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_arrays_md \- Arrays 
+ 
+.SH "Key-Value Pairs"
+.PP
+The main building block of Elektra’s database are hierarchical \fCkey-value pairs\fP\&. You can create such a pair using \fB`kdb set`\fP:
+.PP
+.PP
+.nf
+kdb set user:/tests/parent value
+#> Create a new key user:/tests/parent with string "value"
+.fi
+.PP
+.PP
+\&. The command above created a key \fCuser:/tests/parent\fP with the value \fCvalue\fP\&. Since Elektra uses a hierarchical database we can also create keys \fBbelow\fP \fCuser:/tests/parent\fP:
+.PP
+.PP
+.nf
+# We can create keys with an empty value by passing an empty string\&.
+kdb set user:/tests/parent/son ""
+#> Create a new key user:/tests/parent/son with string ""
+
+kdb set user:/tests/parent/daughter ""
+#> Create a new key user:/tests/parent/daughter with string ""
+
+kdb set user:/tests/parent/daughter/grandchild ""
+#> Create a new key user:/tests/parent/daughter/grandchild with string ""
+.fi
+.PP
+.PP
+\&. We can check the hierarchy of the keys using \fCkdb ls\fP and retrieve data using \fCkdb get\fP:
+.PP
+.PP
+.nf
+# Elektra sorts keys alphabetically
+kdb ls user:/tests/parent
+#> user:/tests/parent
+#> user:/tests/parent/daughter
+#> user:/tests/parent/daughter/grandchild
+#> user:/tests/parent/son
+
+kdb get user:/tests/parent
+#> value
+kdb get user:/tests/parent/daughter
+#>
+.fi
+.PP
+.SH "Array Keys"
+.PP
+Since Elektra keys sorts keys alphabetically, we can use the key-value pair structure described above to store sequences of values (aka\&. arrays)\&.
+.SS "Empty Arrays"
+For an \fBempty array\fP (\fC[]\fP) we just add the \fBmetakey\fP \fCarray\fP:
+.PP
+.PP
+.nf
+# Create an empty array with the name `user:/tests/sequence`
+kdb meta-set user:/tests/sequence array ''
+.fi
+.PP
+.SS "Array Elements"
+To create an \fBarray element\fP we start the basename of a key with the \fC#\fP character and add the index of the array element afterwards\&. For example, the commands below adds three elements to our array \fCuser:/tests/sequence\fP:
+.PP
+.PP
+.nf
+kdb set user:/tests/sequence/#0 'First Element'
+#> Create a new key user:/tests/sequence/#0 with string "First Element"
+kdb set user:/tests/sequence/#1 'Second Element'
+#> Create a new key user:/tests/sequence/#1 with string "Second Element"
+# Arrays do not need to be contiguous
+kdb set user:/tests/sequence/#3 'Fourth Element'
+#> Create a new key user:/tests/sequence/#3 with string "Fourth Element"
+.fi
+.PP
+.PP
+\&. As you can see above arrays can contain “empty fields”: The key \fCuser:/tests/sequence/#2\fP is missing\&.
+.PP
+As Elektra keys are sorted alphabetically, it will automatically prepend with as many \fC_\fP characters as needed to keep the numerical ordering of the array and the alphabetical order identical:
+.PP
+.PP
+.nf
+kdb set user:/tests/sequence/#10 'Eleventh Element'
+#> Create a new key user:/tests/sequence/#_10 with string "Eleventh Element"
+.fi
+.PP
+.PP
+.PP
+.nf
+# List all array elements
+kdb ls user:/tests/sequence/
+#> user:/tests/sequence/#0
+#> user:/tests/sequence/#1
+#> user:/tests/sequence/#3
+#> user:/tests/sequence/#_10
+.fi
+.PP
+.SS "Metadata"
+Elektra’s arrays \fBrequire\fP that you always add the metakey \fCarray\fP to the array parent\&. Otherwise, the values below the parent will not be interpreted as array elements, but rather as normal key-value pairs\&. To make the \fCarray\fP metakey more useful \fBstorage plugins\fP should save the \fBbasename of the last key in the array parent\fP\&. This of course works only, if the plugins already stores this information in the config file, either
+.PP
+.IP "\(bu" 2
+implicitly (e\&.g\&. the data below the array parent is stored as array/list/sequence in the config file), or
+.IP "\(bu" 2
+explicitly (e\&.g\&. the plugin stores the metakey \fCarray\fP directly in the config file)
+.PP
+.PP
+\&. Either way, in some situations you might have to add this value manually via \fCkdb meta-set\fP:
+.PP
+.PP
+.nf
+# Add array elements
+kdb set user:/tests/favorites/superheros/#0 'One-Punch Man'
+#> Create a new key user:/tests/favorites/superheros/#0 with string "One-Punch Man"
+kdb set user:/tests/favorites/superheros/#1 'Mermaid Man and Barnacle Boy'
+#> Create a new key user:/tests/favorites/superheros/#1 with string "Mermaid Man and Barnacle Boy"
+kdb set user:/tests/favorites/superheros/#99999 'The guy with the bow and arrow'
+#> Create a new key user:/tests/favorites/superheros/#____99999 with string "The guy with the bow and arrow"
+
+# The metakey `array` should save the basename of the last element\&.
+kdb meta-set user:/tests/favorites/superheros array '#99999'
+.fi
+.PP
+.PP
+\&. This way you can always retrieve the last element of an array easily:
+.PP
+.PP
+.nf
+kdb get user:/tests/favorites/superheros/`kdb meta-get user:/tests/favorites/superheros array`
+#> The guy with the bow and arrow
+.fi
+.PP
+.SH "Closing Remarks"
+.PP
+We close this tutorial by removing the data created by the commands above:
+.PP
+.PP
+.nf
+kdb rm -r user:/tests
+.fi
+.PP
+

@@ -1,0 +1,110 @@
+\label{doc_GOALS_md_md_doc_GOALS}%
+\Hypertarget{doc_GOALS_md_md_doc_GOALS}%
+ The goal of Elektra is to make it trivial to access and specify configuration settings by an API. This helps in achieving the following goals\+:
+
+
+\begin{DoxyItemize}
+\item Improve robustness of configuration systems by
+\begin{DoxyItemize}
+\item Avoiding common programming errors through the usage of the API.
+\item Getting more guarantees when accessing configuration settings.
+\item Rejecting invalid configurations.
+\item Avoiding reimplementation of parsers for the same configuration file format.
+\end{DoxyItemize}
+\item Allow software to be better integrated via configuration settings (e.\+g. via \href{https://www.freedesktop.org}{\texttt{ Freedesktop}}).
+\item Postpone some decisions from programmers to maintainers/administrators\+:
+\begin{DoxyItemize}
+\item Rejecting unwanted configuration settings.
+\item Uniformity of configuration access (logging, vcs commit, notifications).
+\item Syntax of the configuration files (with limitations, see below).
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+Elektra follows the goals below, in order of preference. If goals conflict, the higher goal takes precedence.\hypertarget{doc_GOALS_md_autotoc_md2707}{}\doxysection{0. Stability}\label{doc_GOALS_md_autotoc_md2707}
+People need to be able to rely on the API/\+ABI to be stable. They expect their configuration settings to continue working, with minimal maintenance burden. In particular following parts must be immutable\+:
+
+
+\begin{DoxyItemize}
+\item The API\+: Within a major release, the core API can only be extended. Every application that compiled with Elektra {\ttfamily x.\+0.\+0} must still compile with any {\ttfamily x.\+y.\+z}. Even with new major releases, only small adoptions in the source of applications or plugins might be needed.
+\item The ABI\+: Even across major releases, the core ABI must stay compatible. Every application that links with Elektra {\ttfamily x.\+0.\+0} will continue to link with any future version of Elektra. We use \mbox{\hyperlink{doc_dev_symbol-versioning_md}{symbol versioning}} for that goal.
+\item Key database and key names\+: Applications can rely on that whatever they once wrote into the key database, they will continue to get identical key names and values also with later versions of Elektra. Future extensions of the key database (e.\+g. new plugins) will not interfere.
+\end{DoxyItemize}\hypertarget{doc_GOALS_md_autotoc_md2708}{}\doxysection{1. Goal\+: Simplicity}\label{doc_GOALS_md_autotoc_md2708}
+Elektra is based on key-\/value pairs, the simplest form of what could be called a database. Elektra\textquotesingle{}s key value pair uniformity allows with a single concept configuration settings and configuration specifications to be written and to be introspected.
+
+An overly complex system cannot be managed nor understood. Extensibility brings some complex issues, which need to be solved -- but in a way so that the user sees either nothing of it or only needs to understand very simple concepts. Special care for simplicity is taken for the users\+:
+
+
+\begin{DoxyItemize}
+\item Endusers when reconfiguring or upgrading should never take any notice of Elektra, except that it works more robust and is better integrated.
+\item Programmers should have multiple ways to take advantage of Elektra so that it flawlessly integrate with their system.
+\item Plugin Programmers\+: it should be simple to extend Elektra in any desired way.
+\end{DoxyItemize}\hypertarget{doc_GOALS_md_autotoc_md2709}{}\doxysection{2. Goal\+: Robustness}\label{doc_GOALS_md_autotoc_md2709}
+Configuration systems today suffer badly from\+:
+
+
+\begin{DoxyItemize}
+\item Different behavior on different systems.
+\item Missing or weak validation.
+\item Faulty transformations from strings to concrete types.
+\item No or misleading error messages.
+\item Undefined behavior.
+\item Not working migrations from one version to another.
+\end{DoxyItemize}
+
+We tackle this problem by introducing an abstraction layer where these problems are dealt with. The goal is that for improvements in these areas only code changes within Elektra are needed (and not within applications using Elektra). This makes the application\textquotesingle{}s code not only portable towards more systems, but also enables global improvements in configuration systems.\hypertarget{doc_GOALS_md_autotoc_md2710}{}\doxysection{3. Goal\+: Extensibility}\label{doc_GOALS_md_autotoc_md2710}
+There are many variants of
+
+
+\begin{DoxyItemize}
+\item Storage formats.
+\item Frontend integrations.
+\item Bindings.
+\end{DoxyItemize}
+
+Nearly every aspect of Elektra must be extremely extensible. On the other side semantics must be very clear and well-\/defined so that this extensible system works reproducible and predictable.
+
+Only key-\/value pairs are the common factor and a way to get and set them, everything else is an extension.\hypertarget{doc_GOALS_md_autotoc_md2711}{}\doxysection{4. Goal\+: Performance}\label{doc_GOALS_md_autotoc_md2711}
+Accessing configuration settings has impact on bootup and startup-\/time of applications. Elektra needs to have similar performance as current solutions. Of particular importance is that {\ttfamily kdb\+Get} invocations\+:
+
+
+\begin{DoxyItemize}
+\item are fast
+\item have low memory usage
+\end{DoxyItemize}
+
+The plugin system has as guideline\+:
+
+\begin{quote}
+Only pay for what you need. \end{quote}
+\hypertarget{doc_GOALS_md_autotoc_md2712}{}\doxysection{Users}\label{doc_GOALS_md_autotoc_md2712}
+These goals are about Elektra\textquotesingle{}s users, again in order of importance. Again, lower goals need to be ignored if goals are in conflict.\hypertarget{doc_GOALS_md_autotoc_md2713}{}\doxysubsection{1. Application Developers}\label{doc_GOALS_md_autotoc_md2713}
+Elektra must be easy and robust for application developers to store any configuration settings referable by keys they need to store. After writing configuration settings ({\ttfamily kdb\+Set}) and reading them again ({\ttfamily kdb\+Get}) they get the same Key\+Set (aka \char`\"{}round-\/trip\char`\"{}).
+
+\begin{quote}
+This means, they must be able to store keys with any name, any string or any binary data as needed for their purpose. \end{quote}
+\hypertarget{doc_GOALS_md_autotoc_md2714}{}\doxysubsection{2. Administrators}\label{doc_GOALS_md_autotoc_md2714}
+Administrators should be empowered by good error messages and validation capabilities. Furthermore, they should be able to use their favorite tools and configuration file formats.
+
+\begin{quote}
+There are principal limitations of nearly all configuration file formats, so Elektra cannot enable that any configuration file format can be used with any application. If maintainers or administrators want to change the configuration file format of some application, they need to carefully test if it works. \end{quote}
+\hypertarget{doc_GOALS_md_autotoc_md2715}{}\doxysubsection{3. Maintainers}\label{doc_GOALS_md_autotoc_md2715}
+Elektra must be available everywhere and flexible enough, so that maintainers can integrate different applications by specifying and mounting.
+
+\begin{quote}
+There might be some restrictions that some applications require some plugins to be mounted for their configuration settings. \end{quote}
+\hypertarget{doc_GOALS_md_autotoc_md2716}{}\doxysubsection{4. Possibility to Represent any Configuration File Format}\label{doc_GOALS_md_autotoc_md2716}
+Elektra must be powerful and flexible enough to be able to represent any configuration file format. We support the development of fully-\/conforming parsers and emitters.
+
+\begin{quote}
+This means, that given a correctly written storage plugin, a Key\+Set can be found that represents the configuration settings, its metadata and the hierarchical structure of the configuration file. \end{quote}
+\hypertarget{doc_GOALS_md_autotoc_md2717}{}\doxysection{Non-\/\+Goals\+:}\label{doc_GOALS_md_autotoc_md2717}
+
+\begin{DoxyItemize}
+\item Support semantics that do not fit into the Key\+Set (key-\/value pairs) with an {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}/{\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} interface.
+\item Support for non-\/configuration issues, e.\+g., storing key-\/value data unrelated to configuration settings.
+\item Elektra is not a distributed configuration management tool\+: use your favorite configuration management tool on top or a distributed file system below Elektra.
+\end{DoxyItemize}\hypertarget{doc_GOALS_md_autotoc_md2718}{}\doxysubsection{Further Readings}\label{doc_GOALS_md_autotoc_md2718}
+
+\begin{DoxyItemize}
+\item Continue reading\+: \mbox{\hyperlink{doc_WHO_md}{Who uses Elektra?}} 
+\end{DoxyItemize}

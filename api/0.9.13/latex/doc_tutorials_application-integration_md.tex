@@ -1,0 +1,273 @@
+\label{doc_tutorials_application-integration_md_md_doc_tutorials_application_integration}%
+\Hypertarget{doc_tutorials_application-integration_md_md_doc_tutorials_application_integration}%
+ In Elektra different forms of application integrations are possible\+:
+
+
+\begin{DoxyEnumerate}
+\item A lightweight integration where configuration files are integrated in a global key database. This will not be discussed here, if you are interested \mbox{\hyperlink{doc_tutorials_mount_md}{please continue reading about mounting}}
+\item Integration techniques without modifying the applications. This will also not be discussed here, if you are interested please read\+:
+\begin{DoxyItemize}
+\item Intercept Environment
+\item Intercept File System
+\end{DoxyItemize}
+\item Integration where applications directly use Elektra to read and store settings.
+\begin{DoxyEnumerate}
+\item Using the low-\/level API.
+\item Using the high-\/level API.
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}
+
+In this tutorial we will discuss (3.\+1), i.\+e., how to extend an application to directly access Elektra’s key database. If you are new to Elektra, we recommend you familiarize yourself with the basic concepts using this guide, but when it comes to elektrifying your application (3.\+2) is mostly likely the better option. So take a look at \mbox{\hyperlink{doc_tutorials_highlevel_md}{how to use the high-\/level API}}.
+
+When the application is fully integrated in Elektra’s ecosystem following benefits arise\+:
+
+
+\begin{DoxyItemize}
+\item Benefits that shared libraries have, e.\+g.
+\begin{DoxyItemize}
+\item All applications profit from fixes, optimization and new features
+\item Less memory consumption, because the libraries executable instructions are only loaded once
+\item Faster development time, because many non-\/trivial problems (e.\+g. OS-\/dependent resolving of configuration file names with atomic updates) are already solved and tested properly
+\end{DoxyItemize}
+\item The administrator can choose\+:
+\begin{DoxyItemize}
+\item the configuration file syntax (e.\+g. XML or JSON)
+\item notification and logging on configuration changes
+\item defaults on absence of values using specifications
+\item and all other features that plugins provide
+\end{DoxyItemize}
+\item The parsing result is guaranteed to be the same because the same parser will be used.
+\item Other applications can use your configuration as override or as fallback (see below)
+\end{DoxyItemize}\hypertarget{doc_tutorials_application-integration_md_autotoc_md4181}{}\doxysection{Elektrify}\label{doc_tutorials_application-integration_md_autotoc_md4181}
+We call the process of making applications aware of other\textquotesingle{}s configuration \char`\"{}to elektrify\char`\"{}. This tutorial is suited both for new and existing applications.
+
+As first step, locate places where configuration is parsed or generated. Afterwards, use Elektra’s data structures instead at these locations. Before we are going to describe how to do this, we will describe some possibilities to keep all advantages your previous configuration system had.
+
+You can keep code you want within Elektra as plugins. This allows your application, and other applications participating in Elektra’s ecosystem to access your configuration. Doing this, the syntax of the configuration file stays the same as before. You can keep the same validation as you had before. The application profits from Elektra’s infrastructure solving basic issues like getting configuration from other parts of the system, update and conflict detection, and resolving of the file name. In particular we gain a lot because every other program can also access the configuration of your software.
+
+If you do not have the code or want to get rid of it, you can use a variety of \mbox{\hyperlink{src_plugins_README_md}{already implemented plugins}} to extend the functionality of the configuration system. There are plenty of plugins that parse and generate configuration files in different formats, do syntactic checks, do notifications (e.\+g. via dbus), and write out events in their log files.
+
+New applications do not have the burden to stay compatible with the configuration system they had to before. So they will prefer to use more standard plugins and contribute to make them flawless. But they can also use self-\/written plugins for adding needed behavior or cross-\/cutting concerns.
+
+To sum up, if a developer wants to {\bfseries{elektrify}} software, he or she can do that without any need for changes to the outside world regarding the format and semantics of the configuration. In the interconnected world it is a matter of time until other software also wants to access the configuration, and with elektrified software it is possible for every application to do so.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4182}{}\doxysection{Get Started}\label{doc_tutorials_application-integration_md_autotoc_md4182}
+As first step in a C-\/application you need to create an in-\/memory {\ttfamily Key}. Such a {\ttfamily Key} is Elektra’s atomic unit and consists of\+:
+
+
+\begin{DoxyItemize}
+\item a unique name
+\item a value
+\item metadata
+\end{DoxyItemize}
+
+{\ttfamily Key}s are either associated with entries in configuration files or used as arguments in the API to transport some information.
+
+Thus a key is in-\/memory and does not need any of the other Elektra objects. We always can create one (the tutorial will use the C-\/\+API, but it describes general concepts useful for other languages in the same way)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key *parentKey = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/sw/org/myapp/\#0/current"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item The first argument of {\ttfamily key\+New} is the name of the key. It consists of different parts, {\ttfamily /} is the hierarchy-\/separator\+:
+\begin{DoxyItemize}
+\item {\ttfamily sw} is for software
+\item {\ttfamily org} is a URL/organization name to avoid name clashes with other application names. Use only one part of the URL/organization, so e.\+g. {\ttfamily kde} is enough.
+\item {\ttfamily myapp} is the name of the most specific component that has its own configuration
+\item {\ttfamily \#0} is the major version number of the configuration (increment if you need to introduce incompatible changes).
+\item {\ttfamily current} is the \mbox{\hyperlink{md_src_plugins_profile_README_src_plugins_profile_README_md}{profile}} to use. Administrators need it if they want to start up applications with different configurations.
+\end{DoxyItemize}
+\item {\ttfamily KEY\+\_\+\+END} as C needs a proper termination of variable length arguments.
+\end{DoxyItemize}
+
+The key name is standardized to make it easier to locate configuration.
+
+
+\begin{DoxyItemize}
+\item \href{https://doc.libelektra.org/api/latest/html/group__key.html}{\texttt{ Read more about key-\/functions in API doc.}}
+\item \mbox{\hyperlink{doc_help_elektra-key-names_md}{Read more about key names here.}}
+\end{DoxyItemize}
+
+Now we have the {\ttfamily Key} we will use to pass as argument. First we open our key database (KDB)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB *repo = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}}(parentKey);}
+
+\end{DoxyCode}
+
+
+A {\ttfamily Key} is seldom alone, but they are often found in groups, as typical in configuration files. To represent many keys (a set of keys) Elektra has the data structure {\ttfamily Key\+Set}. Because the {\ttfamily Key}\textquotesingle{}s name is unique we can lookup keys in a {\ttfamily Key\+Set} without ambiguity. Furthermore, we can iterate over all {\ttfamily Key}s in a {\ttfamily Key\+Set} without a hassle. To create an empty {\ttfamily Key\+Set} we use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet *conf = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(200, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item 200 is an approximation for how many {\ttfamily Key}s we think we will have in the {\ttfamily Key\+Set} {\ttfamily conf}, intended for optimization purposes.
+\item After the first argument we can list built-\/in keys that should be available in any case.
+\item The last argument needs to be {\ttfamily KS\+\_\+\+END}.
+\end{DoxyItemize}
+
+Now we have everything ready to fetch the latest configuration\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}}(repo, conf, parentKey);}
+
+\end{DoxyCode}
+
+
+Note it is important for applications that the parent\+Key starts with a slash {\ttfamily /}. This ensures pulling in all keys of the so-\/called \mbox{\hyperlink{doc_help_elektra-namespaces_md}{namespace}}. Such a name cannot physically exist in configuration files, but they are the most important key names to actually work with configuration within applications as we will see when introducing {\ttfamily ks\+Lookup}.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4183}{}\doxysection{Lookup}\label{doc_tutorials_application-integration_md_autotoc_md4183}
+To lookup a key, we use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key *k = \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}}(conf,}
+\DoxyCodeLine{        \textcolor{stringliteral}{"{}/sw/org/myapp/\#0/current/section/subsection/key"{}},}
+\DoxyCodeLine{        0);}
+
+\end{DoxyCode}
+
+
+We see in this example that only Elektra paths are hard coded in the application, no configuration file or similar.
+
+As already mentioned keys starting with slash {\ttfamily /} do not exist in configuration files, but are \char`\"{}representatives\char`\"{}, \char`\"{}proxies\char`\"{} or \char`\"{}logical placeholders\char`\"{} for keys from any other \mbox{\hyperlink{doc_help_elektra-namespaces_md}{namespace}}.
+
+So that every tool has a consistent view to the key database it is vital that every application does a {\ttfamily ks\+Lookup} for every key it uses. So even if your application iterates over keys, always remember to do a \mbox{\hyperlink{doc_tutorials_cascading_md}{cascading}} lookup for every single key!
+
+Thus we are interested in the value we use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{char} *val = \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(k);}
+
+\end{DoxyCode}
+
+
+We need to convert the configuration value to the data type we need.
+
+To do this manually has severe drawbacks\+:
+
+
+\begin{DoxyItemize}
+\item hard coded names might have typos or might be inconsistent
+\item tedious handling if key or value might be absent
+\item always calling {\ttfamily ks\+Lookup} which gets tiresome for arrays
+\item converting to needed data type is error-\/prone
+\end{DoxyItemize}
+
+So (larger) applications should not directly use {\ttfamily Key\+Set}, but instead use code generation to provide a type-\/safe frontend.
+
+For more information about that, continue reading \href{https://master.libelektra.org/src/tools/pythongen}{\texttt{ here}}.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4184}{}\doxysection{Specification}\label{doc_tutorials_application-integration_md_autotoc_md4184}
+Now, we have a fully working configuration system without any hard coded information (such as configuration files). We already gained something. But, we did not discuss how we can actually achieve application integration, the goal of Elektra.
+
+Elektra 0.\+8.\+11 introduces the so-\/called specification for the application\textquotesingle{}s configuration, located below its own \mbox{\hyperlink{doc_help_elektra-namespaces_md}{namespace}} {\ttfamily spec}. The specification itself also consists of (meta) key-\/value pairs.
+
+Keys in {\ttfamily spec} allow us to specify which keys the application reads, which fallback they might have and which is the default value using metadata.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4185}{}\doxysubsection{Links}\label{doc_tutorials_application-integration_md_autotoc_md4185}
+The implementation of links are in {\ttfamily ks\+Lookup}. When using cascading keys (those starting with {\ttfamily /}), the following features are now available (in the metadata of respective {\ttfamily spec}-\/keys)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily override/\#}\+: use these keys {\itshape in favor} of the key itself (note that {\ttfamily \#} is the syntax for arrays, e.\+g. {\ttfamily \#0} for the first element, {\ttfamily \#\+\_\+10} for the 11th and so on)
+\item {\ttfamily namespace/\#}\+: instead of using all namespaces in the predefined order, one can specify namespaces to search in a given order
+\item {\ttfamily fallback/\#}\+: when no key was found in any of the (specified) namespaces the {\ttfamily fallback}-\/keys will be searched
+\item {\ttfamily default}\+: the value to use if nothing else was found
+\end{DoxyItemize}
+
+You can use those features like following\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set /overrides/test "{}example override"{}}
+\DoxyCodeLine{sudo kdb meta-\/set spec:/test override/\#0 /overrides/test}
+
+\end{DoxyCode}
+
+
+This technique provides complete transparency how a program will fetch a configuration value. In practice that means that\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get "{}/sw/org/myapp/\#0/current/section/subsection/key"{}}
+
+\end{DoxyCode}
+
+
+, will give you the {\itshape exact same value} as the application gets when it uses the above lookup C code.
+
+What we do not see in the program above are the default values and fallbacks. They are also present in the specification (namespace {\ttfamily spec}).
+
+So lets say, that another application {\ttfamily otherapp} has the value we actually want. We want to improve the integration. In the case that we do not have a value for {\ttfamily /sw/org/myapp/\#0/current/section/subsection/key}, we want to use {\ttfamily /sw/otherorg/otherapp/\#0/current/section/subsection/key}.
+
+So we specify\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/org/myapp/\#0/current/section/subsection/key \(\backslash\)}
+\DoxyCodeLine{    "{}fallback/\#0"{} /sw/otherorg/otherapp/\#0/current/section/subsection/key}
+
+\end{DoxyCode}
+
+
+Voila, we have done a system integration between {\ttfamily myapp} and {\ttfamily otherapp}!
+
+Note that the fallback, override and cascading works on {\itshape key level}, and not like most other systems have implemented, on configuration {\itshape file level}.
+
+To make this work within your application make sure to always call {\ttfamily ks\+Lookup} before using a value from Elektra.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4186}{}\doxysubsection{Specfiles}\label{doc_tutorials_application-integration_md_autotoc_md4186}
+We call the files, that contain a complete schema for configuration below a specific path in form of metadata, {\itshape Specfiles}.
+
+Particularly a {\itshape Specfile} contains metadata that defines
+
+
+\begin{DoxyItemize}
+\item the mount points of paths,
+\item the plugins to load and
+\item the behavior of these plugins.
+\end{DoxyItemize}
+
+(note that the {\ttfamily \textbackslash{}\textbackslash{}} are due to \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}}, do not copy them to your shell)
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount tutorial.ecf spec:/sw/org/myapp/\#0/current"{}}
+\DoxyCodeLine{cat << HERE | kdb import spec:/sw/org/myapp/\#0/current ni  \(\backslash\)}
+\DoxyCodeLine{[]                                         \(\backslash\)}
+\DoxyCodeLine{ mountpoint = my-\/config-\/file.ini           \(\backslash\)}
+\DoxyCodeLine{ infos/plugins = ini validation            \(\backslash\)}
+\DoxyCodeLine{                                           \(\backslash\)}
+\DoxyCodeLine{[section/subsection/key]                   \(\backslash\)}
+\DoxyCodeLine{fallback/\#0=/sw/otherorg/otherapp/\#0/current/section/subsection/key  \(\backslash\)}
+\DoxyCodeLine{description = A description of the key     \(\backslash\)}
+\DoxyCodeLine{HERE}
+\DoxyCodeLine{kdb meta-\/ls spec:/sw/org/myapp/\#0/current \# verify if specification is present now}
+\DoxyCodeLine{\#> infos/plugins}
+\DoxyCodeLine{\#> mountpoint}
+
+\end{DoxyCode}
+
+
+Now we apply this {\itshape Specfile} to the key database to all keys below {\ttfamily /sw/org/myapp/\#0/current}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb spec-\/mount /sw/org/myapp/\#0/current}
+
+\end{DoxyCode}
+
+
+Then the configuration of our application will be in my-\/config-\/file.\+ini (because of {\ttfamily mountpoint} in the specification) and it will use the INI format (because of {\ttfamily infos/plugins} in the specification). {\ttfamily section/subsection/key} contains the specification of what we already specified imperatively before.
+
+For a description which metadata is available, have a look in \href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ METADATA.\+ini}}.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4187}{}\doxysection{Conclusion}\label{doc_tutorials_application-integration_md_autotoc_md4187}
+Elektra does not hard code any configuration data in your application. Using the {\ttfamily default} specification, we even can startup applications without any configuration file {\itshape at all} and still do not have anything hard coded in the applications binary. Furthermore, by using cascading keys for {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} and {\ttfamily \mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{ks\+Lookup()}}} Elektra gives you the possibility to specify how to retrieve configuration data. In this specification you can define to consider or prefer configuration data from other applications or shared places. Doing so, we can achieve configuration integration.\hypertarget{doc_tutorials_application-integration_md_autotoc_md4188}{}\doxysection{See Also}\label{doc_tutorials_application-integration_md_autotoc_md4188}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_tutorials_validation_md}{how to validate configuration with the specification}} 
+\end{DoxyItemize}
