@@ -1,0 +1,36 @@
+\label{doc_decisions_6_implemented_error_code_implementation_md_md_doc_decisions_6_implemented_error_code_implementation}%
+\Hypertarget{doc_decisions_6_implemented_error_code_implementation_md_md_doc_decisions_6_implemented_error_code_implementation}%
+ \hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2342}{}\doxysection{Problem}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2342}
+In the previous error concept it was very useful to generate macros as we often added new errors. The code generation itself, however, was not ideal for cross compilation.\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2343}{}\doxysection{Constraints}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2343}
+\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2344}{}\doxysection{Assumptions}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2344}
+
+\begin{DoxyItemize}
+\item Error codes do not change very often
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2345}{}\doxysection{Considered Alternatives}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2345}
+
+\begin{DoxyItemize}
+\item Migrate to a more modern and easier way to generate code with our mustache system, and let this generate the (mapping) code for all compiled languages (C, C++, Java, Rust, Go). All we get out of this is the removal of {\ttfamily std\+::cout $<$$<$ ...} code from C++ but not much more.
+\item Migrate to CMake code that generates such macros/classes. Mustache templates have to be supplied with the input data somehow. Either we have to use a custom executable that is compiled at build time. In that case we would just get rid of the {\ttfamily std\+::cout $<$$<$ ...} in the C++ code, but not much else would change. The other option is to use the default mustache executable, which is a Ruby script and therefore requires Ruby to be installed. Also {\ttfamily kdb gen} cannot be reused, since that would require compiling kdb first, which needs \mbox{\hyperlink{kdberrors_8h}{kdberrors.\+h}}.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2346}{}\doxysection{Decision}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2346}
+Write down the few macros manually, and also manually write down exceptions for the language bindings (and also the mappings from Elektra\textquotesingle{}s internal errors to nice errors specific for the languages).
+
+Since error codes and crucial parts Elektra\textquotesingle{}s core implementation will not often change this is the best approach with minimal effort.
+
+The existing code will be refactored so that error macros directly call macros.
+
+When adding a new error code, language bindings have to be adapted accordingly such as the Rust or Java Binding.\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2347}{}\doxysection{Rationale}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2347}
+
+\begin{DoxyItemize}
+\item Updates to error codes will imply syncing every binding. This though should happen in very rare circumstances.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2348}{}\doxysection{Implications}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2348}
+
+\begin{DoxyItemize}
+\item The current bindings stay untouched.
+\item Tutorial on how to write a binding should be written.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2349}{}\doxysection{Related Decisions}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2349}
+\hypertarget{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2350}{}\doxysection{Notes}\label{doc_decisions_6_implemented_error_code_implementation_md_autotoc_md2350}
+
+\begin{DoxyItemize}
+\item See also \href{https://issues.libelektra.org/2814}{\texttt{ Issue \#2814}}
+\item See also \href{https://issues.libelektra.org/2871}{\texttt{ Issue \#2871}} 
+\end{DoxyItemize}

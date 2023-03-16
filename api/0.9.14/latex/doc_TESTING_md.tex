@@ -1,0 +1,475 @@
+\label{doc_TESTING_md_md_doc_TESTING}%
+\Hypertarget{doc_TESTING_md_md_doc_TESTING}%
+ \hypertarget{doc_TESTING_md_autotoc_md4165}{}\doxysection{Introduction}\label{doc_TESTING_md_autotoc_md4165}
+Libraries need pervasive testing for continuous improvement. Any problem found and behavior described must be written down as test so that it is assured that no new regressions will be added.\hypertarget{doc_TESTING_md_autotoc_md4166}{}\doxysection{Running Tests}\label{doc_TESTING_md_autotoc_md4166}
+Running all tests in the build directory\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make run\_all}
+
+\end{DoxyCode}
+
+
+And on the target (installed) system\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb run\_all}
+
+\end{DoxyCode}
+
+
+To run {\ttfamily memcheck} tests run in the build directory\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make run\_memcheck}
+
+\end{DoxyCode}
+
+
+They are supplementary, ideally you run all three.
+
+Some tests write into system paths and into the home directory. This implies that the UID running the tests must have a home directory. To avoid running tests that write to the disk you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make run\_nokdbtests}
+
+\end{DoxyCode}
+
+
+You can also directly run ctest to make use of parallel testing\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ctest -\/T Test -\/-\/output-\/on-\/failure -\/j 6}
+\DoxyCodeLine{ctest -\/T MemCheck -\/LE memleak -\/-\/output-\/on-\/failure -\/j 6}
+
+\end{DoxyCode}
+
+
+The alternative to {\ttfamily make run\+\_\+nokdbtests}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ctest -\/T Test -\/-\/output-\/on-\/failure -\/LE kdbtests -\/j 6}
+
+\end{DoxyCode}
+
+
+To only run tests whose names match a regular expression, you can use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ctest -\/V -\/R <regex>}
+
+\end{DoxyCode}
+\hypertarget{doc_TESTING_md_autotoc_md4167}{}\doxysection{Required Environment}\label{doc_TESTING_md_autotoc_md4167}
+To run the tests successfully, the environment must fulfill\+:
+
+
+\begin{DoxyItemize}
+\item Mounted /dev and /proc (to have stdin and stdout for import \& export test cases).
+\item POSIX tools need to be available (including the {\ttfamily file} tool)
+\item User must be able to write to system and spec (see below)
+\end{DoxyItemize}
+
+If the access is denied, several tests will fail. You have some options to avoid running them as root\+:
+
+
+\begin{DoxyEnumerate}
+\item To avoid running the problematic test cases (reduces the test coverage!) run {\ttfamily ctest} without tests that have the label {\ttfamily kdbtests}\+: {\ttfamily ctest -\/-\/output-\/on-\/failure -\/LE kdbtests} (which is also what {\ttfamily make run\+\_\+nokdbtests} does)
+\item To give your user the permissions to the relevant paths execute the lines below once as root.
+
+{\bfseries{Warning\+: Changing permissions on the wrong paths can be harmful! Please make sure that the paths are correct.}} In doubt make sure that you have a backup of the affected directories.
+
+First load the required information and verify the paths\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount-\/info}
+\DoxyCodeLine{echo `kdb sget system:/info/elektra/constants/cmake/CMAKE\_INSTALL\_PREFIX .`/`kdb sget system:/info/elektra/constants/cmake/KDB\_DB\_SPEC .`}
+\DoxyCodeLine{echo `kdb sget system:/info/elektra/constants/cmake/KDB\_DB\_SYSTEM .`}
+
+\end{DoxyCode}
+
+
+Then change the permissions\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo chown -\/R `whoami` `kdb sget system:/info/elektra/constants/cmake/CMAKE\_INSTALL\_PREFIX .`/`kdb sget system:/info/elektra/constants/cmake/KDB\_DB\_SPEC .`}
+\DoxyCodeLine{sudo chown -\/R `whoami` `kdb sget system:/info/elektra/constants/cmake/KDB\_DB\_SYSTEM .`}
+
+\end{DoxyCode}
+
+
+After that all test cases should run successfully as described above.
+
+
+\begin{DoxyEnumerate}
+\item Compile Elektra so that system paths are not actual system paths, e.\+g. to write everything into the home directory ({\ttfamily $\sim$}) use CMake options\+: {\ttfamily -\/DKDB\+\_\+\+DB\+\_\+\+SYSTEM=\char`\"{}$\sim$/.\+config/kdb/system\char`\"{} -\/DKDB\+\_\+\+DB\+\_\+\+SPEC=\char`\"{}$\sim$/.\+config/kdb/spec\char`\"{}} (for an example of a full CMake invocation see {\ttfamily scripts/configure-\/home})
+\item Use the XDG resolver (see {\ttfamily scripts/configure-\/xdg}) and set the environment variable {\ttfamily XDG\+\_\+\+CONFIG\+\_\+\+DIRS}, currently lacks {\ttfamily spec} namespaces, see \#734.
+\end{DoxyEnumerate}\hypertarget{doc_TESTING_md_autotoc_md4168}{}\doxysection{Manual Testing}\label{doc_TESTING_md_autotoc_md4168}
+Running executables in the build directory needs some preparation. Here we assume that {\ttfamily build} is the build directory and it is the top-\/level of Elektra\textquotesingle{}s source code\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cd build}
+\DoxyCodeLine{. ../scripts/dev/run\_env}
+
+\end{DoxyCode}
+
+
+After sourcing {\ttfamily run\+\_\+env}, you can directly execute {\ttfamily kdb} and other binaries built with Elektra (such as the examples).
+
+Pay attention that sourcing depends on the operating system or rather the shell. For example on standard Free\+BSD 11.\+3 you have to execute {\ttfamily sh} in the root of the repository first. Then do {\itshape not} use the {\ttfamily source} command but the point {\ttfamily .} as explained above.\hypertarget{doc_TESTING_md_autotoc_md4169}{}\doxysection{Using debuggers}\label{doc_TESTING_md_autotoc_md4169}
+You can use debuggers such as {\ttfamily gdb} to develop Elektra. This can be interesting if you write test cases and they fail at some unknown point. Many tests are put into the {\ttfamily /bin} folder in your build directory. As a consequence, you can {\ttfamily cd} into {\ttfamily /bin} and call, for example
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{gdb hello}
+
+\end{DoxyCode}
+
+
+If you use \mbox{\hyperlink{doc_tutorials_run_all_tests_with_docker_md}{Docker to run your tests}} it makes sense to call the debugger in the same container. In this case you might be required to pass additional parameters to Docker. An example for this is passing {\ttfamily -\/-\/security-\/opt seccomp=unconfined} to disable address space randomization.\hypertarget{doc_TESTING_md_autotoc_md4170}{}\doxysection{Recommended Environment}\label{doc_TESTING_md_autotoc_md4170}
+The tests are designed to disable themselves if some necessary tools are missing or other environmental constraints are not met. To really run {\itshape all} tests (also those that are mostly designed for internal development) you need to fulfil\+:
+
+
+\begin{DoxyItemize}
+\item Elektra must be installed (for gen + external test cases).
+\item A running dbus daemon (Either \char`\"{}system\char`\"{} or \char`\"{}session\char`\"{} daemon).
+\item {\ttfamily gpg2} or {\ttfamily gpg} binary must be available.
+\end{DoxyItemize}
+
+Above environment is needed for both {\ttfamily kdb run\+\_\+all} (installed test cases) and {\ttfamily make run\+\_\+all} (test cases executed from the build directory). For {\ttfamily make run\+\_\+all} following development tools enable even more tests\+:
+
+
+\begin{DoxyItemize}
+\item The script {\ttfamily checkbashisms} is needed to check for bashism ({\ttfamily tests/shell/check\+\_\+bashisms.\+sh}), it is part of \href{https://packages.debian.org/devscripts}{\texttt{ {\ttfamily devscripts}}}.
+\item The POSIX compatibility test for shell scripts requires the tool \href{https://github.com/mvdan/sh}{\texttt{ {\ttfamily shfmt}}}.
+\item {\ttfamily git}, {\ttfamily clang-\/format} (version 12), and \href{https://github.com/cheshirekow/cmake_format}{\texttt{ cmake-\/format}} to check formatting.
+\item {\ttfamily pkg-\/config} must be available ({\ttfamily check\+\_\+external.\+sh} and {\ttfamily check\+\_\+gen.\+sh}).
+\item A build environment including gcc ({\ttfamily check\+\_\+gen.\+sh}).
+\item The \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} requires POSIX utilities ({\ttfamily awk}, {\ttfamily grep}, …).
+\end{DoxyItemize}
+
+You can also use Docker to set up such an environment. There is \mbox{\hyperlink{doc_tutorials_run_all_tests_with_docker_md}{a tutorial}} that guides you through the necessary steps.\hypertarget{doc_TESTING_md_autotoc_md4171}{}\doxysection{Adding Tests}\label{doc_TESTING_md_autotoc_md4171}
+For plugins, adding {\ttfamily ADD\+\_\+\+TEST} to {\ttfamily add\+\_\+plugin} will execute the tests in {\ttfamily testmod\+\_\+\$\{pluginname\}.c}. This is done by default for newly generated plugins.
+
+Add {\ttfamily CPP\+\_\+\+TEST} if the test is written in C++. Then {\ttfamily testmod\+\_\+\$\{pluginname\}.cpp} will be used. These tests use the \href{https://github.com/google/googletest}{\texttt{ gtest}} test framework.
+
+If the tests should not always be executed, the CMake function {\ttfamily add\+\_\+plugintest} can be used instead. See {\ttfamily scripts/cmake/\+Modules/\+Lib\+Add\+Plugin.\+cmake} for more information.
+
+By using {\ttfamily TEST\+\_\+\+README} in {\ttfamily add\+\_\+plugin} (also enabled by default), \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} are expected to be in the README.\+md of the plugin.\hypertarget{doc_TESTING_md_autotoc_md4172}{}\doxysection{Conventions}\label{doc_TESTING_md_autotoc_md4172}
+
+\begin{DoxyItemize}
+\item All names of the test must start with test (needed by test driver for installed tests).
+\item No tests should run if ENABLE\+\_\+\+TESTING is OFF.
+\item All tests that write to {\ttfamily system\+:} or {\ttfamily spec\+:} namespaces (e.\+g. with {\ttfamily kdb\+Set} or by mounting)\+: should be tagged with {\ttfamily kdbtests}\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{set\_property(TEST testname PROPERTY LABELS kdbtests)}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item should not run, if {\ttfamily ENABLE\+\_\+\+KDB\+\_\+\+TESTING} is OFF.
+\item should only write below
+\begin{DoxyItemize}
+\item {\ttfamily /tests/$<$testname$>$} (e.\+g. {\ttfamily /tests/ruby}) and
+\item {\ttfamily system\+:/elektra} (e.\+g. for mounts or globalplugins).
+\end{DoxyItemize}
+\item Before executing tests, no keys must be present below {\ttfamily /tests}. The test cases need to clean up everything they wrote. (Including temporary files)
+\item If your test has memory leaks, e.\+g. because the library used leaks and they cannot be fixed, give them the label {\ttfamily memleak} with the following command\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{set\_property(TEST testname PROPERTY LABELS memleak)}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item If your test modifies resources needed by other tests you also need to set {\ttfamily RUN\+\_\+\+SERIAL}\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{set\_property(TEST testname PROPERTY RUN\_SERIAL TRUE)}
+
+\end{DoxyCode}
+\hypertarget{doc_TESTING_md_autotoc_md4173}{}\doxysection{Strategy}\label{doc_TESTING_md_autotoc_md4173}
+The testing must happen on every level of the software to achieve a maximum coverage with the available time. In the rest of the document we describe the different levels and where these tests are.\hypertarget{doc_TESTING_md_autotoc_md4174}{}\doxysubsection{CFramework}\label{doc_TESTING_md_autotoc_md4174}
+This is basically a bunch of assertion macros and some output facilities. It is written in pure C and very lightweight.
+
+It is located here.\hypertarget{doc_TESTING_md_autotoc_md4175}{}\doxysubsection{ABI Tests}\label{doc_TESTING_md_autotoc_md4175}
+C ABI Tests are written in plain C with the help of {\ttfamily cframework}.
+
+The main purpose of these tests are, that the binaries of old versions can be used against new versions as ABI tests.
+
+So lets say we compile Elektra 0.\+8.\+8 (at this version dedicated ABI tests were introduced) in the {\ttfamily -\/full} variant. But when we run the tests, we use {\ttfamily libelektra-\/full.\+so.\+0.\+8.\+9} (either by installing it or by setting {\ttfamily LD\+\_\+\+LIBRARY\+\_\+\+PATH}). You can check with {\ttfamily ldd} which version is used.
+
+The tests are located here.\hypertarget{doc_TESTING_md_autotoc_md4176}{}\doxysubsection{C Unit Tests}\label{doc_TESTING_md_autotoc_md4176}
+C Unit Tests are written in plain C with the help of {\ttfamily cframework}.
+
+It is used to test internal data structures of libelektra that are not ABI relevant.
+
+ABI tests can be done on these tests, too. But by nature from time to time these tests will fail.
+
+They are located here.\hypertarget{doc_TESTING_md_autotoc_md4177}{}\doxysubsubsection{Internal Functions}\label{doc_TESTING_md_autotoc_md4177}
+According to {\ttfamily src/libs/elektra/libelektra-\/symbols.\+map}, all functions starting with\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily libelektra}
+\item {\ttfamily elektra}
+\item {\ttfamily kdb}
+\item {\ttfamily key}
+\item {\ttfamily ks}
+\end{DoxyItemize}
+
+get exported. Functions not starting with this prefix are internal only and therefore not visible in the test cases. Test internal functionality by including the corresponding C file.\hypertarget{doc_TESTING_md_autotoc_md4178}{}\doxysubsection{Module Tests}\label{doc_TESTING_md_autotoc_md4178}
+The modules, which are typically used as plugins in Elektra (but can also be available statically or in the {\ttfamily -\/full} variant), should have their own tests.
+
+Use the CMake macro {\ttfamily add\+\_\+plugintest} for adding these tests.\hypertarget{doc_TESTING_md_autotoc_md4179}{}\doxysubsection{C++ Unit Tests}\label{doc_TESTING_md_autotoc_md4179}
+C++ Unit tests are done using the Google Test framework. See \mbox{\hyperlink{doc_decisions_6_implemented_unit_testing_md}{architectural decision}}.
+
+Use the CMake macro {\ttfamily add\+\_\+gtest} for adding these tests.\hypertarget{doc_TESTING_md_autotoc_md4180}{}\doxysubsection{Script Tests}\label{doc_TESTING_md_autotoc_md4180}
+Tests which need scripts are done using shell recorder or directly with POSIX shell commands. See \mbox{\hyperlink{doc_decisions_6_implemented_script_testing_md}{architectural decision}}.
+
+The script tests have different purposes\+:
+
+
+\begin{DoxyItemize}
+\item End to End tests (usage of tools as an end user would do)
+\item External compilation tests (compile and run programs as a user would do)
+\item Conventions tests (do internal checks that check for common problems)
+\item Meta Test Suites (run other test suites)
+\end{DoxyItemize}
+
+See here.\hypertarget{doc_TESTING_md_autotoc_md4181}{}\doxysubsection{Shell Recorder}\label{doc_TESTING_md_autotoc_md4181}
+The more elegant way to specify script tests are via the so-\/called Shell Recorder using Markdown Syntax.
+
+See here.\hypertarget{doc_TESTING_md_autotoc_md4182}{}\doxysubsection{Fuzz Testing}\label{doc_TESTING_md_autotoc_md4182}
+We assume that your current working directory is a newly created build directory. First compile Elektra with afl ($\sim$e is source-\/dir of Elektra)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\string~e/scripts/dev/configure-\/debian -\/DCMAKE\_C\_COMPILER=/usr/src/afl/AFL-\/2.57b/afl-\/gcc -\/DCMAKE\_CXX\_COMPILER=/usr/src/afl/AFL-\/2.57b/afl-\/g++ \string~e}
+\DoxyCodeLine{make -\/j 5}
+
+\end{DoxyCode}
+
+
+Copy some import files to {\ttfamily testcase\+\_\+dir}, for example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p testcase\_dir}
+\DoxyCodeLine{cp \string~e/src/plugins/toml/toml/* testcase\_dir}
+
+\end{DoxyCode}
+
+
+Fewer files is better. Then run, for example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{LD\_LIBRARY\_PATH=`pwd`/lib /usr/src/afl/AFL-\/2.57b/afl-\/fuzz -\/i testcase\_dir -\/o findings\_dir bin/kdb import user:/tests toml}
+
+\end{DoxyCode}
+
+
+Check if something is happening with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{watch kdb export user:/tests}
+
+\end{DoxyCode}
+\hypertarget{doc_TESTING_md_autotoc_md4183}{}\doxysubsection{ASAN}\label{doc_TESTING_md_autotoc_md4183}
+To enable sanitize checks use {\ttfamily ENABLE\+\_\+\+ASAN} via CMake.
+
+Then, to use ASAN, run {\ttfamily run\+\_\+asan} in the build directory, which simply does\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ASAN\_OPTIONS=symbolize=1 ASAN\_SYMBOLIZER\_PATH=\$(which llvm-\/symbolizer) make run\_all}
+
+\end{DoxyCode}
+
+
+It could also happen that you need to preload ASAN library, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{LD\_PRELOAD=/usr/lib/clang/3.8.0/lib/linux/libclang\_rt.asan-\/x86\_64.so run\_asan}
+
+\end{DoxyCode}
+
+
+or on Debian\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{LD\_PRELOAD=/usr/lib/llvm-\/3.8/lib/clang/3.8.1/lib/linux/libclang\_rt.asan-\/x86\_64.so run\_asan}
+
+\end{DoxyCode}
+\hypertarget{doc_TESTING_md_autotoc_md4184}{}\doxysubsubsection{mac\+OS}\label{doc_TESTING_md_autotoc_md4184}
+If you use mac\+OS you might want to use the {\ttfamily clang} versions provided by Homebrew, since it supports the \href{https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer}{\texttt{ Leak\+Sanitizer}}. To use Homebrew’s version of {\ttfamily clang} you need to first install LLVM\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install llvm}
+
+\end{DoxyCode}
+
+
+. After that change the {\ttfamily CC} and {\ttfamily CXX} environment variables to point to the clang tools provided by LLVM\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export CC=/usr/local/opt/llvm/bin/clang}
+\DoxyCodeLine{export CXX=/usr/local/opt/llvm/bin/clang++}
+
+\end{DoxyCode}
+
+
+. Now run CMake and build Elektra just like you normally would. To enable the Leak Sanitizer you need to also set the variable {\ttfamily ASAN\+\_\+\+OPTIONS} before you run a test\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export ASAN\_OPTIONS=detect\_leaks=1}
+
+\end{DoxyCode}
+\hypertarget{doc_TESTING_md_autotoc_md4185}{}\doxysubsection{CBMC}\label{doc_TESTING_md_autotoc_md4185}
+For bounded model checking tests, see {\ttfamily scripts/cbmc}.\hypertarget{doc_TESTING_md_autotoc_md4186}{}\doxysubsection{Static Code Checkers}\label{doc_TESTING_md_autotoc_md4186}
+There is a number of static code checkers available for all kind of programming languages. The following section show how the most common ones can be used with {\ttfamily libelektra}.\hypertarget{doc_TESTING_md_autotoc_md4187}{}\doxysubsubsection{Cppcheck}\label{doc_TESTING_md_autotoc_md4187}
+\href{https://cppcheck.sourceforge.net/}{\texttt{ Cppcheck}} can be used directly on a C or C++ source file by calling it with {\ttfamily cppcheck -\/-\/enable=all $<$sourcefile$>$}. This way it might miss some header files though and thus doesn\textquotesingle{}t detect all possible issues, but still gives useful hints in general.
+
+To analyze the whole project, use it in conjunction with CMake by calling {\ttfamily cmake} with the parameter {\ttfamily -\/DCMAKE\+\_\+\+EXPORT\+\_\+\+COMPILE\+\_\+\+COMMANDS=ON}. This way CMake creates a file called {\ttfamily compile\+\_\+commands.\+json} in the build directory. Afterwards, call {\ttfamily cppcheck} with the CMake settings and store the output as xml\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cppcheck -\/-\/project=compile\_commands.json -\/-\/enable=all -\/j 8 -\/-\/xml-\/version=2 2> cppcheck\_result.xml}
+
+\end{DoxyCode}
+
+
+Since the XML file is difficult to read directly, the best way is to convert it to an HTML report. Cppcheck already includes a tool for that, call it with the XML report\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cppcheck-\/htmlreport -\/-\/file=cppcheck\_result.xml -\/-\/report-\/dir=cppcheck\_report -\/-\/source-\/dir=.}
+
+\end{DoxyCode}
+
+
+Now you can view the html report by opening {\ttfamily index.\+html} in the specified folder to get an overview of the issues found in the whole project.\hypertarget{doc_TESTING_md_autotoc_md4188}{}\doxysubsubsection{OCLint}\label{doc_TESTING_md_autotoc_md4188}
+\href{https://oclint.org/}{\texttt{ OCLint}} is a static code analyzer for C, C++ and Objective C. To use this tool enable the CMake option {\ttfamily CMAKE\+\_\+\+EXPORT\+\_\+\+COMPILE\+\_\+\+COMMANDS}. The steps below show a step-\/by-\/step guide on how to analyze files with OCLint.
+
+
+\begin{DoxyEnumerate}
+\item Create a build directory if you have not done so already and change the working path to this directory\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p build}
+\DoxyCodeLine{cd build}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Run CMake with the option {\ttfamily CMAKE\+\_\+\+EXPORT\+\_\+\+COMPILE\+\_\+\+COMMANDS}\+:
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake .. -\/DCMAKE\_EXPORT\_COMPILE\_COMMANDS=ON}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Build Elektra
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Run the {\ttfamily oclint} command specifying the files you want to analyze
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cd ..}
+\DoxyCodeLine{oclint -\/p build -\/no-\/analytics -\/enable-\/global-\/analysis -\/enable-\/clang-\/static-\/analyzer src/plugins/toml/*.c}
+
+\end{DoxyCode}
+\hypertarget{doc_TESTING_md_autotoc_md4189}{}\doxysubsubsection{scan-\/build}\label{doc_TESTING_md_autotoc_md4189}
+\href{https://clang-analyzer.llvm.org/scan-build.html}{\texttt{ scan-\/build}} is a tool that is usually bundled along with LLVM/\+Clang and is also primarily intended for C and C++ code. On mac\+OS you have to install the package {\ttfamily llvm} with homebrew, then you\textquotesingle{}ll find the tool in the folder {\ttfamily /usr/local/opt/llvm/bin/}.
+
+To use it, change the C compiler and the C++ compiler to the LLVM analyzer. To do this, you can configure the project from scratch and prefix the cmake command with {\ttfamily scan-\/build}. Alternatively, set the c compiler to {\ttfamily ccc-\/analyzer} and the C++ compiler to {\ttfamily c++-\/analyzer} (bundled with LLVM/\+Clang).
+
+Then you can build the project with {\ttfamily make} like usual, prefixing the command with {\ttfamily scan-\/build}. The {\ttfamily -\/o} option specifies where the html results get stored. Ensure you build the project from scratch, otherwise the analyzation might be incomplete.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scan-\/build -\/o ./scanbuild\_result make -\/j 4}
+
+\end{DoxyCode}
+
+
+Afterwards, the report can be viewed by using the tool {\ttfamily scan-\/view}, also found in the llvm folder. The report is created in the folder specified above, along with the current date of the analyzation, for instance\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scan-\/view <path specified above>/2017-\/06-\/18-\/171027-\/27108-\/1}
+
+\end{DoxyCode}
+
+
+Alternatively, you can also open the {\ttfamily index.\+html} file in the aforementioned folder, but using the tool the report is enriched with further information.\hypertarget{doc_TESTING_md_autotoc_md4190}{}\doxysubsubsection{Sonar\+Lint}\label{doc_TESTING_md_autotoc_md4190}
+\href{https://www.sonarlint.org/}{\texttt{ Sonar\+Lint}} is a static code checker primarily intended for Java. It is usually used by installing the corresponding plugin for the used IDE, then there is no further configuration required.\hypertarget{doc_TESTING_md_autotoc_md4191}{}\doxysubsection{Randoop}\label{doc_TESTING_md_autotoc_md4191}
+For using the unit test generator randoop with the jna bindings, see {\ttfamily scripts/randoop/randoop}.\hypertarget{doc_TESTING_md_autotoc_md4192}{}\doxysubsection{Code Coverage}\label{doc_TESTING_md_autotoc_md4192}
+Run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make coverage-\/start}
+\DoxyCodeLine{\# now run all tests! E.g.:}
+\DoxyCodeLine{make run\_all}
+\DoxyCodeLine{make coverage-\/stop}
+\DoxyCodeLine{make coverage-\/genhtml}
+
+\end{DoxyCode}
+
+
+The HTML files can be found in the build directory in the folder {\ttfamily coverage}.\hypertarget{doc_TESTING_md_autotoc_md4193}{}\doxysection{See Also}\label{doc_TESTING_md_autotoc_md4193}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_COMPILE_md}{COMPILE}}.
+\item \mbox{\hyperlink{doc_INSTALL_md}{INSTALL}}.
+\item \mbox{\hyperlink{doc_BUILDSERVER_md}{BUILDSERVER}}. 
+\end{DoxyItemize}

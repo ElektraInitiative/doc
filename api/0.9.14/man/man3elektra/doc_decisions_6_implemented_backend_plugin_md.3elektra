@@ -1,0 +1,51 @@
+.TH "doc_decisions_6_implemented_backend_plugin_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_6_implemented_backend_plugin_md \- Backend Plugin 
+ 
+.SH "Problem"
+.PP
+.IP "\(bu" 2
+Old backends (before Elektra 0\&.9\&.12) store plugins in arrays which have a fixed number of slots for each plugin role\&. The number of plugins which can be assigned is limited, making it easy to reach the limit if many plugins are in use\&.
+.IP "\(bu" 2
+As structs, old backends are separate from the plugin interface and integrated into the core of Elektra\&. This makes it difficult to perform operations such as nesting plugins, or to develop other implementations for backends\&.
+.PP
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+All existing plugins, except \fBhooks\fP, should continue working as before\&.
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Multiple storage plugins within a single backend
+.IP "\(bu" 2
+Improve backend to contain more plugin slots
+.IP "\(bu" 2
+Making number of plugins per slot unlimited
+.PP
+.SH "Decision"
+.PP
+.IP "\(bu" 2
+The current backend implementation was redeveloped into a backend plugin\&. The core of Elektra accesses backends through the standard plugin interface\&.
+.IP "\(bu" 2
+The new backend plugin supports an unlimited number of plugins in any position where more than one plugin is sensible, e\&.g\&., unlimited plugins in \fCpoststorage\fP, but only a single one in \fCstorage\fP and \fCresolver\fP
+.PP
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+Making backends also plugins detaches their implementation from the core of Elektra, making it possible to develop new kinds of backends without major changes to the core itself\&.
+.IP "\(bu" 2
+As plugins, backends can contain further backends, making it possible to nest plugins and enabling new kinds of plugin combinations such as fallback storage options\&.
+.PP
+.SH "Implications"
+.PP
+The structure of \fCsystem:/elektra/mountpoints\fP has to change to accommodate different kinds of backend plugins\&.
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+https://issues.libelektra.org/2963 

@@ -1,0 +1,59 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the shell plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides =
+\item infos/placements = postgetstorage postcommit postrollback
+\item infos/status = nodep configurable preview unfinished
+\item infos/description = executes shell commands
+\end{DoxyItemize}\hypertarget{md_src_plugins_shell_README_src_plugins_shell_README_md}{}\doxysection{Usage}\label{md_src_plugins_shell_README_src_plugins_shell_README_md}
+The shell plugin executes shell commandos after set, get or error.
+
+The configuration keys
+
+
+\begin{DoxyItemize}
+\item {\ttfamily execute/set}
+\item {\ttfamily execute/get}
+\item {\ttfamily execute/error}
+\end{DoxyItemize}
+
+are used to store the shell commands.
+
+The configuration keys
+
+
+\begin{DoxyItemize}
+\item {\ttfamily execute/set/return}
+\item {\ttfamily execute/get/return}
+\item {\ttfamily execute/error/return}
+\end{DoxyItemize}
+
+can be compared against the return values of the shell commandos.\hypertarget{md_src_plugins_shell_README_autotoc_md513}{}\doxysection{Example}\label{md_src_plugins_shell_README_autotoc_md513}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Create temporary file}
+\DoxyCodeLine{kdb set system:/tests/tempfile \$(mktemp)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Mount plugin and specify plugin configuration}
+\DoxyCodeLine{sudo kdb mount shell.ini system:/tests/shell ni array= shell execute/set="{}echo set >> \$(kdb get system:/tests/tempfile)"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat \$(kdb get system:/tests/tempfile)}
+\DoxyCodeLine{\#>}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Execute `set` command}
+\DoxyCodeLine{kdb set system:/tests/shell "{}"{}}
+\DoxyCodeLine{\#> Create a new key system:/tests/shell with string "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat \$(kdb get system:/tests/tempfile)}
+\DoxyCodeLine{\#> set}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications}
+\DoxyCodeLine{rm \$(kdb get system:/tests/tempfile)}
+\DoxyCodeLine{kdb rm -\/r system:/tests/shell}
+\DoxyCodeLine{sudo kdb umount system:/tests/shell}
+
+\end{DoxyCode}
+ 

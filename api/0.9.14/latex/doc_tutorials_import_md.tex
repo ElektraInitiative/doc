@@ -1,0 +1,73 @@
+\label{doc_tutorials_import_md_md_doc_tutorials_import}%
+\Hypertarget{doc_tutorials_import_md_md_doc_tutorials_import}%
+ \hypertarget{doc_tutorials_import_md_autotoc_md4314}{}\doxysection{Introduction}\label{doc_tutorials_import_md_autotoc_md4314}
+The kdb tool allows users to interact with Elektra’s Key Database via the command line. This tutorial explains the import function of kdb. This command lets you import Keys from the Elektra Key Database.
+
+The command to use kdb import is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb import [options] destination [format]}
+
+\end{DoxyCode}
+
+
+In this command, {\ttfamily destination} is where the imported Keys should be stored below. For instance, {\ttfamily kdb import system\+:/imported} would store all the keys below {\ttfamily system\+:/imported}. This command takes Keys from {\ttfamily stdin} to store them into the Elektra Key Database. Typically, it is used with a pipe to read in the Keys from a file.\hypertarget{doc_tutorials_import_md_autotoc_md4315}{}\doxysubsection{Format}\label{doc_tutorials_import_md_autotoc_md4315}
+The format argument can be a very powerful option to use with kdb import. The format argument allows a user to specify which plugin is used to import the Keys into the Key Database. The user can specify any storage plugin to serve as the format for the Keys to be imported. For instance, if a user wanted to import a {\ttfamily /etc/hosts} file into KDB without mounting it, they could use the command {\ttfamily cat /etc/hosts $\vert$ kdb import system\+:/hosts hosts}. This command would essentially copy the current hosts file into KDB, like mounting it. Unlike mounting it, changes to the Keys would not be reflected in the hosts file and vise versa.\hypertarget{doc_tutorials_import_md_autotoc_md4316}{}\doxysubsubsection{Dump Format}\label{doc_tutorials_import_md_autotoc_md4316}
+The dump does not rename keys by design. If a user exports a Key\+Set using dump using a command such as {\ttfamily kdb export system\+:/backup $>$ backup.\+ecf}, they can only import that keyset back into {\ttfamily system\+:/backup} using a command like {\ttfamily cat backup.\+ecf $\vert$ kdb import system\+:/backup}.\hypertarget{doc_tutorials_import_md_autotoc_md4317}{}\doxysection{Options}\label{doc_tutorials_import_md_autotoc_md4317}
+The kdb import command only takes one special option {\ttfamily -\/s $<$name$>$} or alternatively {\ttfamily -\/-\/strategy $<$name$>$}, which is used to specify a strategy.\hypertarget{doc_tutorials_import_md_autotoc_md4318}{}\doxysection{Example}\label{doc_tutorials_import_md_autotoc_md4318}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat backup.ecf | kdb import system:/backup}
+
+\end{DoxyCode}
+
+
+This command would import all keys stored in the file {\ttfamily backup.\+ecf} into the Key Database under {\ttfamily system\+:/backup}.
+
+In this example, {\ttfamily backup.\+ecf} was exported from the Key\+Set using the dump format by using the command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export system:/backup > backup.ecf}
+
+\end{DoxyCode}
+
+
+{\ttfamily backup.\+ecf} contains all the information about the keys below {\ttfamily system\+:/backup}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat backup.ecf}
+\DoxyCodeLine{\#> kdbOpen 1}
+\DoxyCodeLine{\#> ksNew 3}
+\DoxyCodeLine{\#> keyNew 19 0}
+\DoxyCodeLine{\#> system:/backup/key1}
+\DoxyCodeLine{\#> keyMeta 7 1}
+\DoxyCodeLine{\#> binary}
+\DoxyCodeLine{\#> keyEnd}
+\DoxyCodeLine{\#> keyNew 19 0}
+\DoxyCodeLine{\#> system:/backup/key2}
+\DoxyCodeLine{\#> keyMeta 7 1}
+\DoxyCodeLine{\#> binary}
+\DoxyCodeLine{\#> keyEnd}
+\DoxyCodeLine{\#> keyNew 19 0}
+\DoxyCodeLine{\#> system:/backup/key3}
+\DoxyCodeLine{\#> keyMeta 7 1}
+\DoxyCodeLine{\#> binary}
+\DoxyCodeLine{\#> keyEnd}
+\DoxyCodeLine{\#> ksEnd}
+
+\end{DoxyCode}
+
+
+Before the import command, {\ttfamily system\+:/backup} does not exists and no keys are contained there. After the import command, running the command {\ttfamily kdb ls system\+:/backup} prints\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/backup/key1}
+\DoxyCodeLine{system:/backup/key2}
+\DoxyCodeLine{system:/backup/key3}
+
+\end{DoxyCode}
+ 

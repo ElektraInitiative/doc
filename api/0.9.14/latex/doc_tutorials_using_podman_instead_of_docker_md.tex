@@ -1,0 +1,86 @@
+\label{doc_tutorials_using_podman_instead_of_docker_md_md_doc_tutorials_using_podman_instead_of_docker}%
+\Hypertarget{doc_tutorials_using_podman_instead_of_docker_md_md_doc_tutorials_using_podman_instead_of_docker}%
+ Podman is an alternative container engine which does not require root privileges on the host OS.
+
+Podman aims at being compatible with Docker and in most cases simply replacing {\ttfamily docker} by {\ttfamily podman} is enough.
+
+However, there are some notable differences when running containers themselves as a user other than root.\hypertarget{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4489}{}\doxysection{Who Is This Guide For?}\label{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4489}
+Anyone who uses Podman to run their containers.\hypertarget{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4490}{}\doxysection{Prerequisites}\label{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4490}
+
+\begin{DoxyItemize}
+\item A working Podman installation
+\end{DoxyItemize}\hypertarget{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4491}{}\doxysection{Basics}\label{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4491}
+To build the Debian bullseye container with Docker the command is
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker build \(\backslash\)}
+\DoxyCodeLine{  -\/-\/tag "{}build-\/elektra-\/debian-\/bullseye"{} \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg "{}JENKINS\_USERID=\$(id -\/u)"{} \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg "{}JENKINS\_GROUPID=\$(id -\/g)"{} \(\backslash\)}
+\DoxyCodeLine{        -\/-\/file "{}scripts/docker/debian/bullseye/Dockerfile"{} \(\backslash\)}
+\DoxyCodeLine{        scripts/docker/debian/bullseye/}
+
+\end{DoxyCode}
+
+
+Simply replacing {\ttfamily docker} with {\ttfamily podman} works in this case
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{podman build \(\backslash\)}
+\DoxyCodeLine{  -\/-\/tag "{}build-\/elektra-\/debian-\/bullseye"{} \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg "{}JENKINS\_USERID=\$(id -\/u)"{} \(\backslash\)}
+\DoxyCodeLine{        -\/-\/build-\/arg "{}JENKINS\_GROUPID=\$(id -\/g)"{} \(\backslash\)}
+\DoxyCodeLine{        -\/-\/file "{}scripts/docker/debian/bullseye/Dockerfile"{} \(\backslash\)}
+\DoxyCodeLine{        scripts/docker/debian/bullseye/}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4492}{}\doxysection{Running a container as a user other than root}\label{doc_tutorials_using_podman_instead_of_docker_md_autotoc_md4492}
+One area where Podman notably differs from Docker is when interacting with the filesystem of the host.
+
+This is relevant when mounting directories of the host filesystem as volumes.
+
+With Docker the container engine itself runs as a priviledged process and therefore the permissions in the host OS are not relevant.
+
+With Podman the situation is more involved, as the container engine does not run with root priviledges.
+
+For instance, the containers specified for building Elektra are configured such that the user inside the container is a non-\/root user.
+
+If one wishes to mount the Elektra source directory from the host filesystem as a volume for the container, extra steps are necessary.
+
+Inside the source directory, you can change the permissions to any user id with {\ttfamily podman unshare chown \$(id -\/u)\+:\$(id -\/u) -\/R .}. Keep in mind that this changes the {\itshape host} filesystem. You can read more about this \href{https://docs.podman.io/en/latest/markdown/podman-run.1.html}{\texttt{ here}}.
+
+After having changed the permissions, one can run the container
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{podman run \(\backslash\)}
+\DoxyCodeLine{   -\/-\/user \$(id -\/u) \(\backslash\)}
+\DoxyCodeLine{   -\/-\/interactive \(\backslash\)}
+\DoxyCodeLine{   -\/-\/tty \(\backslash\)}
+\DoxyCodeLine{   -\/-\/rm \(\backslash\)}
+\DoxyCodeLine{   -\/-\/volume "{}\$PWD:/home/jenkins/workspace:Z"{} \(\backslash\)}
+\DoxyCodeLine{   -\/-\/workdir "{}/home/jenkins/workspace"{} \(\backslash\)}
+\DoxyCodeLine{   build-\/elektra-\/debian-\/bullseye}
+
+\end{DoxyCode}
+
+
+Do not forget the {\ttfamily \+:Z} label. You can read more about the labels in the Podman \href{https://docs.podman.io/en/latest/markdown/podman-run.1.html\#volume-v-source-volume-host-dir-containe}{\texttt{ documentation}}.
+
+Alternatively, if you prefer to not change the permissions of the host filesystem, you can run the container as a root user. Note however, that the environment will differ from that used in continuous integration and the usual caveats concerning running processes as root apply\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{podman run \(\backslash\)}
+\DoxyCodeLine{   -\/-\/user "{}root"{} \(\backslash\)}
+\DoxyCodeLine{   -\/-\/interactive \(\backslash\)}
+\DoxyCodeLine{   -\/-\/tty \(\backslash\)}
+\DoxyCodeLine{   -\/-\/rm \(\backslash\)}
+\DoxyCodeLine{   -\/-\/volume "{}\$PWD:/home/jenkins/workspace:Z"{} \(\backslash\)}
+\DoxyCodeLine{   -\/-\/workdir "{}/home/jenkins/workspace"{} \(\backslash\)}
+\DoxyCodeLine{   build-\/elektra-\/debian-\/bullseye}
+
+\end{DoxyCode}
+ 

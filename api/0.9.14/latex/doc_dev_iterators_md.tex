@@ -1,0 +1,125 @@
+\label{doc_dev_iterators_md_md_doc_dev_iterators}%
+\Hypertarget{doc_dev_iterators_md_md_doc_dev_iterators}%
+ The deprecated internal iterator are removed and replaced with external iteration.\hypertarget{doc_dev_iterators_md_autotoc_md2637}{}\doxysection{Interactions with users}\label{doc_dev_iterators_md_autotoc_md2637}
+Developers of plugins should already use the external iterators instead of the internal ones. However, following functions will be removed\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__keyset_gabe793ff51f1728e3429c84a8a9086b70}{ksRewind}} (KeySet *ks);}
+\DoxyCodeLine{Key *\mbox{\hyperlink{group__keyset_ga317321c9065b5a4b3e33fe1c399bcec9}{ksNext}} (KeySet *ks);}
+\DoxyCodeLine{Key *\mbox{\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ksCurrent}} (\textcolor{keyword}{const} KeySet *ks);}
+\DoxyCodeLine{}
+\DoxyCodeLine{elektraCursor \mbox{\hyperlink{group__keyset_gace0444eb8ec958a429794f8586fc72e7}{ksGetCursor}} (\textcolor{keyword}{const} KeySet *ks);}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__keyset_ga28b2a7d13c620b3c9d4815a0608c738f}{ksSetCursor}} (KeySet *ks, elektraCursor cursor);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} keyRewindMeta (Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} Key *\mbox{\hyperlink{group__keymeta_ga4c88342f580a4291455a801af71ce048}{keyNextMeta}} (Key *key);}
+\DoxyCodeLine{\textcolor{keyword}{const} Key *keyCurrentMeta (\textcolor{keyword}{const} Key *key);}
+
+\end{DoxyCode}
+\hypertarget{doc_dev_iterators_md_autotoc_md2638}{}\doxysection{The Architecture}\label{doc_dev_iterators_md_autotoc_md2638}
+Every occurrence of using the internal iterator has to be replaced with the external iterator (see \#4281). The functions of the internal iterator are listed in \#3171. There are also some uses of the internal iterator found in the SWIG bindings (Lua, Ruby, Python) that also need removal (see \#4279).\hypertarget{doc_dev_iterators_md_autotoc_md2639}{}\doxysubsection{Internal vs. external Iterators}\label{doc_dev_iterators_md_autotoc_md2639}
+When the client (i.\+e. the programmer) controls the iteration, the iterator is called external iterator. Otherwise, when the iterator controls the iteration, it is called internal iterator. Due to the fact that external iterators are more flexible the internal iterators are the way to go.\hypertarget{doc_dev_iterators_md_autotoc_md2640}{}\doxysection{Examples}\label{doc_dev_iterators_md_autotoc_md2640}
+An example for using an external iterator is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor it = 0; it < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (ks); ++it)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    Key * cur = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (ks, it);}
+\DoxyCodeLine{    \textcolor{comment}{// [loop body]}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+You can obtain the {\ttfamily Key} at a specific position in the {\ttfamily Key\+Set} and the overall size of the {\ttfamily Key\+Set}.
+
+If you want to delete {\ttfamily Key}s during the iteration of a {\ttfamily Key\+Set}, be aware that all keys after the deleted {\ttfamily Key} are moved one slot forward, so maybe you have to change to value of {\ttfamily it} after deleting a {\ttfamily Key}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor it = 0; it < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (ks); ++it)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    Key * cur = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (ks, it);}
+\DoxyCodeLine{    \textcolor{keywordflow}{if} ( shouldKeyGetDeleted (cur))}
+\DoxyCodeLine{    \{}
+\DoxyCodeLine{            \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (cur);}
+\DoxyCodeLine{            -\/-\/it; \textcolor{comment}{//next key is now at the position of the current key which was deleted}}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+For such scenarios, it is also important that you recalculate the size with {\ttfamily ks\+Get\+Size ()} within the loop-\/header or explicitly after changing the {\ttfamily Key\+Set}, e.\+g. by deleting a {\ttfamily Key}.
+
+That should be all you need for iterating over keys. For future releases, the function {\ttfamily ks\+At\+Cursor} will be renamed to {\ttfamily ks\+At}. (see issue \#3976)
+
+You can iterate over metakeys in a similar fashion as long as you iterate over a {\ttfamily Key\+Set}, e.\+g., {\ttfamily key\+Meta(\char`\"{}my\+\_\+key\char`\"{})} returns a {\ttfamily Key\+Set} of metakeys.
+
+The following is a comprehension of how to use iterators in various languages.\hypertarget{doc_dev_iterators_md_autotoc_md2641}{}\doxysubsubsection{C}\label{doc_dev_iterators_md_autotoc_md2641}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor it = 0; it < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (ks); ++it)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    Key * cur = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (ks, it);}
+\DoxyCodeLine{    \textcolor{comment}{// ...}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_dev_iterators_md_autotoc_md2642}{}\doxysubsubsection{C++}\label{doc_dev_iterators_md_autotoc_md2642}
+C-\/style fashioned loop\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor it = 0; it < ks.size (); ++it)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        Key key = ks.at(it);}
+\DoxyCodeLine{        \textcolor{comment}{// ...}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Real iterators the C++ interface supports\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (KeySet::iterator i = ks3.begin(); i != ks3.end(); ++i)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        Key key(*i);}
+\DoxyCodeLine{        \textcolor{comment}{// ...}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_dev_iterators_md_autotoc_md2643}{}\doxysubsubsection{Python}\label{doc_dev_iterators_md_autotoc_md2643}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{size = ksSize(keySet)}
+\DoxyCodeLine{for cursor in range(size):}
+\DoxyCodeLine{        key = ksAt(keySet, cursor)}
+\DoxyCodeLine{        \# ...}
+
+\end{DoxyCode}
+\hypertarget{doc_dev_iterators_md_autotoc_md2644}{}\doxysubsubsection{Lua}\label{doc_dev_iterators_md_autotoc_md2644}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{size = kdb.ksSize(keySet);}
+\DoxyCodeLine{if size > 0 then}
+\DoxyCodeLine{        for i = 1, size do}
+\DoxyCodeLine{                key = kdb.ksAt(keySet, i -\/ 1)}
+\DoxyCodeLine{                -\/-\/ ...}
+\DoxyCodeLine{        end}
+\DoxyCodeLine{end}
+
+\end{DoxyCode}
+\hypertarget{doc_dev_iterators_md_autotoc_md2645}{}\doxysubsubsection{Ruby}\label{doc_dev_iterators_md_autotoc_md2645}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{keySet.each do |key|}
+\DoxyCodeLine{        \# ...}
+\DoxyCodeLine{end}
+
+\end{DoxyCode}
+ 

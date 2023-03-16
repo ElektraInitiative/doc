@@ -1,0 +1,847 @@
+\label{doc_news_2019-08-06_0_9_0_md_md_doc_news_2019_08_06_0_9_0}%
+\Hypertarget{doc_news_2019-08-06_0_9_0_md_md_doc_news_2019_08_06_0_9_0}%
+
+\begin{DoxyItemize}
+\item guid\+: e8c753c0-\/74af-\/410b-\/9f66-\/77c3ce194717
+\item author\+: Markus Raab
+\item pub\+Date\+: Tue, 06 Aug 2019 12\+:09\+:02 +0200
+\item short\+Desc\+: Cache, Command-\/line Options, Error Codes
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3562}{}\doxysection{What is Elektra?}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3562}
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database.
+
+You can also read this document \href{https://www.libelektra.org/news/0.9.0-release}{\texttt{ on our website}}.
+
+We wrote a new article \href{https://www.libelektra.org/docgettingstarted/vision}{\texttt{ describing our vision from configuration management perspective}}.
+
+For more information, visit \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3563}{}\doxysection{0.\+9.$\ast$}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3563}
+We are proud to present our largest release so far. It is the first release of the 0.\+9.$\ast$ version series, which goal is it\+:
+
+
+\begin{DoxyItemize}
+\item To prepare Elektra for \href{https://github.com/ElektraInitiative/libelektra/milestone/12}{\texttt{ version 1.\+0.\+0}}, which includes incompatible changes like new error codes (which are already part of this release, hence 0.\+9.\+0). When 0.\+9.$\ast$ is mature enough, we will call it 1.\+0.\+0.
+\item To make Elektra future-\/proof so that during 1.$\ast$. most of Elektra\textquotesingle{}s functionality can be kept stable
+\item To cleanup Elektra, including removal of compatibility layers and research prototypes.
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3564}{}\doxysection{Business Plans}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3564}
+To get away from a purely research-\/oriented approach to a mature foundation, we also need paid employees to fix problems.
+
+We plan to introduce following ways of income\+:
+
+
+\begin{DoxyEnumerate}
+\item donations
+\item paid support/feature requests
+\item consultancy
+\end{DoxyEnumerate}
+
+If you are interested in any of these, please contact us via \href{mailto:business@libelektra.org}{\texttt{ business@libelektra.\+org}}
+
+The 0.\+8.$\ast$ version series will be maintained on paid requests. If you have maintenance requests and want 0.\+8.\+27 to be released, please contact us via \href{mailto:business@libelektra.org}{\texttt{ business@libelektra.\+org}}
+
+Please note, that Elektra will definitely stay 100\% free software (BSD licensed). We do not plan to make any part proprietary. We only introduce a way for paid customers to get desired features or help more quickly.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3565}{}\doxysection{Highlights}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3565}
+
+\begin{DoxyItemize}
+\item Cache
+\item Command-\/line Options
+\item Error Codes
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3566}{}\doxysubsection{Cache}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3566}
+\href{https://www.libelektra.org/plugins/cache}{\texttt{ Cache}} is a new global caching plugin. It uses \href{https://www.libelektra.org/plugins/mmapstorage}{\texttt{ mmapstorage}} as its storage backend and lazily stores the whole configuration from previous configuration accesses.
+
+With large or many configuration files, the cache brings amazing performance improvements\+: Let us say, you have 649 \href{https://www.libelektra.org/plugins/ini}{\texttt{ INI}} configuration files mounted with the \href{https://www.libelektra.org/plugins/multifile}{\texttt{ multifile resolver}}, completely specified (which means that the specification must be copied to all the configuration settings). Before the cache, retrieving the whole configuration would take 6 or even 13 seconds. With the cache, the whole operation now takes less than 0.\+5 seconds after the first access.
+
+This is an important step towards the goal of Elektra to integrate all configuration files present on a system.
+
+Limitations\+:
+
+
+\begin{DoxyItemize}
+\item Mountpoints that are not connected with files, currently cannot be cached.
+\item The cache currently does not work together with other global plugins.
+\end{DoxyItemize}
+
+By default, the cache will automatically enable itself once the {\ttfamily cache} plugin is installed. The cache can be found in {\ttfamily $\sim$/.cache/elektra}.
+
+We also added tools for enabling, disabling and clearing the cache ({\ttfamily kdb cache \{enable,disable,default,clear\}}).
+
+A big thanks to \+\_\+(Mihael Pranjić)\+\_\+ for the excellent work.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3567}{}\doxysubsection{Command-\/line Options}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3567}
+\href{https://www.libelektra.org/plugins/gopts}{\texttt{ Gopts}} is a new plugin that integrates support for command-\/line options to applications\+:
+
+
+\begin{DoxyItemize}
+\item The \href{https://www.libelektra.org/plugins/gopts}{\texttt{ gopts}} plugin retrieves the values of {\ttfamily argc}, {\ttfamily argv} and {\ttfamily envp} needed for \href{https://www.libelektra.org/tutorials/command-line-options}{\texttt{ {\ttfamily elektra\+Get\+Opts}}} and then makes the call. It is intended to be used as a global plugin, so that command-\/line options are automatically parsed when {\ttfamily kdb\+Get} is called. \+\_\+(Klemens Böswirth)\+\_\+
+\item The plugin works under WIN32 (via {\ttfamily Get\+Command\+LineW} and {\ttfamily Get\+Environment\+String}), MAC\+\_\+\+OSX ({\ttfamily \+\_\+\+NSGet\+Argc}, {\ttfamily \+\_\+\+NSGet\+Argv}) and any system that either has a {\ttfamily sysctl(3)} function that accepts {\ttfamily KERN\+\_\+\+PROC\+\_\+\+ARGS} (e.\+g. Free\+BSD) or when {\ttfamily procfs} is mounted and either {\ttfamily /proc/self} or {\ttfamily /proc/curproc} refers to the current process. If you need support for any other systems, feel free to add an implementation.
+\end{DoxyItemize}
+
+This means, that using the plugin, you do not need to call {\ttfamily elektra\+Get\+Opts} yourself anymore.
+
+{\ttfamily kdb\+Ensure} is a new function in {\ttfamily elektra-\/kdb}. It can be used to ensure that a KDB instance meets certain clauses specified in a contract. In principle this a very powerful tool that may be used for a lot of things. All changes made by {\ttfamily kdb\+Ensure} are purely within the KDB handle passed to the function.
+
+For example, {\ttfamily kdb\+Ensure} can be used, to ensure the availability of command-\/line options for your application.
+
+Limitations\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb\+Ensure} only works, if the {\ttfamily list} plugin is mounted in all appropriate global positions.
+\item {\ttfamily kdb\+Ensure} does not take care of dependencies between plugins.
+\item Mounting of non-\/global plugins is not supported.
+\end{DoxyItemize}
+
+A big thanks to \+\_\+(Klemens Böswirth)\+\_\+ for the excellent work.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3568}{}\doxysubsection{Error Codes}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3568}
+With this release, we changed our messy error code system into a more structured and clean way. Similar to \href{https://www.ibm.com/support/knowledgecenter/en/SSGU8G_12.1.0/com.ibm.sqls.doc/ids_sqs_0809.htm}{\texttt{ SQLStates}} we changed to structure of our error codes and migrated them. Have a look into the new \mbox{\hyperlink{doc_decisions_6_implemented_error_codes_md}{codes}}. This allows us to easily extend the specification without breaking existing codes and to avoid risking duplicated errors as we had before. \+\_\+(\+Michael Zronek)\+\_\+
+
+We were able to reduce the former 214 to now only 9 error codes.
+
+For background information read\+:
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_6_implemented_error_codes_md}{about error codes}}
+\item \mbox{\hyperlink{doc_decisions_6_implemented_error_message_format_md}{about error message format}}
+\end{DoxyItemize}
+
+A big thanks to \+\_\+(\+Michael Zronek)\+\_\+ for the excellent work.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3569}{}\doxysection{Plugins}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3569}
+The following section lists news about the \href{https://www.libelektra.org/plugins/readme}{\texttt{ plugins}} we updated in this release. In total, we added 9 plugins and removed 2 plugins.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3570}{}\doxysubsection{Type (\+New Version)}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3570}
+The {\ttfamily type} plugin was completely rewritten in C. The old version is now called {\ttfamily cpptype}. \+\_\+(Klemens Böswirth)\+\_\+
+
+The new {\ttfamily type} plugin also provides the functionality of the {\ttfamily enum} and the {\ttfamily boolean} plugin. These plugins are now considered obsolete and you should use {\ttfamily type} instead.
+
+A few notes on compatibility\+:
+
+
+\begin{DoxyItemize}
+\item the new {\ttfamily type} does not support the full feature set of {\ttfamily enum} and {\ttfamily boolean}, but it supports the features we consider useful.
+\item the new {\ttfamily type} doesn\textquotesingle{}t support {\ttfamily FSType} and {\ttfamily empty}. These have been deprecated for a long time and there are good alternatives available.
+\item the new {\ttfamily type} supports {\ttfamily enum}, {\ttfamily wchar} and {\ttfamily wstring} as types, whereas the old {\ttfamily cpptype} would throw an error for these. In most cases this won\textquotesingle{}t be a problem, but you should be aware of this breaking change.
+\item the new {\ttfamily type} does not support {\ttfamily check/type/min} and {\ttfamily check/type/max}, please use the {\ttfamily range} plugin instead.
+\end{DoxyItemize}
+
+To switch from {\ttfamily enum} to the new {\ttfamily type}, you have to add either {\ttfamily check/type=enum} or {\ttfamily type=enum}. Without a {\ttfamily check/type} or {\ttfamily type} metakey, the {\ttfamily type} plugin will ignore the key. We now also support converting enum values to and from integer values (see \href{https://www.libelektra.org/plugins/type}{\texttt{ README}}).
+
+To switch from {\ttfamily boolean} to the new {\ttfamily type}, you don\textquotesingle{}t have to do anything, if you used the default config. If you used a custom configuration please take a look at the \href{https://www.libelektra.org/plugins/type}{\texttt{ README}}.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3571}{}\doxysubsection{Base64}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3571}
+
+\begin{DoxyItemize}
+\item We fixed some warnings about implicit type conversions reported by \href{https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html}{\texttt{ UBSan}} in the \href{https://www.libelektra.org/plugins/base64}{\texttt{ base64}} plugin. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3572}{}\doxysubsection{Crypto and Fcrypt}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3572}
+
+\begin{DoxyItemize}
+\item Empty GPG key IDs in the plugin configuration are being ignored by the \href{https://www.libelektra.org/plugins/crypto}{\texttt{ crypto}} plugin and the \href{https://www.libelektra.org/plugins/fcrypt}{\texttt{ fcrypt}} plugin. Adding empty GPG key IDs would lead to an error when {\ttfamily gpg} is being invoked. \+\_\+(\+Peter Nirschl)\+\_\+
+\item Apply Base64 encoding to the master password, which is stored within the plugin configuration. This fixes a problem that occurs if ini is used as default storage (see \href{https://github.com/ElektraInitiative/libelektra/issues/2591}{\texttt{ 2591}}). \+\_\+(\+Peter Nirschl)\+\_\+
+\item Fix compilation without deprecated Open\+SSL APIs. Initialization and deinitialization is not needed anymore. \+\_\+(\+Rosen Penev)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3573}{}\doxysubsection{CSVStorage}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3573}
+
+\begin{DoxyItemize}
+\item Support DOS newlines for the \href{https://www.libelektra.org/plugins/csvstorage}{\texttt{ csvstorage}} plugin. \+\_\+(Vlad -\/ Ioan Balan)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3574}{}\doxysubsection{Filecheck}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3574}
+
+\begin{DoxyItemize}
+\item We fixed some warnings about implicit type conversions reported by \href{https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html}{\texttt{ UBSan}}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3575}{}\doxysubsection{INI}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3575}
+
+\begin{DoxyItemize}
+\item Fixed \href{https://www.libelektra.org/plugins/ini}{\texttt{ INI}} plugin when only the root key needs to be written. \+\_\+(Mihael Pranjić)\+\_\+
+\item Plugin writes to INI files without spaces around \textquotesingle{}=\textquotesingle{} anymore. Reading is still possible with and without spaces. \+\_\+(\+Oleksandr Shabelnyk)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3576}{}\doxysubsection{Macaddr}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3576}
+
+\begin{DoxyItemize}
+\item Added a plugin to handle MAC addresses. {\ttfamily kdb\+Get} converts a MAC address into a decimal 64-\/bit integer (with the most significant 16 bits always set to 0), if the format is supported. {\ttfamily kdb\+Set} restores the converted values back to there original form. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3577}{}\doxysubsection{m\+INI}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3577}
+
+\begin{DoxyItemize}
+\item We fixed compiler warnings reported by GCC 9 in the \href{/home/jenkins/workspace/libelektra-release/src/plugins/mini/testmod_mini.c}{\texttt{ unit test code}} of the plugin. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3578}{}\doxysubsection{Mmapstorage}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3578}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/mmapstorage}{\texttt{ mmapstorage}} is now able to persist the Global Key\+Set, which is used by the {\ttfamily cache} plugin. \+\_\+(Mihael Pranjić)\+\_\+
+\item Fixed support for {\ttfamily kdb import} and {\ttfamily kdb export}. \+\_\+(Mihael Pranjić)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3579}{}\doxysubsection{Multifile}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3579}
+
+\begin{DoxyItemize}
+\item Fixed segmentation fault in {\ttfamily kdb\+Error()} function. \+\_\+(Mihael Pranjić)\+\_\+
+\item Added Global Keyset handle to storage plugin. \+\_\+(Mihael Pranjić)\+\_\+
+\item Fixed use of wrong resolver handle in the {\ttfamily kdb\+Error()} function. \+\_\+(Mihael Pranjić)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3580}{}\doxysubsection{Quickdump}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3580}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/quickdump}{\texttt{ quickdump}} is a new storage plugin. It implements a more concise form of the \href{https://www.libelektra.org/plugins/dump}{\texttt{ dump}} format, which is also quicker too read. Contrary to dump, quickdump only stores keynames relative to the parent key. This allows easy relocation of configurations. \+\_\+(Klemens Böswirth)\+\_\+
+\item quickdump now also uses an variable length integer encoding to further reduce file size. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3581}{}\doxysubsection{Reference}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3581}
+
+\begin{DoxyItemize}
+\item Fixed missing Metadata in README and METADATA.\+ini. \+\_\+(\+Michael Zronek)\+\_\+
+\item Update README.\+md web tool to show, how to test REST API on localhost. \+\_\+(\+Dmytro Moiseiuk)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3582}{}\doxysubsection{RGBColor}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3582}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/rgbcolor}{\texttt{ New plugin}} to validate hex formatted colors (e.\+g. \#fff or \#abcd) and normalize them to rgba (4294967295 (= 0xffffffff) and 2864434397 (= 0xaabbccdd) respectively). It also has support for named colors according to the \href{https://www.w3.org/TR/css-color-3/\#svg-color}{\texttt{ extended color keywords}} from CSS3. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3583}{}\doxysubsection{Semlock}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3583}
+Removed due to\+:
+
+
+\begin{DoxyItemize}
+\item constant pain
+\item never worked properly
+\item poor design
+\item no time in future to maintain \+\_\+(\+Kurt Micheli)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3584}{}\doxysubsection{Spec}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3584}
+
+\begin{DoxyItemize}
+\item The spec plugin was partly rewritten to better support specifications for arrays. This includes some breaking changes concerning the less used (and also less functional) parts of the plugin. To find out more about these changes take a look at the \mbox{\hyperlink{md_src_plugins_spec_README_src_plugins_spec_README_md}{README}}. It now better reflects the actually implemented behavior. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3585}{}\doxysubsection{Specload}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3585}
+
+\begin{DoxyItemize}
+\item The \href{https://www.libelektra.org/plugins/specload}{\texttt{ specload}} plugin is a special storage plugin. Instead of using a storage file it calls an external application to request its specification. For the transfer it relies on the \href{https://www.libelektra.org/plugins/quickdump}{\texttt{ quickdump}} plugin. \+\_\+(Klemens Böswirth)\+\_\+
+\item Currently changing the specification is only allowed in a very limited way. However, in future the plugin should allow overriding a specification in all cases where this can be done safely. NOTE\+: While the plugin technically allows some modifications, because of a problem with the resolver this cannot be used right now (see \href{https://www.libelektra.org/plugins/specload}{\texttt{ limitations}}).
+\item We also export {\ttfamily elektra\+Specload\+Send\+Spec} to abstract over the {\ttfamily quickdump} dependency. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3586}{}\doxysubsection{Syslog}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3586}
+
+\begin{DoxyItemize}
+\item We fixed an incorrect format specifier in a call to the {\ttfamily syslog} function. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3587}{}\doxysubsection{Unit}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3587}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/unit}{\texttt{ New plugin}} to validate units of memory and normalize them into bytes. E.\+g. 20 KB (normalized to 20000 Byte). \+\_\+(\+Marcel Hauri)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3588}{}\doxysubsection{YAJL}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3588}
+The \href{https://www.libelektra.org/plugins/yajl}{\texttt{ YAJL}} plugin which parses JSON files\+:
+
+
+\begin{DoxyItemize}
+\item now allows setting a value to the mountpoint. This is represented as a top level value in JSON if no other key is present. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\item no longer lists empty parent keys with {\ttfamily kdb ls}. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\item signifies arrays with the metakey array according to the \mbox{\hyperlink{doc_decisions_5_partially_implemented_array_md}{array decision}}. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\item no longer produces additional {\ttfamily \+\_\+\+\_\+\+\_\+dirdata} entries for empty array keys. See also issue \href{https://github.com/ElektraInitiative/libelektra/issues/2477}{\texttt{ \#2477}}. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3589}{}\doxysubsection{YAMBi}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3589}
+
+\begin{DoxyItemize}
+\item YAMBi is now able detect multiple syntax errors in a file. \+\_\+(René Schwaiger)\+\_\+
+\item The error message now includes more information about the location of syntax errors. For example, for the incorrect YAML input {\ttfamily config.\+yaml}\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key 1: -\/ element 1}
+\DoxyCodeLine{ -\/ element 2}
+\DoxyCodeLine{key 2: scalar}
+\DoxyCodeLine{       -\/ element 3}
+
+\end{DoxyCode}
+
+
+, the plugin prints an error message that includes the following text\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{config.yaml:2:2: syntax error, unexpected start of sequence, expecting end of map or key}
+\DoxyCodeLine{                  -\/ element 2}
+\DoxyCodeLine{                  \string^}
+\DoxyCodeLine{config.yaml:4:8: syntax error, unexpected start of sequence, expecting end of map or key}
+\DoxyCodeLine{                        -\/ element 3}
+\DoxyCodeLine{                        \string^}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item YAMBi now supports Elektra’s \mbox{\hyperlink{doc_decisions_5_partially_implemented_boolean_md}{boolean data type}}. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now handles YAML key-\/value pairs without a value at the end of a file correctly. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now converts YAML key-\/value pairs with empty value to null/empty keys. \+\_\+(René Schwaiger)\+\_\+
+\item YAMBi now converts empty files to a key set containing an empty version of the parent key. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3590}{}\doxysubsection{YAML CPP}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3590}
+
+\begin{DoxyItemize}
+\item The plugin now handles keys that are part of a map, but use a basename ending with \mbox{\hyperlink{doc_tutorials_arrays_md}{array syntax}} correctly. For example, in a key set that contains keys with the following names\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/array/\#0}
+\DoxyCodeLine{user/array/\#1}
+\DoxyCodeLine{user/map/\#0}
+\DoxyCodeLine{user/map/key}
+\DoxyCodeLine{user/map/\#1}
+
+\end{DoxyCode}
+
+
+, {\ttfamily user/array/\#0} and {\ttfamily user/array/\#1} represent array elements, while {\ttfamily user/map/\#0}, and {\ttfamily user/map/\#1} do not, since the key set also contains the key {\ttfamily user/map/key}. The following \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} snippet shows the new behavior of the plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount config.yaml user yamlcpp}
+\DoxyCodeLine{kdb set user/array/\#0 one}
+\DoxyCodeLine{kdb set user/array/\#1 two}
+\DoxyCodeLine{kdb set user/map/\#0   three}
+\DoxyCodeLine{kdb set user/map/key  four}
+\DoxyCodeLine{kdb set user/map/\#1   five}
+\DoxyCodeLine{kdb file user | xargs cat}
+\DoxyCodeLine{\#> array:}
+\DoxyCodeLine{\#>   -\/ one}
+\DoxyCodeLine{\#>   -\/ two}
+\DoxyCodeLine{\#> map:}
+\DoxyCodeLine{\#>   "{}\#0"{}: three}
+\DoxyCodeLine{\#>   "{}\#1"{}: five}
+\DoxyCodeLine{\#>   key: four}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_yamlcpp_README}{YAML CPP}} now handles the conversion from and to \mbox{\hyperlink{doc_decisions_5_partially_implemented_boolean_md}{Elektra’s boolean type}} properly. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin converts “sparse” key sets properly. For example, for the key set that contains {\bfseries{only}} the key\+:
+\begin{DoxyItemize}
+\item {\ttfamily user/parent/\#1/\#2/map/\#0} with the value {\ttfamily arr}
+\end{DoxyItemize}
+
+and uses {\ttfamily user/parent} as parent key, YAML CPP stores the following YAML data\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ \string~}
+\DoxyCodeLine{-\/ -\/ \string~}
+\DoxyCodeLine{  -\/ \string~}
+\DoxyCodeLine{  -\/ map:}
+\DoxyCodeLine{      -\/ arr}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{md_src_plugins_yamlcpp_README}{YAML CPP}} now supports mixed data (nested lists \& sequences) better. For example, the plugin now correctly converts the YAML data
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{root:}
+\DoxyCodeLine{  -\/ element: one}
+\DoxyCodeLine{  -\/ element: two}
+
+\end{DoxyCode}
+
+
+to the key set that contains the following keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user/tests/yaml/root}
+\DoxyCodeLine{user/tests/yaml/root/\#0/element}
+\DoxyCodeLine{user/tests/yaml/root/\#1/element}
+
+\end{DoxyCode}
+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3591}{}\doxysubsection{YAML Smith}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3591}
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/yamlsmith}{\texttt{ YAML Smith}} now converts keys that shares a common prefix correctly. For example, the last command in the script\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount config.yaml user/tests/yaml yaml}
+\DoxyCodeLine{kdb set user/tests/yaml/common/one/\#0 value}
+\DoxyCodeLine{kdb set user/tests/yaml/common/two/\#0 first}
+\DoxyCodeLine{kdb set user/tests/yaml/common/two/\#1 second}
+\DoxyCodeLine{kdb export user/tests/yaml yamlsmith}
+
+\end{DoxyCode}
+
+
+now prints the following YAML data\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{common:}
+\DoxyCodeLine{  one:}
+\DoxyCodeLine{    -\/ "{}value"{}}
+\DoxyCodeLine{  two:}
+\DoxyCodeLine{    -\/ "{}first"{}}
+\DoxyCodeLine{    -\/ "{}second"{}}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item The plugin now converts Elektra’s boolean values ({\ttfamily 0}, {\ttfamily 1}) back to YAML’s boolean values ({\ttfamily true}, {\ttfamily false}). \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3592}{}\doxysubsection{Yan LR}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3592}
+
+\begin{DoxyItemize}
+\item The build system now disables the plugin, if you installed a version of ANTLR 4 that does not support ANTLR’s C++ runtime (like ANTLR {\ttfamily 4.\+5.\+x} or earlier). \+\_\+(René Schwaiger)\+\_\+
+\item We fixed an ambiguity in the \href{https://master.libelektra.org/src/plugins/yanlr/YAML.g4}{\texttt{ YAML grammar}}. \+\_\+(René Schwaiger)\+\_\+
+\item The build system now regenerates the modified parsing code, every time we update the grammar file. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now reports the location of syntax errors correctly. \+\_\+(René Schwaiger)\+\_\+
+\item The lexer for the plugin now emits start tokens for maps at the correct location inside the token stream. This update fixes a problem, where the plugin sometimes reported incorrect error messages for the {\itshape first} syntax error in a YAML file. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now stores the end position of map start tokens correctly. Before this update the plugin would sometimes not show the markers ({\ttfamily $^\wedge$}) that point to the error positions inside the input. \+\_\+(René Schwaiger)\+\_\+
+\item \href{https://www.libelektra.org/plugins/yanlr}{\texttt{ Yan LR}} now supports Elektra’s \mbox{\hyperlink{doc_decisions_5_partially_implemented_boolean_md}{boolean data type}}. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now handles YAML key-\/value pairs that contain no value at the end of a file correctly. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now converts YAML key-\/value pairs with empty value to null/empty keys. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin converts “empty” YAML files to a key set that contains an empty version of the parent key. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3593}{}\doxysubsection{YAwn}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3593}
+
+\begin{DoxyItemize}
+\item YAwn is now able to print error messages for multiple syntax errors. \+\_\+(René Schwaiger)\+\_\+
+\item We also improved the error messages of YAwn, which now also contain the input that caused a syntax error. For example, for the input
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{key: value}
+\DoxyCodeLine{  -\/ element}
+
+\end{DoxyCode}
+
+
+the plugin prints an error message that contains the following text\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{config.yaml:2:3: Syntax error on input “start of sequence”}
+\DoxyCodeLine{                   -\/ element}
+\DoxyCodeLine{                   \string^}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item The plugin now supports Elektra’s \mbox{\hyperlink{doc_decisions_5_partially_implemented_boolean_md}{boolean data type}}. \+\_\+(René Schwaiger)\+\_\+
+\item YAwn handles YAML key-\/value pairs that contain no value at the end of a file correctly. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now converts YAML key-\/value pairs with empty value to null/empty keys. \+\_\+(René Schwaiger)\+\_\+
+\item YAwn now stores empty files as a key set containing an empty parent key. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3594}{}\doxysubsection{YAy PEG}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3594}
+
+\begin{DoxyItemize}
+\item YAy PEG now also supports PEGTL 2.\+8. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now includes the input that could not be parsed in error messages. \+\_\+(René Schwaiger)\+\_\+
+\item We improved the error messages for certain errors slightly. For example, the error message for the input
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{"{}double quoted}
+
+\end{DoxyCode}
+
+
+now includes the following text
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1:14: Missing closing double quote or incorrect value inside flow scalar}
+\DoxyCodeLine{      "{}double quoted}
+\DoxyCodeLine{                    \string^}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item YAy PEG now supports compact mappings\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ key1: value1}
+\DoxyCodeLine{  key2: value2}
+
+\end{DoxyCode}
+
+
+and compact sequences\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ -\/ element1}
+\DoxyCodeLine{  -\/ element2}
+
+\end{DoxyCode}
+
+
+correctly. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item The plugin now supports Elektra’s \mbox{\hyperlink{doc_decisions_5_partially_implemented_boolean_md}{boolean data type}}. \+\_\+(René Schwaiger)\+\_\+
+\item YAy PEG now converts YAML key-\/value pairs with empty value to null/empty keys. \+\_\+(René Schwaiger)\+\_\+
+\item The plugin now translates an empty file to a key set that contains a single empty parent key. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3595}{}\doxysection{Libraries}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3595}
+The text below summarizes updates to the \href{https://www.libelektra.org/libraries/readme}{\texttt{ C (and C++)-\/based libraries}} of Elektra.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3596}{}\doxysubsection{Compatibility}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3596}
+We introduced several incompatible changes\+:
+
+
+\begin{DoxyItemize}
+\item different error codes are returned
+\item INI and YAJL plugins might write different files with the same Key\+Sets
+\end{DoxyItemize}
+
+We changed following symbols\+:
+
+
+\begin{DoxyItemize}
+\item elektra\+Is\+Reference\+Redundant
+\item elektra\+Resolve\+Reference
+\item elektra\+Plugin\+Find\+Global
+\item kdb\+Ensure
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3597}{}\doxysubsection{Core}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3597}
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb\+Get} now calls global postgetstorage plugins with the parent key passed to {\ttfamily kdb\+Get}, instead of a random mountpoint. \+\_\+(Klemens Böswirth)\+\_\+
+\item Fixed a double cleanup error (segmentation fault) when mounting global plugins. \+\_\+(Mihael Pranjić)\+\_\+
+\item Logging in Elektra was changed with this release. If Elektra is compiled with {\ttfamily ENABLE\+\_\+\+LOGGER} enabled, we now log warnings and errors to stderr and everything except debug messages to syslog. If {\ttfamily ENABLE\+\_\+\+DEBUG} is also enabled, debug messages are logged to syslog as well. Previously you had to make some manual changes to the code, to see most of the logging messages. \+\_\+(Klemens Böswirth)\+\_\+
+\item The logger does not truncate the file name incorrectly anymore, if {\ttfamily \+\_\+\+\_\+\+FILE\+\_\+\+\_\+} contains a relative (instead of an absolute) filepath. \+\_\+(René Schwaiger)\+\_\+
+\item Disabled any plugin execution when we have a cache hit or no update from backends. The old behavior can be enabled for testing using {\ttfamily ENABLE\+\_\+\+DEBUG} and adding the {\ttfamily \char`\"{}debug\+Global\+Positions\char`\"{}} metakey to the parent\+Key of the kdb\+Get invocation. \+\_\+(Mihael Pranjić)\+\_\+
+\item Removed {\ttfamily ingroup} from error messages to reduce verbosity. \+\_\+(\+Michael Zronek)\+\_\+
+\item Fixed minor problem when {\ttfamily kdb\+\_\+long\+\_\+double\+\_\+t} is not available (e.\+g. mips32). \+\_\+(\+Matthias Schoepfer)\+\_\+
+\item Only add benchmarks if {\ttfamily BUILD\+\_\+\+TEST} is set in CMake. \+\_\+(\+Matthias Schoepfer)\+\_\+
+\item We fixed some warnings about implicit conversion to {\ttfamily unsigned int} reported by \href{https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html}{\texttt{ UBSan}}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3598}{}\doxysubsection{Ease}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3598}
+
+\begin{DoxyItemize}
+\item The functions for reference resolving used in the \href{https://www.libelektra.org/plugins/reference}{\texttt{ reference plugin}} have been extracted into libease. This lets other parts of Elektra easily use references and ensures a consistent syntax for them. \+\_\+(Klemens Böswirth)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3599}{}\doxysection{Bindings}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3599}
+Bindings allow you to utilize Elektra using \href{https://www.libelektra.org/bindings/readme}{\texttt{ various programming languages}}. This section keeps you up-\/to-\/date with the multi-\/language support provided by Elektra.
+
+
+\begin{DoxyItemize}
+\item JNA is now not experimental anymore. \+\_\+(\+Markus Raab)\+\_\+
+\item gsettings is not default anymore when installed. \+\_\+(\+Markus Raab)\+\_\+
+\item Add fix for creating the Key and Key\+Set objects in the Hello\+Elektra.\+java file. \+\_\+(\+Dmytro Moiseiuk)\+\_\+
+\item We fixed a \href{https://issues.libelektra.org/2670}{\texttt{ warning about a deprecated default constructor}} in the C++ binding reported by GCC 9.\+0. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3600}{}\doxysection{Tools}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3600}
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb get -\/v} now displays if the resulting value is a default-\/value defined by the metadata of the key. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\item {\ttfamily kdb cp} now succeeds if the target-\/keys already have the same values as the source-\/keys. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\item {\ttfamily web-\/ui} does not show empty namespace anymore \+\_\+(\+Josef Wechselauer)\+\_\+
+\item {\ttfamily kdb import} does not fail anymore if executed more than once with the same target in the spec-\/namespace. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\item {\ttfamily kdb mount} avoid adding sync if sync is already provided. \+\_\+(\+Markus Raab)\+\_\+
+\item {\ttfamily kdb list-\/tools} now supports {\ttfamily KDB\+\_\+\+EXEC\+\_\+\+PATH} environment variables that contain spaces. \+\_\+(René Schwaiger)\+\_\+
+\item {\ttfamily gen-\/gpg-\/testkey} is added to the default tools list (see \href{https://github.com/ElektraInitiative/libelektra/issues/2668}{\texttt{ \#2668}}).\+\_\+(\+Peter Nirschl)\+\_\+
+\item {\ttfamily kdb getenv} now executed correctly from within tests \+\_\+(\+Markus Raab)\+\_\+
+\item {\ttfamily kdb-\/bash-\/completion} now works on Mac (see \href{https://github.com/ElektraInitiative/libelektra/pull/2836}{\texttt{ \#2836}}). \+\_\+(\+Eduardo Santana)\+\_\+
+\item {\ttfamily kdb rm} supports {\ttfamily -\/-\/without-\/elektra} and returns 11 on key not found. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3601}{}\doxysubsection{Code generation}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3601}
+{\ttfamily kdb gen} is now no longer an external tool implemented via python, but rather a first class command of the {\ttfamily kdb} tool. For now it only supports code generation for use with the highlevel API. Try it by running {\ttfamily kdb gen elektra $<$parent\+Key$>$ $<$output\+Name$>$}, where {\ttfamily $<$parent\+Key$>$} is the parent key of the specification to use and {\ttfamily $<$output\+Name$>$} is some prefix for the output files. If you don\textquotesingle{}t have your specification mounted, use {\ttfamily kdb gen -\/F $<$plugin$>$\+:$<$file$>$ elektra $<$parent\+Key$>$ $<$output\+Name$>$} to load it from {\ttfamily $<$file$>$} using plugin {\ttfamily $<$plugin$>$}.
+
+. \+\_\+(Klemens Böswirth)\+\_\+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3602}{}\doxysection{Scripts}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3602}
+
+\begin{DoxyItemize}
+\item The {\ttfamily reformat-\/shfmt} script now also formats {\ttfamily tests/shell/include\+\_\+common.\+sh.\+in}. Additionally it ensures that the file is 1000 lines long, so that line numbers of files using it are easier to read. \+\_\+(Klemens Böswirth)\+\_\+
+\item The clang-\/format wrapper script now also checks the supported maximum version of Clang-\/\+Format. \+\_\+(René Schwaiger)\+\_\+
+\item The script {\ttfamily reformat-\/shfmt} now also reformats shell support files ({\ttfamily $\ast$.in}) in the \href{https://master.libelektra.org/scripts}{\texttt{ {\ttfamily scripts}}} folder. \+\_\+(René Schwaiger)\+\_\+
+\item The {\ttfamily reformat-\/$\ast$} scripts now allow you to specify a list of files that should be formatted. Only files actual suitable for the reformat script, will reformat. So e.\+g. calling {\ttfamily reformat-\/cmake \mbox{\hyperlink{kdbprivate_8h}{src/include/kdbprivate.\+h}}} doesn\textquotesingle{}t change any files. \+\_\+(Klemens Böswirth)\+\_\+
+\item The script {\ttfamily scripts/dev/reformat-\/all} is a new convenience script that calls all other {\ttfamily reformat-\/$\ast$} scripts. \+\_\+(Klemens Böswirth)\+\_\+
+\item The script {\ttfamily scripts/pre-\/commit-\/check-\/formatting} can be used as a pre-\/commit hook, to ensure files are formatted before committing. \+\_\+(Klemens Böswirth)\+\_\+
+\item The link checker now prints broken links to the standard error output. \+\_\+(René Schwaiger)\+\_\+
+\item We added a script, called {\ttfamily benchmark-\/yaml} that compares the run-\/time of the YAML plugins\+:
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/plugins/yamlcpp}{\texttt{ YAML CPP}},
+\item \href{https://www.libelektra.org/plugins/yanlr}{\texttt{ Yan LR}},
+\item YAMBi,
+\item YAwn, and
+\item YAy PEG
+\end{DoxyItemize}
+
+for a certain input file with \href{https://github.com/sharkdp/hyperfine}{\texttt{ hyperfine}}. \+\_\+(René Schwaiger)\+\_\+
+\item Added {\ttfamily kdb reset} and {\ttfamily kdb reset-\/elektra}, fixed {\ttfamily kdb stash}. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3603}{}\doxysection{Benchmarks}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3603}
+
+\begin{DoxyItemize}
+\item The benchmarking tool \href{https://master.libelektra.org/benchmarks/plugingetset.c}{\texttt{ {\ttfamily benchmark\+\_\+plugingetset}}} now also supports only executing the {\ttfamily get} method for the specified plugin. For example, to convert the data stored in the file {\ttfamily benchmarks/data/yaypeg.\+test.\+in} with the YAy PEG plugin to a key set you can now use the following command\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{benchmark\_plugingetset benchmarks/data user yaypeg get}
+
+\end{DoxyCode}
+
+
+. \+\_\+(René Schwaiger)\+\_\+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3604}{}\doxysection{Documentation}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3604}
+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3605}{}\doxysubsection{Style}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3605}
+
+\begin{DoxyItemize}
+\item The documentation now uses \href{https://help.github.com/en/articles/creating-and-highlighting-code-blocks\#syntax-highlighting}{\texttt{ fenced code blocks}} to improved the syntax highlighting of code snippets. \+\_\+(René Schwaiger)\+\_\+
+\item We added recommendations about the style of Markdown headers to our \mbox{\hyperlink{doc_CODING_md}{coding guidelines}}. \+\_\+(René Schwaiger)\+\_\+
+\item We now use \href{https://en.wiktionary.org/wiki/title_case}{\texttt{ title case}} for most headings in the documentation. \+\_\+(René Schwaiger)\+\_\+
+\item We added instructions on how to reformat code with
+\begin{DoxyItemize}
+\item \href{https://clang.llvm.org/docs/ClangFormat.html}{\texttt{ Clang-\/\+Format}},
+\item \href{https://github.com/cheshirekow/cmake_format}{\texttt{ cmake-\/format}},
+\item \href{https://prettier.io}{\texttt{ Prettier}}, and
+\item \href{https://github.com/mvdan/sh}{\texttt{ shfmt}}
+\end{DoxyItemize}
+
+to the \mbox{\hyperlink{doc_CODING_md}{coding guidelines}}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3606}{}\doxysubsection{Tutorials}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3606}
+
+\begin{DoxyItemize}
+\item We added a basic tutorial that tells you \mbox{\hyperlink{doc_tutorials_storage-plugins_md}{how to write a (well behaved) storage plugin}}. \+\_\+(René Schwaiger)\+\_\+
+\item Improved the {\ttfamily checkconf} section in the plugin tutorial. \+\_\+(\+Peter Nirschl)\+\_\+
+\item We added a \mbox{\hyperlink{doc_tutorials_benchmarking_md}{tutorial}} on how to benchmark the execution time of plugins using \`{}benchmark\+\_\+plugingetset\`{} and \href{https://github.com/sharkdp/hyperfine}{\texttt{ hyperfine}}. \+\_\+(René Schwaiger)\+\_\+
+\item The new \mbox{\hyperlink{doc_tutorials_profiling_md}{profiling tutorial}} describes how to determine the execution time of code using
+\begin{DoxyItemize}
+\item \href{https://valgrind.org/docs/manual/cl-manual.html}{\texttt{ Callgrind}}, and
+\item \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}}
+\end{DoxyItemize}
+
+. \+\_\+(René Schwaiger)\+\_\+
+\item For beginners we added a \href{https://www.libelektra.org/tutorials/contributing-with-clion}{\texttt{ tutorial}} that guides them through the process of contributing to libelektra. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\item Added a section on {\ttfamily elektra\+Plugin\+Get\+Global\+Key\+Set} in the plugin tutorial. \+\_\+(\+Vid Leskovar)\+\_\+
+\item Added a step-\/by-\/step \mbox{\hyperlink{doc_tutorials_run_all_tests_with_docker_md}{tutorial}} for beginners to run all tests with Docker. \+\_\+(\+Oleksandr Shabelnyk)\+\_\+
+\item Extend/improve Java bindings related documentation in \href{https://www.libelektra.org/tutorials/java-bindings}{\texttt{ tutorial}} and readme. \+\_\+(\+Oleksandr Shabelnyk)\+\_\+
+\item Added a step-\/by-\/step \mbox{\hyperlink{doc_tutorials_run_reformatting_script_with_docker_md}{tutorial}} for running reformatting scripts with Docker. \+\_\+(\+Oleksandr Shabelnyk)\+\_\+
+\item Covered Resolving Missing $\ast$.so Library Error in \mbox{\hyperlink{doc_tutorials_contributing-clion_md}{tutorial}}. \+\_\+(\+Oleksandr Shabelnyk)\+\_\+
+\item Added a basic tutorial on \mbox{\hyperlink{doc_tutorials_java-plugins_md}{How-\/\+To\+: Write a Java Plugin}} \+\_\+(\+Dmytro Moiseiuk)\+\_\+ and \+\_\+(\+Miruna Orsa)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3607}{}\doxysubsection{Spelling Fixes}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3607}
+
+\begin{DoxyItemize}
+\item Write Elektra with capital letter in cascading tutorial. \+\_\+(Vlad -\/ Ioan Balan)\+\_\+
+\item Add typo fix to the hello-\/elektra tutorial. \+\_\+(\+Dmytro Moiseiuk)\+\_\+
+\item Add typo fix to the Java kdb tutorial. \+\_\+(\+Dominik Hofmann)\+\_\+
+\item Fixed capitalization of the initial letter in Readme. \+\_\+(\+Miruna Orsa)\+\_\+
+\item Improved readability in README. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\item We fixed some spelling mistakes in the documentation. \+\_\+(René Schwaiger)\+\_\+
+\item Fix typo in root README.\+md and \textquotesingle{}built-\/in\textquotesingle{} =$>$ \textquotesingle{}built-\/in\textquotesingle{} in several places \+\_\+(\+Raphael Gruber)\+\_\+
+\item Fixed typos in {\ttfamily cassandra.\+ini} \+\_\+(arampaa)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3608}{}\doxysubsection{Other}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3608}
+
+\begin{DoxyItemize}
+\item The \href{https://master.libelektra.org/doc/markdownlinkconverter}{\texttt{ Markdown Link Converter}} now uses the style
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{filename:line:0}
+
+\end{DoxyCode}
+
+
+instead of
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{filename|line col 0|}
+
+\end{DoxyCode}
+
+
+to show the location data for broken links. This is also the same style that Clang and GCC use when they display location information for compiler errors. This update has the advantage, that certain tools such as \href{https://macromates.com}{\texttt{ Text\+Mate}} are able to convert the location data, providing additional features, such as clickable links to the error source. \+\_\+(René Schwaiger)\+\_\+
+
+
+\begin{DoxyItemize}
+\item The \href{https://master.libelektra.org/doc/markdownlinkconverter}{\texttt{ Markdown Link Converter}} uses the index {\ttfamily 1} for the first line number instead of {\ttfamily 0}. This update fixes an off-\/by-\/one-\/error, when the user tries to use the error location data printed by the tool in a text editor. \+\_\+(René Schwaiger)\+\_\+
+\item We added a badge for \href{https://lgtm.com}{\texttt{ LGTM}} to the \href{https://master.libelektra.org/README.md}{\texttt{ main Read\+Me file}}. \+\_\+(René Schwaiger)\+\_\+
+\item Added LCDproc and \href{/home/jenkins/workspace/libelektra-release/examples/spec/cassandra.ini}{\texttt{ Cassandra}} specification examples. These examples provide a good guideline for writing specifications for configurations. \+\_\+(\+Michael Zronek)\+\_\+
+\item Drastically improved the error message format. For more information look \mbox{\hyperlink{doc_decisions_6_implemented_error_message_format_md}{here}}. \+\_\+(\+Michael Zronek)\+\_\+
+\item Added a guideline for writing consistent and good error messages. For more information look \mbox{\hyperlink{doc_dev_error-message_md}{here}}. \+\_\+(\+Michael Zronek)\+\_\+
+\item Every {\ttfamily kdb} command now accepts {\ttfamily v} and {\ttfamily d} as option to show more information in case of warnings or errors. \+\_\+(\+Michael Zronek)\+\_\+
+\item Improved qt-\/gui error popup to conform with the new error message format. \+\_\+(\+Raffael Pancheri)\+\_\+
+\item We fixed the format specifiers in the \href{https://master.libelektra.org/examples/helloElektra.c}{\texttt{ “\+Hello, Elektra” example}}. \+\_\+(René Schwaiger)\+\_\+
+\item Expanded the Python Tutorial to cover installation under Alpine Linux. \+\_\+(\+Philipp Gackstatter)\+\_\+
+\item We wrote a tutorial which is intended to \mbox{\hyperlink{doc_tutorials_contributing-clion_md}{help newcomers contributing to libelektra}}. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\item We fixed various broken links in the documentation. \+\_\+(René Schwaiger)\+\_\+
+\item Fix finding of jni.\+h library. \+\_\+(\+Dmytro Moiseiuk)\+\_\+
+\item Added license for asciinema. \+\_\+(Anastasia @nastiaulian)\+\_\+
+\item We incorporated \href{https://github.com/ElektraInitiative/libelektra/blob/5f6e902af5ac8f4c4228fc0859b7ecef7707bbfb/doc/help/kdb-introduction.md}{\texttt{ {\ttfamily kdb-\/introduction}}} into the \href{https://www.libelektra.org/man-pages/kdb}{\texttt{ man page for {\ttfamily kdb}}} \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3609}{}\doxysection{Tests}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3609}
+
+\begin{DoxyItemize}
+\item We now test the \href{https://www.libelektra.org/plugins/directoryvalue}{\texttt{ Directory Value Plugin}} with additional test data. \+\_\+(René Schwaiger)\+\_\+
+\item The variables\+:
+\begin{DoxyItemize}
+\item {\ttfamily SPEC\+\_\+\+FOLDER}
+\item {\ttfamily SYSTEM\+\_\+\+FOLDER}
+\item {\ttfamily USER\+\_\+\+FOLDER}
+\end{DoxyItemize}
+
+in the inclusion file for shell test were set incorrectly, if the repository path contained space characters. \+\_\+(René Schwaiger)\+\_\+
+\item The \href{https://master.libelektra.org/tests/cframework}{\texttt{ CFramework}} now also compares the names of meta keys. \+\_\+(René Schwaiger)\+\_\+
+\item The release notes check does not report an illegal number anymore, if the release notes were not updated at all. \+\_\+(René Schwaiger)\+\_\+
+\item We added a test for the keyhelper-\/class which checks if rebase\+Path calculates the new path for cascading target-\/keys correctly. \+\_\+(\+Thomas Bretterbauer)\+\_\+
+\item Enable MSR for the crypto and fcrypt tutorial (\href{https://github.com/ElektraInitiative/libelektra/issues/1981}{\texttt{ \#1981}}).\+\_\+(\+Peter Nirschl)\+\_\+
+\item We fixed the \href{https://master.libelektra.org/tests/shell/shell_recorder/tutorial_wrapper}{\texttt{ Markdown Shell Recorder}} test for the command \mbox{\hyperlink{doc_help_kdb-get_md}{\`{}kdb get\`{}}}. \+\_\+(René Schwaiger)\+\_\+
+\item The tests
+\begin{DoxyItemize}
+\item \`{}testscr\+\_\+check\+\_\+real\+\_\+world\`{},
+\item \`{}testscr\+\_\+check\+\_\+resolver\`{}, and
+\item \`{}testscr\+\_\+check\+\_\+spec\`{}
+\end{DoxyItemize}
+
+now also works correctly, if the {\ttfamily user} and {\ttfamily system} directory file paths contain space characters. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3610}{}\doxysubsection{Source Code Checks}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3610}
+
+\begin{DoxyItemize}
+\item The formatting instructions printed by \href{https://master.libelektra.org/tests/shell/check_formatting.sh}{\texttt{ {\ttfamily check\+\_\+formatting}}} now also work correctly, if
+\begin{DoxyItemize}
+\item the {\ttfamily diff} output does not start with the test number added by CTest, and
+\item you use a non-\/\+POSIX shell such as \href{https://fishshell.com}{\texttt{ {\ttfamily fish}}}
+\end{DoxyItemize}
+
+. \+\_\+(René Schwaiger)\+\_\+
+\item We reformatted the CMake source code with cmake-\/format {\ttfamily 0.\+5.\+4} and also check the style of CMake code with this new version of the tool. \+\_\+(René Schwaiger)\+\_\+
+\item We now check the source code of the repository with \href{https://lgtm.com}{\texttt{ LGTM}}. \+\_\+(René Schwaiger)\+\_\+
+\item We fixed various warnings about
+\begin{DoxyItemize}
+\item missing or duplicated include guards,
+\item undefined behavior,
+\item incorrect format specifiers,
+\item unnecessary statements,
+\item short names for global variables, and
+\item empty {\ttfamily if}-\/statements
+\end{DoxyItemize}
+
+reported by \href{https://lgtm.com}{\texttt{ LGTM}}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3611}{}\doxysection{Build}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3611}
+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3612}{}\doxysubsection{CMake}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3612}
+
+\begin{DoxyItemize}
+\item We now disable the option {\ttfamily INSTALL\+\_\+\+SYSTEM\+\_\+\+FILES} by default. This change makes it possible to install Elektra using \href{https://brew.sh}{\texttt{ Homebrew}} on Linux without any changes to \href{https://github.com/Homebrew/linuxbrew-core/blob/master/Formula/elektra.rb}{\texttt{ Elektra’s Linuxbrew formula}}. \+\_\+(René Schwaiger)\+\_\+ Add {\ttfamily -\/DINSTALL\+\_\+\+SYSTEM\+\_\+\+FILES=ON} for previous behavior.
+\item The build system now rebuilds the \href{https://www.libelektra.org/bindings/jna}{\texttt{ JNA binding}} with Maven, if you change any of the Java source files of the binding. \+\_\+(René Schwaiger)\+\_\+
+\item {\ttfamily testshell\+\_\+markdown\+\_\+tutorial\+\_\+crypto} is not compiled and executed if {\ttfamily gen-\/gpg-\/testkey} is not part of TOOLS. \+\_\+(\+Peter Nirschl)\+\_\+
+\item Plugin tests are now only added, if {\ttfamily BUILD\+\_\+\+TESTING=ON}. \+\_\+(Klemens Böswirth)\+\_\+
+\item The symbol list for the static version is now exported directly from a CMake function. \+\_\+(Klemens Böswirth)\+\_\+
+\item Building Elektra with enabled \`{}io\+\_\+glib\`{} binding does not require libuv anymore. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3613}{}\doxysubsection{Docker}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3613}
+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3614}{}\doxysubsubsection{Alpine Linux}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3614}
+
+\begin{DoxyItemize}
+\item Our Docker image for Alpine Linux now uses the base image for Alpine Linux 3.\+9. \+\_\+(René Schwaiger)\+\_\+
+\item We added PEGTL to the Alpine Docker image. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3615}{}\doxysubsubsection{Debian}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3615}
+
+\begin{DoxyItemize}
+\item We now use the default JDK on Debian sid, since the package {\ttfamily openjdk-\/8-\/jdk} is not available in the official unstable repositories anymore. \+\_\+(René Schwaiger)\+\_\+
+\item We added
+\begin{DoxyItemize}
+\item \href{https://www.gnu.org/software/bison/}{\texttt{ Bison}}, and
+\item YAEP
+\end{DoxyItemize}
+
+to the image for Debian sid. \+\_\+(René Schwaiger)\+\_\+
+\item We now offer images for the latest stable version of Debian codenamed “buster”. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3616}{}\doxysubsubsection{Ubuntu}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3616}
+
+\begin{DoxyItemize}
+\item We added a Dockerfile for Ubuntu Disco Dingo. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3617}{}\doxysubsubsection{Other Updates}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3617}
+
+\begin{DoxyItemize}
+\item The Docker images for
+\begin{DoxyItemize}
+\item \href{https://git.libelektra.org/blob/799fecd94dcb482ea9338facaf63d39f8e5ab5bd/scripts/docker/debian/stretch/Dockerfile}{\texttt{ Debian stretch}}, and
+\item Debian sid,
+\end{DoxyItemize}
+
+now include the Python YAML library recommended by \href{https://github.com/cheshirekow/cmake_format}{\texttt{ cmake-\/format}}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3618}{}\doxysubsection{Vagrant}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3618}
+
+\begin{DoxyItemize}
+\item The Vagrant file for Ubuntu Artful Aardvark now installs the Python YAML library recommended by \href{https://github.com/cheshirekow/cmake_format}{\texttt{ cmake-\/format}}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3619}{}\doxysection{Infrastructure}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3619}
+\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3620}{}\doxysubsection{Cirrus}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3620}
+
+\begin{DoxyItemize}
+\item We added the build job {\ttfamily 🔗 Check}, which checks the documentation for broken links. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3621}{}\doxysubsection{Jenkins}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3621}
+
+\begin{DoxyItemize}
+\item We disabled the tests\+:
+\begin{DoxyItemize}
+\item {\ttfamily testmod\+\_\+crypto\+\_\+botan},
+\item {\ttfamily testmod\+\_\+crypto\+\_\+openssl},
+\item {\ttfamily testmod\+\_\+dbus},
+\item {\ttfamily testmod\+\_\+dbusrecv},
+\item {\ttfamily testmod\+\_\+fcrypt},
+\item {\ttfamily testmod\+\_\+gpgme}, and
+\item {\ttfamily testmod\+\_\+zeromqsend}
+\end{DoxyItemize}
+
+, since they are \href{https://issues.libelektra.org/2439}{\texttt{ known to fail in high load scenarios}}. \+\_\+(René Schwaiger)\+\_\+
+\item We added deprecated plugins to the tests. \+\_\+(\+Markus Raab)\+\_\+
+\item We increased the automatic timeout for jobs that show no activity from 5 to 10 minutes. \+\_\+(René Schwaiger)\+\_\+
+\item We improved the exclusion patterns for the \href{https://coveralls.io/github/ElektraInitiative/libelektra}{\texttt{ Coveralls coverage analysis}}. \+\_\+(René Schwaiger)\+\_\+
+\item We now again build the API documentation of \href{https://doc.libelektra.org/api/master}{\texttt{ master}} and we now also build the API documentation of \href{https://doc.libelektra.org/api/pr/}{\texttt{ PRs}}. \+\_\+(\+Markus Raab)\+\_\+
+\item We added buster build jobs. \+\_\+(\+Markus Raab)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3622}{}\doxysubsection{Restyled}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3622}
+
+\begin{DoxyItemize}
+\item We added a configuration file for \href{https://restyled.io}{\texttt{ Restyled}}. Currently \href{https://restyled.io}{\texttt{ Restyled}} monitors changes to Shell code in pull requests and fixes code that does not fit the \mbox{\hyperlink{doc_CODING_md}{coding guideline}}, by adding additional formatting commit to PRs. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3623}{}\doxysubsection{Travis}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3623}
+
+\begin{DoxyItemize}
+\item We removed the build job for the Haskell binding and Haskell plugin. For more information, please take a look \href{https://issues.libelektra.org/2751}{\texttt{ here}}. \+\_\+(Klemens Böswirth)\+\_\+
+\item We always use GCC 9 for the build job {\ttfamily 🍏 GCC}. This update makes sure that the build job succeeds, even if Homebrew adds a new major version of the compiler. \+\_\+(René Schwaiger)\+\_\+
+\item We simplified our Travis configuration file, removing various unnecessary and unused code. In this process we also got rid of the caching directives, we previously used to speed up the Haskell build job {\ttfamily 🍏 Haskell}. \+\_\+(René Schwaiger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3624}{}\doxysection{Website}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3624}
+The website is generated from the repository, so all information about plugins, bindings and tools are always up-\/to-\/date. Furthermore, we changed\+:
+
+
+\begin{DoxyItemize}
+\item Our entry for Elektra has been approved in the Free Software Directory\+: \href{https://directory.fsf.org/wiki/Elektra}{\texttt{ https\+://directory.\+fsf.\+org/wiki/\+Elektra}}
+\item Added Git\+Hub build status badges to website \+\_\+(hesirui)\+\_\+
+\item We updated part of a test for the \href{https://www.libelektra.org/conversion}{\texttt{ snippet converter}}. \+\_\+(René Schwaiger)\+\_\+
+\item Fixed anchor links on the website \+\_\+(hesirui)\+\_\+
+\item Added Docsearch in top-\/bar of website \+\_\+(hesirui)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3625}{}\doxysection{Outlook}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3625}
+We are currently working on following topics\+:
+
+
+\begin{DoxyItemize}
+\item Go bindings and improved Web-\/\+UI \+\_\+(\+Raphael Gruber)\+\_\+
+\item semantic 3-\/way merging \+\_\+(\+Dominic Jaeger)\+\_\+
+\item improved error handling \+\_\+(\+Michael Zronek)\+\_\+
+\item Rust bindings \+\_\+(\+Philipp Gackstatter)\+\_\+
+\item elektrify LCDproc \+\_\+(Klemens Böswirth)\+\_\+ and \+\_\+(\+Jakob Fischer)\+\_\+
+\item configuration upgrades \+\_\+(\+Lukas Kilian)\+\_\+
+\item default storage \+\_\+(René Schwaiger)\+\_\+ and \+\_\+(\+Jakob Fischer)\+\_\+
+\item shell completion \+\_\+(Ulrike Schäfer)\+\_\+
+\item improved developer experience \+\_\+(\+Hani Torabi)\+\_\+
+\item Ansible bindings \+\_\+(\+Thomas Waser)\+\_\+
+\item misconfiguration tracker \+\_\+(\+Vanessa Kos)\+\_\+
+\item plugin interface improvements \+\_\+(\+Vid Leskovar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3626}{}\doxysection{Statistics}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3626}
+About 40 authors changed 1278 files with 49409 insertions(+) and 13883 deletions(-\/) in 2025 commits.
+
+We closed \href{https://github.com/ElektraInitiative/libelektra/milestone/20?closed=1}{\texttt{ 114 issues}} for this release.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3627}{}\doxysection{Join the Initiative!}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3627}
+We welcome new contributors! Read \href{https://www.libelektra.org/devgettingstarted/ideas}{\texttt{ here}} about how to get started.
+
+As first step, you could give us feedback about these release notes. Contact us via our \href{https://issues.libelektra.org}{\texttt{ issue tracker}}.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3628}{}\doxysection{Get the Release!}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3628}
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.9.0.tar.gz}{\texttt{ here}} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.9.0.tar.gz?raw=true}{\texttt{ Git\+Hub}}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.9.0.tar.gz.hashsum?raw=true}{\texttt{ hashsums are\+:}}
+
+
+\begin{DoxyItemize}
+\item name\+: /home/markus/elektra-\/0.9.\+0.\+tar.\+gz
+\item size\+: 7390149
+\item md5sum\+: 5cf9935515aba0567d6014a3693e415a
+\item sha1\+: 05ebe99c87b89a7cac58bf45cd3aff200cc1fd8d
+\item sha256\+: fcdbd1a148af91e2933d9a797def17d386a17006f629d5146020fe3b1b51ddd8
+\end{DoxyItemize}
+
+The release tarball is also available signed by Markus Raab using Gnu\+PG from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.9.0.tar.gz.gpg}{\texttt{ here}} or on \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.9.0.tar.gz.gpg?raw=true}{\texttt{ Git\+Hub}}
+
+Already built API documentation can be found \href{https://doc.libelektra.org/api/0.9.0/html/}{\texttt{ here}} or on \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.9.0}{\texttt{ Git\+Hub}}.\hypertarget{doc_news_2019-08-06_0_9_0_md_autotoc_md3629}{}\doxysection{Stay tuned!}\label{doc_news_2019-08-06_0_9_0_md_autotoc_md3629}
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\texttt{ RSS feed}} to always get the release notifications.
+
+If you also want to participate, or for any questions and comments please contact us via our issue tracker \href{http://issues.libelektra.org}{\texttt{ on Git\+Hub}}.
+
+\href{https://www.libelektra.org/news/0.9.0-release}{\texttt{ Permalink to this NEWS entry}}
+
+For more information, see \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\texttt{ Elektra Initiative}} 

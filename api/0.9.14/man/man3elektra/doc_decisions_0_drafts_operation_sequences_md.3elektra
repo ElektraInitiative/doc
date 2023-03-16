@@ -1,0 +1,262 @@
+.TH "doc_decisions_0_drafts_operation_sequences_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_0_drafts_operation_sequences_md \- Operation sequences 
+ 
+.SH "Problem"
+.PP
+The current public API allows various kind of sequences of \fCkdbGet\fP and \fCkdbSet\fP calls\&. There is no real guideline of allowed and/or prohibited sequences, other than \fCkdbGet\fP for a certain parent key must be called before \fCkdbSet\fP:
+.PP
+.IP "\(bu" 2
+initially after \fCkdbOpen\fP
+.IP "\(bu" 2
+after conflict errors in \fCkdbSet\fP
+.PP
+.PP
+We discovered that some sequences are currently legal but problematic for change tracking and maybe also other use cases\&.
+.PP
+Currently, notification plugins assume that a \fCkdbSet\fP operation for a certain parent key always directly follows the \fCkdbGet\fP operation for that same key\&. However, this is not enforced in any way within Elektra, nor is it documented that it should\&.
+.PP
+In applications, \fCkdbGet\fP and \fCkdbSet\fP of different parent keys might be interwoven in any way\&. This is problematic, as plugins may store the result of \fCkdbGet\fP and use the stored data in the following \fCkdbSet\fP to calculate a changeset\&. Plugins have to do this, as there isn't any other Elektra-provided mechanism currently to do change tracking for them\&.
+.PP
+Note, that erroneous behavior only occurs if plugins are used globally, i\&.e\&. as \fCnotification-send\fP hook plugins\&. If they are mounted for specific backends (via \fCkdb mount\fP), this behavior will not occur as plugins from different backends are isolated\&.
+.SS "Reproducible Example"
+The following example will demonstrate the problematic sequence as real, runnable code\&. This example will show the erroneous behavior for the \fCdbus\fP and \fClogchange\fP plugins, if used as \fCnotification-send\fP hooks\&. These both plugins just serve as a general demonstration, and there may be more plugins that do change tracking this way\&.
+.PP
+First, run some setup steps:
+.PP
+.PP
+.nf
+# enable the dbus plugin as a notification-send hook
+kdb set system:/elektra/hook/notification/send/plugins/#0 dbus
+
+# enable the logchange plugin as a notification-send hook
+kdb set system:/elektra/hook/notification/send/plugins/#1 logchange
+
+# mount user:/a and user:/b as two backends
+kdb mount a\&.ecf user:/a
+kdb mount b\&.ecf user:/b
+
+# populate user:/a and user:/b with values
+kdb set user:/a/brightness 1
+kdb set user:/a/saturation 1
+kdb set user:/b/foreground 1
+kdb set user:/b/background 1
+.fi
+.PP
+.PP
+Then, run the following command to monitor the notifications by the \fCdbus\fP plugins:
+.PP
+.PP
+.nf
+dbus-monitor --session type='signal',interface='org\&.libelektra'
+.fi
+.PP
+.PP
+Finally, execute the following program:
+.PP
+.PP
+.nf
+#include <kdb\&.h>
+#include <stdio\&.h>
+
+int main (void)
+{
+        Key * root = keyNew ("/", KEY_END);
+        KDB * handle = kdbOpen (NULL, root);
+
+        Key * keyA = keyNew ("user:/a", KEY_END);
+        Key * keyB = keyNew ("user:/b", KEY_END);
+
+        KeySet * a = ksNew (0, KS_END);
+        KeySet * b = ksNew (0, KS_END);
+
+        kdbGet (handle, a, keyA);  // (A)
+        kdbGet (handle, b, keyB);  // (B)
+
+        // we need to change *something*, otherwise the backend would assume nothing changed
+        // and never even execute all of kdbSet
+        ksAppendKey (a, keyNew ("user:/a/test", KEY_VALUE, "hi", KEY_END));
+
+        kdbSet (handle, a, keyA);  // (C)
+
+        ksDel (a);
+        ksDel (b);
+        keyDel (keyA);
+        keyDel (keyB);
+        keyDel (root);
+
+        kdbClose (handle, 0);
+        return 0;
+}
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+At point \fC(A)\fP the plugins internally store the data below the parent \fCkeyA\fP\&.
+.IP "\(bu" 2
+At point \fC(B)\fP the same thing happens for the data below the parent \fCkeyB\fP\&. This \fBreplaces\fP the data from \fC(A)\fP\&.
+.IP "\(bu" 2
+At point \fC(C)\fP plugins that do change tracking need to generate a changeset\&. The changeset will be calculated between the stored data and the new data in the KeySet \fCa\fP\&. Because the stored data is now from \fC(B)\fP and \fBnot\fP from \fC(A)\fP, this changeset will be wrong\&. The calculation will wrongly assume everything in KeySet \fCb\fP was removed and everything in KeySet \fCa\fP is newly added\&.
+.PP
+.PP
+Right after \fC(B)\fP, the two keysets are filled with the following values:
+.PP
+\fCa\fP   \fCb\fP    \fCuser:/a/brightness\fP   \fCuser:/b/background\fP    \fCuser:/a/saturation\fP   \fCuser:/b/foreground\fP   
+.PP
+If a plugin calculates a changeset during \fCkdbSet\fP by comparing to the \fCKeySet\fP from the last \fCkdbGet\fP (as described above), the plugin will wrongly calculate the following changeset at \fC(C)\fP:
+.PP
+Added Keys   Removed Keys   Modified Keys    \fCuser:/a/brightness\fP   \fCuser:/b/background\fP   \fCuser:/a/saturation\fP   \fCuser:/b/foreground\fP   \fCuser:/a/test\fP   
+.PP
+This is obviously wrong\&. Looking at the example above, the changeset should only contain \fCuser:/a/test\fP, as nothing else has been changed in keyset \fCa\fP\&. So the correct changeset should look like:
+.PP
+Added Keys   Removed Keys   Modified Keys    \fCuser:/a/test\fP   
+.PP
+The erroneous behavior can be noticed by the output of \fCdbus-monitor\fP:
+.PP
+.PP
+.nf
+signal time=1666993066\&.749997 sender=:1\&.364 -> destination=(null destination) serial=2 path=/org/libelektra/configuration; interface=org\&.libelektra; member=KeyAdded
+   string "user:/a/brightness"
+signal time=1666993066\&.750161 sender=:1\&.364 -> destination=(null destination) serial=3 path=/org/libelektra/configuration; interface=org\&.libelektra; member=KeyAdded
+   string "user:/a/saturation"
+signal time=1666993066\&.750551 sender=:1\&.364 -> destination=(null destination) serial=4 path=/org/libelektra/configuration; interface=org\&.libelektra; member=KeyAdded
+   string "user:/a/test"
+signal time=1666993066\&.750628 sender=:1\&.364 -> destination=(null destination) serial=5 path=/org/libelektra/configuration; interface=org\&.libelektra; member=KeyDeleted
+   string "user:/b/background"
+signal time=1666993066\&.750866 sender=:1\&.364 -> destination=(null destination) serial=6 path=/org/libelektra/configuration; interface=org\&.libelektra; member=KeyDeleted
+   string "user:/b/foreground"
+.fi
+.PP
+.PP
+The same behavior is present in the \fClogchange\fP plugin\&. Notice its output onto \fCstdout\fP:
+.PP
+.PP
+.nf
+added key: user:/a/brightness
+added key: user:/a/saturation
+added key: user:/a/test
+removed key: user:/b/background
+removed key: user:/b/foreground
+.fi
+.PP
+.PP
+As can be seen, the change tracking within the \fCdbus\fP and \fClogchange\fP plugins wrongly calculates everything below \fCuser:/a\fP are new keys that have been added, and everything below \fCuser:/b\fP was removed\&.
+.SH "Constraints"
+.PP
+.IP "1." 4
+As far as possible, we must check for illegal sequences and raise an error when an illegal sequence occurs
+.PP
+.SH "Assumptions"
+.PP
+1\&. 2\&. 3\&.
+.SH "Considered Alternatives"
+.PP
+.IP "1." 4
+Document which sequences are allowed without raising errors in all illegal cases\&. Least-effort approach, but at least offers some transparency for developers\&. Developers utilizing Elektra can still ignore it, and may cause problems in certain setups without knowing\&.
+.PP
+(Violates constraint 1)
+.IP "2." 4
+Enforce that the \fCparentKey\fP used in \fCkdbSet\fP is below the one used in the last \fCkdbGet\fP\&. If this is not the case, \fCkdbSet\fP will abort and report an error in \fCparentKey\fP\&. Developers might still wrongly mix the sequences, but they will get an error and have to fix it\&.
+.IP "  \(bu" 4
+Adding a \fCKey * lastGetParent\fP to \fCstruct _KDB\fP
+.IP "  \(bu" 4
+Doing \fCkeyCopy (handle->lastGetParent, parentKey, KEY_CP_NAME)\fP in \fCkdbGet\fP
+.IP "  \(bu" 4
+And checking \fCkeyIsSameOrBelow (handle->lastGetParent, parentKey) == 1\fP in \fCkdbSet\fP
+.PP
+
+.PP
+.PP
+.PP
+.nf
+KDB * kdb = \&.\&.\&.;
+
+Key * keyA = \&.\&.\&.;
+Key * keyB = \&.\&.\&.;
+
+KeySet * a = \&.\&.\&.;
+KeySet * b = \&.\&.\&.;
+
+// These sequences will work fine
+assert (kdbGet (kdb, a, keyA) == 0);
+assert (kdbSet (kdb, a, keyA) == 0);
+assert (kdbGet (kdb, b, keyB) == 0);
+assert (kdbSet (kdb, b, keyB) == 0);
+
+// These will not
+assert (kdbGet (kdb, a, keyA) == 0);
+assert (kdbGet (kdb, b, keyB) == 0);
+assert (kdbSet (kdb, a, keyA) == -1); // Error! keyA is different from last used key in kdbGet (keyB)
+.fi
+.PP
+.PP
+.IP "3." 4
+Enforce that \fCks\fP used in \fCkdbSet\fP is the same as in the last \fCkdbGet\fP Similar to (2), but we check for the pointer of the \fCKeySet\fP instead of having a copy of the parent key, which saves some memory\&.
+.IP "  \(bu" 4
+Adding a \fCKeySet * lastGetKs\fP to \fCstruct _KDB\fP
+.IP "  \(bu" 4
+Doing \fChandle->lastGetKs = ks\fP in \fCkdbGet\fP
+.IP "  \(bu" 4
+And checking \fClastGetKs == ks\fP in \fCkdbSet\fP
+.PP
+
+.IP "4." 4
+Change the API so that a single instance of KDB can only contain a single instance of a \fCKeySet\fP\&. This solution completely eliminates problematic sequences\&.
+.PP
+.PP
+.PP
+.nf
+// same as before but uses handle->data instead of the ks argument
+int kdbGet (KDB * handle, Key * parentKey);
+// same as before but uses handle->data instead of the ks argument
+int kdbSet (KDB * handle, Key * parentKey);
+
+KeySet * kdbData (KDB * handle) {
+    return handle->data;
+}
+.fi
+.PP
+.PP
+.IP "5." 4
+Allow arbitrary sequences and let each plugin deal with it on a case-by-case basis\&. This alternative would put most of the burden onto the plugin authors\&. Depending on what the plugins do, every plugin may also need to deep-dup every keyset of every parent it ever receives via \fCkdbGet\fP\&. This will increase memory usage\&. However, this could be paired with the \fBCOW semantics\fP so the memory toll would not be that big of a deal\&. The biggest problem with this approach would be the unnecessary duplication of the non-trivial change tracking algorithm\&.
+.IP "6." 4
+Don't restrict sequences further and provide a common framework to handle change tracking correctly\&.
+.PP
+As the problem has only been observed with plugins doing their own change tracking, we could provide a general change tracking framework within Elektra\&. This way, we have only one such algorithm in a central place, and plugin authors don't have to think about the sequences their plugins are called by developers\&.
+.PP
+This approach can also be paired with \fBCOW semantics\fP, so that memory toll will be kept low\&. A separate \fBdecision for change tracking\fP is currently in progress\&.
+.PP
+Should we observe this problem with use cases other than change tracking, we can provide general frameworks for those too\&.
+.PP
+.SH "Decision"
+.PP
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+
+.IP "\(bu" 2
+
+.IP "\(bu" 2
+
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBChange Tracking\fP
+.IP "\(bu" 2
+\fBInternal KeySet Cache\fP
+.IP "\(bu" 2
+[](\fBdoc_decisions_0_drafts__README_md\fP)
+.PP
+.SH "Notes"
+.PP
+.IP "\(bu" 2
+Issue \fC#4514\fP uncovered a problem in the current change tracking approach relating to sequences of \fCkdbGet\fP and \fCkdbSet\fP
+.IP "\(bu" 2
+Issue \fC#4512\fP explored some possible solutions 
+.PP
+

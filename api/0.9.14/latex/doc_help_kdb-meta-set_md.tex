@@ -1,0 +1,55 @@
+\label{doc_help_kdb-meta-set_md_md_doc_help_kdb_meta_set}%
+\Hypertarget{doc_help_kdb-meta-set_md_md_doc_help_kdb_meta_set}%
+ \hypertarget{doc_help_kdb-meta-set_md_autotoc_md2953}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-meta-set_md_autotoc_md2953}
+{\ttfamily kdb meta-\/set $<$key name$>$ $<$metaname$>$ \mbox{[}$<$metavalue$>$\mbox{]}}
+
+Where {\ttfamily key name} is the name of the key that the metakey is associated with, {\ttfamily metaname} is the name of the metakey the user would like to set the value of (or create), and {\ttfamily metavalue} is the value the user wishes to set the metakey to. If no {\ttfamily metavalue} is given, the metakey will be removed.\hypertarget{doc_help_kdb-meta-set_md_autotoc_md2954}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-meta-set_md_autotoc_md2954}
+This command allows the user to set the value of an individual metakey. If a (non-\/cascading) key does not already exist and the user tries setting a metakey associated with it, the key will be created with a null value. If a cascading key is given that does not resolve to an actual key, the operation is aborted.
+
+There is some special handling for the metadata atime, mtime and ctime. They will be converted to time\+\_\+t.\hypertarget{doc_help_kdb-meta-set_md_autotoc_md2955}{}\doxysection{OPTIONS}\label{doc_help_kdb-meta-set_md_autotoc_md2955}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional debug information in case of errors/warnings.
+\item {\ttfamily -\/q}, {\ttfamily -\/-\/quiet}\+: Suppress non-\/error messages.
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: Do not perform cascading KDB operations if the key provided has a namespace. For example, this bypasses validation specified in the spec\+: namespace for the given key.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-meta-set_md_autotoc_md2956}{}\doxysection{KDB}\label{doc_help_kdb-meta-set_md_autotoc_md2956}
+
+\begin{DoxyItemize}
+\item {\ttfamily /sw/elektra/kdb/\#0/current/verbose}\+: Same as {\ttfamily -\/v}\+: Explain what is happening.
+\item {\ttfamily /sw/elektra/kdb/\#0/current/quiet}\+: Same as {\ttfamily -\/q}\+: Suppress default messages.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-meta-set_md_autotoc_md2957}{}\doxysection{EXAMPLES}\label{doc_help_kdb-meta-set_md_autotoc_md2957}
+To set a metakey called {\ttfamily description} associated with the key {\ttfamily user\+:/example/key} to the value {\ttfamily Hello World!}\+:~\newline
+ {\ttfamily kdb meta-\/set spec\+:/example/key description \char`\"{}\+Hello World!\char`\"{}}
+
+To create a new key {\ttfamily spec\+:/example/newkey} with a null value (if it did not exist before) and a metakey {\ttfamily namespace/\#0} associated with it to the value {\ttfamily system}\+:~\newline
+ {\ttfamily kdb meta-\/set /example/newkey \char`\"{}namespace/\#0\char`\"{} system}
+
+To create an override link for a {\ttfamily /test} key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set /overrides/test "{}example override"{}}
+\DoxyCodeLine{sudo kdb meta-\/set spec:/test override/\#0 /overrides/test}
+
+\end{DoxyCode}
+
+
+To remove it\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb meta-\/set spec:/test override/\#0}
+
+\end{DoxyCode}
+\hypertarget{doc_help_kdb-meta-set_md_autotoc_md2958}{}\doxysection{SEE ALSO}\label{doc_help_kdb-meta-set_md_autotoc_md2958}
+
+\begin{DoxyItemize}
+\item How to get metadata\+: \mbox{\hyperlink{doc_help_kdb-meta-get_md}{kdb-\/meta-\/get(1)}}
+\item \mbox{\hyperlink{doc_help_elektra-metadata_md}{elektra-\/metadata(7)}} for an explanation of the metadata concepts.
+\item \mbox{\hyperlink{doc_help_elektra-key-names_md}{elektra-\/key-\/names(7)}} for an explanation of key names. 
+\end{DoxyItemize}

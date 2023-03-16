@@ -1,0 +1,107 @@
+.TH "md_src_plugins_path_README" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_path_README \- Plugin: path 
+
+.IP "\(bu" 2
+infos = Information about path plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/status = maintained nodep libc nodoc
+.IP "\(bu" 2
+infos/metadata = check/path check/path/mode check/path/user
+.IP "\(bu" 2
+infos/description = Checks if keys enriched with appropriate metadata contain valid paths as values as well as correct permissions
+.PP
+.SH "Introduction"
+.PP
+This plugin checks whether the value of a key is a valid file system path and optionally if correct permissions are set for a certain user\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-extra\fP\&.
+.SH "Purpose"
+.PP
+The motivation to write this plugin is given by the two paths that exist in /etc/fstab: the device file and the mountpoint\&. A missing file is not necessarily an error, because the device file may appear later when a device is plugged in and the mountpoint may be there when another subsequent mount was executed\&. So only warnings are yielded in that case\&. One situation, however, presents an error: Only an absolute path is allowed to occur for both device and mountpoint\&. When checking for relative files, it is not enough to look at the first character if it is a \fC/\fP, because remote file systems and some special names are valid, too\&.
+.PP
+If \fCcheck/path/mode = <permission>\fP is also present it will check for the correct permissions of the file/directory\&. Optionally, you can also add \fCcheck/path/user = <user>"\fP which then checks the permissions for the given user\&. When calling \fCkdb set\fP on the actual key, you have to run as \fCroot\fP user or the file permissions cannot be checked (you will receive an error message)\&. It is also possible to leave the \fCcheck/path/user\fP empty (just provide an empty string) which then takes the executing user as target to check\&. So for example \fCsudo kdb set \&.\&.\&.\fP will check if \fCroot\fP can access the target file/directory whereas \fCkdb set \&.\&.\&.\fP will take the current executing process/user\&. If \fCcheck/path/user\fP is not given at all, the plugin will check accessibility for the \fCroot\fP user only (which again requires \fCsudo\fP)
+.PP
+\fCcheck/path/mode = rw\fP and \fCcheck/path/user = tomcat\fP for example will check if the user \fCtomcat\fP has read and write access to the path which was set for the key\&. Please note that the file has to exist already and it is not checked if the user has the right to create a file in the directory\&.
+.PP
+Permissions available:
+.PP
+.IP "\(bu" 2
+\fCr\fP: **R**ead
+.IP "\(bu" 2
+\fCw\fP: **W**rite
+.IP "\(bu" 2
+\fCx\fP: e**X**ecute
+.PP
+.SH "Usage"
+.PP
+If the metakey \fCcheck/path\fP is present, it is checked if the value is a valid absolute file system path\&. If a metavalue is present, an additional check will be done if it is a directory or device file\&.
+.SH "Examples"
+.PP
+An example on which the user should have no permission at all for the root directory\&.
+.PP
+.PP
+.nf
+sudo kdb mount test\&.dump user:/tests path dump
+sudo kdb set user:/tests/path "$HOME"
+sudo kdb meta-set user:/tests/path check/path ""
+sudo kdb meta-set user:/tests/path check/path/user ""
+sudo kdb meta-set user:/tests/path check/path/mode "rw"
+
+# Standard users should not be able to read/write the root folder
+[ $(id -u) = 0 ] && printf >&2 'User is root\n' || kdb set user:/tests/path "/root"
+# STDERR: User is root|\&.*C03200\&.*
+
+# Set something which the current user can access for sure
+kdb set user:/tests/path "$HOME"
+# STDOUT-REGEX: \&.*Set string to "/\&.*"\&.*
+
+#cleanup
+sudo kdb rm -r user:/tests
+sudo kdb umount user:/tests
+.fi
+.PP
+.PP
+An example where part of the permissions are missing for a tmp file
+.PP
+.PP
+.nf
+sudo kdb mount test\&.dump user:/tests path dump
+sudo kdb set user:/tests/path "$HOME"
+sudo kdb meta-set user:/tests/path check/path ""
+sudo kdb meta-set user:/tests/path check/path/user ""
+sudo kdb meta-set user:/tests/path check/path/mode "rwx"
+
+# Standard users should not be able to read/write the root folder
+kdb set user:/tests/path/tempfile $(mktemp)
+chmod +rw `kdb get user:/tests/path/tempfile`
+kdb set user:/tests/path `kdb get user:/tests/path/tempfile`
+# ERROR:C03200
+
+# Set something which the current user can access for sure
+chmod +x `kdb get user:/tests/path/tempfile`
+kdb set user:/tests/path `kdb get user:/tests/path/tempfile`
+# STDOUT-REGEX: Set string to "/\&.*"\&.*
+
+#cleanup
+sudo rm -rf `kdb get user:/tests/path/tempfile`
+sudo kdb rm -r user:/tests
+sudo kdb umount user:/tests
+.fi
+.PP
+.SH "Future work"
+.PP
+Add a check which ensures that the given path is a file/directory/symbolic link/hard link/etc\&. 

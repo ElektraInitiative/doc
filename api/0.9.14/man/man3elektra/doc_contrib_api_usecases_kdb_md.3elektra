@@ -1,0 +1,29 @@
+.TH "doc_contrib_api_usecases_kdb_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_contrib_api_usecases_kdb_md \- API based on use cases for KDB 
+ 
+.SH "Get configuration"
+.PP
+In \fClibelektra-kdb\fP this use case is directly implemented as the \fC\fBkdbGet()\fP\fP function\&. The API has the additional precondition, that \fC\fBkdbOpen()\fP\fP was used to create a \fCKDB\fP instance and that a \fCKeySet\fP exists into which the configuration will be loaded\&.
+.PP
+The use case is also implemented by \fClibelektra-highlevel\fP\&. However, it is not a direct mapping\&. Instead, the \fC\fBelektraOpen()\fP\fP function takes care of loading configuration, which can then be accessed key by key via the \fCelektraGet*()\fP function family\&.
+.SH "Set configuration"
+.PP
+In \fClibelektra-kdb\fP this use case is directly implemented as the \fC\fBkdbSet()\fP\fP function\&. The API has the additional precondition, that the current configuration has been loaded (at least once) via \fC\fBkdbGet()\fP\fP using the same \fCKDB\fP instance\&. Even though \fC\fBkdbGet()\fP\fP must be called, the entire configuration can be overwritten via \fC\fBkdbSet()\fP\fP as described in the use case\&.
+.SH "Modify configuration"
+.PP
+In \fClibelektra-kdb\fP this use case is directly implemented as the \fC\fBkdbSet()\fP\fP function\&.
+.PP
+The use case is also implemented by \fClibelektra-highlevel\fP\&. After loading the configuration via \fC\fBelektraOpen()\fP\fP, the \fCelektraSet*()\fP function family can be used to change individual configuration values (key by key)\&.
+.SH "Keeping configuration up-to-date"
+.PP
+This use case is implemented by a combination of \fClibelektra-kdb\fP, \fClibelektra-notification\fP and at least one notification hook plugin\&. The notification hook plugin(s) must be enabled via the contract in \fC\fBkdbOpen()\fP\fP\&. Then \fClibelektra-kdb\fP will send update notifications via the notification hook plugin(s)\&.
+.PP
+With the API of \fClibelektra-notification\fP applications can register callbacks to be called, when a notification is received\&.
+.SH "Validating configuration with specification"
+.PP
+This use case is implemented by a combination of \fClibelektra-kdb\fP and the spec hook plugin (normally the \fCspec\fP plugin)\&. The \fCspec\fP plugin is enabled as a spec hook plugin by default, so this use case works out of the box\&.
+.PP
+The main validation logic is implemented in the \fCspec\fP plugin\&. 

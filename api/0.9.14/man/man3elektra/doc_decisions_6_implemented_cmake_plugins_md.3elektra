@@ -1,0 +1,142 @@
+.TH "doc_decisions_6_implemented_cmake_plugins_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_6_implemented_cmake_plugins_md \- CMake Plugins 
+ 
+.SH "Problem"
+.PP
+.IP "\(bu" 2
+plugin names and plugin folders not always exactly match (\fCresolver_*\fP, \fCcrypto_*\fP)
+.IP "\(bu" 2
+plugin should be able to register new variants
+.IP "\(bu" 2
+there should be only one place to define a new plugin
+.IP "\(bu" 2
+multiple categories should be possible per plugin, defined in README\&.md
+.IP "\(bu" 2
+on some OS some plugins won't work (simpleini)
+.IP "\(bu" 2
+some unit tests depend on bindings
+.PP
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+should work with supported CMake
+.IP "\(bu" 2
+It should be easy to add trivial plugins (without dependency and variants)
+.IP "\(bu" 2
+It should be possible to add complex plugins (with dependencies on plugins/unit tests and many variants)
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+have one more mapping that describes folder <-> plugins (bad coherence)
+.IP "\(bu" 2
+directly use README\&.md to also describe CMake deps (too limited in expression)
+.IP "\(bu" 2
+split up AddPlugin\&.cmake and CMakeLists\&.txt (does not work well with variants)
+.IP "\(bu" 2
+simply adding all directories in src/plugins and decide within the \fCadd_plugin\fP if we should drop the plugin (see below in Rationale)
+.PP
+.PP
+Names for flag:
+.PP
+.IP "\(bu" 2
+\fCDEPENDENCIES\fP -> might be used for \fCadd_plugin\fP
+.IP "\(bu" 2
+\fCASSEMBLE_DEPS\fP
+.IP "\(bu" 2
+\fCFIND_DEPS\fP -> not only finding happens
+.IP "\(bu" 2
+\fCPROCESS_DEPS\fP
+.IP "\(bu" 2
+\fCHANDLE_DEPS\fP
+.IP "\(bu" 2
+\fCDEPS_MODE\fP -> too generic, new terminology
+.IP "\(bu" 2
+\fCCHECK_DEPS\fP -> not only checking happens
+.IP "\(bu" 2
+\fCDO_DEPS\fP -> sounds funny
+.IP "\(bu" 2
+\fCFIND_PACKAGES\fP -> not only packages are subject to this phase
+.IP "\(bu" 2
+\fCCOLLECT\fP -> needs NOT
+.IP "\(bu" 2
+\fCFIND_PHASE\fP -> needs NOT
+.IP "\(bu" 2
+\fCDEPENDENCY\fP -> ambiguous
+.PP
+.SH "Decision"
+.PP
+Introduce a CMake process where all plugins are processed three times\&. Following CMake variables are used for the phases:
+.PP
+.IP "\(bu" 2
+\fCCOLLECTION_PHASE\fP \&.\&. collect all \fCadd_plugins\fP
+.IP "\(bu" 2
+\fCDEPENDENCY_PHASE\fP \&.\&. resolve all dependencies, do \fCadd_plugins\fP again
+.IP "\(bu" 2
+\fCADDTESTING_PHASE\fP \&.\&. (reserve for potential 3rd phase)
+.PP
+.IP "1." 4
+Collection phase (\fCCOLLECTION_PHASE\fP is \fCON\fP), add_plugin internally builds up:
+.IP "  \(bu" 4
+\fCADDED_PLUGINS\fP
+.IP "  \(bu" 4
+\fCREMOVED_PLUGINS\fP
+.IP "  \(bu" 4
+\fCADDED_DIRECTORIES\fP
+.PP
+
+.IP "2." 4
+assemble dependency phase (\fCDEPENDENCY_PHASE\fP is \fCON\fP, only considering \fCADDED_DIRECTORIES\fP), with:
+.IP "  \(bu" 4
+\fCfind_libraries\fP, actually search for libraries on the system (only relevant libraries of plugins that are considered for inclusion)
+.IP "  \(bu" 4
+\fCadd_plugin\fP, with \fIactually adding\fP the plugins
+.PP
+
+.IP "3." 4
+assemble all unit tests (\fCADDTESTING_PHASE\fP is \fCON\fP), either
+.IP "  \(bu" 4
+with \fCADD_TEST\fP in \fCadd_plugin\fP, or
+.IP "  \(bu" 4
+with \fCadd_plugintest\fP (for unittests that have dependencies to bindings)
+.PP
+
+.PP
+.SH "Rationale"
+.PP
+Solves all the issues without adding too much complexity for actually adding plugins\&.
+.PP
+Maintaining additional mappings is very time-consuming\&. Simply adding all plugins directories is problematic\&. It would:
+.PP
+.IP "\(bu" 2
+clutter the CMake output (especially in the case of errors)
+.IP "\(bu" 2
+introduce more variables into the CMakeCache which are irrelevant for the user
+.IP "\(bu" 2
+maybe even find libraries in wrong versions which are incompatible to what other plugins need
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+need to adopt all CMakeLists\&.txt
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBPlugin Variants\fP
+.PP
+.SH "Notes"
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+\fCADDED_DIRECTORIES\fP of variants will be kept\&.
+.IP "\(bu" 2
+Typos in plugin names are currently not checked, strings that are not plugin names are simply ignored\&. 
+.PP
+

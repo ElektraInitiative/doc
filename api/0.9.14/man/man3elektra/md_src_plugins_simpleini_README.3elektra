@@ -1,0 +1,92 @@
+.TH "md_src_plugins_simpleini_README" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_simpleini_README \- Plugin: simpleini 
+
+.IP "\(bu" 2
+infos = Information about simpleini plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/properties
+.IP "\(bu" 2
+infos/needs = code binary
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep concept obsolete 3000
+.IP "\(bu" 2
+infos/description = Very simple storage plugin which stores data in a basic properties file format
+.PP
+.SH "Introduction"
+.PP
+This plugin reads and writes files written in a basic line-oriented ini-like format\&. It is very simplistic without sections, the \fBtoml\fP plugin and for specifications the \fBni\fP plugin should be preferred\&. Since the \fCsimpleini\fP plugin requires the GNU C library it \fBwill not work\fP on operating systems that use another C library such as macOS\&.
+.SH "Usage"
+.PP
+It is quite suitable to export configuration if you want line-by-line key, value pairs without sections or metadata\&. (Thus +3000 in status)
+.PP
+.PP
+.nf
+kdb export system:/samba simpleini
+.fi
+.PP
+.SH "Configuration"
+.PP
+The only parameter simpleini supports is \fCformat\fP which allows you to change the syntax of individual lines\&. The \fCformat\fP is a string with any characters where only \fC%\fP has special meaning:
+.PP
+.IP "\(bu" 2
+\fC%\fP in an even number N are escaped and represent N/2 \fC%\fP, e\&.g\&. \fC%%%%\fP are actually \fC%%\fP in the resulting format\&.
+.IP "\(bu" 2
+The first unescaped \fC%\fP represents the key\&.
+.IP "\(bu" 2
+The second unescaped \fC%\fP represents the value\&.
+.PP
+.PP
+The default is \fC% = %\fP\&.
+.PP
+For example, if you want every key to be marked \fC%:key value\fP you would use:
+.PP
+.PP
+.nf
+kdb export -c "format=%%:% %" system:/samba simpleini
+#> %:key value
+#> %:key2 value2
+.fi
+.PP
+.SH "Restrictions"
+.PP
+.IP "\(bu" 2
+Lines in a different format (e\&.g\&. comments) are discarded\&.
+.IP "\(bu" 2
+The order per line must be key and then value: the plugin cannot be used if the value is first
+.IP "\(bu" 2
+Whitespace before and after keynames are trimmed (but not for value)
+.IP "\(bu" 2
+Delimiting symbols cannot be part of the key\&.
+.IP "\(bu" 2
+The last occurrence of the same key wins (others are discarded)\&.
+.IP "\(bu" 2
+The parent Key cannot be used\&.
+.IP "\(bu" 2
+This plugin needs the code and binary plugins\&. A code plugin is used for the escape character for some symbols (but does not respect user-defined \fCformat\fP) and the binary plugin is used to handle binary values\&.
+.PP
+.SH "Examples"
+.PP
+Mount the plugin:
+.PP
+.PP
+.nf
+kdb mount -d /etc/samba/smb\&.conf system:/samba ccode simpleini
+.fi
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+will be excluded in macOS
+.IP "\(bu" 2
+cannot parse entries where key or value is missing 
+.PP
+

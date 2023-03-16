@@ -1,0 +1,114 @@
+\label{doc_news_2014-11-04_0_8_9_md_md_doc_news_2014_11_04_0_8_9}%
+\Hypertarget{doc_news_2014-11-04_0_8_9_md_md_doc_news_2014_11_04_0_8_9}%
+
+\begin{DoxyItemize}
+\item guid\+: 38640673-\/3e07-\/4cff-\/9647-\/f6bdd89b1b08
+\item author\+: Markus Raab
+\item pub\+Date\+: Tue, 04 Nov 2014 10\+:48\+:14 +0100
+\item short\+Desc\+: adds qt-\/gui, several optimizations \& fixes
+\end{DoxyItemize}
+
+Again we managed to do an amazing feature release in just two month. In 416 commits we modified 393 files with 23462 insertions(+) and 9046 deletions(-\/).\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3152}{}\doxysection{Most awaited}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3152}
+The most awaited feature in this release is certainly the {\itshape qt-\/gui} developed by Raffael Pancheri. It includes a rich feature set including searching, unmounting, importing and exporting. A lot of functionality is quite stable now, even though its version is 0.\+0.\+1 alpha. If you find any bugs or want to give general feedback, feel free to use the issue tracker of the Elektra Initiative. A screenshot can be found \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/images/screenshot-qt-gui.png}{\texttt{ here}} To compile it (together with Elektra), see the README \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/tools/qt-gui}{\texttt{ here}}
+
+Manuel Mausz also has been very active and developed glib+gi bindings. These bindings make Elektra more friendly to the glib/gtk/gnome world. Using the gobject introspection python3 and lua bindings were developed. Additionally he got rid of all clang warnings.
+
+Felix Berlakovich also made progress\+: \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/plugins/ini}{\texttt{ the ini plugin}} now supports multiline and which can be dynamically turned on and off, i.\+e. during mounting (thanks to Felix)
+
+Last, but not least, Kai-\/\+Uwe ported Elektra to Windows7. Min\+GW is now one more supported compiler (tested on build-\/server, see later). Astonishingly, it was only little effort necessary\+: Basically we only needed a new implementation of the resolver, which is now called {\itshape wresolver}. Different from the {\itshape resolver} it lacks the sophisticated multi-\/process and multi-\/thread atomicity properties. On the plus side we now have a resolver that is very easy to study and understand and still works as file resolver ({\itshape noresolver} does not).\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3153}{}\doxysection{Interfaces}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3153}
+ABI/\+API of the C-\/\+API is still completely stable even though under the hood a lot was changed. All test cases compiled against the previous version still run against Elektra 0.\+8.\+9.
+
+This is, however, not the case for libtools. For Min\+GW porting it was necessary to rename an enum related to merging because it conflicted with an already defined MACRO.
+
+For maintainers also some changes are necessary. For Min\+GW and to actually use the flexibility of the new resolver variants two new CMake Variables are introduced\+: KDB\+\_\+\+DEFAULT\+\_\+\+RESOLVER and KDB\+\_\+\+DEFAULT\+\_\+\+STORAGE.
+
+More importantly for maintainers the CMake variables regarding SWIG bindings are now abandoned in favor to the new variable BINDINGS that works like PLUGINS and TOOLS. Just start with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/DBINDINGS=ALL}
+
+\end{DoxyCode}
+
+
+and CMake should remove the bindings that have missing dependencies on your system. Remember that glib and gi (i.\+e. {\itshape gi\+\_\+python3} and {\itshape gi\+\_\+lua}) bindings were introduced, too. Additionally, the {\itshape cpp} binding can now be deactivated if not added to BINDINGS.
+
+Finally, the {\itshape gen} tool added a Python package called {\ttfamily support}.\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3154}{}\doxysection{Other Bits}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3154}
+A proof of concept storage plugin {\ttfamily regexstore} was added. It allows one to capture individual configuration options within an otherwise not understood configuration file (e.\+g. for vimrc or emacs where the configuration file may contain programming constructs).
+
+Most tests now also work with the BUILD\+\_\+\+SHARED variant (from our knowledge all would work now, but some are still excluded if BUILD\+\_\+\+FULL and BUILD\+\_\+\+STATIC is disabled. Please report issues if you want to use uncommon CMake combinations).
+
+A small but very important step towards specifying configuration files is the new proposed API method ks\+Lookup\+By\+Spec (and ks\+Lookup implementing cascading search). It introduces a {\ttfamily logical view} of configuration that in difference to the {\ttfamily physical view} of configuration does not have namespaces, but everything is below the root \char`\"{}/\char`\"{}. Additionally, contextual values now allow one to be compile-\/time configured using C++-\/\+Policies. These are small puzzle pieces that will fit into a greater picture at a later time.
+
+A (data) race detection tool was implemented. Using it a configurable number of processes and threads it tries to \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} a different configuration at (nearly) the same time.
+
+With this tool the resolver could be greatly be improved (again). It now uses stat with nanosecond precision that will be updated for every successful \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. Even if the configuration file was modified manually (not using Elektra) the next \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} then is much more likely to fail. Additionally a recursive mutex now protects the file locking mechanism.
+
+The build server now additionally has following build jobs\+:
+
+
+\begin{DoxyItemize}
+\item i386 build\+: We had an i386 regression, because none of the developers seems to use i386 anymore.
+\item Configure Debian Script\+: Calls the scripts/configure-\/debian(-\/wheezy).
+\item Local Installation\+: We had an regression that local installation was not possible because of a bash completion file installed to /etc. This build tests if it is possible to install Elektra in your home directory (and calls kdb run\+\_\+all afterwards)
+\item Test bindings\+: Compiles and tests ALL bindings.
+\item Mingw\+: Compiles Elektra using mingw.
+\end{DoxyItemize}
+
+Many more examples were written and are used within doxygen. Most snippets now can also be found in compilable files\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://github.com/ElektraInitiative/libelektra/tree/master/examples/keyNew.c}{\texttt{ key\+New examples}}
+\item \href{https://github.com/ElektraInitiative/libelektra/tree/master/examples/keyCopy.c}{\texttt{ key\+Copy examples}}
+\item \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/bindings/cpp/examples/cpp_example_dup.cpp}{\texttt{ C++ deep dup}}
+\item \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/bindings/cpp/examples/cpp_example_ordering.cpp}{\texttt{ How to put Key in different data structures}}
+\item \href{https://github.com/ElektraInitiative/libelektra/tree/master/scripts/kdb/mount-augeas}{\texttt{ Mount some config files using augeas}}
+\item \href{https://github.com/ElektraInitiative/libelektra/tree/master/scripts/kdb/mount-info}{\texttt{ Mount system information}}
+\end{DoxyItemize}
+
+Most plugins now internally use the same CMake function {\ttfamily add\+\_\+plugin} which makes plugin handling more consistent.
+
+Felix converted the METADATA spec to ini files and added a proposal how comments can be improved.\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3155}{}\doxysubsection{Refactoring\+:}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3155}
+
+\begin{DoxyItemize}
+\item reuse of utilities in gen code generator
+\item the gen support library is now in its own package ({\ttfamily support})
+\item refactor array handling
+\item internal comparision functions (key\+Compare\+By\+Name)
+\end{DoxyItemize}\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3156}{}\doxysubsection{Optimization\+:}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3156}
+
+\begin{DoxyItemize}
+\item lookup\+By\+Name does not need to allocate two keys
+\item lookups in generated code
+\item prefer to use allocation on stack
+\end{DoxyItemize}\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3157}{}\doxysubsection{Fixes\+:}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3157}
+
+\begin{DoxyItemize}
+\item disable cast that segfaults on i386 (only testing code was affected)
+\item fix key\+Add\+Base\+Name in xmltool and testing code
+\item support non-\/system installation (e.\+g. in home directory)
+\item rewrote test cases to use succeed\+\_\+if\+\_\+same to avoid crashes on null pointers
+\item allow one to use python 2.\+6 for kdb gen
+\item improve exception messages
+\item use memcasecmp (fix lookup ignoring case)
+\item fix memory leaks (ini)
+\item text messages for some warnings/errors
+\item fix many issues regarding CMake, more variants of setting CMake options are now allowed.
+\item CMake policies fixes allow us to use CMake version $>$ 3
+\end{DoxyItemize}\hypertarget{doc_news_2014-11-04_0_8_9_md_autotoc_md3158}{}\doxysection{Get It!}\label{doc_news_2014-11-04_0_8_9_md_autotoc_md3158}
+You can download the release from \href{http://www.markus-raab.org/ftp/elektra/releases/elektra-0.8.9.tar.gz}{\texttt{ here}}
+
+
+\begin{DoxyItemize}
+\item size\+: 1936524
+\item md5sum\+: 001c4ec67229046509a0cb9eda223dc6
+\item sha1\+: 79ea9b83c08ed4c347ed0100b5e0e2d3309b9d04
+\item sha256\+: e0895bba28a27fb37f36f59ef77c95235f3a9c54fb71aa6f648566774d276568
+\end{DoxyItemize}
+
+already built API documentation can be found \href{https://doc.libelektra.org/api/0.8.9/html/}{\texttt{ here}}
+
+For more information, see \href{https://www.libelektra.org}{\texttt{ https\+://www.\+libelektra.\+org}}
+
+Best regards, Markus 

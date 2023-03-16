@@ -1,0 +1,286 @@
+.TH "doc_news_2018-03-27_0_8_22_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2018-03-27_0_8_22_md \- 0\&.8\&.22 Release 
+
+.IP "\(bu" 2
+guid: 4884a54f-996a-4564-a138-38a70166fed7
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Tue, 27 Feb 2018 19:35:58 +0100
+.IP "\(bu" 2
+shortDesc: Logo, INI, Lookup
+.PP
+.PP
+We are proud to release Elektra 0\&.8\&.22! In 429 commits, 8 authors changed 548 files with 60369 insertions(+), 6783 deletions(-)\&.
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+For a small demo see here:
+.PP
+\fC\fP.PP
+You can also read the news \fCon our website\fP
+.PP
+You can read the \fCFOSDEM interview\fP and watch the \fCFOSDEM main talk\fP given recently\&.
+.PP
+Elektra is now an official part of \fCHomebrew\fP\&.
+.SH "Highlights"
+.PP
+.IP "\(bu" 2
+New Logo and Website Theme
+.IP "\(bu" 2
+INI plugin greatly improved
+.IP "\(bu" 2
+Notifications API and Bindings for Asynchronous I/O
+.IP "\(bu" 2
+Plugin Processes
+.IP "\(bu" 2
+Lookup with the Order Preserving Minimal Perfect Hash Map
+.PP
+.SS "New Logo and Website Theme"
+We are proud to present our new logo\&. It has a new shape and cooler colors\&.
+.PP
+.PP
+Thanks to Philipp Frei!
+.PP
+We also gave the website a new look\&. It has the colors from the logo and new fonts (\fCLato\fP and \fCLibre Franklin\fP) that improve readability and add to a unique look\&. The restructured start page contributes to the new look as well\&.
+.PP
+We also updated asciinema-player to 2\&.6\&.0\&.
+.PP
+Thanks to Thomas Wahringer\&.
+.PP
+We also fixed security issues in the Website due to an old version of jquery, thanks to Marvin Mall\&.
+.PP
+Thanks to Bernhard Denner for keeping our infrastructure running\&.
+.SS "INI plugin greatly improved"
+.IP "\(bu" 2
+\fCdini\fP is no longer experimental anymore and adds the binary plugin\&.
+.IP "\(bu" 2
+We added a crash test for the INI plugin that feeds the plugin with problematic input data we determined using \fCAFL\fP
+.IP "\(bu" 2
+We fixed various small bugs that could potentially cause the INI plugin to crash and fixes the problems as reported by AFL
+.IP "\(bu" 2
+The INI plugin now \fCconverts a section to a normal key-value pair\fP if you store a value inside it\&. This has the advantage that you will not \fClose data unexpectedly anymore\fP\&.
+.IP "\(bu" 2
+The \fCINI plugin\fP should now read most key-value pairs containing delimiter characters (\fC=\fP) properly\&.
+.PP
+.PP
+Thanks to René Schwaiger!
+.PP
+Nevertheless, we did not switch to INI as default format\&. This has some reasons:
+.PP
+.IP "\(bu" 2
+In many workflows, \fCdump\fP is the better choice: e\&.g\&. with \fCkdb editor\fP you can edit any parts of Elektra with any format (e\&.g\&. INI) more safely\&. (With the INI plugin in some of these situations metadata is wrongly shown\&.)
+.IP "\(bu" 2
+The code base of INI is not fully tested and partly not well understood\&.
+.IP "\(bu" 2
+We plan to switch to a newly written parser (most likely YAML) and want to avoid that users have two migrations\&. The migration from \fCdump\fP is easier (especially compared with INI) because the \fCdump\fP format is recognisable without ambiguity\&. (Thus the INI file parses nearly any file, it is hard to detect that a file is not INI)
+.PP
+.PP
+But for those who want to switch, the migration will be smooth: The \fCdini\fP plugin makes sure that old dump files are still being read\&. Only when writing out configuration files, configuration files are converted to INI\&. To change to INI during compilation, simply use:
+.PP
+\fC-DKDB_DEFAULT_STORAGE=dini\fP
+.PP
+Or simply switch for your installation with:
+.br
+ \fCsudo kdb change-default-storage dini\fP
+.PP
+You can also mount INI (or dini) as root:
+.br
+ \fCsudo kdb mount default\&.ini / dini\fP
+.SS "Notification API and Bindings for Asynchronous I/O"
+This release contains an experimental implementation of Elektra's notification feature\&. This feature enables applications to get updates when configuration is changed at run-time\&. For more details see the preview tutorial at \fCdoc/tutorials/notifications\&.md\fP
+.PP
+The \fCNotification API\fP is implemented by a new library called \fCelektra-notification\fP\&. To use the library you need the new internalnotification plugin\&. Since the plugin is experimental it needs to be enabled when building Elektra from source (e\&.g\&. by passing \fC-DPLUGINS='ALL;-EXPERIMENTAL;internalnotification'\fP to \fCcmake\fP)\&.
+.PP
+New bindings for asynchronous I/O called 'I/O bindings' also have been added\&. These bindings allow Elektra's plugins and other parts to perform \fIasynchronous\fP operations\&. I/O bindings are opt-in for application developers\&. New features of Elektra that take advantage of I/O bindings will have fallbacks where viable\&. These fallbacks will use synchronous I/O thus keeping the status quo\&.
+.PP
+This release includes an experimental I/O binding for \fCuv\fP\&. The interface for I/O bindings is currently experimental and might change in the future\&.
+.PP
+Elektra's notification feature is not complete yet\&. So-called 'transport plugins' will be responsible for sending and receiving notifications using different protocols or libraries (like ZeroMQ or D-Bus)\&. These plugins will make use of the new I/O bindings\&. We plan to introduce the first transport plugins with the next release of Elektra\&.
+.SS "Plugin Processes"
+A new library called \fCpluginprocess\fP has been added\&. This library contains functions that aid in executing plugins in a separate process\&. This child process is forked from Elektra's main process each time such plugin is used and gets closed again afterwards\&. It uses a simple communication protocol based on a KeySet that gets serialized through a pipe via the \fCdump\fP plugin to orchestrate the processes\&.
+.PP
+Such a behavior is useful for plugins which cause memory leaks to be isolated in an own process\&. Furthermore this is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used\&.
+.SS "Lookup with the Order Preserving Minimal Perfect Hash Map"
+The \fCksLookup (\&.\&.\&.)\fP has a new search algorithm, that acts as an alternative to the binary search\&. The Order Preserving Minimal Perfect Hash Map (OPMPHM) is a non-dynamic, randomized hash map and is very effective for mostly static configurations\&. The OPMPHM can be enabled for a search by passing the in \fCkdbproposal\&.h\fP defined option \fCKDB_O_OPMPHM\fP to the lookup\&. Be aware that if the KeySet changes often using the OPMPHM might not be a good idea, read more about the \fCOPMPHM\fP\&.
+.PP
+When you are not sure if the OPMPHM will speed up you searches, wait for the next release, that one will include a hybrid search algorithm that combines the best properties of both search algorithms\&.
+.PP
+To disable OPMPHM (e\&.g\&. on systems with tight memory constraints), you can pass \fC-DENABLE_OPTIMIZATIONS=OFF\fP
+.SH "Other New Features"
+.PP
+We added even more functionality, which could not make it to the highlights:
+.PP
+.IP "\(bu" 2
+The Web UI was greatly improved, thanks to Daniel Bugl The version of clusterd was increased from 1\&.0\&.0 to 1\&.1\&.0\&.
+.IP "\(bu" 2
+Elektra is now part of the official \fCHomebrew repository\fP\&. We still provide a \fCtap\fP, if you want to install Elektra together with plugins or bindings that require additional libraries\&.
+.IP "\(bu" 2
+The building and linking of the Haskell bindings and Haskell plugins has been \fCgreatly improved\fP\&.
+.IP "\(bu" 2
+The invoke library can now \fCreport errors\fP upon opening/closing a plugin, thanks to Armin Wurzinger\&.
+.IP "\(bu" 2
+The \fCYAML CPP plugin\fP does not require \fCBoost\fP anymore, if you installed \fCyaml-cpp 0\&.6\fP\&.
+.IP "\(bu" 2
+Improved colored output in \fCkdb\fP tool\&.
+.IP "\(bu" 2
+We added two build jobs: docker and haskell\&. Thanks to Bernhard Denner and Armin Wurzinger\&.
+.IP "\(bu" 2
+\fCYAML CPP\fP does not write binary data to a config file, if you forget to load the \fCBase64 plugin\fP\&.
+.IP "\(bu" 2
+\fCYAML CPP\fP now encodes empty binary keys as NULL values (\fC~\fP), and also adds the metakey \fCbinary\fP for such values automatically\&.
+.PP
+.SH "Documentation"
+.PP
+We improved the documentation in the following ways:
+.PP
+.IP "\(bu" 2
+We have \fCdocumented how you can setup a build node for Jenkins using a Docker container\fP We also provide an example Dockerfile based on Debian Stretch for that purpose, thanks to Armin Wurzinger\&.
+.IP "\(bu" 2
+Document how \fCrlwrap\fP might be used for \fCkdb shell\fP\&.
+.IP "\(bu" 2
+Fixed documentation in \fChosts\fP plugin\&.
+.IP "\(bu" 2
+Greatly improved the \fClicense documentation\fP in \fCdebian/copyright\fP in the \fCdebian\fP branch, thanks to Thomas Wahringer\&.
+.IP "\(bu" 2
+Various fixes in doc/METADATA\&.ini
+.PP
+.SH "Compatibility"
+.PP
+As always, the ABI and API of kdb\&.h is fully compatible, i\&.e\&. programs compiled against an older 0\&.8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API)\&.
+.PP
+We executed old test cases against the latest Elektra version and all tests passed\&.
+.PP
+In \fCkdbinvoke\&.h\fP we changed the API so that \fCelektraInvokeOpen\fP and \fCelektraInvokeClose\fP can yield error messages\&.
+.PP
+We added:
+.PP
+.IP "\(bu" 2
+the public headerfiles \fC\fBkdbnotification\&.h\fP\fP, \fC\fBkdbio\&.h\fP\fP, \fC\fBkdbiotest\&.h\fP\fP\&.
+.IP "\(bu" 2
+the private headerfiles \fCkdbnotificationplugin\&.h\fP, \fC\fBkdbioprivate\&.h\fP\fP\&.
+.PP
+.SH "Portability"
+.PP
+.IP "\(bu" 2
+Fix bash shebang of bash scripts, thanks to Jakub Jirutka
+.IP "\(bu" 2
+Remove unportable unneeded asm, thanks to Timo Teräs and Jakub Jirutka
+.IP "\(bu" 2
+Fixed syntax in shell recorder, thanks to René Schwaiger
+.IP "\(bu" 2
+Used \fCmktemp\fP in \fCcheck_distribution\&.sh\fP to allow parallel run of test cases, thanks to Armin Wurzinger\&.
+.PP
+.SH "Notes for Maintainer"
+.PP
+These notes are of interest for people maintaining packages of Elektra:
+.PP
+.IP "\(bu" 2
+\fCdini\fP is no longer experimental\&.
+.IP "\(bu" 2
+CMake: \fCBINDINGS\fP now behaves like \fCPLUGINS\fP By default now all MAINTAINED bindings except EXPERIMENTAL and DEPRECATED are included\&. For more details see \fC/doc/COMPILE\&.md\fP\&. To include both intercept bindings, you now need to write \fCINTERCEPT\fP, to only include getenv interception \fCintercept_env\fP\&. \fCintercept\fP in lower-case does not work anymore\&.
+.PP
+.PP
+The following files are new:
+.PP
+.IP "\(bu" 2
+Libs: \fClibelektra-notification\&.so\fP, \fClibelektra-io\&.so\fP, \fClibelektra-io-uv\&.so\fP, \fClibelektra-pluginprocess\&.so\fP
+.IP "\(bu" 2
+Headers: \fCkdbgetenv\&.h\fP, \fC\fBkdbio\&.h\fP\fP, \fCkdbpluginprocess\&.h\fP
+.IP "\(bu" 2
+Plugins: \fCbase64/Base64\&.pdf\fP
+.IP "\(bu" 2
+Binaries: \fCgetenv\fP, \fCtest_context\fP, \fCtest_fork\fP, \fCtest_getenv\fP, \fCtest_ks_opmphm\fP, \fCtest_opmphm\fP
+.IP "\(bu" 2
+Other: \fCelektra-io\&.pc\fP
+.PP
+.PP
+The following files were removed:
+.PP
+.IP "\(bu" 2
+Tests: \fCtestmod_semlock\fP
+.PP
+.SH "Notes for Elektra's Developers"
+.PP
+These notes are of interest for people developing Elektra:
+.PP
+.IP "\(bu" 2
+We now use \fCclang-reformat-5\&.0\fP for formatting\&. Please upgrade your clang\&.
+.IP "\(bu" 2
+Build Agent \fCryzen v2\fP was added to speed up \fCjenkins build all please\fP, thanks to Armin Wurzinger\&.
+.IP "\(bu" 2
+Travis maintenance (Qt 5 and other problems), thanks to René Schwaiger\&.
+.IP "\(bu" 2
+\fCBINDINGS\fP was greatly improved and the CMake functions were simplified\&. Bindings now also have a \fCREADME\&.md\fP with metadata\&. A big thanks to Thomas Wahringer\&.
+.IP "\(bu" 2
+Decision: Logging with \fCELEKTRA_LOG\fP is only for C/C++\&.
+.IP "\(bu" 2
+Including \fC\fBkdberrors\&.h\fP\fP in a C++ files now also works, if you do not add the statement
+.PP
+.PP
+.PP
+.nf
+using namespace ckdb;
+.fi
+.PP
+.PP
+before you import \fC\fBkdberrors\&.h\fP\fP\&.
+.PP
+.IP "\(bu" 2
+The CMake code for Elektra’s \fCQt-GUI\fP now detects the location of Qt 5 automatically if you installed Qt via Homebrew\&.
+.IP "\(bu" 2
+All Shell Recorder tests should not now correctly restore your old configuration after you execute them, thanks to René Schwaiger\&.
+.IP "\(bu" 2
+The \fCBase64 plugin\fP does not encode empty binary values in meta mode anymore\&. This update allows plugins such as YAML CPP to handle empty keys properly\&.
+.PP
+.SH "Fixes"
+.PP
+Many problems were resolved with the following fixes:
+.PP
+.IP "\(bu" 2
+\fCkdb global-umount\fP also removed other mountpoints
+.IP "\(bu" 2
+We fixed \fCinternal inconsistency\fP in the CMake code of the \fCAugeas plugin\fP
+.IP "\(bu" 2
+We fixed the \fChaskell bindings and plugins on Debian Stretch\fP and added a new build server job to test that in the future\&.
+.IP "\(bu" 2
+Cleanup in list plugin, thanks to Thomas Wahringer
+.IP "\(bu" 2
+The Shell Recorder now exports and imports the root of a mountpoint instead of the mountpoint itself\&. This change makes sure that Shell Recorder test do not change the configuration directly below the specified mountpoint\&.
+.PP
+.SH "Get It!"
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.8\&.22\&.tar\&.gz
+.IP "\(bu" 2
+size: 5885118
+.IP "\(bu" 2
+md5sum: 5cbd9e33daf51f6f33791ff3f99342a6
+.IP "\(bu" 2
+sha1: 4954ff16cfe7dc69e45e6a748556262b8fb1a9fa
+.IP "\(bu" 2
+sha256: 962598315619d5dff3a575d742720f076dc4ba3702bd01609bfb7a6ddb5d759f
+.PP
+.PP
+The release tarball is also available signed by me using GnuPG from \fChere\fP or \fCGitHub\fP
+.PP
+Already built API documentation can be found \fConline\fP or \fCGitHub\fP\&.
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+For any questions and comments, please contact the issue tracker \fCon GitHub\fP or me by email using elektra@markus-raab.org\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP
+.PP
+Best regards, \fCElektra Initiative\fP 

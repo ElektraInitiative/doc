@@ -1,0 +1,268 @@
+.TH "doc_decisions_0_drafts_metakey_semantics_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_0_drafts_metakey_semantics_md \- Metakey semantics 
+ 
+.SH "Problem"
+.PP
+Metakeys (i\&.e\&., keys with namespace \fCKEY_NS_META\fP) have special requirements beyond what other namespaces want\&. This is because metakeys are used for specifications\&.
+.PP
+These extra requirements are:
+.PP
+.IP "1." 4
+Copying metadata from \fCspec:/\fP keys to other namespaces must share as much memory as possible\&. Without sharing memory there would be massive unnecessary duplication of data\&.
+.IP "2." 4
+It must be possible to identify whether a metakey was copied from \fCspec:/\fP key, or was set directly\&. Additionally, it must be possible to detect if the value of a copied metakey has changed\&.
+.IP "3." 4
+Changing the value of a copied metakey must not affect the original \fCspec:/\fP key (and its metadata)\&.
+.PP
+.PP
+Unrelated to the specification use case (see also \fBUse Case: Validating Configuration with Specification\fPValidating Configuration with Specification''), metakeys must also be prevented from having metadata of their own\&. As \fCkeyMeta\fP now 'leaks' (compared with the previous API) the \fCKeySet\fP of metadata is unprotected and the requirements above are not fulfilled anymore\&. For example, changes of metadata values could confuse the spec plugin and lead to invalid configuration passed to applications\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+The API should be hard to misuse\&.
+.IP "\(bu" 2
+Elektra should protect against incorrect operations, that would lead to undefined behavior\&.
+.IP "\(bu" 2
+As a specialized hook plugin \fCspec\fP could make use of specialized APIs\&. However, the need for such internal APIs should be limited as much as possible\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Not allowing metadata on metakeys, can also be ignored here, because it can be dealt with in \fC\fBkeyNew()\fP\fP and \fC\fBkeyMeta()\fP\fP\&. \fC\fBkeyMeta()\fP\fP can just return \fCNULL\fP and \fC\fBkeyNew()\fP\fP can either ignore metadata arguments or fail if metadata is given\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.SS "Completely Read-only"
+One option to enforce all requirements is to just make any \fCKey\fP that is created with the \fCKEY_NS_META\fP namespace entirely read-only after \fC\fBkeyNew()\fP\fP\&.
+.PP
+Because the \fCKey\fP is entirely read-only, it's value cannot change\&. Therefore, we can find out, if it was copied from a given \fCspec:/\fP key by doing a pointer comparison:
+.PP
+.PP
+.nf
+KeySet * specMeta = keyMeta (specKey);
+KeySet * otherMeta = keyMeta (otherMeta);
+
+for (elektraCursor it = 0; it < ksGetSize (otherMeta); it++)
+{
+   Key * metaKey = ksAtCursor (otherMeta, it);
+   if (metaKey == ksLookup (specMeta, metaKey, 0))
+   {
+      // copied from spec
+   }
+}
+.fi
+.PP
+.PP
+To update metadata you would have to create a new \fCKey\fP to replace the existing one:
+.PP
+.PP
+.nf
+ksAppendKey (keyMeta (key), keyNew ("meta:/type", KEY_VALUE, "string", KEY_END));
+
+// would always fail, because metakeys are read-only
+keySetString (ksLookupByName (keyMeta (key), "meta:/type", 0), "string");
+.fi
+.PP
+.PP
+Safely copying metadata would be very simple with this solution\&.
+.PP
+.PP
+.nf
+ksAppend (keyMeta (dest), keyMeta (source))
+.fi
+.PP
+.PP
+This copies metadata while sharing the memory for the individual \fCKey\fPs\&. Because the \fCKey\fPs are read-only they cannot be changed at all, so we don't have to worry about changes to \fCdest\fP affecting \fCsource\fP\&. If we want to change the metadata of \fCdest\fP we have to create a new \fCKey\fP, which will not be used by \fCsource\fP\&.
+.SS "Read-only while in <tt>KeySet</tt>"
+A relaxation of the above solution would be to only make the \fCKey\fP read-only, while it is part of a \fCKeySet\fP\&.
+.PP
+The snippets from above would still work and changing the value of metakey directly as above would still fail\&. But now you don't have to create the \fCKey\fP directly with the right name and value\&.
+.PP
+.PP
+.nf
+Key * metaKey = keyNew ("meta:/", KEY_END);
+keyAddBaseName (metaKey, somePart);
+keySetString (metaKey, someValue);
+.fi
+.PP
+.PP
+The snippet above would not work, if the key is returned as read-only directly from \fC\fBkeyNew()\fP\fP\&.
+.PP
+Copying metadata works the same as above\&. Since the \fCKey\fPs are still read-only as long as \fCsource\fP uses them, we again cannot affect \fCsource\fP by changing \fCdest\fP\&.
+.SS "Utilize COW implementation"
+.SS "Issues with Read-only Solutions"
+An issue with the solutions above is that you always have to create a new \fCKey\fP to change metadata\&. This means we need to allocate all the memory for a new metakey\&. This new metakey will replace the existing one in \fCkeyMeta(key)\fP\&. But that means, if the existing metakey was not shared with other keys, it will be deleted, when we could have just reused that memory\&.
+.PP
+Some of that problem is mitigated by \fCkeyDup\fP using copy-on-write (COW)\&. However, let's look at what is needed to change the value of \fCmeta:/type\fP with a read-only solution\&.
+.PP
+The straightforward option doesn't work, because of the read-only nature of metakeys:
+.PP
+.PP
+.nf
+// FAILS, metakey is read-only
+keySetString (ksLookupByName (keyMeta (key), "meta:/type", 0), "string");
+.fi
+.PP
+.PP
+To make proper use of COW you need to write something like this to change the value of \fCmeta:/type\fP:
+.PP
+.PP
+.nf
+// Note: snippet could be even more complex, if you want to avoid the `keyDup`, in case meta is not in another KeySet
+Key * meta = ksLookupByName (keyMeta (key), "meta:/type", 0);
+meta = meta == NULL ? keyNew ("meta:/type", KEY_END) : keyDup (meta, KEY_CP_NAME);
+keySetString (meta, "long");
+ksAppendKey (keyMeta (key), meta);
+.fi
+.PP
+.PP
+However, most people would probably opt for the much simpler:
+.PP
+.PP
+.nf
+ksAppendKey (keyMeta (key), keyNew ("meta:/type", KEY_VALUE, "long", KEY_END));
+.fi
+.PP
+.PP
+For a one-time operation the difference might not be big, but if a metakey (probably not \fCmeta:/type\fP), changes many times it will become significant\&. Every time the simpler solution is used, an entirely new \fCKey\fP is created instead of utilizing the COW approach\&.
+.SS "Possible Fix"
+One option to solve that read-only problems, in 'Read-only while in `KeySet`' is something like this:
+.PP
+.PP
+.nf
+Key * metaKey = ksLookupByName (keyMeta (key), "meta:/type", KDB_O_POP);
+if (isInKeySet (metaKey)) // <- hypothetical API
+{
+   // still used, can't modify -> use new key
+   keyDel (metaKey);
+   ksAppendKey (keyMeta (key), keyNew ("meta:/type", KEY_VALUE, "string", KEY_END));
+}
+else
+{
+   keySetString (metaKey);
+   ksAppendKey (keyMeta (key), metaKey);
+}
+.fi
+.PP
+.PP
+.RS 4
+\fBNote\fP: Where the code above would live doesn't matter\&. It may be part of some Elektra library, or it may be user code\&. The code is clearly not ideal and that's why the solution here actually is to avoid the need for a \fCisInKeySet\fP function entirely\&. 
+.RE
+.PP
+However, that still has some obvious issues:
+.PP
+.IP "\(bu" 2
+It needs a public API \fCisInKeySet\fP to check whether a metakey is used by some metadata \fCKeySet\fP\&.
+.IP "\(bu" 2
+We still need to take the metakey out of the metadata \fCKeySet\fP and reinsert it\&. That means shuffling around the array in the \fCKeySet\fP, which may be worse than the duplicate memory for the new metakey\&.
+.PP
+.PP
+Clearly this is \fBnot\fP a viable solution to the problem\&. But the good thing is we can solve these issues, because of the \fBCOW implementation\fP\&.
+.PP
+To solve the issues mentioned above, \fCspec\fP needs to do a few things differently:
+.SS "Copying Metakeys in <tt>spec</tt>"
+Instead of copying metadata with
+.PP
+.PP
+.nf
+ksAppend (keyMeta (dest), keyMeta (source))
+.fi
+.PP
+.PP
+we need to make a copy of all metakeys
+.PP
+.PP
+.nf
+KeySet * sourceMeta = keyMeta (source);
+KeySet * destMeta = keyMeta (dest);
+
+for (elektraCursor i = 0; i < ksGetSize (sourceMeta); i++)
+{
+   ksAppendKey (destMeta, keyDup (ksAtCursor (sourceMeta, i), KEY_CP_ALL));
+}
+.fi
+.PP
+.PP
+This seems like a bad change, but because of the COW implementation it's not as bad as it looks\&. Only the \fCstruct Key\fP will be duplicated, both the name and value data of the metakeys will still be shared between \fCsource\fP and \fCdest\fP\&. Still worse than reusing everything and just adding a few new pointers, but not too bad\&.
+.PP
+This change means that modifying metadata in \fCdest\fP cannot possibly affect \fCsource\fP, because they do not share any \fCKey *\fPs\&. At first, they do share all the name and value data, but through COW that stops as soon as either \fCKey\fP is modified\&. Therefore, we don't need to make the value read-only and anybody (including user code) can just do:
+.PP
+.PP
+.nf
+keySetString (ksLookupByName (keyMeta (key), "meta:/type", 0), "string");
+.fi
+.PP
+.SS "Detecting & Removing Copied Metakeys in <tt>spec</tt>"
+The issue with not sharing \fCKey *\fPs of course is that a pointer comparison will no longer detect copied metakeys\&. That means we need a new way of detecting what \fCspec\fP needs to remove\&.
+.PP
+First we'd add a new \fCkeyGetCOWValue\fP function:
+.PP
+.PP
+.nf
+KeyData * keyGetCOWValue (Key * key)
+{
+   return key->keyData;
+}
+.fi
+.PP
+.PP
+.RS 4
+\fBNote\fP: This function wouldn't be part of \fClibelektra-core\fP\&. It would be in \fClibelektra-extra\fP or some other library on which \fCspec\fP would depend\&. 
+.RE
+.PP
+With this function, the check to detect copied metakeys becomes this straightforward snippet:
+.PP
+.PP
+.nf
+KeySet * specMeta = keyMeta (specKey);
+KeySet * otherMeta = keyMeta (otherMeta);
+
+for (elektraCursor it = 0; it < ksGetSize (otherMeta); it++)
+{
+   Key * otherMetaKey = ksAtCursor (otherMeta, it);
+   if (keyGetCOWValue (otherMetaKey) == keyGetCOWValue(ksLookup (specMeta, metaKey, 0)))
+   {
+      // copied from spec
+   }
+}
+.fi
+.PP
+.PP
+The check above works, because changing the value of a \fCKey\fP will allocate a new \fCkey->keyData\fP, if it is shared with another key\&. Therefore, the \fCkeyData\fP pointers will only be the same if the value was not modified and was copied from the \fCspec:/\fP key\&.
+.PP
+.RS 4
+\fBNote\fP: Adding \fCkeyGetCOWValue\fP (anywhere) might cause problem with some of the current guarantees related to COW\&. A quick solution for this would be to instead only provide \fCkeyHasSameCOWValue\fP:
+.PP
+.PP
+.nf
+bool keyHasSameCOWValue (Key * key, Key * other)
+{
+  if (key == NULL && other == NULL) return true;
+  if (key == NULL || other == NULL) return false;
+  return key->keyData == other->keyData;
+}
+.fi
+.PP
+.PP
+This would still allow making the comparison needed by \fCspec\fP, but doesn't actually provide any access to \fCkey->keyData\fP, so nothing no guarantees can be broken\&. 
+.RE
+.PP
+.SH "Decision"
+.PP
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBCopy On Write\fP
+.IP "\(bu" 2
+\fBTypes of `KeySet`s\fP
+.PP
+.SH "Notes"
+.PP
+

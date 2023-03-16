@@ -1,0 +1,13 @@
+\label{doc_contrib_mmapstorage_md_md_doc_contrib_mmapstorage}%
+\Hypertarget{doc_contrib_mmapstorage_md_md_doc_contrib_mmapstorage}%
+ The {\ttfamily mmapstorage} plugin is a high performance storage plugin that supports full Elektra semantics.
+
+The most important constraint for {\ttfamily mmapstorage} is that any structure (or bytes) that is an allocation unit (e.\+g. we {\ttfamily malloc()} the bytes needed for {\ttfamily Key\+Set} struct, so this is an unit) needs to have a flag to determine whether those bytes are actually {\ttfamily malloc()}ed or they are {\ttfamily mmap()}ed.
+
+The {\ttfamily mmapstorage} plugin only calls {\ttfamily munmap} in some error cases, so basically the returned keyset is never invalidated and {\ttfamily munmap} is never called for its data.
+
+During {\ttfamily kdb\+Set} the storage plugins always write to a temp file, due to how the resolver works. We also don\textquotesingle{}t need to {\ttfamily mmap} the temp file here\+: when doing {\ttfamily kdb\+Set} we already have the {\ttfamily Key\+Set} at hand, {\ttfamily mmap}-\/ing it is not needed at all, because we have the data. We just want to update the cache file. The {\ttfamily mmap}/{\ttfamily munmap} in {\ttfamily kdb\+Set} are just so we can write the {\ttfamily Key\+Set} to a file in our format. ({\ttfamily mmap()} is just simpler, but we could also {\ttfamily malloc()} a region and then {\ttfamily fwrite()} the stuff)
+
+Therefore the only case where we return a {\ttfamily mmap()}ed Key\+Set should be in {\ttfamily kdb\+Get}.
+
+When the {\ttfamily mmapstorage} was designed/implemented, not all structures had refcounters, so there was no way to know when a {\ttfamily munmap} is safe. This was simply out of scope at that point in time. 

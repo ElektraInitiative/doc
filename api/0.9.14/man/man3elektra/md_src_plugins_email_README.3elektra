@@ -1,0 +1,102 @@
+.TH "md_src_plugins_email_README" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_email_README \- Plugin: email 
+
+.IP "\(bu" 2
+infos = Information about the email plugin is in keys below
+.IP "\(bu" 2
+infos/author = Andreas Kraschitzer e01226853@student.tuwien.ac.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest nodep experimental
+.IP "\(bu" 2
+infos/metadata = check/email
+.IP "\(bu" 2
+infos/description = Validation for email addresses
+.PP
+.SH "Email Address Validation"
+.PP
+.SS "Introduction"
+This plugin validates email addresses using regular expressions\&. The plugin does not support the full RFC5321 spec\&. For more information see \fCLimitations\fP below\&.
+.SS "Installation"
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SS "Usage"
+.PP
+.nf
+# Mount `email` plugin to cascading namespace `/tests/email`
+kdb mount config\&.dump /tests/email dump email
+
+# Incorrect address is valid with incomplete configuration
+kdb meta-set spec:/tests/email/noaddr check/email
+kdb set user:/tests/email/noaddr invalid\&.\&.address@com
+# RET: 0
+
+# Check the validity of the email stored in `/tests/email/adr`
+kdb meta-set spec:/tests/email/adr check/email ""
+
+# Set a correct email address
+kdb set user:/tests/email/adr test+email@dev\&.libelektra\&.com
+kdb get user:/tests/email/adr
+#> test+email@dev\&.libelektra\&.com
+
+# Try to set incorrect addresses
+kdb set user:/tests/email/adr invalid\&.\&.address@com
+# STDERR: \&.*Validation Semantic\&.*
+# ERROR:  C03200
+# RET: 5
+
+kdb set user:/tests/email/adr not\&.@email\&.com
+# STDERR: \&.*Validation Semantic\&.*
+# ERROR:  C03200
+# RET: 5
+
+kdb set user:/tests/email/adr @
+# STDERR: \&.*Validation Semantic\&.*
+# ERROR:  C03200
+# RET: 5
+
+# Undo modifications to the database
+kdb rm -rf /tests/email
+kdb umount /tests/email
+.fi
+.PP
+.SS "Limitations"
+The plugin only checks email addresses for validity\&. It is not able to resolve if the host and or check if the address can receive emails\&. The validation does not completely support the RFC5321\&. The following valid email addresses are not supported:
+.PP
+.IP "\(bu" 2
+\fC(ele)ktra@elektra\&.io\fP
+.IP "\(bu" 2
+\fCelektra@elektra\&.io(io)\fP
+.IP "\(bu" 2
+\fC'hi@you'@elektra\&.io\fP
+.IP "\(bu" 2
+\fC'hi you'@elektra\&.io\fP
+.IP "\(bu" 2
+\fC' '@elektra\&.io\fP
+.IP "\(bu" 2
+\fC'<\\'\\"\&.!\&.#%$@elektra\&.io\fP
+.IP "\(bu" 2
+\fCcow@[dead::beef]\fP
+.IP "\(bu" 2
+\fC1@[23456789]\fP
+.PP
+.PP
+There is no validation of top level domains and no length check\&. The following invalid email addresses will be allowed:
+.PP
+.IP "\(bu" 2
+\fCvalid+part@nonexistenttopleveldomain\fP
+.IP "\(bu" 2
+\fC1234567890123456789012345678901234567890123456789012345678901234+x@example\&.com\fP 
+.PP
+

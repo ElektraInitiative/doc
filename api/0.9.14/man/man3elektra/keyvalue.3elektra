@@ -1,0 +1,572 @@
+.TH "keyvalue" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+keyvalue \- Value Manipulation Methods
+.PP
+ \- Methods to do various operations on Key values\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const void * \fBkeyValue\fP (const Key *key)"
+.br
+.RI "Return a pointer to the real internal \fCkey\fP value\&. "
+.ti -1c
+.RI "const char * \fBkeyString\fP (const Key *key)"
+.br
+.RI "Get a pointer to the c-string representing the value\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetValueSize\fP (const Key *key)"
+.br
+.RI "Returns the number of bytes needed to store the key value, including the NULL terminator\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetString\fP (const Key *key, char *returnedString, size_t maxSize)"
+.br
+.RI "Copy the string value of a Key into \fCreturnedString\fP\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetString\fP (Key *key, const char *newStringValue)"
+.br
+.RI "Set the value for \fCkey\fP as \fCnewStringValue\fP\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetBinary\fP (const Key *key, void *returnedBinary, size_t maxSize)"
+.br
+.RI "Copy the binary value of a Key into \fCreturnedBinary\fP\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetBinary\fP (Key *key, const void *newBinary, size_t dataSize)"
+.br
+.RI "Set the value of a Key to the binary value \fCnewBinary\fP\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Methods to do various operations on Key values\&. 
+
+A key can contain a value in different format\&. The most likely situation is, that the value is interpreted as text\&. Use \fBkeyGetString()\fP for that\&. You can save any Unicode Symbols and Elektra will take care that you get the same back, independent of your current environment\&.
+.PP
+In some situations this idea fails\&. When you need exactly the same value back without any interpretation of the characters, there is \fBkeySetBinary()\fP\&. If you use that, its very likely that your Configuration is not according to the standard\&. Also for Numbers, Booleans and Date you should use \fBkeyGetString()\fP\&. To do so, you might use strtod() strtol() and then atol() or atof() to convert back\&.
+.PP
+To use them: 
+.PP
+.nf
+#include <kdb\&.h>
+
+.fi
+.PP
+ 
+.SH "Function Documentation"
+.PP 
+.SS "ssize_t keyGetBinary (const Key * key, void * returnedBinary, size_t maxSize)"
+
+.PP
+Copy the binary value of a Key into \fCreturnedBinary\fP\&. If the type is not binary -1 will be returned\&.
+.PP
+When the binary data is empty (this is not the same as ''!) 0 will be returned and \fCreturnedBinary\fP will not be changed\&.
+.PP
+For string values see \fBkeyGetString()\fP and \fBkeyIsString()\fP\&.
+.PP
+When \fCreturnedBinary\fP is too small to hold the data (maximum size is given by maxSize), the returnedBinary will not be changed and -1 is returned\&.
+.PP
+\fBExample:\fP
+.RS 4
+
+.PP
+.nf
+Key *key = keyNew ("user:/keyname", KEY_BINARY, KEY_END);
+char buffer[300];
+
+if (keyGetBinary(key,buffer,sizeof(buffer)) == -1)
+{
+        // handle error
+}
+
+.fi
+.PP
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object to get the binary value from 
+.br
+\fIreturnedBinary\fP pre-allocated memory to store a copy of the Key's value 
+.br
+\fImaxSize\fP number of bytes of pre-allocated memory in \fCreturnedBinary\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes copied to \fCreturnedBinary\fP 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if the binary is empty 
+.br
+\fI-1\fP on NULL pointers 
+.br
+\fI-1\fP if maxSize is 0, too small for the value or larger than SSIZE_MAX 
+.br
+\fI-1\fP if the Key's value is a string
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyValue()\fP for getting a raw pointer to the Key's value 
+.PP
+\fBkeyGetValueSize()\fP for getting the size of the Key's value 
+.PP
+\fBkeySetBinary()\fP for setting the binary value of a Key 
+.PP
+\fBkeyIsBinary()\fP for checking whether a Key's value is binary 
+.PP
+\fBkeyGetString()\fP, \fBkeySetString()\fP for working with string values 
+.RE
+.PP
+
+.SS "ssize_t keyGetString (const Key * key, char * returnedString, size_t maxSize)"
+
+.PP
+Copy the string value of a Key into \fCreturnedString\fP\&. When there is no value inside the string, 1 will be returned and the returnedString will be empty ('') to avoid programming errors where old strings are shown to the user\&.
+.PP
+\fBExample:\fP
+.RS 4
+
+.PP
+.nf
+Key *key = keyNew ("user:/keyname", KEY_END);
+char buffer[300];
+
+if (keyGetString(key,buffer,sizeof(buffer)) == -1)
+{
+        // handle error
+} else {
+        printf ("buffer: %s\n", buffer);
+}
+
+.fi
+.PP
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object to get the string from 
+.br
+\fIreturnedString\fP pre-allocated memory to store a copy of the Key's value 
+.br
+\fImaxSize\fP number of bytes of allocated memory in \fCreturnedString\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes actually copied to \fCreturnedString\fP, including final NULL 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if the string is empty 
+.br
+\fI-1\fP on any NULL pointers 
+.br
+\fI-1\fP if the Key's value is binary 
+.br
+\fI-1\fP maxSize is 0, too small for the string or larger than SSIZE_MAX
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetValueSize()\fP for getting the size of the Key's value 
+.PP
+\fBkeyValue()\fP for getting a raw pointer to the Key's value 
+.PP
+\fBkeyString()\fP for getting a raw char pointer to the Key's value 
+.PP
+\fBkeyGetBinary()\fP, \fBkeyIsBinary()\fP for working with binary data 
+.RE
+.PP
+
+.SS "ssize_t keyGetValueSize (const Key * key)"
+
+.PP
+Returns the number of bytes needed to store the key value, including the NULL terminator\&. It returns the correct size, independent of the Key Type\&. If the value is binary there might be '\\0' values in it\&.
+.PP
+For an empty string you need one byte to store the ending NULL\&. For that reason 1 is returned\&. This is not true for binary data, so 0 will be returned\&.
+.PP
+A binary key has no '\\0' termination\&. String types are null-terminated, and the terminator will be considered for the length\&.
+.PP
+This method can be used with \fBelektraMalloc()\fP before \fBkeyGetString()\fP or \fBkeyGetBinary()\fP is called\&.
+.PP
+.PP
+.nf
+char *buffer;
+buffer = elektraMalloc (keyGetValueSize (key));
+// use this buffer to store the value (binary or string)
+// pass keyGetValueSize (key) for maxSize
+.fi
+.PP
+.PP
+\fBPostcondition\fP
+.RS 4
+returns the exact amount of bytes needed to store \fCkey's\fP value (including NULL terminators)
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object to get the size of the value from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes needed to store the Key's value 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP when there is no data and type is a string 
+.br
+\fI0\fP when there is no data and type is binary 
+.br
+\fI-1\fP on null pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetString()\fP for getting the Key's value as a string 
+.PP
+\fBkeyGetBinary()\fP for getting the Key's value as a binary 
+.PP
+\fBkeyValue()\fP for getting a pointer to the Key's value 
+.RE
+.PP
+
+.SS "ssize_t keySetBinary (Key * key, const void * newBinary, size_t dataSize)"
+
+.PP
+Set the value of a Key to the binary value \fCnewBinary\fP\&. A private copy of \fCnewBinary\fP will be allocated and saved inside \fCkey\fP, so the parameter can be deallocated after the call\&.
+.PP
+Binary values might be encoded in another way than string values depending on the plugin\&. Typically character encodings should not take place on binary data\&. Consider using a string Key instead, if encoding should occur\&.
+.PP
+When \fCnewBinary\fP is a NULL pointer the value will be freed and 0 will be returned\&.
+.PP
+Read-only keys will stay unchanged after calling this function\&.
+.PP
+\fBNote\fP
+.RS 4
+The metadata 'binary' will be set to mark that the key is binary from now on\&. When the Key is already binary the metadata won't be changed\&. This will only happen in the successful case, but not when -1 is returned\&.
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCdataSize\fP matches the length of \fCnewBinary\fP 
+.PP
+\fCnewBinary\fP is not NULL and \fCdataSize\fP > 0 
+.PP
+\fCkey\fP is not read-only 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+\fCkey's\fP value set exactly to the data in \fCnewBinary\fP 
+.PP
+'binary' key set in \fCkey's\fP metadata
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object where the value should be set 
+.br
+\fInewBinary\fP a pointer to any binary data or NULL (to clear the stored value) 
+.br
+\fIdataSize\fP number of bytes to copy from \fCnewBinary\fP 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes actually copied to internal struct storage 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP when the internal binary was freed and is now a null pointer 
+.br
+\fI-1\fP if \fCkey\fP is NULL 
+.br
+\fI-1\fP when \fCdataSize\fP is 0 (and newBinary not NULL) or larger than SSIZE_MAX 
+.br
+\fI-1\fP if \fCkey\fP is read-only
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetBinary()\fP for getting a Key's value as binary 
+.PP
+\fBkeyIsBinary()\fP to check if the Key's value is binary 
+.PP
+\fBkeyGetString()\fP and \fBkeySetString()\fP for working with string values 
+.RE
+.PP
+
+.SS "ssize_t keySetString (Key * key, const char * newStringValue)"
+
+.PP
+Set the value for \fCkey\fP as \fCnewStringValue\fP\&. The function will allocate and save a private copy of \fCnewStringValue\fP, so the parameter can be freed after the call\&.
+.PP
+String values will be saved in backend storage in UTF-8 universal encoding, regardless of the program's current encoding (if the iconv plugin is available)\&.
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCnewStringValue\fP is a NULL terminated string 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+Value of the Key is set to the UTF-8 encoded value of \fCnewStringValue\fP 
+.PP
+Metakey \fCmeta:/binary\fP is cleared
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key for which to set the string value 
+.br
+\fInewStringValue\fP NULL-terminated string to be set as \fCkey's\fP value
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes actually saved in private struct including final NULL 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if \fCnewStringValue\fP is a NULL pointer, this will make the string empty (string only containing null termination) 
+.br
+\fI-1\fP if \fCkey\fP is a NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyString()\fP for getting a pointer to the Key's value 
+.PP
+\fBkeyGetString()\fP for getting a copy of the Key's value 
+.PP
+\fBkeySetBinary()\fP for setting binary data 
+.RE
+.PP
+
+.SS "const char* keyString (const Key * key)"
+
+.PP
+Get a pointer to the c-string representing the value\&. Will return '(null)' on null pointers\&. Will return '(binary)' on binary data not ended with a null byte\&.
+.PP
+\fBNote\fP
+.RS 4
+You must not change or delete the returned value\&. Use the respective functions for that (\fBkeySetString()\fP, \fBkeyGetString()\fP)
+.RE
+.PP
+It is not checked if it is actually a string, only if it terminates for security reasons\&.
+.PP
+\fBPostcondition\fP
+.RS 4
+returned pointer points to the real internal value 
+.PP
+value is NULL terminated
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key object to get the string value from
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+pointer to the c-string representing the Key's value 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI''\fP if no data found 
+.br
+\fI(null)\fP on null Key 
+.br
+\fI(binary)\fP on binary Key
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetString()\fP for getting a copy of the Key's value as string 
+.PP
+\fBkeyGetBinary()\fP for getting a copy of the Key's value as binary 
+.PP
+\fBkeyValue()\fP for getting a pointer to the Key's value as binary 
+.RE
+.PP
+
+.SS "const void* keyValue (const Key * key)"
+
+.PP
+Return a pointer to the real internal \fCkey\fP value\&. This is a much more efficient version of \fBkeyGetString()\fP \fBkeyGetBinary()\fP\&. You should use it if you are responsible enough to not mess up things\&. You are not allowed to modify anything in the returned string\&. If you need a copy of the Value, consider to use \fBkeyGetString()\fP or \fBkeyGetBinary()\fP instead\&.
+.SH "String Handling"
+.PP
+If \fCkey\fP is string (\fBkeyIsString()\fP), you may cast the returned as a \fC'char *'\fP because you'll get a NULL terminated regular string\&.
+.PP
+\fBkeyValue()\fP returns '' in string mode when there is no value\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetString(key,"");
+keyValue(key); // you would expect "" here
+keyDel(key);
+
+.fi
+.PP
+.SH "Binary Data Handling"
+.PP
+If the data is binary, the size of the value must be determined by \fBkeyGetValueSize()\fP, any strlen() operations are not suitable to determine the size\&.
+.PP
+\fBkeyValue()\fP returns 0 in binary mode when there is no value\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetBinary(key, 0, 0);
+keyValue(key); // you would expect 0 here
+
+keySetBinary(key,"", 1);
+keyValue(key); // you would expect "" (a pointer to '\0') here
+
+int i=23;
+keySetBinary(key, (void*)&i, 4);
+(int*)keyValue(key); // you would expect a pointer to (int)23 here
+keyDel(key);
+
+.fi
+.PP
+.PP
+\fBNote\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyValue()\fP method to set a new value\&. Use \fBkeySetString()\fP or \fBkeySetBinary()\fP instead\&.
+.RE
+.PP
+\fBWarning\fP
+.RS 4
+Binary keys will return a NULL pointer when there is no data in contrast to \fBkeyName()\fP, \fBkeyBaseName()\fP and \fBkeyComment()\fP\&. For string value the behaviour is the same\&.
+.RE
+.PP
+\fBExample:\fP
+.RS 4
+
+.PP
+.nf
+KDB *handle = kdbOpen();
+KeySet *ks=ksNew(0, KS_END);
+kdbGetByName(handle,ks,"system:/sw/my",KDB_O_SORT|KDB_O_RECURSIVE);
+
+ for (elektraCursor it = 0; it < ksGetSize (ks); ++it)
+ {
+        Key * current = ksAtCursor (ks, it);
+        size_t size=0;
+
+        if (keyIsBinary(current)) {
+                size=keyGetValueSize(current);
+                printf("Key %s has a value of size %d bytes\&. Value: <BINARY>\nComment: %s",
+                        keyName(current),
+                        size,
+                        keyComment(current));
+        } else {
+                size=elektraStrLen((char *)keyValue(current));
+                printf("Key %s has a value of size %d bytes\&. Value: %s\nComment: %s",
+                        keyName(current),
+                        size,
+                        (char *)keyValue(current),
+                        keyComment(current));
+        }
+}
+
+ksDel (ks);
+kdbClose (handle);
+
+.fi
+.PP
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fCkey\fP is not NULL and has stored data 
+.RE
+.PP
+\fBPostcondition\fP
+.RS 4
+returned pointer points to the stored internal value 
+.PP
+if the value is a string, the value is NULL terminated
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key from which to get the value
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to the Key's internal value 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI''\fP when there is no value and Key is not binary 
+.br
+\fI0\fP where there is no value and Key is binary 
+.br
+\fI0\fP on NULL pointer
+.RE
+.PP
+\fBSince\fP
+.RS 4
+1\&.0\&.0
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetValueSize()\fP to get the size of the Key's value 
+.PP
+\fBkeyGetString()\fP for getting the Key's value as string 
+.PP
+\fBkeyGetBinary()\fP for getting the Key's value as binary 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

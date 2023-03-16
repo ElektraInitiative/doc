@@ -1,0 +1,115 @@
+.TH "md_src_plugins_reference_examples_alternative_README" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_reference_examples_alternative_README \- Plugin: reference 
+
+.SH "Example: Alternative References"
+.PP
+For this example the following configuration is used:
+.PP
+.PP
+.nf
+; this example uses the ni plugin syntax
+; 1\&. metadata
+[rootkey/ref]
+check/reference = recursive
+
+[otherkey/newref]
+check/reference = alternative
+
+; 2\&. configuration data
+rootkey/ref = \&.\&./otherkey
+
+otherkey/ref = \&.\&./yetanotherkey
+otherkey/newref = \&.\&./otherotherkey
+
+otherotherkey/ref = \&.\&./nonexistent
+otherotherkey/newref = \&.\&./mergekey
+
+yetanotherkey/ref = \&.\&./mergekey
+yetanotherkey/newref = \&.\&./nonexistent
+
+mergekey/ref = \&.\&./finalkey
+mergekey/newref = \&.\&./finalkey
+
+finalkey = ""
+.fi
+.PP
+.PP
+We mount it by executing:
+.PP
+.PP
+.nf
+cat << EOF > alternative\&.ini
+; this example uses the ni plugin syntax
+; 1\&. metadata
+[rootkey/ref]
+check/reference = recursive
+
+[otherkey/newref]
+check/reference = alternative
+
+; 2\&. configuration data
+rootkey/ref = \&.\&./otherkey
+
+otherkey/ref = \&.\&./yetanotherkey
+otherkey/newref = \&.\&./otherotherkey
+
+otherotherkey/ref = \&.\&./nonexistent
+otherotherkey/newref = \&.\&./mergekey
+
+yetanotherkey/ref = \&.\&./mergekey
+yetanotherkey/newref = \&.\&./nonexistent
+
+mergekey/ref = \&.\&./finalkey
+mergekey/newref = \&.\&./finalkey
+
+finalkey = ""
+EOF
+
+kdb mount alternative\&.ini user:/tests/reference/alternative ni reference
+.fi
+.PP
+.PP
+The file contains a specification, which marks \fCuser:/tests/reference/alternative/rootkey/ref\fP as our root reference key and \fCuser:/tests/reference/alternative/otherkey/newref\fP as an alternative reference\&.
+.PP
+The actual configuration contains then a structure which is processed by the plugin like follows:
+.PP
+.IP "1." 4
+\fCuser:/tests/reference/alternative/rootkey/ref\fP is read and its reference validated\&.
+.IP "2." 4
+\fCuser:/tests/reference/alternative/otherkey/ref\fP is read and its reference validated\&.
+.IP "3." 4
+\fCuser:/tests/reference/alternative/otherkey/newref\fP is discovered as an alternative reference and stored for later\&.
+.IP "4." 4
+\fCuser:/tests/reference/alternative/yetanotherkey/ref\fP is read and its reference validated\&.
+.IP "5." 4
+\fCuser:/tests/reference/alternative/mergekey/ref\fP is read and its reference validated\&.
+.IP "6." 4
+\fCuser:/tests/reference/alternative/finalkey\fP does not contain a reference, so we stop here\&.
+.IP "7." 4
+Processing of the alternative reference chain from \fCuser:/tests/reference/alternative/otherkey/newref\fP starts\&.
+.IP "8." 4
+\fCuser:/tests/reference/alternative/otherkey/newref\fP is read and its reference validated\&.
+.IP "9." 4
+\fCuser:/tests/reference/alternative/otherotherkey/newref\fP is read and its reference validated\&.
+.IP "10." 4
+\fCuser:/tests/reference/alternative/mergekey/newref\fP is read and its reference validated\&.
+.IP "11." 4
+\fCuser:/tests/reference/alternative/finalkey\fP does not contain a reference, so we stop here\&.
+.PP
+.PP
+The resulting reference graph looks like this:
+.PP
+.PP
+As you can see, the plugin completely ignores \fCuser:/tests/reference/alternative/yetanotherkey/newref\fP as well as \fCuser:/tests/reference/alternative/otherother/ref\fP and in turn does not throw an error because \fCuser:/tests/reference/alternative/nonexistent\fP does not exist\&. However, the plugin does still exhaustively check both of the alternative reference chains\&. If you want to prohibit this, you can set the metakey \fCcheck/reference/restrict\fP to an empty value on whichever key you want to be a leaf node in the graph\&.
+.PP
+After we are done we can unmount the example with:
+.PP
+.PP
+.nf
+kdb umount user:/tests/reference/alternative
+.fi
+.PP
+ 

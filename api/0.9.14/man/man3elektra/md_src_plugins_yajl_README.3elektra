@@ -1,0 +1,303 @@
+.TH "md_src_plugins_yajl_README" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_yajl_README \- Plugin: yajl 
+
+.IP "\(bu" 2
+infos = Information about YAJL plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/json
+.IP "\(bu" 2
+infos/needs = directoryvalue type
+.IP "\(bu" 2
+infos/recommends = rebase comment
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained coverage unittest
+.IP "\(bu" 2
+infos/description = JSON using YAJL
+.PP
+.SH "Introduction"
+.PP
+This is a plugin reading and writing JSON files using the library \fCyail\fP
+.PP
+The plugin was tested with yajl version 1\&.0\&.8-1 from Debian 6 and yajl version 2\&.0\&.4-2 from Debian 7\&.
+.PP
+Examples of files which are used for testing can be found below the folder in 'src/plugins/yajl/yajl'\&.
+.PP
+The JSON grammar can be found \fChere\fP\&.
+.PP
+A validator can be found \fChere\fP\&.
+.PP
+Supports every KeySet except when arrays are intermixed with other keys\&. Has only limited support for metadata\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-yajl\fP\&.
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fClibyajl-dev\fP (version 1 and 2 should work)
+.PP
+.SH "Types"
+.PP
+The type of the data is available via the metadata \fCtype\fP:
+.PP
+.IP "\(bu" 2
+\fCstring\fP: The JSON string type\&.
+.IP "\(bu" 2
+\fCboolean\fP: The JSON boolean type (true or false)
+.IP "\(bu" 2
+\fCdouble\fP: For JSON numbers\&.
+.PP
+.PP
+If no metadata \fCtype\fP is given, the type is either:
+.PP
+.IP "\(bu" 2
+\fCnull\fP on binary null-key
+.IP "\(bu" 2
+\fCstring\fP otherwise
+.PP
+.PP
+Any other type/value will still be treated as string, but the warning \fCC03200\fP will be added because of the potential data loss\&.
+.SH "Special values"
+.PP
+In JSON it is possible to have empty arrays and objects\&. In Elektra this is mapped using the special names
+.PP
+.PP
+.nf
+###empty_array
+.fi
+.PP
+.PP
+and
+.PP
+.PP
+.nf
+___empty_map
+.fi
+.PP
+.PP
+Arrays are mapped to Elektra’s array convention #0, #1,\&.\&.
+.SH "Restrictions"
+.PP
+.IP "\(bu" 2
+Only UTF-8 is supported\&. Use the \fCiconv\fP plugin if your locale are not UTF-8\&. When using non-UTF-8 the plugin will be able to write the file, but cannot parse it back again\&. You will error C03100, invalid bytes in UTF8 string\&.
+.IP "\(bu" 2
+Everything is string if not tagged by metakey 'type' Only valid JSON types can be used in type, otherwise there are some fall backs to string but warnings are produced\&.
+.IP "\(bu" 2
+Arrays will be normalized (to #0, #1, \&.\&.)
+.IP "\(bu" 2
+Comments of various JSON-dialects are discarded\&.
+.IP "\(bu" 2
+Mixing of arrays and maps is not detected and leads to corrupted JSON files\&. Please specify arrays to avoid such situations\&.
+.IP "\(bu" 2
+The plugin creates adds an empty root key to the database, even if you did not add this key (see http://issues.libelektra.org/2132)\&.
+.PP
+.PP
+Because of these potential problems a type checker and comments filter are highly recommended\&.
+.SH "Usage"
+.PP
+The following example shows you how you can read and write data using this plugin\&.
+.PP
+.PP
+.nf
+# Mount the plugin to the cascading namespace `/tests/yajl`
+sudo kdb mount config\&.json /tests/yajl yajl
+
+# Manually add a key-value pair to the database
+printf '{ "number": 1337 }' > `kdb file user:/tests/yajl`
+
+# Retrieve the new value
+kdb get user:/tests/yajl/number
+#> 1337
+
+# Determine the data type of the value
+kdb meta-get user:/tests/yajl/number type
+#> double
+
+# Add another key-value pair
+kdb set user:/tests/yajl/key value
+# STDOUT-REGEX: \&.*Create a new key user:/tests/yajl/key with string "value"
+
+# Retrieve the new value
+kdb get user:/tests/yajl/key
+#> value
+
+# Check the format of the configuration file
+kdb file user:/tests/yajl/ | xargs cat
+#> {
+#>     "key": "value",
+#>     "number": 1337
+#> }
+
+# Add an array
+kdb set user:/tests/yajl/piggy/#0 straw
+kdb set user:/tests/yajl/piggy/#1 sticks
+kdb set user:/tests/yajl/piggy/#2 bricks
+
+# Retrieve an array key
+kdb get user:/tests/yajl/piggy/#2
+#> bricks
+
+# Check the format of the configuration file
+kdb file user:/tests/yajl | xargs cat
+#> {
+#>     "key": "value",
+#>     "number": 1337,
+#>     "piggy": [
+#>         "straw",
+#>         "sticks",
+#>         "bricks"
+#>     ]
+#> }
+
+# Undo modifications to the database
+kdb rm -r user:/tests/yajl
+sudo kdb umount /tests/yajl
+.fi
+.PP
+.SS "Directory Values"
+The YAJL plugin support values in directory keys via the \fBDirectory Value\fP plugin\&.
+.PP
+.PP
+.nf
+# Mount the plugin to `user:/tests/yajl`
+sudo kdb mount config\&.json user:/tests/yajl yajl
+
+# Add two directory keys and one leaf key
+kdb set user:/tests/yajl/roots 'Things Fall Apart'
+kdb set user:/tests/yajl/roots/bloody 'Radical Face'
+kdb set user:/tests/yajl/roots/bloody/roots 'No Roots'
+
+# Add an array containing two elements
+kdb set user:/tests/yajl/now ', Now'
+# Elektra arrays require the metakey `array` to the parent\&.
+# Otherwise the keys below `user:/tests/yajl/now` would be
+# interpreted as normal key-value pairs\&.
+kdb meta-set user:/tests/yajl/now array ''
+kdb set user:/tests/yajl/now/#0 'Neighbors'
+kdb set user:/tests/yajl/now/#1 'Threads'
+
+kdb ls user:/tests/yajl
+#> user:/tests/yajl/now
+#> user:/tests/yajl/now/#0
+#> user:/tests/yajl/now/#1
+#> user:/tests/yajl/roots
+#> user:/tests/yajl/roots/bloody
+#> user:/tests/yajl/roots/bloody/roots
+
+# Retrieve directory values
+kdb get user:/tests/yajl/roots
+#> Things Fall Apart
+kdb get user:/tests/yajl/roots/bloody
+#> Radical Face
+
+# Retrieve leaf value
+kdb get user:/tests/yajl/roots/bloody/roots
+#> No Roots
+
+# Check array
+kdb get user:/tests/yajl/now
+#> , Now
+kdb meta-get user:/tests/yajl/now array
+#> #1
+kdb get user:/tests/yajl/now/#0
+#> Neighbors
+kdb get user:/tests/yajl/now/#1
+#> Threads
+
+# Undo modifications to the database
+kdb rm -r user:/tests/yajl
+sudo kdb umount user:/tests/yajl
+.fi
+.PP
+.SS "Booleans"
+The YAJL plugin maps '1' and 'true' to its true bool type, and '0' and 'false' to its false bool type\&. However, it always returns 1 or 0\&.
+.PP
+You can take advantage of the \fBtype\fP plugin to map arbitrary values to true and false\&.
+.PP
+.PP
+.nf
+# Type plugin is automatically mounted since yajl depends on it
+sudo kdb mount conf\&.json user:/tests/yajl yajl
+kdb set user:/tests/yajl 1
+kdb get user:/tests/yajl
+#> 1
+kdb meta-set user:/tests/yajl type boolean
+kdb set user:/tests/yajl on
+kdb get user:/tests/yajl
+#> 1
+kdb set user:/tests/yajl/subkey disable
+kdb meta-set user:/tests/yajl/subkey type boolean
+kdb get user:/tests/yajl/subkey
+#> 0
+
+# Undo modifications to the database
+kdb rm -r user:/tests/yajl
+sudo kdb umount user:/tests/yajl
+.fi
+.PP
+.SH "OpenICC Device Config"
+.PP
+This plugin was specifically designed and tested for the \fCOpenICC_device_config_DB\fP although it is of course not limited to it\&.
+.PP
+Mount the plugin:
+.PP
+.PP
+.nf
+kdb mount --resolver=resolver_fm_xhp_x color/settings/openicc-devices\&.json \
+  /org/freedesktop/openicc yajl rename cut=org/freedesktop/openicc
+.fi
+.PP
+.PP
+or:
+.PP
+.PP
+.nf
+kdb mount-openicc
+.fi
+.PP
+.PP
+Then you can copy the \fCOpenICC_device_config_DB\&.json\fP to systemwide or user config, e\&.g\&.
+.PP
+.PP
+.nf
+cp src/plugins/yajl/examples/OpenICC_device_config_DB\&.json /etc/xdg
+cp src/plugins/yajl/examples/OpenICC_device_config_DB\&.json ~/\&.config
+
+kdb ls system:/org/freedesktop/openicc
+.fi
+.PP
+.PP
+prints out then all device entries available in the config
+.PP
+.PP
+.nf
+kdb get system:/org/freedesktop/openicc/device/camera/0/EXIF_manufacturer
+.fi
+.PP
+.PP
+prints out 'Glasshuette' with the example config in source
+.PP
+You can export the whole system openicc config to ini with:
+.PP
+.PP
+.nf
+kdb export system:/org/freedesktop/openicc simpleini > dump\&.ini
+.fi
+.PP
+.PP
+or import it:
+.PP
+.PP
+.nf
+kdb import system:/org/freedesktop/openicc ini < dump\&.ini
+.fi
+.PP
+ 

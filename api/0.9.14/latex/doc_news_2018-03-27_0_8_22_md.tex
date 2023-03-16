@@ -1,0 +1,222 @@
+\label{doc_news_2018-03-27_0_8_22_md_md_doc_news_2018_03_27_0_8_22}%
+\Hypertarget{doc_news_2018-03-27_0_8_22_md_md_doc_news_2018_03_27_0_8_22}%
+
+\begin{DoxyItemize}
+\item guid\+: 4884a54f-\/996a-\/4564-\/a138-\/38a70166fed7
+\item author\+: Markus Raab
+\item pub\+Date\+: Tue, 27 Feb 2018 19\+:35\+:58 +0100
+\item short\+Desc\+: Logo, INI, Lookup
+\end{DoxyItemize}
+
+We are proud to release Elektra 0.\+8.\+22! In 429 commits, 8 authors changed 548 files with 60369 insertions(+), 6783 deletions(-\/).\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3392}{}\doxysection{What is Elektra?}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3392}
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database. For more information, visit \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}.
+
+For a small demo see here\+:
+
+\href{https://asciinema.org/a/cantr04assr4jkv8v34uz9b8r}{\texttt{ }}
+
+You can also read the news \href{https://www.libelektra.org/news/0.8.22-release}{\texttt{ on our website}}
+
+You can read the \href{https://fosdem.org/2018/interviews/markus-raab/}{\texttt{ FOSDEM interview}} and watch the \href{https://fosdem.org/2018/schedule/event/elektra/}{\texttt{ FOSDEM main talk}} given recently.
+
+Elektra is now an official part of \href{http://formulae.brew.sh/formula/elektra}{\texttt{ Homebrew}}.\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3393}{}\doxysection{Highlights}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3393}
+
+\begin{DoxyItemize}
+\item New Logo and Website Theme
+\item INI plugin greatly improved
+\item Notifications API and Bindings for Asynchronous I/O
+\item Plugin Processes
+\item Lookup with the Order Preserving Minimal Perfect Hash Map
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3394}{}\doxysubsection{New Logo and Website Theme}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3394}
+We are proud to present our new logo. It has a new shape and cooler colors.
+
+
+
+Thanks to Philipp Frei!
+
+We also gave the website a new look. It has the colors from the logo and new fonts (\href{https://fonts.google.com/specimen/Lato}{\texttt{ Lato}} and \href{https://fonts.google.com/specimen/Libre+Franklin}{\texttt{ Libre Franklin}}) that improve readability and add to a unique look. The restructured start page contributes to the new look as well.
+
+We also updated asciinema-\/player to 2.\+6.\+0.
+
+Thanks to Thomas Wahringer.
+
+We also fixed security issues in the Website due to an old version of jquery, thanks to Marvin Mall.
+
+Thanks to Bernhard Denner for keeping our infrastructure running.\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3395}{}\doxysubsection{INI plugin greatly improved}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3395}
+
+\begin{DoxyItemize}
+\item {\ttfamily dini} is no longer experimental anymore and adds the binary plugin.
+\item We added a crash test for the INI plugin that feeds the plugin with problematic input data we determined using \href{http://lcamtuf.coredump.cx/afl}{\texttt{ AFL}}
+\item We fixed various small bugs that could potentially cause the INI plugin to crash and fixes the problems as reported by AFL
+\item The INI plugin now \href{https://github.com/ElektraInitiative/libelektra/issues/1793}{\texttt{ converts a section to a normal key-\/value pair}} if you store a value inside it. This has the advantage that you will not \href{https://github.com/ElektraInitiative/libelektra/issues/1697}{\texttt{ lose data unexpectedly anymore}}.
+\item The \href{https://www.libelektra.org/plugins/ini}{\texttt{ INI plugin}} should now read most key-\/value pairs containing delimiter characters ({\ttfamily =}) properly.
+\end{DoxyItemize}
+
+Thanks to René Schwaiger!
+
+Nevertheless, we did not switch to INI as default format. This has some reasons\+:
+
+
+\begin{DoxyItemize}
+\item In many workflows, {\ttfamily dump} is the better choice\+: e.\+g. with {\ttfamily kdb editor} you can edit any parts of Elektra with any format (e.\+g. INI) more safely. (With the INI plugin in some of these situations metadata is wrongly shown.)
+\item The code base of INI is not fully tested and partly not well understood.
+\item We plan to switch to a newly written parser (most likely YAML) and want to avoid that users have two migrations. The migration from {\ttfamily dump} is easier (especially compared with INI) because the {\ttfamily dump} format is recognisable without ambiguity. (Thus the INI file parses nearly any file, it is hard to detect that a file is not INI)
+\end{DoxyItemize}
+
+But for those who want to switch, the migration will be smooth\+: The {\ttfamily dini} plugin makes sure that old dump files are still being read. Only when writing out configuration files, configuration files are converted to INI. To change to INI during compilation, simply use\+:
+
+{\ttfamily -\/DKDB\+\_\+\+DEFAULT\+\_\+\+STORAGE=dini}
+
+Or simply switch for your installation with\+:~\newline
+ {\ttfamily sudo kdb change-\/default-\/storage dini}
+
+You can also mount INI (or dini) as root\+:~\newline
+ {\ttfamily sudo kdb mount default.\+ini / dini}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3396}{}\doxysubsection{Notification API and Bindings for Asynchronous I/O}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3396}
+This release contains an experimental implementation of Elektra\textquotesingle{}s notification feature. This feature enables applications to get updates when configuration is changed at run-\/time. For more details see the preview tutorial at \href{https://github.com/ElektraInitiative/libelektra/tree/master/doc/tutorials/notifications.md}{\texttt{ doc/tutorials/notifications.\+md}}
+
+The \href{https://doc.libelektra.org/api/latest/html/kdbnotification_8h.html}{\texttt{ Notification API}} is implemented by a new library called {\ttfamily elektra-\/notification}. To use the library you need the new internalnotification plugin. Since the plugin is experimental it needs to be enabled when building Elektra from source (e.\+g. by passing {\ttfamily -\/DPLUGINS=\char`\"{}\+ALL;-\/\+EXPERIMENTAL;internalnotification\char`\"{}} to {\ttfamily cmake}).
+
+New bindings for asynchronous I/O called \char`\"{}\+I/\+O bindings\char`\"{} also have been added. These bindings allow Elektra\textquotesingle{}s plugins and other parts to perform {\itshape asynchronous} operations. I/O bindings are opt-\/in for application developers. New features of Elektra that take advantage of I/O bindings will have fallbacks where viable. These fallbacks will use synchronous I/O thus keeping the status quo.
+
+This release includes an experimental I/O binding for \href{http://libuv.org/}{\texttt{ uv}}. The interface for I/O bindings is currently experimental and might change in the future.
+
+Elektra\textquotesingle{}s notification feature is not complete yet. So-\/called \char`\"{}transport plugins\char`\"{} will be responsible for sending and receiving notifications using different protocols or libraries (like Zero\+MQ or D-\/\+Bus). These plugins will make use of the new I/O bindings. We plan to introduce the first transport plugins with the next release of Elektra.\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3397}{}\doxysubsection{Plugin Processes}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3397}
+A new library called \href{https://github.com/ElektraInitiative/libelektra/tree/master/src/libs/pluginprocess}{\texttt{ pluginprocess}} has been added. This library contains functions that aid in executing plugins in a separate process. This child process is forked from Elektra\textquotesingle{}s main process each time such plugin is used and gets closed again afterwards. It uses a simple communication protocol based on a Key\+Set that gets serialized through a pipe via the {\ttfamily dump} plugin to orchestrate the processes.
+
+Such a behavior is useful for plugins which cause memory leaks to be isolated in an own process. Furthermore this is useful for runtimes or libraries that cannot be reinitialized in the same process after they have been used.\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3398}{}\doxysubsection{Lookup with the Order Preserving Minimal Perfect Hash Map}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3398}
+The {\ttfamily ks\+Lookup (...)} has a new search algorithm, that acts as an alternative to the binary search. The Order Preserving Minimal Perfect Hash Map (OPMPHM) is a non-\/dynamic, randomized hash map and is very effective for mostly static configurations. The OPMPHM can be enabled for a search by passing the in \href{https://github.com/ElektraInitiative/libelektra/blob/master/src/include/kdbproposal.h}{\texttt{ kdbproposal.\+h}} defined option {\ttfamily KDB\+\_\+\+O\+\_\+\+OPMPHM} to the lookup. Be aware that if the Key\+Set changes often using the OPMPHM might not be a good idea, read more about the \href{https://github.com/ElektraInitiative/libelektra/blob/master/doc/dev/data-structures.md\#order-preserving-minimal-perfect-hash-map-aka-opmphm}{\texttt{ OPMPHM}}.
+
+When you are not sure if the OPMPHM will speed up you searches, wait for the next release, that one will include a hybrid search algorithm that combines the best properties of both search algorithms.
+
+To disable OPMPHM (e.\+g. on systems with tight memory constraints), you can pass {\ttfamily -\/DENABLE\+\_\+\+OPTIMIZATIONS=OFF}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3399}{}\doxysection{Other New Features}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3399}
+We added even more functionality, which could not make it to the highlights\+:
+
+
+\begin{DoxyItemize}
+\item The Web UI was greatly improved, thanks to Daniel Bugl The version of clusterd was increased from 1.\+0.\+0 to 1.\+1.\+0.
+\item Elektra is now part of the official \href{http://formulae.brew.sh/formula/elektra}{\texttt{ Homebrew repository}}. We still provide a \href{http://github.com/ElektraInitiative/homebrew-elektra}{\texttt{ tap}}, if you want to install Elektra together with plugins or bindings that require additional libraries.
+\item The building and linking of the Haskell bindings and Haskell plugins has been \href{https://github.com/ElektraInitiative/libelektra/pull/1698}{\texttt{ greatly improved}}.
+\item The invoke library can now \href{https://github.com/ElektraInitiative/libelektra/pull/1801}{\texttt{ report errors}} upon opening/closing a plugin, thanks to Armin Wurzinger.
+\item The \href{https://www.libelektra.org/plugins/yamlcpp}{\texttt{ YAML CPP plugin}} does not require \href{http://www.boost.org}{\texttt{ Boost}} anymore, if you installed \href{https://github.com/jbeder/yaml-cpp/releases/tag/yaml-cpp-0.6.0}{\texttt{ yaml-\/cpp 0.\+6}}.
+\item Improved colored output in {\ttfamily kdb} tool.
+\item We added two build jobs\+: docker and haskell. Thanks to Bernhard Denner and Armin Wurzinger.
+\item \href{https://www.libelektra.org/plugins/yamlcpp}{\texttt{ YAML CPP}} does not write binary data to a config file, if you forget to load the \href{https://www.libelektra.org/plugins/base64}{\texttt{ Base64 plugin}}.
+\item \href{https://www.libelektra.org/plugins/yamlcpp}{\texttt{ YAML CPP}} now encodes empty binary keys as NULL values ({\ttfamily $\sim$}), and also adds the metakey {\ttfamily binary} for such values automatically.
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3400}{}\doxysection{Documentation}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3400}
+We improved the documentation in the following ways\+:
+
+
+\begin{DoxyItemize}
+\item We have \href{https://github.com/ElektraInitiative/libelektra/tree/master/scripts/docker/jenkinsnode/README.md}{\texttt{ documented how you can setup a build node for Jenkins using a Docker container}} We also provide an example Dockerfile based on Debian Stretch for that purpose, thanks to Armin Wurzinger.
+\item Document how {\ttfamily rlwrap} might be used for {\ttfamily kdb shell}.
+\item Fixed documentation in {\ttfamily hosts} plugin.
+\item Greatly improved the \href{https://git.libelektra.org/blob/debian/debian/copyright}{\texttt{ license documentation}} in {\ttfamily debian/copyright} in the {\ttfamily debian} branch, thanks to Thomas Wahringer.
+\item Various fixes in doc/\+METADATA.\+ini
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3401}{}\doxysection{Compatibility}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3401}
+As always, the ABI and API of kdb.\+h is fully compatible, i.\+e. programs compiled against an older 0.\+8 version of Elektra will continue to work (ABI) and you will be able to recompile programs without errors (API).
+
+We executed old test cases against the latest Elektra version and all tests passed.
+
+In {\ttfamily kdbinvoke.\+h} we changed the API so that {\ttfamily elektra\+Invoke\+Open} and {\ttfamily elektra\+Invoke\+Close} can yield error messages.
+
+We added\+:
+
+
+\begin{DoxyItemize}
+\item the public headerfiles {\ttfamily \mbox{\hyperlink{kdbnotification_8h}{kdbnotification.\+h}}}, {\ttfamily \mbox{\hyperlink{kdbio_8h}{kdbio.\+h}}}, {\ttfamily \mbox{\hyperlink{kdbiotest_8h}{kdbiotest.\+h}}}.
+\item the private headerfiles {\ttfamily kdbnotificationplugin.\+h}, {\ttfamily \mbox{\hyperlink{kdbioprivate_8h}{kdbioprivate.\+h}}}.
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3402}{}\doxysection{Portability}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3402}
+
+\begin{DoxyItemize}
+\item Fix bash shebang of bash scripts, thanks to Jakub Jirutka
+\item Remove unportable unneeded asm, thanks to Timo Teräs and Jakub Jirutka
+\item Fixed syntax in shell recorder, thanks to René Schwaiger
+\item Used {\ttfamily mktemp} in {\ttfamily check\+\_\+distribution.\+sh} to allow parallel run of test cases, thanks to Armin Wurzinger.
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3403}{}\doxysection{Notes for Maintainer}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3403}
+These notes are of interest for people maintaining packages of Elektra\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily dini} is no longer experimental.
+\item CMake\+: {\ttfamily BINDINGS} now behaves like {\ttfamily PLUGINS} By default now all MAINTAINED bindings except EXPERIMENTAL and DEPRECATED are included. For more details see \href{https://github.com/ElektraInitiative/libelektra/tree/master/doc/COMPILE.md}{\texttt{ /doc/\+COMPILE.md}}. To include both intercept bindings, you now need to write {\ttfamily INTERCEPT}, to only include getenv interception {\ttfamily intercept\+\_\+env}. {\ttfamily intercept} in lower-\/case does not work anymore.
+\end{DoxyItemize}
+
+The following files are new\+:
+
+
+\begin{DoxyItemize}
+\item Libs\+: {\ttfamily libelektra-\/notification.\+so}, {\ttfamily libelektra-\/io.\+so}, {\ttfamily libelektra-\/io-\/uv.\+so}, {\ttfamily libelektra-\/pluginprocess.\+so}
+\item Headers\+: {\ttfamily kdbgetenv.\+h}, {\ttfamily \mbox{\hyperlink{kdbio_8h}{kdbio.\+h}}}, {\ttfamily kdbpluginprocess.\+h}
+\item Plugins\+: {\ttfamily base64/\+Base64.\+pdf}
+\item Binaries\+: {\ttfamily getenv}, {\ttfamily test\+\_\+context}, {\ttfamily test\+\_\+fork}, {\ttfamily test\+\_\+getenv}, {\ttfamily test\+\_\+ks\+\_\+opmphm}, {\ttfamily test\+\_\+opmphm}
+\item Other\+: {\ttfamily elektra-\/io.\+pc}
+\end{DoxyItemize}
+
+The following files were removed\+:
+
+
+\begin{DoxyItemize}
+\item Tests\+: {\ttfamily testmod\+\_\+semlock}
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3404}{}\doxysection{Notes for Elektra\textquotesingle{}s Developers}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3404}
+These notes are of interest for people developing Elektra\+:
+
+
+\begin{DoxyItemize}
+\item We now use {\ttfamily clang-\/reformat-\/5.\+0} for formatting. Please upgrade your clang.
+\item Build Agent {\ttfamily ryzen v2} was added to speed up {\ttfamily jenkins build all please}, thanks to Armin Wurzinger.
+\item Travis maintenance (Qt 5 and other problems), thanks to René Schwaiger.
+\item {\ttfamily BINDINGS} was greatly improved and the CMake functions were simplified. Bindings now also have a {\ttfamily README.\+md} with metadata. A big thanks to Thomas Wahringer.
+\item Decision\+: Logging with {\ttfamily ELEKTRA\+\_\+\+LOG} is only for C/\+C++.
+\item Including {\ttfamily \mbox{\hyperlink{kdberrors_8h}{kdberrors.\+h}}} in a C++ files now also works, if you do not add the statement
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{using namespace }ckdb;}
+
+\end{DoxyCode}
+
+
+before you import {\ttfamily \mbox{\hyperlink{kdberrors_8h}{kdberrors.\+h}}}.
+
+
+\begin{DoxyItemize}
+\item The CMake code for Elektra’s \href{https://www.libelektra.org/tools/qt-gui}{\texttt{ Qt-\/\+GUI}} now detects the location of Qt 5 automatically if you installed Qt via Homebrew.
+\item All Shell Recorder tests should not now correctly restore your old configuration after you execute them, thanks to René Schwaiger.
+\item The \href{https://www.libelektra.org/plugins/base64}{\texttt{ Base64 plugin}} does not encode empty binary values in meta mode anymore. This update allows plugins such as YAML CPP to handle empty keys properly.
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3405}{}\doxysection{Fixes}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3405}
+Many problems were resolved with the following fixes\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb global-\/umount} also removed other mountpoints
+\item We fixed \href{https://github.com/ElektraInitiative/libelektra/pull/1761}{\texttt{ internal inconsistency}} in the CMake code of the \href{https://www.libelektra.org/plugins/augeas}{\texttt{ Augeas plugin}}
+\item We fixed the \href{https://github.com/ElektraInitiative/libelektra/pull/1787}{\texttt{ haskell bindings and plugins on Debian Stretch}} and added a new build server job to test that in the future.
+\item Cleanup in list plugin, thanks to Thomas Wahringer
+\item The Shell Recorder now exports and imports the root of a mountpoint instead of the mountpoint itself. This change makes sure that Shell Recorder test do not change the configuration directly below the specified mountpoint.
+\end{DoxyItemize}\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3406}{}\doxysection{Get It!}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3406}
+You can download the release from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.22.tar.gz}{\texttt{ here}} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.22.tar.gz?raw=true}{\texttt{ Git\+Hub}}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.8.22.tar.gz.hashsum?raw=true}{\texttt{ hashsums are\+:}}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+8.\+22.\+tar.\+gz
+\item size\+: 5885118
+\item md5sum\+: 5cbd9e33daf51f6f33791ff3f99342a6
+\item sha1\+: 4954ff16cfe7dc69e45e6a748556262b8fb1a9fa
+\item sha256\+: 962598315619d5dff3a575d742720f076dc4ba3702bd01609bfb7a6ddb5d759f
+\end{DoxyItemize}
+
+The release tarball is also available signed by me using Gnu\+PG from \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.8.22.tar.gz.gpg}{\texttt{ here}} or \href{https://github.com/ElektraInitiative/ftp/blob/master/releases//elektra-0.8.22.tar.gz.gpg?raw=true}{\texttt{ Git\+Hub}}
+
+Already built API documentation can be found \href{https://doc.libelektra.org/api/0.8.22/html/}{\texttt{ online}} or \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.8.22}{\texttt{ Git\+Hub}}.\hypertarget{doc_news_2018-03-27_0_8_22_md_autotoc_md3407}{}\doxysection{Stay tuned!}\label{doc_news_2018-03-27_0_8_22_md_autotoc_md3407}
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\texttt{ RSS feed}} to always get the release notifications.
+
+For any questions and comments, please contact the issue tracker \href{http://issues.libelektra.org}{\texttt{ on Git\+Hub}} or me by email using \href{mailto:elektra@markus-raab.org}{\texttt{ elektra@markus-\/raab.\+org}}.
+
+\href{https://www.libelektra.org/news/0.8.22-release}{\texttt{ Permalink to this NEWS entry}}
+
+For more information, see \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\texttt{ Elektra Initiative}} 

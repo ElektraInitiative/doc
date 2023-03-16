@@ -1,0 +1,120 @@
+.TH "doc_decisions_4_decided_library_split_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_4_decided_library_split_md \- Library Split 
+ 
+.SH "Problem"
+.PP
+Only \fClibelektra-core\fP is supposed to access private data, but this contradicts the goal to keep the library minimal\&. \fC\fBkdbprivate\&.h\fP\fP was too generic, it contained many other parts next to the struct definitions of Key/KeySet\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+The \fCC99 standard, section 5\&.2\&.4\&.1\fP gives following limit: 4095 external identifiers in one translation unit
+.IP "\(bu" 2
+Some parts of Elektra, like \fCmmapstorage\fP need access to private data structure\&.
+.IP "\(bu" 2
+Elektra does not support several different struct definitions of Key/KeySet\&. Alternative implementations that want to coexist (e\&.g\&. \fCmmapstorage\fP should still work) must use the same struct definitions of Key/KeySet\&.
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+keep current situation
+.PP
+.SH "Decision"
+.PP
+Also allow \fClibelektra-extra\fP (and maybe other explicitly documented libraries) to access private Key/KeySet\&. Put struct definitions of Key/KeySet in a separate header file, which gets included by parts that need it\&.
+.PP
+All currently planned libraries and their respective API prefixes are listed in the \fCNotes\fP below\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+allows various users (plugins, applications) to link to (more or less) exactly what they need
+.IP "\(bu" 2
+allows symbol versioning on different levels (for different evolving libraries)
+.IP "\(bu" 2
+allows alternative implementation of parts of Elektra, e\&.g\&. a libcore written in Rust
+.IP "\(bu" 2
+facilitates code reuse between plugins
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+we need to clearly communicate which plugins must be exactly in the version of the \fClibelektra-core\fP
+.IP "\(bu" 2
+all libraries will share a versioning scheme and are only supported if used in the same version
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+.IP "\(bu" 2
+\fClibelektra-core\fP: The core minimal API of Elektra\&. Defines what \fCElektraKey\fP and \fCElektraKeyset\fP are, and contains the minimal API for manipulating them\&.
+.PP
+\fBPrefixes:\fP \fCelektraKey*\fP and \fCelektraKeyset*\fP
+.IP "\(bu" 2
+\fClibelektra-kdb\fP: The main API for interfacing with the KDB\&.
+.PP
+\fBPrefix:\fP \fCelektraKdb*\fP
+.IP "\(bu" 2
+\fClibelektra-lowlevel-c\fP: Additional C APIs that are useful when working with \fCElektraKey\fP and \fCElektraKeyset\fP, but not are not minimal API\&. Specifically targets C and not intended for use via bindings\&.
+.PP
+\fBPrefixes:\fP \fCelektraCKey*\fP, \fCelektraCKeyset*\fP
+.IP "\(bu" 2
+\fClibelektra-highlevel-c\fP: The C high-level API for reading/writing configuration with Elektra\&. Intended for use by applications\&. Partially intended for use with code-generation\&. Specifically targets C and not intended for use via bindings\&.
+.PP
+\fBPrefix:\fP \fCelektraHlc*\fP (Note: Even though there isn't any other \fChighlevel\fP implementation, \fCc\fP suffix to show this lib is only for C)
+.IP "\(bu" 2
+\fClibelektra-opts\fP: The API for parsing command-line arguments according to Elektra's spec\&.
+.PP
+\fBPrefix:\fP \fCelektraOpts*\fP
+.IP "\(bu" 2
+\fClibelektra-notification\fP: The API for setting up callbacks and automatically updated variables linked to changes in the KDB\&.
+.PP
+\fBPrefix:\fP \fCelektraNotification*\fP
+.IP "\(bu" 2
+\fClibelektra-io\fP: Elektra's API for asynchronous operations\&.
+.PP
+\fBPrefix:\fP \fCelektraIo*\fP
+.IP "\(bu" 2
+\fClibelektra-merge\fP: The API for merging and/or detecting conflicts between two keysets\&.
+.PP
+\fBPrefix:\fP \fCelektraMerge*\fP
+.IP "\(bu" 2
+\fClibelektra-plugin\fP: The plugin API\&. It forms the base for all plugins and contains the functions required to implement a plugin\&. It also contains the API for interacting with (other) plugins\&. This includes loading plugins and calling exported functions\&.
+.PP
+Note: This library comes with two separate headers\&. One for implementing a plugin and another for loading/calling plugins\&.
+.PP
+\fBPrefix:\fP \fCelektraPlugin*\fP (Note: previously \fClibelektra-plugin\fP merged with \fClibelektra-invoke\fP)
+.IP "\(bu" 2
+\fClibelektra-pluginload\fP: Internal static library, linked into \fClibelektra-plugin\fP (re-exported) and \fClibelektra-kdb\fP (not exported)\&. Contains the code for loading plugins\&.
+.PP
+\fBPrefix:\fP: \fCelektraPlugin*\fP (shared with \fClibelektra-plugin\fP because exported there)
+.IP "\(bu" 2
+\fClibelektra-mount\fP: The API for manipulating mountpoints\&.
+.PP
+\fBPrefix:\fP \fCelektraMount*\fP
+.IP "\(bu" 2
+\fClibelektra-type\fP: The API that defines Elektra's type system\&.
+.PP
+\fBNames:\fP \fCelektra<TYPE>ToString\fP and \fCelektraKeyTo<TYPE>\fP (Note: extracted from \fClibelektra-ease\fP)
+.IP "\(bu" 2
+\fClibelektra-extra\fP: Contains extra APIs for \fCElektraKey\fP and \fCElektraKeyset\fP beyond the minimal API of \fClibelektra-core\fP\&. These APIs are things that could be considered part of the classes for \fCElektraKey\fP and \fCElektraKeyset\fP, but which we do not consider minimal\&. The APIs should not specifically target C (see \fClibelektra-lowlevel-c\fP for that) and should be usable via bindings (if appropriate for the other language)\&.
+.PP
+\fBPrefix:\fP \fCelektraExtra*\fP (Note: includes \fCelektraExtraKeysetCut\fP, etc\&.; may also include stuff from old \fClibelektra-ease\fP or \fClibelektra-meta\fP)
+.IP "\(bu" 2
+\fClibelektra-ease\fP: A collection of various other APIs that help when interacting with \fCElektraKey\fP and \fCElektraKeyset\fP\&. These APIs go beyond what could be considered part of the 'classes' for \fCElektraKey\fP and \fCElektraKeyset\fP (e\&.g\&., SHA256 hashes)\&. The APIs should not specifically target C (see \fClibelektra-lowlevel-c\fP for that) and should be usable via bindings (if appropriate for the other language)\&.
+.PP
+\fBPrefix:\fP \fCelektraEase*\fP (Note: rest of old \fClibelektra-ease\fP, merged with \fClibelektra-meta\fP; cleanup needed)
+.IP "\(bu" 2
+\fClibelektra-utility\fP: Standalone helper functions that don't depend on \fClibelektra-core\fP
+.PP
+\fBPrefix:\fP \fCelektraUtil*\fP
+.IP "\(bu" 2
+\fClibelektra-base\fP: Internal static library, linked into \fClibelektra-core\fP (not exported) and \fClibelektra-utility\fP (partially re-exported)\&. Contains helper functions for e\&.g\&., memory allocations, string formatting, etc\&.
+.PP
+\fBPrefix:\fP \fCelektra*\fP (for internal), \fCelektraUtil*\fP (for exported) 
+.PP
+

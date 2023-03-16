@@ -1,0 +1,94 @@
+.TH "reference.c" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+reference.c \- Reference methods\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'kdbease\&.h'\fP
+.br
+\fC#include 'kdbhelper\&.h'\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraIsReferenceRedundant\fP (const char *reference)"
+.br
+.RI "Check whether a reference is redundant (i\&.e\&. "
+.ti -1c
+.RI "char * \fBelektraResolveReference\fP (const char *reference, const Key *baseKey, const Key *parentKey)"
+.br
+.RI "Resolve reference into a full keyname\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Reference methods\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraIsReferenceRedundant (const char * reference)"
+
+.PP
+Check whether a reference is redundant (i\&.e\&. it can be expressed in less characters) or not\&.
+.PP
+This can be used to give a warning to users, because redundant references are often mistakes\&. Using '\&.\&./some/key/\&.\&./path' instead of '\&.\&./some/path' may indicate, that either a mistake was made while editing, or the concept of references was misunderstood\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIreference\fP the reference to check 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if the reference is redundant 
+.br
+\fI0\fP otherwise 
+.RE
+.PP
+
+.SS "char* elektraResolveReference (const char * reference, const Key * baseKey, const Key * parentKey)"
+
+.PP
+Resolve reference into a full keyname\&. References operate like UNIX paths, with some additions:
+.IP "\(bu" 2
+'\&.' refers to the current key
+.IP "\(bu" 2
+'\&.\&.' refers to the parent of the current key
+.IP "\(bu" 2
+'@' refers to the parentKey of KDB
+.IP "\(bu" 2
+references starting with anything but '\&./', '\&.\&./' and '@/' as absolute, only embedded '/\&./' and '/\&.\&./' as well as '/\&.' and '/\&.\&.' at the end will be resolved (like in any keySetName call)
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIreference\fP The reference to resolve 
+.br
+\fIbaseKey\fP The key identified by the reference '\&./' 
+.br
+\fIparentKey\fP The key identified by the reference '@/'
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a newly allocated string, containing the full keyname; has to be disposed with \fBelektraFree()\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

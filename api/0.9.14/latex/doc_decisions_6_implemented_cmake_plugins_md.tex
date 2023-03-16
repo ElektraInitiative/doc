@@ -1,0 +1,94 @@
+\label{doc_decisions_6_implemented_cmake_plugins_md_md_doc_decisions_6_implemented_cmake_plugins}%
+\Hypertarget{doc_decisions_6_implemented_cmake_plugins_md_md_doc_decisions_6_implemented_cmake_plugins}%
+ \hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2245}{}\doxysection{Problem}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2245}
+
+\begin{DoxyItemize}
+\item plugin names and plugin folders not always exactly match ({\ttfamily resolver\+\_\+$\ast$}, {\ttfamily crypto\+\_\+$\ast$})
+\item plugin should be able to register new variants
+\item there should be only one place to define a new plugin
+\item multiple categories should be possible per plugin, defined in README.\+md
+\item on some OS some plugins won\textquotesingle{}t work (simpleini)
+\item some unit tests depend on bindings
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2246}{}\doxysection{Constraints}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2246}
+
+\begin{DoxyItemize}
+\item should work with supported CMake
+\item It should be easy to add trivial plugins (without dependency and variants)
+\item It should be possible to add complex plugins (with dependencies on plugins/unit tests and many variants)
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2247}{}\doxysection{Assumptions}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2247}
+\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2248}{}\doxysection{Considered Alternatives}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2248}
+
+\begin{DoxyItemize}
+\item have one more mapping that describes folder $<$-\/$>$ plugins (bad coherence)
+\item directly use README.\+md to also describe CMake deps (too limited in expression)
+\item split up Add\+Plugin.\+cmake and CMake\+Lists.\+txt (does not work well with variants)
+\item simply adding all directories in src/plugins and decide within the {\ttfamily add\+\_\+plugin} if we should drop the plugin (see below in Rationale)
+\end{DoxyItemize}
+
+Names for flag\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily DEPENDENCIES} -\/$>$ might be used for {\ttfamily add\+\_\+plugin}
+\item {\ttfamily ASSEMBLE\+\_\+\+DEPS}
+\item {\ttfamily FIND\+\_\+\+DEPS} -\/$>$ not only finding happens
+\item {\ttfamily PROCESS\+\_\+\+DEPS}
+\item {\ttfamily HANDLE\+\_\+\+DEPS}
+\item {\ttfamily DEPS\+\_\+\+MODE} -\/$>$ too generic, new terminology
+\item {\ttfamily CHECK\+\_\+\+DEPS} -\/$>$ not only checking happens
+\item {\ttfamily DO\+\_\+\+DEPS} -\/$>$ sounds funny
+\item {\ttfamily FIND\+\_\+\+PACKAGES} -\/$>$ not only packages are subject to this phase
+\item {\ttfamily COLLECT} -\/$>$ needs NOT
+\item {\ttfamily FIND\+\_\+\+PHASE} -\/$>$ needs NOT
+\item {\ttfamily DEPENDENCY} -\/$>$ ambiguous
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2249}{}\doxysection{Decision}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2249}
+Introduce a CMake process where all plugins are processed three times. Following CMake variables are used for the phases\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily COLLECTION\+\_\+\+PHASE} .. collect all {\ttfamily add\+\_\+plugins}
+\item {\ttfamily DEPENDENCY\+\_\+\+PHASE} .. resolve all dependencies, do {\ttfamily add\+\_\+plugins} again
+\item {\ttfamily ADDTESTING\+\_\+\+PHASE} .. (reserve for potential 3rd phase)
+\end{DoxyItemize}
+\begin{DoxyEnumerate}
+\item Collection phase ({\ttfamily COLLECTION\+\_\+\+PHASE} is {\ttfamily ON}), add\+\_\+plugin internally builds up\+:
+\begin{DoxyItemize}
+\item {\ttfamily ADDED\+\_\+\+PLUGINS}
+\item {\ttfamily REMOVED\+\_\+\+PLUGINS}
+\item {\ttfamily ADDED\+\_\+\+DIRECTORIES}
+\end{DoxyItemize}
+\item assemble dependency phase ({\ttfamily DEPENDENCY\+\_\+\+PHASE} is {\ttfamily ON}, only considering {\ttfamily ADDED\+\_\+\+DIRECTORIES}), with\+:
+\begin{DoxyItemize}
+\item {\ttfamily find\+\_\+libraries}, actually search for libraries on the system (only relevant libraries of plugins that are considered for inclusion)
+\item {\ttfamily add\+\_\+plugin}, with {\itshape actually adding} the plugins
+\end{DoxyItemize}
+\item assemble all unit tests ({\ttfamily ADDTESTING\+\_\+\+PHASE} is {\ttfamily ON}), either
+\begin{DoxyItemize}
+\item with {\ttfamily ADD\+\_\+\+TEST} in {\ttfamily add\+\_\+plugin}, or
+\item with {\ttfamily add\+\_\+plugintest} (for unittests that have dependencies to bindings)
+\end{DoxyItemize}
+\end{DoxyEnumerate}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2250}{}\doxysection{Rationale}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2250}
+Solves all the issues without adding too much complexity for actually adding plugins.
+
+Maintaining additional mappings is very time-\/consuming. Simply adding all plugins directories is problematic. It would\+:
+
+
+\begin{DoxyItemize}
+\item clutter the CMake output (especially in the case of errors)
+\item introduce more variables into the CMake\+Cache which are irrelevant for the user
+\item maybe even find libraries in wrong versions which are incompatible to what other plugins need
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2251}{}\doxysection{Implications}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2251}
+
+\begin{DoxyItemize}
+\item need to adopt all CMake\+Lists.\+txt
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2252}{}\doxysection{Related Decisions}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2252}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_0a_postponed_plugin_variants_md}{Plugin Variants}}
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2253}{}\doxysection{Notes}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2253}
+\hypertarget{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2254}{}\doxysection{Limitations}\label{doc_decisions_6_implemented_cmake_plugins_md_autotoc_md2254}
+
+\begin{DoxyItemize}
+\item {\ttfamily ADDED\+\_\+\+DIRECTORIES} of variants will be kept.
+\item Typos in plugin names are currently not checked, strings that are not plugin names are simply ignored. 
+\end{DoxyItemize}

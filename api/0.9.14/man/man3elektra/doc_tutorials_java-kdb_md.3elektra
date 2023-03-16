@@ -1,0 +1,207 @@
+.TH "doc_tutorials_java-kdb_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_java-kdb_md \- How-To: Java kdb 
+ 
+.SH "Introduction"
+.PP
+When programming in Java it is possible to access the key database, changing values of existing keys or adding new ones and a few other things\&. It is also possible to write plugins for Elektra in Java but we will focus on using the Java binding in this tutorial\&.
+.SH "First Steps"
+.PP
+In order to use \fCkdb\fP you need to include the dependency in your project\&. \fBHere\fP you can find a detailed tutorial on how to do that\&.
+.PP
+After that you can start loading a \fCKDB\fP object as follows:
+.PP
+.PP
+.nf
+try (KDB kdb = KDB\&.open()) {
+    // code to manipulate keys
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.PP
+Note that \fCKDB\fP implements \fCAutoClosable\fP which allows \fC\fCtry-with-resouces\fP\fP\&.
+.PP
+If an error occurs, detailed information can be obtained from the thrown \fCKDBException\fP\&.
+.SH "A word about releasing native resources"
+.PP
+There are 3 kinds of native resources having to be cleaned up properly to prevent memory leaks: \fCKeySet\fP, \fCKey\fP and \fCKDB\fP or rather their backing native key set, key or KDB session\&.
+.PP
+Fortunately the only resource you are strictly required to release is \fCKDB\fP via either \fCKDB::close\fP or \fCtry-with-resouces\fP\&. For \fCKeySet\fP and \fCKey\fP the garbage collector cleans them up automatically using a \fC\fCCleaner\fP\fP In situations where memory is very constrained, it might be a good idea to clean up these native resources as soon as they are no longer needed, since we do not have any control of when or if the garbage collector cleans up after us\&. For this use-case, the following functions are provided: \fCKeySet::release\fP, \fCKey::release\fP and \fCKDBException::releaseErrorKey\fP`\&.
+.SH "Fetching keys"
+.PP
+First let's retrieve a key which is already part of the key database\&. The first thing we need to do is to create a \fCKeySet\fP your keys are going to be stored in:
+.PP
+.PP
+.nf
+var keySet = KeySet\&.create();
+.fi
+.PP
+.PP
+Now we load all keys located below a specific parent key:
+.PP
+.PP
+.nf
+var parentKey = Key\&.create("user:/");
+kdb\&.get(keySet, parentKey);
+.fi
+.PP
+.PP
+Note on \fCKDB::get\fP: The resulting key set may contain more keys than requested\&.
+.PP
+Now we can simply fetch the desired key's value as follows:
+.PP
+.PP
+.nf
+String value = keySet\&.lookup("user:/my/presaved/key")\&.map(Key::getString)\&.orElseThrow();
+.fi
+.PP
+.PP
+So for example if you had executed the command below via shell, before starting the application:
+.PP
+.PP
+.nf
+kdb set user:/my/presaved/key it_works!
+.fi
+.PP
+.PP
+\fCvalue\fP would equals \fCit_works!\fP\&.
+.PP
+Afterwards, we may clean-up no longer needed native resources:
+.PP
+.PP
+.nf
+parentKey\&.release();
+keySet\&.release();
+.fi
+.PP
+.SH "Saving Keys"
+.PP
+Next let's save a new key to the key database\&. Again, first we need to create an empty \fCKeySet\fP\&. We also \fBneed to fetch\fP all keys for the namespace before we will be able to save a new key\&.
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");                 // create key representing the namespace to fetch
+var keySet = kdb\&.get(keyNamespace);                      // fetch all keys for the namespace into a new key set
+var keyToStore = Key\&.create("user:/somekey", "myValue"); // create key with value to store
+keySet\&.append(keyToStore);
+kdb\&.set(keySet, keyToStore);
+.fi
+.PP
+.PP
+If you try to save a key without fetching it beforehand, a \fCKDBException\fP will be thrown, telling you to call get before set\&.
+.PP
+The \fIuser\fP namespace is accessible without special rights, but if you try to write to \fIsystem\fP you will need to have root privileges\&. Take a look at \fBTESTING\&.md\fP to see how to access the system namespace as non-root user\&. This should only be done in testing environments though as it is not intended for productive systems\&.
+.SH "Examples"
+.PP
+.SS "Traversing Keys in a <tt>KeySet</tt>"
+First we create a new \fCKDB\fP handle and fetch all keys for the desired namespace, in this example the whole \fCuser\fP namespace\&. Since all keys are put in the passed \fCkeySet\fP variable we can then iterate through it\&. The \fCat(int)\fP method returns a new \fCKey\fP object for the native key with the corresponding position within the \fCkeySet\fP\&.
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");           // select a namespace from which all keys should be fetched
+try (KDB kdb = KDB\&.open()) {
+    var keySet = kdb\&.get(keyNamespace);            // fetch all keys into a new key set
+    for (int i = 0; i < keySet\&.length(); i++) {    // traverse the set
+        var currentKey = keySet\&.at(i);
+        System\&.out\&.println(String\&.format("%s: %s",
+                currentKey\&.getName(),              // fetch the key's name
+                currentKey\&.getString()));          // fetch the key's value
+    }
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.PP
+\fCKeySet\fP also provides an iterator implementation:
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");           // select a namespace from which all keys should be fetched
+try (KDB kdb = KDB\&.open()) {
+    var iter = kdb\&.get(keyNamespace)\&.iterator();   // fetch all keys into a new key set
+    while(iter\&.hasNext()) {                        // traverse the set
+        var currentKey = iter\&.next();
+        System\&.out\&.println(String\&.format("%s: %s",
+                currentKey\&.getName(),              // fetch the key's name
+                currentKey\&.getString()));          // fetch the key's value
+    }
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.PP
+Of course, alternatively a for each loop can be used:
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");           // select a namespace from which all keys should be fetched
+try (KDB kdb = KDB\&.open()) {
+    var keySet = kdb\&.get(keyNamespace);            // fetch all keys into a new key set
+    for (var currentKey : keySet) {                // traverse the set
+        System\&.out\&.println(String\&.format("%s: %s",
+                currentKey\&.getName(),              // fetch the key's name
+                currentKey\&.getString()));          // fetch the key's value
+    }
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.PP
+Another way to traverse is to use the Stream API which was introduced with Java 8:
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");           // select a namespace from which all keys should be fetched
+try (KDB kdb = KDB\&.open()) {
+    var keySet = kdb\&.get(keyNamespace);            // fetch all keys into a new key set
+    keySet\&.forEach(key -> System\&.out\&.printf("%s: %s%n", key\&.getName(), key\&.getString()));                              // directly format-print all key value pairs using foreach
+    // or
+    keySet\&.stream()\&.map(key -> String\&.format("%s: %s", key\&.getName(), key\&.getString()))\&.forEach(System\&.out::println);  // map the key value paris to the desired format first and then print them using foreach and a function reference
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.PP
+As the \fCKeySet\fP implements the \fCSortedSet<Key>\fP interface, all its methods can be used for (not only) a traversal:
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");           // select a namespace from which all keys should be fetched
+try (KDB kdb = KDB\&.open()) {
+    var keySet = kdb\&.get(keyNamespace);            // fetch all keys into a new key set
+    keySet\&.subSet(Key\&.create("user:/b"), Key\&.create("user:/k"))                                  // only select the keys starting with "user:/a" through "user:/k" (excluded)\&.
+        \&.forEach(key -> System\&.out\&.printf("%s: %s%n", key\&.getName(), key\&.getString()));          // directly format-print all key value pairs using foreach
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.PP
+Another way to traverse is to use the Stream API which was introduced with Java 8:
+.PP
+.PP
+.nf
+var keyNamespace = Key\&.create("user:/");           // select a namespace from which all keys should be fetched
+try (KDB kdb = KDB\&.open()) {
+    var keySet = kdb\&.get(keyNamespace);            // fetch all keys into a new key set
+    keySet\&.forEach(key -> System\&.out\&.printf("%s: %s%n", key\&.getName(), key\&.getString()));                              // directly format-print all key value pairs using foreach
+    // or
+    keySet\&.stream()\&.map(key -> String\&.format("%s: %s", key\&.getName(), key\&.getString()))\&.forEach(System\&.out::println);  // map the key value paris to the desired format first and then print them using foreach and a function reference
+} catch (KDBException e) {
+    e\&.printStackTrace();
+}
+.fi
+.PP
+.SS "Read Multiple Keys From KDB"
+\fBThis\fP example shows how to read multiple keys\&. It provides comments for further clarification\&. Further information can be found \fBhere\fP\&.
+.SH "Java Plugin Tutorial"
+.PP
+For the tutorial on how to write java plugins, please check out \fBthis\fP page\&. 

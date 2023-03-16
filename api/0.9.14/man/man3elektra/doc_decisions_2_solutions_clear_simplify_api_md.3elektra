@@ -1,0 +1,96 @@
+.TH "doc_decisions_2_solutions_clear_simplify_api_md" 3elektra "Thu Mar 16 2023" "Version 0.9.14" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_2_solutions_clear_simplify_api_md \- Simplify API 
+ 
+.SH "Problem"
+.PP
+According to \fBsymbols\&.map\fP the public core API has 124 symbols¹, which is arguable too much for a key-value API which has as highest goal simplicity\&.
+.PP
+In particular following areas have many functions and are not simple:
+.PP
+.IP "\(bu" 2
+binary keys
+.IP "\(bu" 2
+memory functions
+.IP "\(bu" 2
+comparison functions
+.IP "\(bu" 2
+error/warnings
+.PP
+.PP
+The urgency of this decision is that API can be easily introduced later but we cannot get rid of it after 1\&.0\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+To not disturb main features as described in use cases\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Binary data is not a core feature, if needed the plugin system can also work without (properly tagged) binary data in key sets\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+flags for binary data
+.PP
+.SH "Decision"
+.PP
+The exact API changes are not listed here, because it would just a long list that could just as easily be found in the Git history\&.
+.PP
+However, the API changes follow these rules:
+.PP
+.IP "\(bu" 2
+\fIRemove\fP all functions related to key metadata, except those listed below
+.IP "\(bu" 2
+\fIRemove\fP all functions related to keyset cursors, as well as \fCksHead\fP and \fCksTail\fP
+.IP "\(bu" 2
+\fIRemove\fP/_Change_ all functions related to (binary) key values as described in (\fBBinary\fP)
+.IP "\(bu" 2
+\fIRemove\fP all functions that use a user-provided buffer to return keyname/value/etc\&.
+.IP "\(bu" 2
+\fIChange\fP/_Add_ \fCkeyMeta\fP/\fCkeySetMeta\fP to directly read/write the metadata KeySet of a Key
+.IP "\(bu" 2
+\fIRename\fP \fCkeyGet*Size\fP to \fCkey*Size\fP
+.IP "\(bu" 2
+\fIAdd\fP \fCksRemove\fP function to remove a Key at a specific index
+.IP "\(bu" 2
+\fIRemove from public API\fP all the helper functions that use \fCelektraMalloc\fP (e\&.g\&. \fCelektraFormat\fP), as well as all the helper functions that only enhance standard APIs with additional error checks (e\&.g\&. \fCelektraStrCmp\fP)
+.IP "\(bu" 2
+\fIRemove from public API\fP \fCksCut\fP, \fCksDeepDup\fP, \fCksCopyInternal\fP and other functions that should never have been public
+.IP "\(bu" 2
+\fIRemove\fP all functions that can be replaced by others (e\&.g\&. \fCksPop\fP)
+.IP "\(bu" 2
+\fIRename\fP all functions to start with \fCelektra\fP as described in \fBElektra Prefix\fP, and use \fCKeySet\fP instead of \fCks\fP (also applies to names above)
+.PP
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBBinary\fP
+.IP "\(bu" 2
+\fBElektra Prefix\fP
+.PP
+.SH "Notes"
+.PP
+¹ the 124 symbols are (as found by @kodebach):
+.PP
+.IP "\(bu" 2
+6 for the KDB stuff
+.IP "\(bu" 2
+6 for the plugin system
+.IP "\(bu" 2
+48 for Key
+.IP "\(bu" 2
+31 for KeySet
+.IP "\(bu" 2
+15 other helper functions
+.IP "\(bu" 2
+The other 18 symbols are the public constants for the error API\&. 
+.PP
+
