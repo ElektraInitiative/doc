@@ -1,0 +1,708 @@
+.TH "doc_COMPILE_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_COMPILE_md \- Compile 
+ 
+.SH "Dependencies"
+.PP
+For the base system you only need \fCcmake3\fP, \fCGit\fP, a C99 compiler and essential build tools (make and some standard Unix tools; alternatively ninja and clang are also supported but not described here)\&. Those can be installed as follows:
+.PP
+.IP "\(bu" 2
+on APT-based systems (Ubuntu, Debian):
+.PP
+.PP
+.PP
+.nf
+sudo apt-get install cmake git build-essential
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+on RPM-based systems (CentOS, Red Hat Enterprise Linux, Oracle Linux):
+.PP
+.PP
+.PP
+.nf
+sudo yum install -y cmake git gcc-c++ make
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+on macOS, most of the build tools can be obtained by installing Xcode (from the App Store)\&. Other required tools may be installed using \fCbrew\fP\&. First install brew as described on their website\&. Then issue the following command to get cmake and git in order to complete the basic requirements:
+.PP
+.PP
+.PP
+.nf
+brew install cmake git
+.fi
+.PP
+.SH "Quick Guide"
+.PP
+Run the following commands to compile Elektra with non-experimental parts where your system happens to fulfill the dependencies (continue reading the rest of the document for details about these steps):
+.PP
+.PP
+.nf
+git clone https://github\&.com/ElektraInitiative/libelektra\&.git
+cd libelektra
+mkdir build
+cd build
+cmake \&.\&.  # watch output to see if everything needed is included
+ccmake \&.\&. # optional: overview of the available build settings (needs cmake-curses-gui)
+cmake --build \&. -- -j5
+cmake --build \&. --target run_nokdbtests # optional: run tests
+.fi
+.PP
+.PP
+The last line only runs tests without writing onto your system\&. See \fBTESTING\fP for how to run more tests\&. Afterwards you can use \fCsudo make install && sudo ldconfig\fP to install Elektra\&. See \fBINSTALL\fP for more information about installation of self-compiled Elektra (such as how to uninstall it)\&.
+.SH "Optional Dependencies"
+.PP
+.RS 4
+Note: You do not need to install the dependencies listed here\&. If they are not available, some of the functionality gets disabled automatically\&. The core of Elektra never depends on other libraries\&. 
+.RE
+.PP
+.SS "Documentation dependencies"
+To build the documentation you need doxygen (we recommend 1\&.8\&.8+), graphviz and \fCronn-ng\fP\&. These can be installed as follows:
+.PP
+.IP "\(bu" 2
+on APT-based systems (Ubuntu, Debian):
+.PP
+.PP
+.PP
+.nf
+apt-get install doxygen graphviz ruby
+gem install ronn-ng -v 0\&.10\&.1\&.pre1
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+on RPM-based systems (CentOS, Red Hat Enterprise Linux, Oracle Linux):
+.PP
+.PP
+.PP
+.nf
+sudo yum install -y doxygen docbook-style-xsl graphviz ruby
+gem install ronn-ng -v 0\&.10\&.1\&.pre1
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+on macOS using brew:
+.PP
+.PP
+.PP
+.nf
+brew install doxygen graphviz
+brew install ruby # in case ruby is not already installed
+gem install ronn-ng -v 0\&.10\&.1\&.pre1
+.fi
+.PP
+.PP
+To build PDF documentation you need \fCpdflatex\fP\&. You can install it as follows:
+.PP
+.IP "\(bu" 2
+on APT-based systems (Ubuntu, Debian):
+.PP
+.PP
+.PP
+.nf
+apt-get install \
+  texlive-latex-base \
+  texlive-latex-recommended \
+  texlive-latex-extra \
+  texlive-fonts-recommended \
+  texlive-fonts-extra \
+  texlive-science
+.fi
+.PP
+.SS "Plugin dependencies"
+For dependencies of plugins, please refer to the \fCREADME\&.md\fP of the respective plugin\&.
+.PP
+A small subset of build dependencies to get you started:
+.PP
+.IP "\(bu" 2
+on RPM-based systems (CentOS, Red Hat Enterprise Linux, Oracle Linux):
+.PP
+.PP
+.PP
+.nf
+sudo yum install -y libdb-devel GConf2-devel libxml2-devel yajl-devel   \
+libcurl-devel augeas-devel libgit2-devel lua-devel swig python34-devel python-devel \
+java-17-openjdk-devel jna ruby-devel byacc
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+on APT-based systems (Ubuntu, Debian):
+.PP
+.PP
+.PP
+.nf
+sudo apt install -y libxerces-c-dev libxml2-dev libyajl-dev \
+libcurl4-gnutls-dev libaugeas-dev git git-buildpackage dh-lua liblua5\&.2-dev \
+dh-python python3-all python3-dev openjdk-17-jdk libjna-java ruby-dev flex bison
+.fi
+.PP
+.SH "Preparation"
+.PP
+Elektra uses \fCCMake3\fP\&. Tested are CMake version 3\&.0\&.2 and 3\&.7\&.2 among others\&.
+.PP
+To configure Elektra graphically (with curses) run (\fC\&.\&.\fP belongs to command):
+.PP
+.PP
+.nf
+mkdir build && cd build && ccmake \&.\&.
+.fi
+.PP
+.PP
+and press \fCc\fP to configure the cache (might be necessary multiple times, and once on the first time in case you don‘t see any settings)\&. After applying the desired settings, press \fCg\fP to generate the make file\&.
+.PP
+All options described here, can also be used with \fCcmake\fP rather than \fCccmake\fP (\fC\&.\&.\fP does also here belong to the command):
+.PP
+.PP
+.nf
+mkdir build && cd build && cmake -D<OPTION1>=<VAR1> -D<OPTION2>=<VAR2> \&.\&.
+.fi
+.PP
+.PP
+For information what you can use as \fCOPTION1\fP and \fCOPTION2\fP, see above\&. Note: You have to enclose a value with quotes \fC''\fP if it contains a semicolon (\fC;\fP)\&. E\&.g\&.:
+.PP
+.PP
+.nf
+cmake -DPLUGINS="dump;resolver_fm_hpu_b;yajl;list;spec" \&.\&.
+.fi
+.PP
+.PP
+Some scripts in the folder of the same name may help you running CMake\&.
+.SS "Compilers"
+You should be able to compile Elektra with any C99 compiler\&. For a list of compilers we test with have a look at:
+.PP
+.IP "\(bu" 2
+our \fBDocker containers\fP orchestrated by our \fBJenkinsfile\fP being built on \fCour build server\fP
+.IP "\(bu" 2
+\fBCirrus\fP
+.IP "\(bu" 2
+\fBGitHub Actions\fP
+.PP
+.PP
+Here is an additional list of compilers used by developers (for build servers, see links above):
+.PP
+Compiler   Version   Target    gcc   gcc (Debian 8\&.3\&.0-6) 8\&.3\&.0   x86_64-linux-gnu    gcc   gcc (Debian 10\&.2\&.1-6) 10\&.2\&.1 20210110   x86_64-linux-gnu    gcc   gcc (GCC) 11\&.2\&.1 20220127 (Red Hat 11\&.2\&.1-9)   x86_64-redhat-linux    gcc   gcc (GCC) 12\&.2\&.1 20220819 (Red Hat 12\&.2\&.1-2)   x86_64-redhat-linux    gcc   gcc-12 (Homebrew GCC 12\&.2\&.0) 12\&.2\&.0   x86_64-apple-darwin21    gcc   Homebrew clang version 15\&.0\&.1   x86_64-apple-darwin21\&.6\&.0    clang   clang version 14\&.0\&.5 (Fedora 14\&.0\&.5-1\&.fc36)   x86_64-redhat-linux-gnu    clang   Apple clang version 14\&.0\&.0 (clang-1400\&.0\&.29\&.102)   x86_64-apple-darwin21\&.6\&.0   
+.PP
+.RS 4
+(¹) OpenBSD ships an old version of GCC per default, which can not compile Elektra\&. A manual installation of egcc/eg++ is required\&. Note that not every OpenBSD mirror provides the eg++ package\&. Elektra builds are confirmed with egcc/eg++ 4\&.9\&.4 in OpenBSD 6\&.3\&. The packages are called gcc and g++\&. Compile with \fCCC=/usr/local/bin/egcc CXX=/usr/local/bin/eg++\fP\&. 
+.RE
+.PP
+To change the compiler, use CMake settings \fCCMAKE_C_COMPILER\fP and \fCCMAKE_CXX_COMPILER\fP\&.
+.PP
+To use gcc-4\&.3 for example
+.PP
+.PP
+.nf
+cmake -DCMAKE_C_COMPILER=gcc-4\&.3 -DCMAKE_CXX_COMPILER=g++-4\&.3 \&.\&.
+.fi
+.PP
+.PP
+To change the compiler with \fCccmake\fP, you may need to toggle advanced options (key \fCt\fP)\&.
+.SS "Options"
+Some options, i\&.e\&. \fCPLUGINS\fP, \fCBINDINGS\fP and \fCTOOLS\fP are either:
+.PP
+.IP "\(bu" 2
+a list of elements separated with a semicolon (\fC;\fP) (note that shells typically need \fC;\fP to be escaped)
+.IP "\(bu" 2
+a special uppercase element that gets replaced by a list of elements, that are:
+.IP "  \(bu" 4
+\fCALL\fP to include all elements (except elements with unfulfilled dependencies)
+.IP "  \(bu" 4
+\fCNODEP\fP to include all elements without dependencies
+.PP
+
+.IP "\(bu" 2
+elements prefixed with a minus symbol (\fC-\fP) to exclude an element
+.PP
+.PP
+Examples for this are especially in the subsection \fCPLUGINS\fP below, but they work in the same fashion for \fCBINDINGS\fP and \fCTOOLS\fP\&.
+.SS "Plugins"
+Read about available plugins \fBhere\fP\&.
+.PP
+Because the core of Elektra is minimal, plugins are needed to actually read and write to configuration files (\fIstorage plugins\fP), commit the changes (\fIresolver plugins\fP, also takes care about how the configuration files are named) and also do many other tasks related to configuration\&.
+.PP
+The minimal set of plugins you should add:
+.PP
+.IP "\(bu" 2
+\fBdump\fP is the default storage\&. If you remove it, make sure you add another one and set \fCKDB_DEFAULT_STORAGE\fP to it\&.
+.IP "\(bu" 2
+\fBresolver\fP is the default resolver\&. If you remove it, make sure you add another one and set \fCKDB_DEFAULT_RESOLVER\fP to it\&.
+.IP "\(bu" 2
+\fBspec\fP copies metadata from spec namespace to other namespaces\&. Needed for tests\&. (Required with \fCENABLE_TESTING\fP, except on mingw\&.)
+.IP "\(bu" 2
+\fBsync\fP is very useful to not lose any data\&. If you do not want to include it, make sure to set \fC/sw/elektra/kdb/#0/current/plugins\fP to a value not containing sync (e\&.g\&. an empty value)\&. See \fBkdb-mount(1)\fP\&.
+.PP
+.PP
+By default CMake adds nearly all plugins if the dependencies are present\&. Only experimental plugins will be omitted by default:
+.PP
+.PP
+.nf
+-DPLUGINS="ALL;-EXPERIMENTAL"
+.fi
+.PP
+.PP
+To add also experimental plugins, you can use:
+.PP
+.PP
+.nf
+-DPLUGINS=ALL
+.fi
+.PP
+.PP
+.RS 4
+Note that plugins are only built if their dependencies are satisfied\&. So make sure to install all dependencies you need before you run \fCcmake\fP\&. For example, to include the plugin \fCyajl\fP, make sure \fClibyajl-dev\fP is installed\&. 
+.RE
+.PP
+To add all plugins except some plugins you can use:
+.PP
+.PP
+.nf
+-DPLUGINS="ALL;-plugin1;-plugin2"
+.fi
+.PP
+.PP
+For example, if you want all plugins except the jni plugin you would use:
+.PP
+.PP
+.nf
+-DPLUGINS="ALL;-jni"
+.fi
+.PP
+.PP
+To add all plugins not having additional dependencies (they need only POSIX), you can use
+.PP
+.PP
+.nf
+-DPLUGINS=NODEP
+.fi
+.PP
+.PP
+Note, that every \fCinfos/provides\fP and \fCinfos/status\fP field written uppercase can be used to select plugins that way (see README of \fBindividual plugins\fP)\&. You also can combine any of these fields and add/remove other plugins to/from it, e\&.g\&. to include all plugins without deps, that provide storage (except \fCyajl\fP) and are maintained, but not include all plugins that are experimental, you would use:
+.PP
+.PP
+.nf
+-DPLUGINS="NODEP;STORAGE;-yajl;MAINTAINED;-EXPERIMENTAL"
+.fi
+.PP
+.PP
+The inclusion is determined by following preferences:
+.PP
+.IP "1." 4
+if the plugin is explicit excluded with \fC-plugin\fP
+.IP "2." 4
+if the plugin is explicit included with \fCplugin\fP
+.IP "3." 4
+if the plugin is excluded via a category \fC-CATEGORY\fP
+.IP "4." 4
+if the plugin is included via a category \fCCATEGORY\fP
+.IP "5." 4
+plugins are excluded if they are not mentioned at all (neither by category nor by name)
+.PP
+.PP
+Note, that changing \fCPLUGINS\fP will not modify the defaults used after Elektra was installed\&. For this endeavour you need to change:
+.PP
+.PP
+.nf
+-DKDB_DEFAULT_RESOLVER=resolver
+.fi
+.PP
+.PP
+and
+.PP
+.PP
+.nf
+-DKDB_DEFAULT_STORAGE=dump
+.fi
+.PP
+.PP
+The default resolver and storage will write to \fCKDB_DB_FILE\fP and \fCKDB_DB_INIT\fP (\fBfor bootstrapping\fP)\&.
+.PP
+Obviously, you can pass the exact list of plugins you want, e\&.g\&.:
+.PP
+.PP
+.nf
+-DPLUGINS="resolver;sync;dump"
+.fi
+.PP
+.PP
+Some plugins are compile-time configurable\&. Then you can choose which features are compiled in or out\&. This is especially important in the bootstrapping phase, because then only the compiled in configuration applies\&. To compile-time-configure a plugin, you just pass a underscore (\fC_\fP) and flags after the name of the plugin\&.
+.PP
+The resolver for example distinguish between 3 different kind of flags:
+.PP
+.PP
+.nf
+-DPLUGINS="resolver_baseflags_userflags_systemflags"
+.fi
+.PP
+.PP
+The following base flags are available:
+.PP
+.IP "\(bu" 2
+\fCc\fP for debugging conflicts
+.IP "\(bu" 2
+\fCf\fP for enabling file locking
+.IP "\(bu" 2
+\fCm\fP for enabling mutex locking
+.PP
+.PP
+The user flags are (the order matters!):
+.PP
+.IP "\(bu" 2
+\fCp\fP use passwd/ldap to lookup home directory using \fCgetpwuid_r\fP
+.IP "\(bu" 2
+\fCh\fP use the environment variable HOME
+.IP "\(bu" 2
+\fCu\fP use the environment variable USER
+.IP "\(bu" 2
+\fCb\fP use the built-in default CMake variable \fCKDB_DB_HOME\fP
+.PP
+.PP
+The system flags are (the order matters!):
+.PP
+.IP "\(bu" 2
+\fCx\fP use the environment variable \fCXDG_CONFIG_DIRS\fP (\fC:\fP are interpreted as part of filename, no searching is done!) This option is not recommended (unless for testing), because it allows users to fake system configuration\&.
+.IP "\(bu" 2
+\fCb\fP use the built-in default CMake variable \fCKDB_DB_SYSTEM\fP
+.IP "\(bu" 2
+note: if a path that begins with a slash (\fC/\fP) is chosen, the system flags are irrelevant and the path is taken as-is\&.
+.PP
+.PP
+For example, one may use:
+.PP
+.PP
+.nf
+-DPLUGINS="resolver_lm_uhpb_b"
+.fi
+.PP
+.PP
+To add \fCresolver_l_h_b\fP you need to specify
+.PP
+.PP
+.nf
+-DPLUGINS="resolver;resolver_l_h_b"
+.fi
+.PP
+.PP
+You can add resolver with any combination of the flags, even if they are not available in \fCALL\fP\&.
+.SS "Tools"
+Tools are used to add extra functionality to Elektra\&. The flag used to specify which tools are compiled is \fC-DTOOLS\fP, thus flag works similarly to the \fC-DPLUGINS\fP flag, but is more limited in its functionality (which does not matter, because there are not so many tools)\&.
+.PP
+To add all non-experimental tools, you can use::
+.PP
+.PP
+.nf
+-DTOOLS=ALL
+.fi
+.PP
+.PP
+.RS 4
+Note that the behavior is different to PLUGINS which includes all PLUGINS if ALL is used\&. 
+.RE
+.PP
+To add all tools except of race, you can use:
+.PP
+.PP
+.nf
+-DTOOLS="ALL;-race"
+.fi
+.PP
+.PP
+To specify specific tools you can use, e\&.g\&.:
+.PP
+.PP
+.nf
+-DTOOLS=qt-gui;kdb
+.fi
+.PP
+.SS "Bindings"
+Bindings are used in a like as \fCPLUGINS\fP\&. For example, to build all maintained bindings and exclude experimental bindings you can use:
+.PP
+.PP
+.nf
+-DBINDINGS=MAINTAINED;-EXPERIMENTAL
+.fi
+.PP
+.PP
+The SWIG executable may be specified with:
+.PP
+.PP
+.nf
+-DSWIG_EXECUTABLE=/usr/bin/swig3\&.0
+.fi
+.PP
+.PP
+If this option is not used, CMake will find the first occurrence of \fCswig\fP in your environment's path\&.
+.PP
+Some bindings provide different APIs (and not a different language), e\&.g:
+.PP
+.IP "\(bu" 2
+\fCgsettings\fP
+.IP "\(bu" 2
+\fCINTERCEPT\fP with \fCintercept_fs\fP and \fCintercept_env\fP
+.IP "\(bu" 2
+\fCIO\fP with \fCio_uv\fP
+.PP
+.PP
+To not add such APIs, but only \fCswig\fP bindings and \fCcpp\fP, you can use:
+.PP
+.PP
+.nf
+-DBINDINGS="SWIG;cpp"
+.fi
+.PP
+.PP
+For a list of available bindings see \fBbinding's README\&.md\fP\&.
+.SS "<tt>CMAKE_BUILD_TYPE</tt>"
+\fCDebug\fP, \fCRelease\fP or \fCRelWithDebInfo\fP See help bar at bottom of \fCccmake\fP for that option or: https://www.cmake.org/Wiki/CMake_Useful_Variables
+.SS "<tt>BUILD_SHARED</tt>, <tt>BUILD_FULL</tt> and <tt>BUILD_STATIC</tt>"
+\fCBUILD_SHARED\fP is the typical build you want to have on systems that support \fCdlopen\fP\&. It can be used for desktop builds, but also embedded systems as long as they support \fCdlopen\fP, for example, \fCBUILD_SHARED\fP is used on OpenWRT with \fCmusl\fP\&. Using \fCBUILD_SHARED\fP every plugin is its own shared object\&.
+.PP
+\fCBUILD_FULL\fP links together all parts of Elektra as a single shared \fC\&.so\fP library\&. This is ideal if shared libraries are available, but you want to avoid \fCdlopen\fP\&. Some tests only work with \fCBUILD_FULL\fP, so you might turn it on to get full coverage\&.
+.PP
+\fCBUILD_STATIC\fP also links together all parts but as static \fC\&.a\fP library\&. It is only useful for systems without \fCdlopen\fP or if the overhead of \fCdlopen\fP needs to be avoided\&.
+.PP
+All three forms of builds can be intermixed freely\&.
+.PP
+For example, to enable shared and full build, but disable static build, one would use:
+.PP
+.PP
+.nf
+cmake -DBUILD_SHARED=ON -DBUILD_FULL=ON -DBUILD_STATIC=OFF \&.\&.
+.fi
+.PP
+.SS "<tt>BUILD_DOCUMENTATION</tt>"
+Build documentation with doxygen (API) and ronn-ng (man pages)\&.
+.PP
+If ronn-ng is not found, already compiled man pages will be used instead\&.
+.PP
+.RS 4
+Note: Turning off building the documentation, also turns off installing the documentation, see https://issues.libelektra.org/2522 Then no man pages are available\&. 
+.RE
+.PP
+.SS "<tt>BUILD_PDF</tt>"
+Build documentation with LaTeX\&.
+.PP
+See \fCDocumentation dependencies\fP for the required dependencies\&.
+.SS "Developer Options"
+As developer you should enable \fCENABLE_DEBUG\fP and \fCENABLE_LOGGER\fP:
+.PP
+.IP "\(bu" 2
+\fCENABLE_DEBUG\fP:
+.IP "  \(bu" 4
+enables assertions
+.IP "  \(bu" 4
+adds RTLD_NODELETE so that debugger finds symbols even after dlclose
+.PP
+
+.IP "\(bu" 2
+\fCENABLE_LOGGER\fP: enables logging By default no logging will take place, see \fBCODING\fP for how to get log messages\&.
+.PP
+.PP
+Continue reading \fBtesting\fP for more information about testing\&.
+.SS "<tt>CMAKE_INSTALL_PREFIX</tt>"
+\fCCMAKE_INSTALL_PREFIX\fP defaults to \fC/usr/local\fP\&. So by default most files will be installed below \fC/usr/local\fP\&. Exceptions to this are files handled by \fCINSTALL_SYSTEM_FILES\fP\&.
+.PP
+Edit that cache entry to change that behavior\&. Also called system prefix within the documentation\&.
+.PP
+If you want to create a package afterwards it is ok to use paths that you can write to (e\&.g\&. \fC-DCMAKE_INSTALL_PREFIX=/home/username/\fP)
+.SS "<tt>LIB_SUFFIX</tt>"
+Lets you install libraries into architecture specific folder\&. E\&.g\&. for 32/64 bit systems you might install libraries under \fClib64\fP\&. Set \fCLIB_SUFFIX\fP to \fC64\fP to achieve exactly that\&. So the system library folder will be \fCCMAKE_INSTALL_PREFIX/lib64\fP then\&.
+.SS "<tt>TARGET_INCLUDE_FOLDER</tt>"
+By default include folders will be installed below \fCCMAKE_INSTALL_PREFIX/include/elektra\fP\&. This entry let you change the elektra\&. If the entry is empty, the include files will be installed directly to \fCCMAKE_INSTALL_PREFIX/include\fP\&.
+.SS "<tt>TARGET_PLUGIN_FOLDER</tt>"
+Similar to above, but with the plugins\&. Default is: \fCCMAKE_INSTALL_PREFIX/lib${LIB_SUFFIX}/elektra\fP It can be also left empty to install plugins next to other libraries\&.
+.SS "<tt>GTEST_ROOT</tt>"
+This value specifies the root directory of a local copy of the \fCGoogle Test\fP framework\&.
+.PP
+.IP "\(bu" 2
+If it is empty (\fC''\fP), then the build system will download a copy of \fCGoogle Test\fP into the build directory\&.
+.IP "\(bu" 2
+Otherwise the build system will search for the file \fCCMakeLists\&.txt\fP in the top level directory of \fCGTEST_ROOT\fP\&. If this file exists, then the build system will use the sources files at \fCGTEST_ROOT\fP to translate tests that use \fCGoogle Test\fP\&.
+.PP
+.PP
+It can be provided as CMake or environment variable\&. If both options are provided the value passed via CMake takes precedence\&.
+.PP
+It is recommended that you browse through all the options using \fCccmake\fP\&. Afterwards press \fCc\fP again (maybe multiple times until all variables are resolved) and then \fCg\fP to generate\&. Finally press \fCe\fP to exit\&.
+.SS "<tt>INSTALL_BUILD_TOOLS</tt>"
+Specifies that the build tools, i\&.e\&. \fCelektra-export-symbols\fP and \fCelektra-export-symbols\fP are installed (by default off)\&. Is needed for cross-compilation\&.
+.SS "<tt>INSTALL_SYSTEM_FILES</tt>"
+Some of Elektra’s targets require to be installed into specific folders in the file system hierarchy to work properly\&.
+.PP
+This variable is disabled by default, since it requires the install target to have the rights to write into the corresponding folders\&. Set \fC-DINSTALL_SYSTEM_FILES=ON\fP, if you also want to install the files listed below\&.
+.PP
+If you do not have root rights you can also copy the files manually to your user folder\&.
+.PP
+Currently the installed system files are as following:
+.PP
+Module   Description   Install Path    bash-completion   bash tab auto completion file   \fCcompletionsdir\fP from pkg-config (¹)    zsh-completion   zsh tab auto completion file   /usr/share/zsh/vendor-completions    GIR   introspection file for bindings   \fCINTROSPECTION_GIRDIR\fP from pkg-config    GSettings   GSettings backend module   \fCGIO_MODULE_DIR\fP from pkg-config   
+.PP
+.RS 4
+(¹) Or \fC/usr/share/bash-completion/completions\fP as fallback\&. 
+.RE
+.PP
+.SS "<tt>ENABLE_OPTIMIZATIONS</tt>"
+In order to keep the binaries as small as possible this flag allows trading memory for speed\&.
+.SH "Building"
+.PP
+.SS "Without IDE"
+To build the source use:
+.PP
+.PP
+.nf
+make
+.fi
+.PP
+.PP
+You can pass:
+.PP
+.IP "\(bu" 2
+\fC-j\fP for parallel builds
+.IP "\(bu" 2
+\fCVERBOSE=1\fP to see the invocations of the compiler
+.PP
+.PP
+Continue by reading \fBINSTALL\fP\&.
+.SS "With CodeBlocks"
+You can build Elektra using Code::Blocks under Gentoo:
+.PP
+Precondition: Make sure you have a compiler, xml2 (for kdb tool) and xsl (see later) installed\&. cmake configure will help you with that, it will make sure you don't forget something essential\&.
+.PP
+For Most Linux system all you have to do is open up a console and
+.PP
+.PP
+.nf
+mkdir build
+cd build
+cmake \&.\&. -G 'CodeBlocks - Unix Makefiles'
+make package
+.fi
+.PP
+.PP
+\fBNote 1:\fP You can use other editor if you like just type cmake at the console to get a list of option you can pass to cmake as long as well as a list of what code editor project cmake can create\&.
+.PP
+\fBNote 2:\fP For Unix if you have nCurses install you can run \fCccmake\fP to set important option after running cmake like to enable debug symbol\&.
+.PP
+\fBNote 3:\fP For Gentoo it's recommended to emerge sys-apps/lsb-release to name the package right even thou not required\&.
+.SH "Maintainer's Guide"
+.PP
+.SS "Multiarch"
+On multiarch (multiple architectures installed in one system), you need to set \fCLIB_SUFFIX\fP\&. For example, if you want to have the binaries in \fClib64\fP and \fClib32\fP, you would use for the libraries to be installed in \fC${CMAKE_INSTALL_PREFIX}/lib64\fP:
+.PP
+.PP
+.nf
+-DLIB_SUFFIX="64"
+.fi
+.PP
+.PP
+If there is a directory for different architectures, simply prepend an \fC/\fP\&. For example, for Debian:
+.PP
+.PP
+.nf
+-DLIB_SUFFIX="/$(DEB_HOST_MULTIARCH)"
+.fi
+.PP
+.SS "<tt>RPATH</tt>"
+By default Elektra uses \fCRPATH\fP to hide its plugins\&. This makes it obvious that external applications should \fInot\fP link against plugins\&. Instead every application should use the \fCelektraModulesLoad()\fP API to load Elektra’s modules\&.
+.PP
+The folder where the plugins are located is a subdirectory of where the libraries are installed\&. The name of the subdirectory can be specified using \fCTARGET_PLUGIN_FOLDER\fP and is \fCelektra\fP by default\&. You might want to encode Elektra’s \fCSOVERSION\fP into the folders name, if you want different major versions of Elektra be co-installable\&.
+.PP
+Elektra’s use case for \fCRPATH\fP is considered acceptable, so we recommend using it because:
+.PP
+.IP "\(bu" 2
+plugins do not clutter the library folder nor the \fCld\&.so\&.cache\fP
+.IP "\(bu" 2
+it works well with multiarch (\fCLIB_SUFFIX\fP is also honored for plugins)
+.IP "\(bu" 2
+which plugins are used should be decided at mount-time and be globally available in the same way for every application\&. \fCRPATH\fP supports exactly that because it even overrides \fCLD_LIBRARY_PATH\fP\&.
+.PP
+.PP
+Unfortunately, there are also drawbacks:
+.PP
+.IP "\(bu" 2
+it makes Elektra non-relocatable (\fCRPATH\fP is decided at compile-time, so you cannot simply move Elektra’s installations within the file system (e\&.g\&. from \fC/usr/local\fP to \fC/usr\fP)
+.IP "\(bu" 2
+it requires modern \fCld\&.so\fP implementations that honor \fCRPATH\fP from libraries\&. This is the case for most \fClibc\fP implementations including Linux and macOS, but not for, e\&.g\&., \fCmusl\fP\&.
+.PP
+.PP
+If you want Elektra to \fInot\fP use \fCRPATH\fP, you can add:
+.PP
+.PP
+.nf
+-DTARGET_PLUGIN_FOLDER="" -DCMAKE_SKIP_INSTALL_RPATH=ON
+.fi
+.PP
+.PP
+Then all plugins are directly installed to the library directory and loaded like other libraries (in any of \fCld\&.so\fP paths)\&.
+.PP
+Alternatively, which gives you the advantage not to clutter the main library path, is to add the plugin folder in \fC/etc/ld\&.so\&.conf\&.d/elektra\fP\&. Note that it still allows applications to link against plugins\&.
+.SH "Troubleshooting"
+.PP
+.SS "Dependencies not Available for Cent OS"
+Please enable EPEL https://fedoraproject.org/wiki/EPEL
+.PP
+.PP
+.nf
+# Install EPEL for RHEL 7
+curl -o epel-release-7-8\&.noarch\&.rpm \
+  https://dl\&.fedoraproject\&.org/pub/epel/7/x86_64/e/epel-release-7-8\&.noarch\&.rpm
+sudo rpm -ivh epel-release-7-8\&.noarch\&.rpm
+sudo yum update
+.fi
+.PP
+.PP
+For Bindings swig3 is recommended\&. swig2 only works on some distributions\&. E\&.g\&., for Debian Jessie the bindings will crash\&.
+.PP
+At time of writing, no swig 3 was available, not even in EPEL\&. Thus you need to install swig3 manually:
+.PP
+.PP
+.nf
+curl https://codeload\&.github\&.com/swig/swig/tar\&.gz/rel-3\&.0\&.10 | tar xz
+cd swig-rel-3\&.0\&.10 && \&./autogen\&.sh && \&./configure && make
+sudo make install
+cd \&.\&.
+.fi
+.PP
+.PP
+Also, no ronn-ng was available, thus you need to do:
+.PP
+.PP
+.nf
+gem install ronn-ng -v 0\&.10\&.1\&.pre1
+.fi
+.PP
+.SS "Cross Compiling"
+In Elektra cross compiling needs two steps\&. If you get errors like \fCelektra-export-errors_EXE_LOC\fP not found, go on reading\&.
+.PP
+In the first step, you need to compile Elektra for the host architecture and install the build tools:
+.PP
+.PP
+.nf
+cmake -DINSTALL_BUILD_TOOLS=ON \
+      -DCMAKE_PREFIX_PATH=$(STAGING_DIR_HOST) \
+      \&.\&.
+cmake --build \&. -- -j5
+cmake --build \&. --target install
+.fi
+.PP
+.PP
+Where \fC\fP must be a directory to be found in the later build process\&. In particular, \fC/bin\fP must be in a directory found by a later \fCfind_program\fP\&.
+.PP
+Then you need to compile Elektra again, but for the target architecture\&. Now, the build tools such as \fCelektra-export-errors\fP should be found in the \fC/bin\fP where they were installed before\&.
+.PP
+For reference, you can look into the \fCOpenWRT Elektra Makefile\fP and the \fCCMake in OpenWRT\fP\&.
+.SH "See Also"
+.PP
+.IP "\(bu" 2
+\fBINSTALL\fP
+.IP "\(bu" 2
+\fBTESTING\fP
+.IP "\(bu" 2
+\fBBUILDSERVER\fP 
+.PP
+

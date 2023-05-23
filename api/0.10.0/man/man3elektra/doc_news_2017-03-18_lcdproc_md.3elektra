@@ -1,0 +1,253 @@
+.TH "doc_news_2017-03-18_lcdproc_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2017-03-18_lcdproc_md \- Elektrify LCDproc 
+
+.IP "\(bu" 2
+guid: d52657b5-60da-4a21-9679-f8aacf6d6b72
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Sat, 18 Mar 2017 20:43:03 +0100
+.IP "\(bu" 2
+shortDesc: Elektrify LCDproc
+.PP
+.PP
+.RS 4
+LCDproc is a piece of open source software that displays real-time system information from your \fCLinux\fP/\fC*BSD\fP box on a LCD\&. 
+.RE
+.PP
+LCDproc's \fCwebsite\fP is a bit outdated but LCDproc itself is now well-maintained on \fCGitHub\fP and had a \fCrelease recently\fP\&.
+.PP
+Like in many projects, it invented its own configuration access and INI parser which did not evolve with the needs of the project\&. As a consequence inconsistencies and code duplication spread over the source\&. For example, the LCDproc configuration access does not support values that represent display's size (such as \fC20x4\fP)\&. Thus every LCDproc's module has its own parsing code for such values\&.
+.PP
+Some days ago (16\&.03\&.2017), we met with Harald Geyer and discussed the current situation\&. We decided that we will elektrify LCDproc and remove all the configuration access and parsing code within LCDproc\&. To \fBelektrify\fP an application means to change the application so that it uses LibElektra afterwards\&.
+.SH "Goals"
+.PP
+We formulated three goals:
+.PP
+.IP "1." 4
+We (Elektra Initiative, mainly Thomas Waser) remove as much code as possible from LCDproc's code base\&.
+.IP "2." 4
+Users of LCDproc should be able to use \fCLCDd\&.conf\fP as they use it now\&.
+.IP "3." 4
+We avoid the current duplications of configuration specifications\&. (Currently in \fCLCDd\&.conf\fP, the docbook, in code checking the limits, and the default parameter in the code\&.)
+.PP
+.PP
+Nice-to-have is:
+.PP
+.IP "\(bu" 2
+Safe updates: \fCmake install\fP should not break the current \fCLCDd\&.conf\fP\&. (As it is already done in Debian\&.)
+.IP "\(bu" 2
+The robustness of LCDproc on misconfiguration should be improved (Thomas Waser writes the specification)\&.
+.IP "\(bu" 2
+Automatic reloading of the daemon when using Elektra to update configuration\&. (Manual \fCSIGHUP\fP-signals will work in any case\&.)
+.IP "\(bu" 2
+Have physical units with metric prefix like \fC500ms\fP for \fC0\&.5s\fP (seconds)\&.
+.PP
+.PP
+Possible limitations are:
+.PP
+.IP "\(bu" 2
+We break support for systems that only have very old compilers\&.
+.IP "\(bu" 2
+The \fC-c\fP option to specify a different configuration file is against the abstraction Elektra should deliver\&. We might create a \fCwrapper script\fP that emulates \fC-c\fP via mountpoints\&.
+.IP "\(bu" 2
+LCDproc will depend on the yet-to-be-released \fC0\&.8\&.20\fP\&. We will delay the 0\&.8\&.20 release until all parts for LCDproc are tested and ready\&.
+.PP
+.PP
+In any case, the \fCadvertised benefits of Elektra\fP will automatically apply (incomplete list):
+.PP
+.IP "\(bu" 2
+Global key database: you can connect other configuration files with the LCDproc's configuration and validation\&.
+.IP "\(bu" 2
+Allows users to easily modify the specifications, for example to have different command-line options, or support for environment variables\&.
+.IP "\(bu" 2
+\fCProfile support\fP: Having multiple complete configuration settings you can easily choose from\&. (thanks to Thomas Waser)
+.IP "\(bu" 2
+Introspectibility: you can check with \fCkdb\fP-tool which configuration settings LCDproc will receive\&.
+.IP "\(bu" 2
+Other configuration file formats can be used instead, e\&.g\&. JSON or XML\&. (Only if wanted as personal preference, by default INI will be used to remain compatibility with \fCLCDd\&.conf\fP\&.)
+.IP "\(bu" 2
+Easy migration paths to use other configuration file formats such as YAML as default in future\&. (thanks to René Schwaiger)
+.IP "\(bu" 2
+Elektra's tool can be used to configure LCDconf, including:
+.IP "  \(bu" 4
+\fCkdb set\fP to modify individual settings within scripts and validation\&.
+.IP "  \(bu" 4
+\fCkdb editor\fP, which spawns your favorite editor but validates the configuration file before writing it out\&.
+.IP "  \(bu" 4
+\fCkdb qt-gui\fP, the Qt GUI (thanks to Raffael Pancheri)\&.
+.IP "  \(bu" 4
+The web UI of Elektra (thanks to Daniel Bugl)\&.
+.PP
+
+.IP "\(bu" 2
+Elektra's website can be used to share LCDproc's configuration files, and you can use the \fCcurlget plugin\fP to mount files from the website\&. (thanks to Marvin Mall)
+.IP "\(bu" 2
+You can use Shell, Python, or Lua to write small scripts that are executed on configuration access\&.
+.IP "\(bu" 2
+Elektra allows you to directly read and write from git using the \fCGit plugin\fP\&. (Even if \fCLCDd\&.conf\fP is not checked out, thanks to Thomas Waser)
+.IP "\(bu" 2
+We extensively \fCtest\fP Elektra with modern techniques such as fuzzing\&.
+.PP
+.SH "Validation"
+.PP
+Instead of \fCif\fPs within the code, we will use SpecElektra for validation\&. \fCSpecElektra\fP is a configuration specification language that allows us to describe which configuration is valid\&.
+.PP
+This specification will be installed as part of LCDproc to \fC/usr/share/elektra/specifications\fP\&. It uses the \fCmetadata\fP as defined by the plugins to validate configuration changed via Elektra\&.
+.PP
+For broken installations or when executing LCDproc from the source repository, there is also a built-in specification\&. The specification will only be used if the installed one cannot be found\&.
+.PP
+Thus the configuration validation specification is a normal configuration file also integrated in Elektra, also the specification can be introspected: useful for system administrators who want to know about valid entries, but also for tools like our newly developed web-UI by Daniel Bugl\&.
+.PP
+The web-UI automatically restricts the interface so that only valid entries can be entered\&. For example, if you should enter a boolean, only a check box is presented to you\&.
+.PP
+.IP "\(bu" 2
+For more information about validation, see the \fCtutorial\fP
+.PP
+.SH "Code Generation"
+.PP
+We (mainly Dominik Hofer) are currently developing \fCa high-level API\fP, whose first user will be LCDproc\&. In this API, we will make sure during compilation, that configuration access is done correctly\&.
+.PP
+This is especially useful when configuration settings get renamed\&. Then all places where out-dated configuration settings are used will fail to compile\&.
+.PP
+In particular using code generation developers do not need to use strings to refer to configuration settings and they get easy-to-use enums consistent with the configuration specification\&.
+.PP
+Furthermore, code generation will make sure that a specification (and default configuration settings) will be found even if no \fC/etc\fP or no \fC/usr\fP is found\&.
+.PP
+We also found that we cannot use code generation everywhere\&. In generic access code, code generation obviously is limited\&.
+.PP
+.IP "\(bu" 2
+For more information about code generation, see the \fCtutorial\fP
+.PP
+.SH "Risks"
+.PP
+Understandably, users might be concerned that such a change will not work or create problems in the future\&. Here we will discuss some of the concerns\&.
+.PP
+.RS 4
+Elektra might be discontinued\&. 
+.RE
+.PP
+From history perspective, Elektra received steady development since 2004\&. Elektra is a FLOSS project and welcomes everyone to join\&. In the last years several people did, with an increasing number per year\&. Currently following people are working on substantial new features in Elektra (sorted by first name):
+.PP
+.IP "\(bu" 2
+Armin Wurzinger: Quality Improvements
+.IP "\(bu" 2
+Bernhard Denner: \fCPuppet Module\fP
+.IP "\(bu" 2
+Daniel Bugl: \fCWebUI\fP
+.IP "\(bu" 2
+Dominik Hofer: \fCthe high-level API\fP
+.IP "\(bu" 2
+Kurt Micheli: Order Preserving Minimal Hash Map
+.IP "\(bu" 2
+Markus Raab: Maintainer
+.IP "\(bu" 2
+Michael Zehender: Quality Improvements
+.IP "\(bu" 2
+Mihael Pranjić: mmap plugin
+.IP "\(bu" 2
+Peter Nirschl: \fCcrypto plugin\fP
+.IP "\(bu" 2
+René Schwaiger: YAML plugin
+.IP "\(bu" 2
+Sebastian Bachmann: Shell Completion
+.IP "\(bu" 2
+Thomas Waht: Notification
+.IP "\(bu" 2
+Thomas Waser: Validation and Transformations of Configuration
+.IP "\(bu" 2
+Vanessa Kos: Misconfiguration Bug Database
+.PP
+.PP
+Obviously, there are many more casual contributors\&.
+.PP
+Elektra has a large set of \fCautomated tests\fP and only a small amount of technical dept\&. Elektra has no required external dependencies except libc\&. So without internal changes, only minimal maintenance cost is required\&.
+.PP
+.RS 4
+Elektra is unfinished\&. 
+.RE
+.PP
+Technically this is true: we did not reach \fC1\&.0\fP\&. We are, however, on track to reach this goal within this summer\&. Now is the best time to join because we can provide more support and are more flexible for changes and wishes\&.
+.PP
+Some \fCtime ago\fP we asked in a survey in which direction Elektra should develop\&. Most open issues are (in)direct responses from this wanted direction\&.
+.PP
+Some plugins are experimental or proof-of-concept, but they are clearly marked as such\&.
+.PP
+.RS 4
+It seems a bit to me like \fCxkcd: Standards\fP\&. 
+.RE
+.PP
+Elektra does not invent a new configuration file format nor new standards where to store configuration files but abstracts over these issues\&.
+.PP
+.RS 4
+Elektra not being available in my distribution\&. 
+.RE
+.PP
+For the following Linux Distributions Elektra 0\&.8 packages are available:
+.PP
+.IP "\(bu" 2
+Gentoo
+.IP "\(bu" 2
+\fCArch Linux\fP
+.IP "\(bu" 2
+\fCDebian\fP
+.IP "\(bu" 2
+\fCUbuntu\fP
+.IP "\(bu" 2
+\fCOpenSuse\fP
+.IP "\(bu" 2
+PLDLinux
+.IP "\(bu" 2
+\fCLinux Mint\fP
+.IP "\(bu" 2
+\fCOpenWRT\fP
+.PP
+.PP
+See \fCINSTALL\fP for the complete and up-to-date list\&.
+.PP
+.RS 4
+If Elektra does not take off and achieve world dominance, will we be worse off than before? 
+.RE
+.PP
+Making sure that projects will not be worse off is what we did the last years: Not only offer an API and wait for world dominance but to offer an implementation that can compete with any configuration library out there\&. We are not completely there yet (there are some details where specific other libraries are better than Elektra in specific points) but these are not points that the current configuration system of LCDproc supports (not even close)\&. And the libraries that can compete with Elektra have a completely different level on which dependencies they have: Elektra is the only one only requiring libc\&.
+.PP
+.RS 4
+Do we retain the old way of configuring things, i\&.e\&. manually editing an ini file in /etc? 
+.RE
+.PP
+Absolutely, you can think of libelektra as a small library in C that reads a configuration file and returns a data structure if you do not use any of its advanced features\&.
+.PP
+.RS 4
+Do we retain the old way reloading/restarting the system service? 
+.RE
+.PP
+Elektra does not interfere with restarting\&. It is a passive library\&. It provides some techniques for reloading but they are optional (but we recommend that you keep the in-memory and persistent configuration in sync via notification)\&.
+.PP
+For more information, see the \fCFAQ\fP\&.
+.SH "Win-Win"
+.PP
+We can both profit from it:
+.PP
+.IP "1." 4
+For LCDproc it will be a simplification of code while getting many more tools\&.
+.IP "2." 4
+For Elektra it will improve its adoption and packaging\&.
+.PP
+.PP
+For oyranos it already worked well on both sides, see our discussions in the issue tracker, for example \fC#1134\fP\&.
+.PP
+If you also maintain an free or open source (FLOSS) project with an out-dated configuration system, please contact us\&.
+.PP
+Obviously, we cannot fully port every FLOSS project ourselves, instead we will handle requests on a first come, first serve basis\&. Earlier projects will also have an higher impact on the feature set of Elektra, thus you will less likely need to implement your own plugin\&.
+.SH "See Also"
+.PP
+.IP "\(bu" 2
+Progress can be viewed \fChere\fP
+.IP "\(bu" 2
+We discussed about alternatives to Elektra \fChere\fP\&.
+.PP
+.PP
+Best regards, Markus 

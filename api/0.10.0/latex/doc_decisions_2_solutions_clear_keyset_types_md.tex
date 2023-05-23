@@ -1,0 +1,72 @@
+\label{doc_decisions_2_solutions_clear_keyset_types_md_md_doc_decisions_2_solutions_clear_keyset_types}%
+\Hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_md_doc_decisions_2_solutions_clear_keyset_types}%
+ \hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1989}{}\doxysection{Problem}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1989}
+A {\ttfamily Key\+Set} can be used in different ways. Among these are at least\+:
+
+
+\begin{DoxyItemize}
+\item As originally intended, a set of configuration data
+\item Metadata of a {\ttfamily Key}
+\item General associative array data structure
+\end{DoxyItemize}
+
+Only {\ttfamily Key\+Set}s with one kind of keys makes sense. These types have slightly different requirements, and therefore need to be treated differently. Currently, keys of different types can be arbitrary intermixed, leading to many error variants and error code that is time-\/consuming (full iteration is needed).
+
+The {\ttfamily Key\+Set} for metadata (returned by {\ttfamily key\+Meta}) also has the special requirement, that it must be restricted to metadata keys, even when it is empty.\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1990}{}\doxysection{Constraints}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1990}
+
+\begin{DoxyItemize}
+\item API must be minimal
+\item API must be safe to use for each of the different types
+\item {\ttfamily Key\+Set} returned by {\ttfamily key\+Meta} must always be limited to {\ttfamily meta\+:/} keys
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1991}{}\doxysection{Assumptions}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1991}
+
+\begin{DoxyItemize}
+\item The types are not different enough to warrant the overhead of entirely different APIs and data structures.
+\item Introducing a type safe API with different C-\/types for each type of {\ttfamily Key\+Set}, is not worth the necessary API duplication.
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1992}{}\doxysection{Considered Alternatives}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1992}
+\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1993}{}\doxysubsection{No restrictions}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1993}
+Leave {\ttfamily Key\+Set} entirely unrestricted, so it can be used for each use case.
+
+Sometimes there can be odd edge cases. For example, what should a storage plugin do, if it receives a {\ttfamily Key\+Set} with both configuration data and metadata.\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1994}{}\doxysubsection{Restriction based on first $<$tt$>$\+Key$<$/tt$>$}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1994}
+To effectively create different kinds of {\ttfamily Key\+Set}s, we restrict which {\ttfamily Key}s can be inserted into a {\ttfamily Key\+Set} based on the first {\ttfamily Key} in a {\ttfamily Key\+Set}.
+
+Any {\ttfamily Key} except cascading keys can be inserted into an empty {\ttfamily Key\+Set}. Only {\ttfamily Key}s matching the type of a {\ttfamily Key\+Set} can be inserted into a non-\/empty {\ttfamily Key\+Set}. The type of a {\ttfamily Key\+Set} is determined by the first {\ttfamily Key}, i.\+e., {\ttfamily ks\+At\+Cursor(ks, 0)}. Transitively, this means the type of a {\ttfamily Key\+Set} is fixed when the first {\ttfamily Key} is inserted and when a {\ttfamily Key\+Set} is cleared, it becomes \char`\"{}type-\/less\char`\"{} again.
+
+The different types of {\ttfamily Key\+Set} will be\+:
+
+
+\begin{DoxyEnumerate}
+\item Metadata\+: Can only contain {\ttfamily Key}s with namespace {\ttfamily KEY\+\_\+\+NS\+\_\+\+META}.
+\item General data\+: Can only contain {\ttfamily Key}s with namespace {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC}.
+\item Config data\+: Can only contain a mix of {\ttfamily Key}s with namespace {\ttfamily KEY\+\_\+\+NS\+\_\+\+SPEC}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+PROC}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+DIR}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+USER}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+SYSTEM} and {\ttfamily KEY\+\_\+\+NS\+\_\+\+DEFAULT}.
+\end{DoxyEnumerate}
+
+Importantly, {\ttfamily Key}s with namespace {\ttfamily KEY\+\_\+\+NS\+\_\+\+CASCADING} can never be inserted into a {\ttfamily Key\+Set}. This is a restriction that simplifies the logic for cascading lookups. Instead, the {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC} namespace should be used.
+
+Cascading lookups always try the namespaces allowed in the type of {\ttfamily Key\+Set} in order, but never try {\ttfamily KEY\+\_\+\+NS\+\_\+\+SPEC}. This means cascading lookups work for all types of {\ttfamily Key\+Set} the way a user would expect.
+
+The special restriction for the {\ttfamily Key\+Set} returned by {\ttfamily key\+Meta} can be solved by adding a new flag to {\ttfamily struct \+\_\+\+Key\+Set}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} forceMeta : 1; }
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1995}{}\doxysubsection{Different structs and APIs}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1995}
+Extract the implementation of {\ttfamily Key\+Set} into an internal API (and possibly data structure). Expose a different type and API for each of the use cases.
+
+This creates unnecessary overhead and at least some code duplication, even if it is minimized by extracting the implementation.\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1996}{}\doxysubsection{Key\+Sets also have Namespaces}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1996}
+Add a {\ttfamily ks\+Set\+Namespace} API which allows to change the namespace of a Key\+Set. This requires an alias {\ttfamily KS\+\_\+\+NS\+\_\+\+CONFIG} to the namespaces {\ttfamily KEY\+\_\+\+NS\+\_\+\+SPEC}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+PROC}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+DIR}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+USER}, {\ttfamily KEY\+\_\+\+NS\+\_\+\+SYSTEM} and {\ttfamily KEY\+\_\+\+NS\+\_\+\+DEFAULT}.
+
+Only keys of the namespace set to {\ttfamily ks\+Set\+Namespace} can be added. {\ttfamily ks\+Set\+Namespace} fails if called after keys were added.
+
+While the term \char`\"{}namespace\char`\"{} ({\ttfamily NS}) is used here, it may be better to use \char`\"{}type\char`\"{} to avoid confusion.
+
+This alternative conflicts with the constraint of minimal API.\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1997}{}\doxysection{Decision}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1997}
+\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1998}{}\doxysection{Rationale}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1998}
+\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1999}{}\doxysection{Implications}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md1999}
+\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md2000}{}\doxysection{Related Decisions}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md2000}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_4_decided_misc_namespace_md}{Namespace for miscellaneous data}}
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md2001}{}\doxysection{Notes}\label{doc_decisions_2_solutions_clear_keyset_types_md_autotoc_md2001}

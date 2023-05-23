@@ -1,0 +1,416 @@
+\label{doc_tutorials_dockerd-specification_md_md_doc_tutorials_dockerd_specification}%
+\Hypertarget{doc_tutorials_dockerd-specification_md_md_doc_tutorials_dockerd_specification}%
+ \hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4378}{}\doxysection{Overview}\label{doc_tutorials_dockerd-specification_md_autotoc_md4378}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4379}{}\doxysubsection{Introduction}\label{doc_tutorials_dockerd-specification_md_autotoc_md4379}
+In this tutorial you will learn how to interactively use the {\ttfamily Spec\+Elektra} specification language and {\ttfamily kdb} to write a configuration specification for \href{https://docs.docker.com/engine/reference/commandline/dockerd/}{\texttt{ dockerd}}.\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4380}{}\doxysubsection{What you should already know}\label{doc_tutorials_dockerd-specification_md_autotoc_md4380}
+
+\begin{DoxyItemize}
+\item Already know how to write a \mbox{\hyperlink{doc_tutorials_specification_md}{specification}}
+\end{DoxyItemize}\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4381}{}\doxysubsection{What you’ll learn}\label{doc_tutorials_dockerd-specification_md_autotoc_md4381}
+
+\begin{DoxyItemize}
+\item how to create and mount a specification using {\ttfamily kdb}
+\item how to add keys with different types, defaults, enums, array specifications, wildcard specifications and examples to your specification and how to validate them
+\end{DoxyItemize}\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4382}{}\doxysubsection{What you\textquotesingle{}ll do}\label{doc_tutorials_dockerd-specification_md_autotoc_md4382}
+
+\begin{DoxyItemize}
+\item use {\ttfamily kdb} to create and mount a specification for \href{https://docs.docker.com/engine/reference/commandline/dockerd/}{\texttt{ dockerd}}
+\item define defaults, array / wildcard specifications, examples and checks for keys in the validation
+\item use the specification as a starting point for customizing the configuration of installed applications
+\end{DoxyItemize}\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4383}{}\doxysubsection{Scope}\label{doc_tutorials_dockerd-specification_md_autotoc_md4383}
+In this tutorial we will introduce a possible specification for \href{https://docs.docker.com/engine/reference/commandline/dockerd/}{\texttt{ dockerd}}. Using {\ttfamily kdb} we will configure the specification.
+
+\begin{quote}
+NOTE\+: As the specification for dockerd is quite big we will only present a sample for the above mentioned metakeys and link to a full specification \href{/home/jenkins/workspace/libelektra-release/examples/spec/dockerd.ini}{\texttt{ dockerd-\/full-\/spec}}. \end{quote}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4384}{}\doxysection{Getting Started}\label{doc_tutorials_dockerd-specification_md_autotoc_md4384}
+Before we start just an overview of the structure\+:
+
+
+\begin{DoxyItemize}
+\item Specification file location\+: {\ttfamily /docker/daemon.json}
+\item Parent specification key\+: {\ttfamily spec\+:/sw/dockerd/dockerd/\#0/current}
+\end{DoxyItemize}\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4385}{}\doxysection{Specification Types (values)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4385}
+{\ttfamily Elektra} supports multiple types which leads to a more flexible specification. See \mbox{\hyperlink{md_src_plugins_type_README_src_plugins_type_README_md}{type plugin}} for information about all the types that are supported.\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4386}{}\doxysection{Mount Setup}\label{doc_tutorials_dockerd-specification_md_autotoc_md4386}
+We will be mounting an existing example \href{/home/jenkins/workspace/libelektra-release/examples/spec/dockerd.ini}{\texttt{ dockerd-\/spec}}.\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4387}{}\doxysubsection{Step 1\+: Mount dockerd specification}\label{doc_tutorials_dockerd-specification_md_autotoc_md4387}
+First you need to mount a specification file, in this case {\ttfamily dockerd.\+ini} to the {\ttfamily spec\+:/} namespace. You can define the path inside the {\ttfamily spec\+:/} namespace as {\ttfamily /sw/docker/dockerd/\#0/current}, refer to \href{https://www.libelektra.org/tutorials/integration-of-your-c-application}{\texttt{ the documentation}} to find out more about constructing the name.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount "{}\$PWD/examples/spec/dockerd.ini"{} spec:/sw/docker/dockerd/\#0/current ni}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+NOTE\+: If you encounter any error saying that you have already mounted some specification with the same name you can run {\ttfamily sudo kdb umount spec\+:/sw/docker/dockerd/\#0/current} and rerun the above command. \end{quote}
+\begin{quote}
+Note\+: ni is the format which is used for the specification in the file. You can also choose to use json, then you need use yajl instead of ni. \end{quote}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4388}{}\doxysubsection{Step 2\+: Define a mountpoint}\label{doc_tutorials_dockerd-specification_md_autotoc_md4388}
+Next you can define, that this specification uses a specific mountpoint for a concrete application configuration. So you can say the concrete configuration should be written to {\ttfamily dockerd.\+ini}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/dockerd/dockerd/\#0/current mountpoint /docker/daemon.json}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+Your {\ttfamily dockerd.\+ini} file should now contain the {\ttfamily mountpoint} metakey\+:
+
+\begin{quote}
+NOTE\+: Excerpt of {\ttfamily cat \$(kdb file spec\+:/sw/docker/dockerd/\#0/current)}. \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# ;Ni1}
+\DoxyCodeLine{\# ; Generated by the ni plugin using Elektra (see libelektra.org).}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# =}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# []}
+\DoxyCodeLine{\#  meta:/mountpoint = /dockerd/daemon.json}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4389}{}\doxysubsection{Step 3\+: Define $<$tt$>$json$<$/tt$>$ as plugin}\label{doc_tutorials_dockerd-specification_md_autotoc_md4389}
+Next we will define that our configuration should be written {\ttfamily json}.
+
+We can do this by running\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/dockerd/dockerd/\#0/current infos/plugin "{}yajl"{}}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4390}{}\doxysubsection{Step 4\+: Do a specification mount}\label{doc_tutorials_dockerd-specification_md_autotoc_md4390}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb spec-\/mount "{}/sw/docker/dockerd/\#0/current"{} ni}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+This specification mount makes sure that the paths where the concrete configuration should be ({\ttfamily daemon.\+json}) are ready to fulfill our specification ({\ttfamily dockerd.\+ini}). Be aware that different files get mounted for different namespaces. You\textquotesingle{}ve a specification file ({\ttfamily dockerd.\+ini}) for the {\ttfamily spec}-\/namespace and three files ({\ttfamily daemon.\+json}) on different locations for the {\ttfamily dir}-\/ {\ttfamily user}-\/ and {\ttfamily system}-\/namespaces.
+
+You can see the files by providing the namespace as prefix to the {\ttfamily kdb file} command (each shows a different path)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file system:/sw/docker/dockerd/\#0/current}
+\DoxyCodeLine{\# /dockerd/daemon.json}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file user:/sw/docker/dockerd/\#0/current}
+\DoxyCodeLine{\# STDOUT-\/REGEX: /dockerd/daemon.json}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb file dir:/sw/docker/dockerd/\#0/current}
+\DoxyCodeLine{\# STDOUT-\/REGEX: /dockerd/daemon.json}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+NOTE\+: The \$\+PWD should equal the PWD where you run {\ttfamily sudo kdb mount \char`\"{}\$\+PWD/examples/spec/dockerd.\+ini\char`\"{} spec\+:/sw/docker/dockerd/\#0/current ni}. \end{quote}
+\begin{quote}
+$\ast$$\ast$\+\_\+\+Note\+\_\+$\ast$$\ast$\+: The files only exist, when configuration values are stored there, i.\+e. they are created on the first {\ttfamily kdb set} and removed with the last {\ttfamily kdb rm}. \end{quote}
+For more information about namespaces in Elektra please see \href{https://www.libelektra.org/man-pages/elektra-namespaces}{\texttt{ here}}, a tutorial about the topic is available \href{https://www.libelektra.org/tutorials/namespaces}{\texttt{ here}}.\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4391}{}\doxysection{Writing specification for keys (manually)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4391}
+\begin{quote}
+NOTE\+: All output we display for {\ttfamily cat \$(kdb file spec\+:/sw/docker/dockerd/\#0/current)} is an excerpt of the whole file output. \end{quote}
+In this example for {\ttfamily dockerd} we will be using 3 types of specifications\+:
+
+
+\begin{DoxyItemize}
+\item Simple specification (type and description)
+\item Enum specifications (for keys were only a set of possible options can be used)
+\item Array and wildcard specifications (for keys where a list of possible options can be used)
+\end{DoxyItemize}
+
+As the {\ttfamily dockerd} specification is big we will just present one of each of the above mentioned specification types.
+
+\begin{quote}
+NOTE\+: In Elektra we use {\ttfamily /} instead of {\ttfamily -\/} to seperate key names. This results in a hierarchical structure of key names. This commands will automatically store the specification in the {\ttfamily dockerd-\/daemon.\+ni} specification file. \end{quote}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4392}{}\doxysubsection{Array specification}\label{doc_tutorials_dockerd-specification_md_autotoc_md4392}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[data/root]}
+\DoxyCodeLine{meta:/type = string}
+\DoxyCodeLine{meta:/description = Root directory of persistent Docker state}
+\DoxyCodeLine{meta:/default = /var/lib/docker}
+
+\end{DoxyCode}
+
+
+In order to get the above specification we will need the following commands\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/data/root type "{}string"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/data/root description "{}Root directory of persistent Docker state"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/data/root default "{}/var/lib/docker"{}}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+In case no {\ttfamily data/root} key gets configured the value {\ttfamily /var/lib/docker} is used.
+
+Let us verify that the metakeys have been set correctly\+:
+
+\begin{quote}
+NOTE\+: Excerpt of {\ttfamily cat \$(kdb file spec\+:/sw/docker/dockerd/\#0/current)}. \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/sw/docker/dockerd/\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [data/root]}
+\DoxyCodeLine{\#  meta:/type = string}
+\DoxyCodeLine{\#  meta:/description = Root directory of persistent Docker state}
+\DoxyCodeLine{\#  meta:/default = /var/lib/docker}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4393}{}\doxysubsection{Enum specification (for keys were only a set of possible options can be used)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4393}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[default/cgroupns/mode]}
+\DoxyCodeLine{meta:/description = Default mode for containers cgroup namespace}
+\DoxyCodeLine{meta:/default = private}
+\DoxyCodeLine{meta:/check/enum = \#1}
+\DoxyCodeLine{meta:/check/enum/\#0 = host}
+\DoxyCodeLine{meta:/check/enum/\#1 = private}
+
+\end{DoxyCode}
+
+
+In order to get the above specification we will need the following commands\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/cgroupns/mode description "{}Default mode for containers cgroup namespace"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/cgroupns/mode default "{}private"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/cgroupns/mode check/enum "{}\#1"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/cgroupns/mode check/enum/\#0 "{}host"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/cgroupns/mode check/enum/\#1 "{}private"{}}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+With this configuration we have managed to allow two possible values for {\ttfamily default/cgroupns/mode}. The values are {\ttfamily host} and {\ttfamily private}. The default value if we do not set any configuration is {\ttfamily private}.
+
+Let us verify that the metakeys have been set correctly\+:
+
+\begin{quote}
+NOTE\+: Excerpt of {\ttfamily cat \$(kdb file spec\+:/sw/docker/dockerd/\#0/current)}. \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/sw/docker/dockerd/\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [default/cgroupns/mode]}
+\DoxyCodeLine{\#  meta:/check/enum/\#0 = host}
+\DoxyCodeLine{\#  meta:/check/enum/\#1 = private}
+\DoxyCodeLine{\#  meta:/description = Default mode for containers cgroup namespace}
+\DoxyCodeLine{\#  meta:/default = private}
+\DoxyCodeLine{\#  meta:/check/enum = \#1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [data/root]}
+\DoxyCodeLine{\#  meta:/type = string}
+\DoxyCodeLine{\#  meta:/description = Root directory of persistent Docker state}
+\DoxyCodeLine{\#  meta:/default = /var/lib/docker}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4394}{}\doxysubsection{Wildcard specifications (for keys where a list of possible options can be used)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4394}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[default/ulimits/\_]}
+\DoxyCodeLine{meta:/type = long}
+\DoxyCodeLine{meta:/description = Default ulimits for containers}
+\DoxyCodeLine{meta:/example = 64000}
+
+\end{DoxyCode}
+
+
+For this specification we want to allow an arbitrary number of {\ttfamily default ulimits}. The name of the {\ttfamily ulimits} does not matter but all should have the same metakeys.
+
+In order to get the above specification we will need following commands\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/ulimits/\_ type "{}long"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/ulimits/\_ description "{}Default ulimits for containers"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/ulimits/\_ example "{}64000"{}}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+The above specification will allow us to create any name below the {\ttfamily default/ulimits} key. The value needs to be a string. The sample value is {\ttfamily 64000}.
+
+Let us verify that the metakeys have been set correctly\+:
+
+\begin{quote}
+NOTE\+: Excerpt of {\ttfamily cat \$(kdb file spec\+:/sw/docker/dockerd/\#0/current)}. \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/sw/docker/dockerd/\#0/current)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [default/ulimits/\_]}
+\DoxyCodeLine{\#  meta:/type = long}
+\DoxyCodeLine{\#  meta:/example = 64000}
+\DoxyCodeLine{\#  meta:/description = Default ulimits for containers}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [default/cgroupns/mode]}
+\DoxyCodeLine{\#  meta:/check/enum/\#0 = host}
+\DoxyCodeLine{\#  meta:/check/enum/\#1 = private}
+\DoxyCodeLine{\#  meta:/description = Default mode for containers cgroup namespace}
+\DoxyCodeLine{\#  meta:/default = private}
+\DoxyCodeLine{\#  meta:/check/enum = \#1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# [data/root]}
+\DoxyCodeLine{\#  meta:/type = string}
+\DoxyCodeLine{\#  meta:/description = Root directory of persistent Docker state}
+\DoxyCodeLine{\#  meta:/default = /var/lib/docker}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4395}{}\doxysubsection{Array specifications (for keys where a list of possible options can be used)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4395}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[default/address/pools]}
+\DoxyCodeLine{meta:/array/min = 0}
+\DoxyCodeLine{meta:/description = Default address pools for node specific local networks (list)}
+\DoxyCodeLine{}
+\DoxyCodeLine{[default/address/pools/\#/base]}
+\DoxyCodeLine{meta:/type = string}
+\DoxyCodeLine{meta:/description = Ip address (ipv4) + subnet}
+\DoxyCodeLine{meta:/example = 172.30.0.0/16}
+\DoxyCodeLine{}
+\DoxyCodeLine{[default/address/pools/\#/size]}
+\DoxyCodeLine{meta:/type = short}
+\DoxyCodeLine{meta:/description = Number of ip addresses in this pool with base}
+\DoxyCodeLine{meta:/example = 24}
+
+\end{DoxyCode}
+
+
+The specification above shows the use of an array specification with the {\ttfamily \#} character. We define the array to have a minimum value of {\ttfamily 0} and arbitrary max length. We use {\ttfamily type}, {\ttfamily description} and {\ttfamily example} as metakeys on the keys beneath each array element.
+
+This configuration above assures that we can configure {\ttfamily pools} with {\ttfamily base} and {\ttfamily size}.
+
+It prevents a configuration like\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{default/address/pools/\#0/size = "{}test"{}}
+
+\end{DoxyCode}
+
+
+It will fail as {\ttfamily default/address/pools/\#/size} is required to be of type {\ttfamily short} when set.
+
+In order to get the above specification we will need following commands\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools array/min "{}0"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools description "{}Default address pools for node specific local networks (list)"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools/\#/base type "{}string"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools/\#/base description "{}Ip address (ipv4) + subnet"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools/\#/base example "{}172.30.0.0/16"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools/\#/size type "{}short"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools/\#/size description "{}Number of ip addresses in this pool with base"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/sw/docker/dockerd/\#0/current/default/address/pools/\#/size example "{}24"{}}
+\DoxyCodeLine{\# RET: 0}
+
+\end{DoxyCode}
+
+
+The above specification defines that we can create array elements and each can have {\ttfamily base} or {\ttfamily size}.\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4396}{}\doxysection{Final specification code}\label{doc_tutorials_dockerd-specification_md_autotoc_md4396}
+Your specification should be complete now! After adding all the keys that are necessary for our application, you can verify that all specification keys are contained by running\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/sw/docker/dockerd/\#0/current)}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+NOTE\+: We want display the output because it is too long to display ($\sim$ 400-\/500 lines). \end{quote}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4397}{}\doxysection{Adding full example specification (with kdb import)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4397}
+The above tutorial has given a good overview of how to write a specification. You might want to add a full example specification for {\ttfamily dockerd} using {\ttfamily kdb import}. To do so, follow the next steps.
+
+To make sure we don\textquotesingle{}t run into errors we will clean up everything we have done by now.
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily sudo kdb rm -\/r spec\+:/sw/docker/dockerd/\#0/current}
+\item {\ttfamily sudo kdb umount spec\+:/sw/docker/dockerd/\#0/current}
+\item {\ttfamily rm -\/rf \$\+PWD/dockerd} (make sure that you are in the same PWD as when you run the {\ttfamily sudo kdb mount})
+\end{DoxyEnumerate}
+
+Now we are going to add an example of \href{/home/jenkins/workspace/libelektra-release/examples/spec/dockerd.ini}{\texttt{ dockerd-\/full-\/spec}}.
+
+Make sure you are in the root of the cloned {\ttfamily libelektra} repository\+:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily sudo kdb mount \char`\"{}\$\+PWD/dockerd/dockerd-\/daemon.\+ni\char`\"{} spec\+:/sw/docker/dockerd/\#0/current ni}
+\item {\ttfamily kdb meta-\/set spec\+:/sw/dockerd/dockerd/\#0/current mountpoint /dockerd/daemon.ni}
+\item {\ttfamily kdb meta-\/set spec\+:/sw/dockerd/dockerd/\#0/current infos/plugin \char`\"{}yajl\char`\"{}}
+\item {\ttfamily sudo kdb spec-\/mount \char`\"{}/sw/docker/dockerd/\#0/current\char`\"{}}
+\item {\ttfamily sudo kdb import spec\+:/sw/docker/dockerd/\#0/current ni $<$ ./examples/spec/dockerd.ini}
+\end{DoxyEnumerate}
+
+To verify that everything was created successfully, run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat \$(kdb file spec:/sw/docker/dockerd/\#0/current)}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+NOTE\+: We want display the output because it is too long to display ($\sim$ 400-\/500 lines). \end{quote}
+\hypertarget{doc_tutorials_dockerd-specification_md_autotoc_md4398}{}\doxysection{Appendix (full specification)}\label{doc_tutorials_dockerd-specification_md_autotoc_md4398}
+The full specification can be viewed at \href{/home/jenkins/workspace/libelektra-release/examples/spec/dockerd.ini}{\texttt{ dockerd-\/full-\/spec}}. 

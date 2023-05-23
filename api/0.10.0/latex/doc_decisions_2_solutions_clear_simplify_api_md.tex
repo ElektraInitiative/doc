@@ -1,0 +1,64 @@
+\label{doc_decisions_2_solutions_clear_simplify_api_md_md_doc_decisions_2_solutions_clear_simplify_api}%
+\Hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_md_doc_decisions_2_solutions_clear_simplify_api}%
+ \hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2002}{}\doxysection{Problem}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2002}
+According to symbols.map the public core API has 124 symbols¹, which is arguable too much for a key-\/value API which has as highest goal simplicity.
+
+In particular following areas have many functions and are not simple\+:
+
+
+\begin{DoxyItemize}
+\item binary keys
+\item memory functions
+\item comparison functions
+\item error/warnings
+\end{DoxyItemize}
+
+The urgency of this decision is that API can be easily introduced later but we cannot get rid of it after 1.\+0.\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2003}{}\doxysection{Constraints}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2003}
+
+\begin{DoxyItemize}
+\item To not disturb main features as described in use cases.
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2004}{}\doxysection{Assumptions}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2004}
+
+\begin{DoxyItemize}
+\item Binary data is not a core feature, if needed the plugin system can also work without (properly tagged) binary data in key sets.
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2005}{}\doxysection{Considered Alternatives}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2005}
+
+\begin{DoxyItemize}
+\item flags for binary data
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2006}{}\doxysection{Decision}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2006}
+The exact API changes are not listed here, because it would just a long list that could just as easily be found in the Git history.
+
+However, the API changes follow these rules\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape Remove} all functions related to key metadata, except those listed below
+\item {\itshape Remove} all functions related to keyset cursors, as well as {\ttfamily ks\+Head} and {\ttfamily ks\+Tail}
+\item {\itshape Remove}/\+\_\+\+Change\+\_\+ all functions related to (binary) key values as described in (\mbox{\hyperlink{doc_decisions_2_solutions_clear_binary_md}{Binary}})
+\item {\itshape Remove} all functions that use a user-\/provided buffer to return keyname/value/etc.
+\item {\itshape Change}/\+\_\+\+Add\+\_\+ {\ttfamily key\+Meta}/{\ttfamily key\+Set\+Meta} to directly read/write the metadata Key\+Set of a Key
+\item {\itshape Rename} {\ttfamily key\+Get$\ast$\+Size} to {\ttfamily key$\ast$\+Size}
+\item {\itshape Add} {\ttfamily ks\+Remove} function to remove a Key at a specific index
+\item {\itshape Remove from public API} all the helper functions that use {\ttfamily elektra\+Malloc} (e.\+g. {\ttfamily elektra\+Format}), as well as all the helper functions that only enhance standard APIs with additional error checks (e.\+g. {\ttfamily elektra\+Str\+Cmp})
+\item {\itshape Remove from public API} {\ttfamily ks\+Cut}, {\ttfamily ks\+Deep\+Dup}, {\ttfamily ks\+Copy\+Internal} and other functions that should never have been public
+\item {\itshape Remove} all functions that can be replaced by others (e.\+g. {\ttfamily ks\+Pop})
+\item {\itshape Rename} all functions to start with {\ttfamily elektra} as described in \mbox{\hyperlink{doc_decisions_4_decided_elektra_prefix_md}{Elektra Prefix}}, and use {\ttfamily Key\+Set} instead of {\ttfamily ks} (also applies to names above)
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2007}{}\doxysection{Rationale}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2007}
+\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2008}{}\doxysection{Implications}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2008}
+\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2009}{}\doxysection{Related Decisions}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2009}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_2_solutions_clear_binary_md}{Binary}}
+\item \mbox{\hyperlink{doc_decisions_4_decided_elektra_prefix_md}{Elektra Prefix}}
+\end{DoxyItemize}\hypertarget{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2010}{}\doxysection{Notes}\label{doc_decisions_2_solutions_clear_simplify_api_md_autotoc_md2010}
+¹ the 124 symbols are (as found by @kodebach)\+:
+
+
+\begin{DoxyItemize}
+\item 6 for the KDB stuff
+\item 6 for the plugin system
+\item 48 for Key
+\item 31 for Key\+Set
+\item 15 other helper functions
+\item The other 18 symbols are the public constants for the error API. 
+\end{DoxyItemize}

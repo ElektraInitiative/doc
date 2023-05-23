@@ -1,0 +1,107 @@
+\label{doc_tutorials_changetracking_md_md_doc_tutorials_changetracking}%
+\Hypertarget{doc_tutorials_changetracking_md_md_doc_tutorials_changetracking}%
+ Elektra provides developers of applications and plugins a way to determine changes made to a {\ttfamily Key\+Set} relative to the last known state of the key database. This can be useful if you are writing a plugin that works with changes of the configuration.\hypertarget{doc_tutorials_changetracking_md_autotoc_md4303}{}\doxysection{Basics}\label{doc_tutorials_changetracking_md_autotoc_md4303}
+The two headers you have to use are {\ttfamily kdbchangetracking.\+h} and {\ttfamily kdbdiff.\+h}. Those declare the {\ttfamily elektra\+Change\+Tracking$\ast$} and {\ttfamily elektra\+Diff$\ast$} functions.
+
+The two main data structures you will encounter are {\ttfamily Change\+Tracking\+Context} and {\ttfamily Elektra\+Diff}.\hypertarget{doc_tutorials_changetracking_md_autotoc_md4304}{}\doxysection{Getting the difference between Key\+Sets}\label{doc_tutorials_changetracking_md_autotoc_md4304}
+If all you want to do is get the difference between two in-\/memory {\ttfamily Key\+Set} objects, use the function {\ttfamily elektra\+Diff\+Calculate}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * originalKeySet;}
+\DoxyCodeLine{KeySet * modifiedKeySet;}
+\DoxyCodeLine{Key * parentKey;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// Calculate the difference of the keys below and including parentKey}}
+\DoxyCodeLine{ElektraDiff * diff = elektraDiffCalculate (modifiedKeySet, originalKeySet, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// Extract useful information, see section 'Working with the diff'}}
+\DoxyCodeLine{}
+\DoxyCodeLine{elektraDiffDel (diff);}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_changetracking_md_autotoc_md4305}{}\doxysection{Getting the changes within a transaction in a plugin}\label{doc_tutorials_changetracking_md_autotoc_md4305}
+If you are writing a plugin, you can use {\ttfamily elektra\+Change\+Tracking\+Get\+Context\+From\+Plugin} to get the current {\ttfamily Change\+Tracking\+Context}. Then, use {\ttfamily elektra\+Change\+Tracking\+Calculate\+Diff} to calculate the changes to the KDB.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} myPluginSet (Plugin * handle, KeySet * returned, Key * parentKey)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{keyword}{const} ChangeTrackingContext * ctx = elektraChangeTrackingGetContextFromPlugin (handle);}
+\DoxyCodeLine{        ElektraDiff * diff = elektraChangeTrackingCalculateDiff (returned, ctx, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{comment}{// Don't be impatient, we will soon look into what we can do with the diff}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        elektraDiffDel (diff);}
+\DoxyCodeLine{        \textcolor{keywordflow}{return} 1;}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_changetracking_md_autotoc_md4306}{}\doxysection{Getting the changes as an application developer}\label{doc_tutorials_changetracking_md_autotoc_md4306}
+If you are elektrifying your app, you can use {\ttfamily elektra\+Change\+Tracking\+Get\+Context\+From\+Kdb} to get the current {\ttfamily Change\+Tracking\+Context} for your KDB instance. Then, use {\ttfamily elektra\+Change\+Tracking\+Calculate\+Diff} to calculate the changes to the KDB.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KDB * \mbox{\hyperlink{namespacekdb}{kdb}};}
+\DoxyCodeLine{KeySet * myKeySet;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{const} ChangeTrackingContext * ctx = elektraChangeTrackingGetContextFromKdb (\mbox{\hyperlink{namespacekdb}{kdb}});}
+\DoxyCodeLine{ElektraDiff * diff = elektraChangeTrackingCalculateDiff (myKeySet, ctx, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// Don't be impatient, we will soon look into what we can do with the diff}}
+\DoxyCodeLine{}
+\DoxyCodeLine{elektraDiffDel (diff);}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_changetracking_md_autotoc_md4307}{}\doxysection{Working with the diff}\label{doc_tutorials_changetracking_md_autotoc_md4307}
+Congratulations! You\textquotesingle{}ve got your diff! Now what? Elektra provides you with different functions to determine added, removed and modified keys, as well as added, removed and modified metadata.
+
+You can use the following methods to reason about changes to the keyset as a whole\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// Get keys that are in modifiedKeySet but not in originalKeySet}}
+\DoxyCodeLine{KeySet * addedKeys = elektraDiffGetAddedKeys (diff);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// Get keys that are in originalKeySet but not in modifiedKeySet}}
+\DoxyCodeLine{KeySet * removedKeys = elektraDiffGetRemovedKeys (diff);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// Get keys that are in both KeySets, but have either different values or different metadata.}}
+\DoxyCodeLine{\textcolor{comment}{// The returned keys will have the old values and metadata}}
+\DoxyCodeLine{KeySet * modifiedKeys = elektraDiffGetModifiedKeys (diff);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (addedKeys);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (removedKeys);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (modifiedKeys);}
+
+\end{DoxyCode}
+
+
+Use these methods to get information about single keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * myKey; \textcolor{comment}{// A key that we want to check.}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// whether the value of myKey has been changed}}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} valueChanged = elektraDiffKeyValueChanged (diff, myKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// determine if only the metadata of myKey has been changed}}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} onlyMetaChanged = elektraDiffKeyOnlyMetaChanged (diff, myKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// get all metadata that has been added to myKey}}
+\DoxyCodeLine{KeySet * addedMeta = elektraDiffGetAddedMetaKeys (diff, myKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// get all metadata that has been removed from myKey}}
+\DoxyCodeLine{KeySet * removedMeta = elektraDiffGetRemovedMetaKeys (diff, myKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// get all metadata that has been modified.}}
+\DoxyCodeLine{\textcolor{comment}{// the returned keyset will contain the old metadata}}
+\DoxyCodeLine{KeySet * modifiedMeta = elektraDiffGetModifiedMetaKeys (diff, myKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (addedMeta);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (removedMeta);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (modifiedMeta);}
+
+\end{DoxyCode}
+ 

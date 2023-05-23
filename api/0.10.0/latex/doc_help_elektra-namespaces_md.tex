@@ -1,0 +1,81 @@
+\label{doc_help_elektra-namespaces_md_md_doc_help_elektra_namespaces}%
+\Hypertarget{doc_help_elektra-namespaces_md_md_doc_help_elektra_namespaces}%
+ \hypertarget{doc_help_elektra-namespaces_md_autotoc_md2790}{}\doxysection{INTRODUCTION}\label{doc_help_elektra-namespaces_md_autotoc_md2790}
+Every key in Elektra needs a unique name so that administrators can refer to them unambiguously. Sometimes, multiple keys denote the same configuration item from different sources, e.\+g.\+:
+
+
+\begin{DoxyItemize}
+\item by a commandline argument
+\item by a configuration file found relative to the current directory
+\item by a configuration file found relative to the home directory
+\item by a configuration file found below {\ttfamily /} etc
+\end{DoxyItemize}
+
+To allow such keys to exist in parallel, Elektra uses namespaces.
+
+A namespace has the following properties\+:
+
+
+\begin{DoxyItemize}
+\item in-\/memory Keys start with one of the namespaces
+\item keys within a namespace are known to stem from a specific configuration source. For example files from the {\ttfamily user} namespace are from the users home directory, {\bfseries{even if}} an absolute configuration file name was used.
+\item {\ttfamily \mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{ks\+Lookup()}}} uses multiple namespaces in a specific default order unless specified otherwise (cascading lookup)
+\end{DoxyItemize}
+
+Following parts of Elektra source code are affected by namespaces\+:
+
+
+\begin{DoxyItemize}
+\item the key name validation in {\ttfamily \mbox{\hyperlink{group__keyname_ga7699091610e7f3f43d2949514a4b35d9}{key\+Set\+Name()}}}
+\item {\ttfamily \mbox{\hyperlink{group__keyname_gafc3ca03ed10f87eb59bdc02cf2a0de8d}{key\+Get\+Namespace()}}} which enumerates all namespaces
+\item {\ttfamily \+\_\+\+Backend} and {\ttfamily split.\+c} for correct distribution to plugins (note that not all namespaces actually are distributed to configuration files)
+\item {\ttfamily mount.\+c} for cascading and root backends
+\item and of course many unit tests
+\end{DoxyItemize}
+
+In the rest of this document all currently available namespaces in the default order are described.\hypertarget{doc_help_elektra-namespaces_md_autotoc_md2791}{}\doxysection{spec}\label{doc_help_elektra-namespaces_md_autotoc_md2791}
+Unlike the other namespaces, the specification namespace does not contain values of the keys, but instead metadata as described in \href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ {\ttfamily METADATA.\+ini}}}.
+
+When a cascading key is looked up, keys from the spec-\/namespace are the first to be searched. When a spec-\/key is found, the rest of the lookup will be done as specified, probably in a different order than the namespaces enlisted here.
+
+Usually, the spec-\/keys do not directly contribute to the value, with one notable exception\+: the default value (metadata {\ttfamily default}, see in cascading below) might be used if every other way as specified in the spec-\/key failed.
+
+Spec-\/keys typically include an explanation and description for the key itself (but not comments which are specific for individual keys).
+
+The spec configuration files are below {\ttfamily CMAKE\+\_\+\+INSTALL\+\_\+\+PREFIX/\+KDB\+\_\+\+DB\+\_\+\+SPEC}.
+
+spec is not part of cascading mounts, because the specifications often are written in different syntax than the configuration files.\hypertarget{doc_help_elektra-namespaces_md_autotoc_md2792}{}\doxysection{proc}\label{doc_help_elektra-namespaces_md_autotoc_md2792}
+Derived from the process (e.\+g. by parsing {\ttfamily /proc/self} or by arguments passed from the main method)\+:
+
+
+\begin{DoxyItemize}
+\item program name
+\item arguments
+\item environment
+\end{DoxyItemize}
+
+Keys in the namespace proc can not be stored by their nature. Thus they are ignored by {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set}. They might be different for every invocation of an application.\hypertarget{doc_help_elektra-namespaces_md_autotoc_md2793}{}\doxysection{dir}\label{doc_help_elektra-namespaces_md_autotoc_md2793}
+Keys from the namespace {\ttfamily dir} are derived from a directory special to the user starting/using the application, e.\+g.\+:
+
+
+\begin{DoxyItemize}
+\item the current working directory for project specific settings, e.\+g. {\ttfamily .git}
+\item the directory a server wants to present to the user, e.\+g. {\ttfamily .htaccess}
+\end{DoxyItemize}
+
+Note that Elektra only supports a single special directory per KDB instance. Start a new KDB instance if you need different special directories for different parts of your application. How to change the directory may be different dependent on the resolver, e.\+g. by using chdir or by setting the environment variable {\ttfamily PWD}.\hypertarget{doc_help_elektra-namespaces_md_autotoc_md2794}{}\doxysection{user}\label{doc_help_elektra-namespaces_md_autotoc_md2794}
+On multi-\/user operating systems obviously every user wants her/his own configuration. The user configuration is located in the users home directory typically below the folder {\ttfamily KDB\+\_\+\+DB\+\_\+\+USER.} Other paths below the home directory are possible too (absolute path for resolver).
+
+Note that Elektra only supports a user directory per KDB instance. Start a new KDB instance if you need different user configuration for different parts of your application. How to change the user may be different dependent on the resolver, e.\+g. by {\ttfamily seteuid()} or by environment variables like {\ttfamily HOME}, {\ttfamily USER}\hypertarget{doc_help_elektra-namespaces_md_autotoc_md2795}{}\doxysection{system}\label{doc_help_elektra-namespaces_md_autotoc_md2795}
+The system configuration is the same for every chroot.
+
+The configuration is typically located below {\ttfamily KDB\+\_\+\+DB\+\_\+\+SYSTEM}. Other absolute paths, e.\+g. below {\ttfamily /opt} or {\ttfamily /usr/local/etc} are possible too.\hypertarget{doc_help_elektra-namespaces_md_autotoc_md2796}{}\doxysection{Cascading}\label{doc_help_elektra-namespaces_md_autotoc_md2796}
+Keys that are not in a namespace (i.\+e. start with an {\ttfamily /}) are called cascading keys. Cascading keys do not stem from a configuration source, but are used by applications to lookup a key in different namespaces. So, multiple keys can contribute to each cascading key name.
+
+Cascading is the same as a name resolution and provides a namespace unification as described in \href{https://dl.acm.org/doi/10.1145/1138041.1138045}{\texttt{ Versatility and Unix semantics in namespace unification}}.
+
+Keys without a namespace can not be stored by their nature. So they are transient\+: after a restart they are forgotten.
+
+Keys of that namespace are only used by ks\+Lookup when no other suitable key was found. So they have the lowest possible priority, even fallback keys are preferred.
+
+\mbox{\hyperlink{doc_help_elektra-cascading_md}{Read more about cascading.}} 

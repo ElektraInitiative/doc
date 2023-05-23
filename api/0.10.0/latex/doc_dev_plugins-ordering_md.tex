@@ -1,0 +1,46 @@
+\label{doc_dev_plugins-ordering_md_md_doc_dev_plugins_ordering}%
+\Hypertarget{doc_dev_plugins-ordering_md_md_doc_dev_plugins_ordering}%
+ \hypertarget{doc_dev_plugins-ordering_md_autotoc_md2687}{}\doxysection{Outdated}\label{doc_dev_plugins-ordering_md_autotoc_md2687}
+\begin{quote}
+{\bfseries{Warning}} Many of the things described below are outdated. Parts of this document are still valid for the {\ttfamily backend} plugin. \end{quote}
+\hypertarget{doc_dev_plugins-ordering_md_autotoc_md2688}{}\doxysection{Introduction}\label{doc_dev_plugins-ordering_md_autotoc_md2688}
+You should first read elektra-\/plugins to get an idea about plugins.
+
+This document describes how elektra-\/plugins are ordered with \mbox{\hyperlink{doc_help_elektra-backends_md}{elektra-\/backends(7)}}.
+
+Multiple plugins open up many ways in which they can be arranged. A simple way is to have one array with pointers to plugins. To store a {\ttfamily Key\+Set}, the first plugin starts off with the {\ttfamily Key\+Set} passed to it. The resulting {\ttfamily Key\+Set} is given to the next plugin. This is repeated for every plugin in the array.
+
+To obtain a {\ttfamily Key\+Set}, the array of plugins is processed the other way round. An empty {\ttfamily Key\+Set} is passed to the last plugin. The resulting {\ttfamily Key\+Set} is handed over to the previous one until the first plugin is executed.
+
+This approach has shown not to be powerful enough to express all use cases by counter-\/evidence. Logging should take place after the storage plugin performs its actions in both directions. It is not possible to do this with a {\itshape single array} processed in a way as described above.\hypertarget{doc_dev_plugins-ordering_md_autotoc_md2689}{}\doxysection{Separated lists}\label{doc_dev_plugins-ordering_md_autotoc_md2689}
+Two individual lists (get+set list) of plugins solve the described problem. Instead of bidirectional processing of a single list two separate arrays are used. It turns out that error scenarios also make this approach unsuccessful. When a plugin fails, no other plugin must be executed later on because it might depend on the previous plugin to work correctly. In {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}, this works well -- the update process will be stopped. But during {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}, changes to the file system must be reverted. Plugins can leave a lock, temporary file or journal. These resources need to be cleaned up properly.\hypertarget{doc_dev_plugins-ordering_md_autotoc_md2690}{}\doxysection{Error List}\label{doc_dev_plugins-ordering_md_autotoc_md2690}
+So every backend additionally needs a third array that is executed in error scenarios during {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. Plugins responsible for the cleanup, rollback or error notification are inserted into it.
+
+The resolver plugin requires this error list to do a proper rollback. Another use case is logging after a failure has happened.\hypertarget{doc_dev_plugins-ordering_md_autotoc_md2691}{}\doxysection{Arrays of linked lists}\label{doc_dev_plugins-ordering_md_autotoc_md2691}
+A disadvantage of using arrays is that they contain a fixed amount of slots. This means that when a certain amount of slots is full, it is no longer possible to add more. Therefore, the plugin arrays are structured as arrays of linked lists.
+
+Each plugin role is assigned its own slot in the array, which contains a linked list. Plugins fulfilling that role are added to the list. That way, much greater and more flexible plugin numbers can be added to a single role.\hypertarget{doc_dev_plugins-ordering_md_autotoc_md2692}{}\doxysection{Placements}\label{doc_dev_plugins-ordering_md_autotoc_md2692}
+The ordering of plugins inside these three arrays is controlled by \mbox{\hyperlink{doc_help_elektra-contracts_md}{elektra-\/contracts(7)}}. Each of the three arrays has one slot for each role. These slots have names to be referred to in the contract.
+
+Here you see a table that contains all names\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Slot   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Error   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Get   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Set    }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Slot   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Error   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Get   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Set    }\\\cline{1-4}
+\endhead
+0   &prerollback   &getresolver   &setresolver    \\\cline{1-4}
+1   &rollback   &pregetstorage   &presetstorage    \\\cline{1-4}
+2   &postrollback   &getstorage   &setstorage    \\\cline{1-4}
+3   &&postgetstorage   &precommit    \\\cline{1-4}
+4   &&&commit    \\\cline{1-4}
+5   &&&postcommit   \\\cline{1-4}
+\end{longtabu}
+
+
+How the placement is influenced using {\ttfamily infos/placement}, {\ttfamily infos/ordering} and {\ttfamily infos/stacking} is described in \href{/home/jenkins/workspace/libelektra-release/doc/CONTRACT.ini}{\texttt{ CONTRACT.\+ini}}. 

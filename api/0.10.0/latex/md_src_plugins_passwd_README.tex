@@ -1,0 +1,88 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the passwd plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage/passwd
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained reviewed conformant compatible coverage specific unittest tested nodep libc configurable experimental limited
+\item infos/metadata =
+\item infos/description = storage plugin for passwd files
+\end{DoxyItemize}\hypertarget{md_src_plugins_passwd_README_src_plugins_passwd_README_md}{}\doxysection{Introduction}\label{md_src_plugins_passwd_README_src_plugins_passwd_README_md}
+This plugin parses {\ttfamily passwd} files, e.\+g. {\ttfamily /etc/passwd}.\hypertarget{md_src_plugins_passwd_README_autotoc_md384}{}\doxysection{Installation}\label{md_src_plugins_passwd_README_autotoc_md384}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_passwd_README_autotoc_md385}{}\doxysection{Implementation Details}\label{md_src_plugins_passwd_README_autotoc_md385}
+The non-\/\+POSIX function {\ttfamily fgetpwent} (GNU\+\_\+\+SOURCE) will be used to read the file supplied by the resolver. As a fallback we implemented our own version based on musls {\ttfamily fgetpwent}.
+
+For writing {\ttfamily putpwent} (GNU\+\_\+\+SOURCE) will be used. If it is not available the plugin will write straight to the config file.\hypertarget{md_src_plugins_passwd_README_autotoc_md386}{}\doxysection{Requirements}\label{md_src_plugins_passwd_README_autotoc_md386}
+For the plugin to be build at least {\ttfamily POSIX\+\_\+\+C\+\_\+\+SOURCE $>$= 200809L} compatibility is required.\hypertarget{md_src_plugins_passwd_README_autotoc_md387}{}\doxysection{Configuration}\label{md_src_plugins_passwd_README_autotoc_md387}
+If the config key {\ttfamily index} is set to {\ttfamily name} passwd entries will be sorted by name, if not set or set to {\ttfamily uid} passwd entries will be sorted by uid\hypertarget{md_src_plugins_passwd_README_autotoc_md388}{}\doxysection{Fields}\label{md_src_plugins_passwd_README_autotoc_md388}
+
+\begin{DoxyItemize}
+\item {\ttfamily gecos} contains the full name of the account
+\item {\ttfamily gid} contains the accounts primary group id
+\item {\ttfamily home} contains the path to the accounts home directory
+\item {\ttfamily shell} contains the accounts default shell
+\item {\ttfamily uid} contains the accounts uid
+\item {\ttfamily name} contains the account name
+\end{DoxyItemize}\hypertarget{md_src_plugins_passwd_README_autotoc_md389}{}\doxysection{Usage}\label{md_src_plugins_passwd_README_autotoc_md389}
+To mount the passwd file you can run
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount /etc/passwd system:/tests/passwd passwd index=name}
+
+\end{DoxyCode}
+
+
+To see which entries for the root user exist you can run
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls system:/tests/passwd/root}
+\DoxyCodeLine{\#> system:/tests/passwd/root}
+\DoxyCodeLine{\#> system:/tests/passwd/root/gecos}
+\DoxyCodeLine{\#> system:/tests/passwd/root/gid}
+\DoxyCodeLine{\#> system:/tests/passwd/root/home}
+\DoxyCodeLine{\#> system:/tests/passwd/root/passwd}
+\DoxyCodeLine{\#> system:/tests/passwd/root/shell}
+\DoxyCodeLine{\#> system:/tests/passwd/root/uid}
+
+\end{DoxyCode}
+
+
+If you want to receive one specific value you can run for example
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get system:/tests/passwd/root/gecos}
+
+\end{DoxyCode}
+
+
+You can also export it as whole in any format you like, for example JSON
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export system:/tests/passwd/root json}
+\DoxyCodeLine{\# \{}
+\DoxyCodeLine{\#    "{}gecos"{}: "{}root"{},}
+\DoxyCodeLine{\#    "{}gid"{}: "{}0"{},}
+\DoxyCodeLine{\#    "{}home"{}: "{}/root"{},}
+\DoxyCodeLine{\#    "{}passwd"{}: "{}x"{},}
+\DoxyCodeLine{\#    "{}shell"{}: "{}/bin/bash"{},}
+\DoxyCodeLine{\#    "{}uid"{}: "{}0"{}}
+\DoxyCodeLine{\# \}}
+
+\end{DoxyCode}
+
+
+To unmount it, you can run
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb umount system:/tests/passwd}
+
+\end{DoxyCode}
+ 

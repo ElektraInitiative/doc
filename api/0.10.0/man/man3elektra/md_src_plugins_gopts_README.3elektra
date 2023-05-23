@@ -1,0 +1,91 @@
+.TH "md_src_plugins_gopts_README" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_gopts_README \- Plugin: gopts 
+
+.IP "\(bu" 2
+infos = Information about the gopts plugin is in keys below
+.IP "\(bu" 2
+infos/author = Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = hook procgetstorage
+.IP "\(bu" 2
+infos/status = recommended productive maintained nodep libc
+.IP "\(bu" 2
+infos/metadata = args args/index command opt opt/long opt/arg opt/flagvalue opt/help opt/hidden opt/# opt/#/long opt/#/arg opt/#/flagvalue opt/#/hidden env env/#
+.IP "\(bu" 2
+infos/description = Parses command-line options using elektra-opts
+.PP
+.SH "Introduction"
+.PP
+This plugin allows applications to access command-line options and environment variables via the KDB\&.
+.PP
+It is implemented as a simple frontend for the parser implemented in the internal \fCelektraGetOpts\fP\&.
+.PP
+For more information on how to write the necessary specification and on using command-line options in general, take a look at \fBthe dedicated tutorial\fP
+.PP
+Depending on the calling context and configuration, this plugin might use operating system specific functions to determine command-line arguments and environment variables\&. Which operating system's functions the plugin uses is determined at compile-time\&.
+.PP
+.RS 4
+\fBNote:\fP One of the system-specific implementations of this plugin relies on procfs\&. Therefore, if you compile the plugin on a system with procfs, the plugin may not work on other machine with the same OS or even on the same machine, if procfs is not mounted\&. 
+.RE
+.PP
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SH "Basic Usage"
+.PP
+The preferred way of using this plugin is via a \fCkdbOpen\fP contract:
+.PP
+.PP
+.nf
+KeySet * contract = ksNew (0, KS_END);
+elektraGOptsContract (contract, argc, argv, environ, parentKey, NULL);
+
+KDB * kdb = kdbOpen (contract, parentKey);
+
+// gopts automatically mounted
+KeySet * ks = ksNew (0, KS_END);
+kdbGet (kdb, ks, parentKey);
+.fi
+.PP
+.SH "Configuration Keys"
+.PP
+The plugin accepts a number of configuration keys\&.
+.PP
+.IP "\(bu" 2
+\fC/offset\fP: You can set this key to an integer \fCn\fP\&. The plugin will then ignore the first \fCn\fP command-line arguments and only pass the rest on to the parser\&.
+.IP "\(bu" 2
+\fC/help/usage\fP: The value of this key is used to replace the standard usage line in the auto-generated help message\&.
+.IP "\(bu" 2
+\fC/help/prefix\fP: The value of this key is inserted between the usage line and the options list in the auto-generated help message\&.
+.PP
+.SH "Global KeySet"
+.PP
+The plugin also takes part of its configuration from the global KeySet\&. All keys the plugin uses are below \fCsystem:/elektra/gopts\fP\&. This prefix is abbreviated to \fC//\fP below\&.
+.PP
+This plugin may use the following keys from the global KeySet:
+.PP
+.IP "\(bu" 2
+\fC//parent\fP: If present, the plugin will use this key instead of the one provided by \fCkdbGet\fP as the parent key pass on to the parser\&. Specifically, the plugin uses this keys value as the key name for a new key that is passed to the parser\&.
+.IP "\(bu" 2
+\fC//argc\fP: If present and \fC//parent\fP is present as well, the plugin expects \fC//argv\fP to be present as well\&. This key must be binary and its value must be an \fCint\fP\&.
+.IP "\(bu" 2
+\fC//argv\fP: If present and \fC//parent\fP is present as well, the plugin expects \fC//argc\fP to be present as well\&. The values of \fC//argc\fP and \fC//argv\fP will be used instead of using the OS specific implementation\&. This key must be binary and its value must be a \fCconst char * const *\fP\&.
+.IP "\(bu" 2
+\fC//envp\fP: If present and \fC//parent\fP is present as well, the value of this key will be used as the list of environment variables\&. This key must be binary and its value must be a \fCconst char * const *\fP\&.
+.IP "\(bu" 2
+\fC//args\fP: If present and \fC//parent\fP is present as well, but \fC//argc\fP and \fC//argv\fP are absent, this will be used as the list of command-line arguments\&. This key must be binary and its value must be a zero-byte separated (and terminated) list of strings\&.
+.IP "\(bu" 2
+\fC//env\fP: If present and \fC//parent\fP is present as well, but \fC//envp\fP is absent, this will be used as the list of environment variable\&. This key must be binary and its value must be a zero-byte separated (and terminated) list of strings\&. 
+.PP
+

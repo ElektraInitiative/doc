@@ -1,0 +1,53 @@
+.TH "doc_decisions_2_solutions_clear_functions_with_buffers_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_2_solutions_clear_functions_with_buffers_md \- Functions with buffers 
+ 
+.SH "Problem"
+.PP
+Currently the way functions like \fC\fBkeyGetName()\fP\fP work is by passing a buffer with a \fCmaxSize\fP and if the buffer is large enough, the value gets copied into the buffer\&. This leads to the user having to write a lot of surrounding boilerplate code, checking for the size of every value / name they want to copy into a buffer\&.
+.SH "Constraints"
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.SH "Decision"
+.PP
+.IP "\(bu" 2
+Remove Functions:
+.IP "  \(bu" 4
+\fBkeyGetName()\fP
+.IP "  \(bu" 4
+\fBkeyGetUnescapedName()\fP
+.IP "  \(bu" 4
+\fBkeyGetBaseName()\fP
+.IP "  \(bu" 4
+\fBkeyGetString()\fP
+.IP "  \(bu" 4
+\fBkeyGetBinary()\fP
+.PP
+
+.IP "\(bu" 2
+add documentation in API documentation about life-time and add in release notes that you should use strncpy() / memcpy() instead:
+.PP
+.PP
+.PP
+.nf
+// str values
+strncpy(\&.\&.\&., keyName (k), \&.\&.\&.)
+// binary values
+memcpy(\&.\&.\&., keyValue (k), \&.\&.\&.)
+.fi
+.PP
+.SH "Rationale"
+.PP
+The functions clutter the API and try to replace existing builtin functionality for little to no gain\&. This makes the API leaner while also retaining its functionality\&.
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

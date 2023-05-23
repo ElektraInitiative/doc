@@ -1,0 +1,592 @@
+\label{doc_CODING_md_md_doc_CODING}%
+\Hypertarget{doc_CODING_md_md_doc_CODING}%
+ This document provides an introduction in how the source code of libelektra is organized and how and where to add functionality.\hypertarget{doc_CODING_md_autotoc_md735}{}\doxysection{Folder structure}\label{doc_CODING_md_autotoc_md735}
+After you downloaded and unpacked Elektra you should see some folders. The most important are\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{src\+:}} This directory contains the source of the libraries, tools and plugins.
+\item {\bfseries{doc\+:}} General documentation for the project and the core library.
+\item {\bfseries{examples\+:}} Examples on how to use the core library.
+\item {\bfseries{tests\+:}} Contains the testing framework for the source ({\bfseries{src}}).
+\end{DoxyItemize}
+
+You can find more information about the structure in the {\ttfamily README.\+md}.\hypertarget{doc_CODING_md_autotoc_md736}{}\doxysection{General Information}\label{doc_CODING_md_autotoc_md736}
+
+\begin{DoxyItemize}
+\item Make sure that the codestyle of contributions complies with the already established codestyle of this project, except if this document says otherwise\+: then please open an issue for offending code.
+\item We use Unix line endings
+\item Large files should be in \href{https://blobs.libelektra.org/}{\texttt{ https\+://blobs.\+libelektra.\+org/}} or \href{https://rawdata.libelektra.org}{\texttt{ https\+://rawdata.\+libelektra.\+org}}
+\item `find . -\/not -\/regex '\mbox{[}/.a-\/z\+A-\/\+Z0-\/9\+\_\+-\/\mbox{]}$\ast$\textquotesingle{}\`{} should not find your file names
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md737}{}\doxysection{Source Code}\label{doc_CODING_md_autotoc_md737}
+The same guidelines apply to all code in the repository including the plugins.\hypertarget{doc_CODING_md_autotoc_md738}{}\doxysubsection{General Guidelines}\label{doc_CODING_md_autotoc_md738}
+You are only allowed to break a guideline if there is a good reason to do so. When you do, document the fact as comment next to the code.
+
+Of course, all rules of good software engineering apply\+: Use meaningful names and keep the software both testable and reusable.
+
+The purpose of the guidelines is to have a consistent style, not to teach programming.
+
+If you see code that breaks guidelines do not hesitate to fix them or at least open issues.
+
+If you see inconsistency within the rules do not hesitate to open an issue about it.\hypertarget{doc_CODING_md_autotoc_md739}{}\doxysubsection{Code Comments}\label{doc_CODING_md_autotoc_md739}
+Code is not only for the computer, but it should be readable for humans, too. Up-\/to-\/date code comments are essential to make code understandable for others. Thus please use following techniques (in order of preference)\+:
+
+
+\begin{DoxyEnumerate}
+\item Comment functions with {\ttfamily /$\ast$$\ast$/} and Doxygen, see below.
+\item You should also add assertions to state what should be true at a specific position in the code. Their syntax is checked and they are automatically verified at run-\/time. So they are not only useful for people reading the code but also for tools. Assertions in Elektra are used by\+:
+
+{\ttfamily \#include $<$\mbox{\hyperlink{kdbassert_8h}{kdbassert.\+h}}$>$}
+
+{\ttfamily ELEKTRA\+\_\+\+ASSERT (condition, \char`\"{}formatted text to be printed when assert fails\char`\"{}, ...)}
+
+Note\+: Do not use assert for user-\/\+APIs, always handle arguments of user-\/\+APIs like untrusted input.
+\item If the \char`\"{}comment\char`\"{} might be useful to be printed during execution, use logging\+:
+
+{\ttfamily \#include $<$\mbox{\hyperlink{kdblogger_8h}{kdblogger.\+h}}$>$}
+
+{\ttfamily ELEKTRA\+\_\+\+LOG (\char`\"{}formatted text to be printed according to log filters\char`\"{}, ...)}
+
+Read \mbox{\hyperlink{doc_tutorials_logger_md}{HERE}} for how to enable the logger.
+\item Otherwise comment within source with {\ttfamily //} or with {\ttfamily /$\ast$$\ast$/} for multi-\/line comments. Use {\ttfamily TODO} to indicate that something is not yet done. Before merging, relevant {\ttfamily TODO}s should be fixed or \href{https://issues.libelektra.org}{\texttt{ issues}} created for left-\/overs.
+\end{DoxyEnumerate}\hypertarget{doc_CODING_md_autotoc_md740}{}\doxysubsection{Coding Style}\label{doc_CODING_md_autotoc_md740}
+
+\begin{DoxyItemize}
+\item Limits
+\begin{DoxyItemize}
+\item Functions should not exceed 100 lines.
+\item Files should not exceed 1000 lines.
+\item A line should not be longer than 140 characters.
+\end{DoxyItemize}
+
+Split up when those limits are reached. Rationale\+: Readability with split windows.
+\item Indentation
+\begin{DoxyItemize}
+\item Use tabs for indentation.
+\item One tab equals 8 spaces.
+\end{DoxyItemize}
+\item Blocks
+\begin{DoxyItemize}
+\item Use blocks even for single line statements.
+\item Curly braces go on a line on their own on the previous indentation level.
+\item Avoid multiple variable declarations at one place.
+\item Declare Variables as late as possible, preferable within blocks.
+\end{DoxyItemize}
+\item Naming
+\begin{DoxyItemize}
+\item Use camel\+Case for functions and variables.
+\item Start types with upper-\/case, everything else with lower-\/case.
+\item Prefix names with {\ttfamily elektra} for internal usage. External API either starts with {\ttfamily ks}, {\ttfamily key} or {\ttfamily kdb}.
+\end{DoxyItemize}
+\item Whitespaces
+\begin{DoxyItemize}
+\item Use space before and after equal when assigning a value.
+\item Use space before round parenthesis ( {\ttfamily (} ).
+\item Use space before and after {\ttfamily $\ast$} from Pointers.
+\item Use space after {\ttfamily ,} of every function argument.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+The reformat script can ensure most code style rules, but it is obviously not capable of ensuring everything (e.\+g. naming conventions). So do not give this responsibility out of hands entirely. You can \mbox{\hyperlink{doc_tutorials_run_reformatting_script_with_docker_md}{use docker}} to ensure that you have the correct version of all our reformatting tools at hand. You can also enable that formatting runs automatically before commiting using {\ttfamily scripts/dev/enable-\/pre-\/commit-\/hook} and disable it again using {\ttfamily scripts/dev/disable-\/pre-\/commit-\/hook}\hypertarget{doc_CODING_md_autotoc_md741}{}\doxysubsection{C Guidelines}\label{doc_CODING_md_autotoc_md741}
+
+\begin{DoxyItemize}
+\item The compiler shall not emit any warning (or error).
+\item Use goto only for error situations.
+\item Use {\ttfamily const} as much as possible.
+\item Use {\ttfamily static} methods if they should not be externally visible.
+\item C-\/\+Files have extension {\ttfamily .c}, Header files {\ttfamily .h}.
+\item Use internal functions\+: prefer to use {\ttfamily elektra\+Malloc}, {\ttfamily elektra\+Free}.
+\end{DoxyItemize}
+
+{\bfseries{Example\+:}} \href{/home/jenkins/workspace/libelektra-release/src/libs/elektra/kdb.c}{\texttt{ src/libs/elektra/kdb.\+c}}\hypertarget{doc_CODING_md_autotoc_md742}{}\doxysubsubsection{Clang Format}\label{doc_CODING_md_autotoc_md742}
+To guarantee consistent formatting we use \href{https://clang.llvm.org/docs/ClangFormat.html}{\texttt{ {\ttfamily clang-\/format}}} (version {\ttfamily 12}) to format all C and C++ code in the repository. Since our build servers also check the style for every pull request you might want to make sure you reformat your C/\+C++ code changes with this tool.
+
+To find out which version of {\ttfamily clang-\/format} a certain build server uses please check\+:
+
+
+\begin{DoxyItemize}
+\item the Debian sid Docker image,
+\item the Git\+Hub Actions configuration files, and
+\item the Cirrus configuration file
+\end{DoxyItemize}
+
+and search for the relevant packages ({\ttfamily clang-\/format}, {\ttfamily llvm}). Currently we use clang-\/format {\ttfamily 12}
+
+
+\begin{DoxyItemize}
+\item in the Git\+Hub Actions configuration files,
+\item in the Debian sid Docker container on the Jenkins build server, and
+\item in the Cirrus mac\+OS build jobs.
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md743}{}\doxyparagraph{Installation}\label{doc_CODING_md_autotoc_md743}
+\doxysubparagraph*{mac\+OS}
+
+On mac\+OS you can install {\ttfamily clang-\/format} using \href{https://brew.sh}{\texttt{ Homebrew}} either directly\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install clang-\/format}
+
+\end{DoxyCode}
+
+
+or by installing the whole \href{https://llvm.org}{\texttt{ LLVM}} infrastructure\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install llvm}
+
+\end{DoxyCode}
+
+
+Please note, that both of these commands will install current versions of {\ttfamily clang-\/format} that might format code a little bit differently than Clang-\/\+Format {\ttfamily 12} in certain edge cases. If you want you can also install a specific version of LLVM and Clang-\/\+Format\+: e.\+g. Clang-\/\+Format {\ttfamily 11} using LLVM {\ttfamily 11}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install llvm@11}
+
+\end{DoxyCode}
+
+
+\doxysubparagraph*{Debian}
+
+In Debian (Sid) the package for Clang-\/\+Format {\ttfamily 12} is called {\ttfamily clang-\/format-\/12}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apt-\/get install clang-\/format-\/12}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md744}{}\doxyparagraph{Usage}\label{doc_CODING_md_autotoc_md744}
+For the basic use cases you can use {\ttfamily clang-\/format} directly. To do that, just call the tool using the option {\ttfamily -\/i} and specify the name of the files you want to reformat. For example, if you want to reformat the file {\ttfamily \mbox{\hyperlink{kdb_8hpp}{src/bindings/cpp/include/kdb.\+hpp}}} you can use the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# On some systems such as Debian the `clang-\/format` executable also contains}
+\DoxyCodeLine{\# the version number. For those systems, please replace `clang-\/format`,}
+\DoxyCodeLine{\# with `clang-\/format-\/12` in the command below.}
+\DoxyCodeLine{clang-\/format -\/i src/bindings/cpp/include/kdb.hpp}
+
+\end{DoxyCode}
+
+
+While this works fine, if you want to format only a small number of file, formatting multiple files can be quite tedious. For that purpose you can use the script \`{}reformat-\/c\`{} that reformats all C and C++ code in Elektra’s code base
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/c \# This script will probably take some seconds to execute}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md745}{}\doxyparagraph{Tool Integration}\label{doc_CODING_md_autotoc_md745}
+If you work on Elektra’s code base regularly you might want to integrate the formatting step directly in your development setup. \href{https://clang.llvm.org/docs/ClangFormat.html}{\texttt{ Clang\+Format’s homepage}} includes a list of integrations for various tools that should help you to do that. Even if this webpage does not list any integrations for your favorite editor or IDE, you can usually add support for external tools such as {\ttfamily clang-\/format} to advanced editors or IDEs pretty easily.
+
+\doxysubparagraph*{Text\+Mate}
+
+While \href{https://macromates.com}{\texttt{ Text\+Mate}} supports {\ttfamily clang-\/format} for the current file directly via the keyboard shortcut {\ttfamily ctrl}+{\ttfamily ⇧}+{\ttfamily H}, the editor does not automatically reformat the file on save. To do that
+
+
+\begin{DoxyEnumerate}
+\item open the bundle editor (“\+Bundles” → “\+Edit Bundles”),
+\item navigate to the “\+Reformat Code” item of the C bundle (“\+C” → “\+Menu Actions” → “\+Reformat Code”),
+\item insert {\ttfamily callback.\+document.\+will-\/save} into the field “\+Semantic Class”, and
+\item change the menu option for the field “\+Save” to “\+Nothing”
+\end{DoxyEnumerate}
+
+After that change Text\+Mate will reformat C and C++ code with {\ttfamily clang-\/format} every time you save a file.\hypertarget{doc_CODING_md_autotoc_md746}{}\doxysubsection{C++ Guidelines}\label{doc_CODING_md_autotoc_md746}
+
+\begin{DoxyItemize}
+\item Everything as in C if not noted otherwise.
+\item Do not use goto at all, use RAII instead.
+\item Do not use raw pointers, use smart pointers instead.
+\item C++-\/\+Files have extension {\ttfamily .cpp}, Header files {\ttfamily .hpp}.
+\item Do not use {\ttfamily static}, but anonymous namespaces.
+\item Write everything within namespaces and do not prefix names.
+\item Oriented towards \href{https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md}{\texttt{ more safe and modern usage}}.
+\end{DoxyItemize}
+
+{\bfseries{Example\+:}} \href{/home/jenkins/workspace/libelektra-release/src/bindings/cpp/include/kdb.hpp}{\texttt{ src/bindings/cpp/include/kdb.\+hpp}}\hypertarget{doc_CODING_md_autotoc_md747}{}\doxysubsection{CMake Guidelines}\label{doc_CODING_md_autotoc_md747}
+We use a similar style for CMake as we do for other code\+:
+
+
+\begin{DoxyItemize}
+\item The length of a functions should not exceed 100 lines.
+\item The length of a file should not exceed 1000 lines.
+\item A line should not be longer than 140 characters.
+\item Use tabs for indentation.
+\item One tab equals 8 spaces.
+\item Declare variables as late as possible, preferable within blocks.
+\item Add a space character before round parenthesis ( {\ttfamily (} ).
+\item Use lower case for command names (e.\+g. {\ttfamily set} instead of {\ttfamily SET})
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md748}{}\doxysubsubsection{CMake format}\label{doc_CODING_md_autotoc_md748}
+We use \href{https://github.com/cheshirekow/cmake_format}{\texttt{ {\ttfamily cmake-\/format}}} to reformat code according to the guidelines given above. Since {\ttfamily cmake-\/format} currently does not support tabs, we use the standard command {\ttfamily unexpand} to fix this issue. For example, to reformat the file {\ttfamily CMake\+Lists.\+txt} in the root folder of the repository we use the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# This command uses `sponge`, which is part of the [moreutils](https://joeyh.name/code/moreutils/) package.}
+\DoxyCodeLine{cmake-\/format CMakeLists.txt | unexpand | sponge CMakeLists.txt}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md749}{}\doxyparagraph{Installation}\label{doc_CODING_md_autotoc_md749}
+Since {\ttfamily cmake-\/format} is written in \href{https://www.python.org}{\texttt{ Python}} you usually install it via Python’s package manager {\ttfamily pip}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Install cmakelang `0.6.13` with support for YAML config files}
+\DoxyCodeLine{pip install cmakelang[yaml]==0.6.13}
+
+\end{DoxyCode}
+
+
+Please make sure, that you install the correct version ({\ttfamily 0.\+6.\+13}) of cmake-\/format\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake-\/format -\/-\/version}
+\DoxyCodeLine{\#> 0.6.13}
+
+\end{DoxyCode}
+
+
+since otherwise the formatted code might look quite different.
+
+We also use the \href{https://joeyh.name/code/moreutils}{\texttt{ moreutils}} in our CMake formatting script, which you can install on mac\+OS using \href{https://brew.sh}{\texttt{ Homebrew}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install moreutils}
+
+\end{DoxyCode}
+
+
+and on Debian using {\ttfamily apt-\/get}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{apt-\/get install moreutils}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md750}{}\doxyparagraph{Usage}\label{doc_CODING_md_autotoc_md750}
+If you want to reformat the whole codebase you can use the script \`{}reformat-\/cmake\`{}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/cmake \# Running this script for the whole code base takes some time.}
+
+\end{DoxyCode}
+
+
+To reformat specific files add a list of file paths after the command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# The command below reformats the file `cmake/CMakeLists.txt`.}
+\DoxyCodeLine{scripts/dev/reformat-\/cmake cmake/CMakeLists.txt}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md751}{}\doxyparagraph{Tool Integration}\label{doc_CODING_md_autotoc_md751}
+If you work on CMake code quite often you probably want to integrate cmake-\/format into your development workflow. The homepage of \href{https://github.com/cheshirekow/cmake_format\#integrations}{\texttt{ cmake-\/format}} list some integration options.
+
+\doxysubparagraph*{Text\+Mate}
+
+While Text\+Mate does not support cmake-\/format directly, you can quickly create a command that applies {\ttfamily cmake-\/format} every time you save a CMake file yourself. The steps below show one option to do that.
+
+
+\begin{DoxyEnumerate}
+\item Open the “\+Bundle Editor”\+: Press {\ttfamily $^\wedge$} + {\ttfamily ⌥} + {\ttfamily ⌘} + {\ttfamily B}
+\item Create a new command\+:
+\begin{DoxyEnumerate}
+\item Press {\ttfamily ⌘} + {\ttfamily N}
+\item Select “\+Command”
+\item Press the button “\+Create”
+\end{DoxyEnumerate}
+\item Configure your new command
+\begin{DoxyEnumerate}
+\item Use “\+Reformat Document” or a similar text as “\+Name”
+\item Enter {\ttfamily source.\+cmake} in the field “\+Scope Selector”
+\item Use {\ttfamily $^\wedge$} + {\ttfamily ⇧} + {\ttfamily H} as “\+Key Equivalent”
+\item Copy the text {\ttfamily callback.\+document.\+will-\/save} into the field “\+Semantic Class”
+\item Select “\+Document” as “\+Input”
+\item Select “\+Replace Document” in the dropdown menu for the option “\+Output”
+\item Select “\+Line Interpolation” in the menu “\+Caret Placement”
+\item Copy the following code into the text field\+:
+
+\`{}\`{}\`{} \#!/bin/bash
+
+set -\/o pipefail if ! \char`\"{}\$\{\+TM\+\_\+\+CMAKE\+\_\+\+FORMAT\+:-\/cmake-\/format\}\char`\"{} -\/ $\vert$ \$\{TM\+\_\+\+CMAKE\+\_\+\+FORMAT\+\_\+\+FILTER\+:-\/tee\}; then . \char`\"{}\$\+TM\+\_\+\+SUPPORT\+\_\+\+PATH/lib/bash\+\_\+init.\+sh\char`\"{} exit\+\_\+show\+\_\+tool\+\_\+tip fi \`{}\`{}\`{}
+\item Save your new command\+: {\ttfamily ⌘} + {\ttfamily S}
+\item Store the value {\ttfamily unexpand} in the variable {\ttfamily TM\+\_\+\+CMAKE\+\_\+\+FORMAT\+\_\+\+FILTER}. To do that save the text
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{TM\_CMAKE\_FORMAT\_FILTER = "{}unexpand"{}}
+
+\end{DoxyCode}
+
+
+in a file called \href{https://macromates.com/blog/2011/git-style-configuration}{\texttt{ {\ttfamily .tm\+\_\+properties}}} in the root of Elektra’s repository.\hypertarget{doc_CODING_md_autotoc_md752}{}\doxysubsection{Java \& Groovy Guidelines}\label{doc_CODING_md_autotoc_md752}
+Please follow \href{https://google.github.io/styleguide/javaguide.html}{\texttt{ Google Java Style Guide}} for Groovy (used by Jenkins) and Java files.
+
+Most notably use\+:
+
+
+\begin{DoxyItemize}
+\item 2 spaces for indentation
+\item Variable and function names in lower\+Camel\+Case
+\item K \& R style brackets
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md753}{}\doxysubsubsection{Usage}\label{doc_CODING_md_autotoc_md753}
+If you want to reformat all Java files in the repository you can use the script \`{}reformat-\/java\`{}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/java}
+
+\end{DoxyCode}
+
+
+To reformat specific files add a list of file paths after the command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# The command below reformats the file `src/bindings/jna/libelektra/src/main/java/org/libelektra/KDB.java`.}
+\DoxyCodeLine{scripts/dev/reformat-\/java src/bindings/jna/libelektra/src/main/java/org/libelektra/KDB.java}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md754}{}\doxysubsection{Java\+Script Guidelines}\label{doc_CODING_md_autotoc_md754}
+\hypertarget{doc_CODING_md_autotoc_md755}{}\doxysubsubsection{Prettier}\label{doc_CODING_md_autotoc_md755}
+We use \href{https://prettier.io}{\texttt{ {\ttfamily prettier}}} to format Java\+Script files.\hypertarget{doc_CODING_md_autotoc_md756}{}\doxyparagraph{Installation}\label{doc_CODING_md_autotoc_md756}
+\doxysubparagraph*{mac\+OS}
+
+On mac\+OS you can install \href{https://prettier.io}{\texttt{ {\ttfamily prettier}}} using \href{https://brew.sh}{\texttt{ Homebrew}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install prettier}
+
+\end{DoxyCode}
+
+
+\doxysubparagraph*{General}
+
+To install \href{https://prettier.io}{\texttt{ {\ttfamily prettier}}} using Node’s package manager \href{https://www.npmjs.com}{\texttt{ npm}} you can use the command below
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{npm install -\/-\/global prettier@2.8.4}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md757}{}\doxyparagraph{Usage}\label{doc_CODING_md_autotoc_md757}
+To format all Java\+Script files in the repository you can use the script \`{}reformat-\/javascript\`{}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/javascript}
+
+\end{DoxyCode}
+
+
+To format only some files, please specify a list of filenames after the command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/markdown src/tools/qt-\/gui/qml/ErrorDialogCreator.js \# Reformat this file}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md758}{}\doxysubsection{Markdown Guidelines}\label{doc_CODING_md_autotoc_md758}
+
+\begin{DoxyItemize}
+\item File Ending is {\ttfamily .md} or integrated within Doxygen comments
+\item Only use {\ttfamily \#} characters at the left side of headers/titles
+\item Use \href{https://help.github.com/en/articles/creating-and-highlighting-code-blocks}{\texttt{ fences}} for code/examples
+\item Prefer fences which indicate the used language for better syntax highlighting
+\item Fences with sh are for the shell recorder syntax
+\item {\ttfamily README.\+md} and tutorials should be written exclusively with shell recorder syntax so that we know that the code in the tutorial produces output as expected
+\item Please use \href{https://en.wiktionary.org/wiki/title_case}{\texttt{ {\bfseries{title-\/case}}}} for headings in the general documentation.
+\item For man pages please use {\bfseries{only capital letters for subheadings}} and only {\bfseries{small letters for the main header}}. We use this header style to match the look and feel of man pages for Unix tools such as {\ttfamily ls} or {\ttfamily mkdir}.
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md759}{}\doxysubsubsection{Prettier}\label{doc_CODING_md_autotoc_md759}
+We use \href{https://prettier.io}{\texttt{ {\ttfamily prettier}}} to format the documentation according to the guidelines given above.
+
+Under certain {\bfseries{exceptional}} circumstances you might want to prevent {\ttfamily prettier} from formatting certain parts of a Markdown file. To do that you can
+
+
+\begin{DoxyItemize}
+\item enclose the Markdown code in {\ttfamily $<$!-\/-\/ prettier-\/ignore-\/start -\/-\/$>$} and {\ttfamily $<$!-\/-\/ prettier-\/ignore-\/end -\/-\/$>$} tags, or
+\item use {\ttfamily $<$!-\/-\/ prettier-\/ignore -\/-\/$>$} to disable formatting till the end of a file
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md760}{}\doxyparagraph{Installation}\label{doc_CODING_md_autotoc_md760}
+For information on how to install the tool, please take a look at “\+Java\+Script Guidelines” → “\+Prettier” → “\+Installation”.\hypertarget{doc_CODING_md_autotoc_md761}{}\doxyparagraph{Usage}\label{doc_CODING_md_autotoc_md761}
+You can format all Markdown files in the repository using the script \`{}reformat-\/markdown\`{}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/markdown}
+
+\end{DoxyCode}
+
+
+To format only some files, please specify a list of filenames after the command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/markdown doc/CODING.md \# Reformat this file}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md762}{}\doxyparagraph{Tool Integration}\label{doc_CODING_md_autotoc_md762}
+The \href{https://prettier.io}{\texttt{ homepage of Prettier}} lists various options to integrate the tool into your workflow.
+
+\doxysubparagraph*{Text\+Mate}
+
+To reformat a Markdown document in \href{https://macromates.com}{\texttt{ Text\+Mate}} every time you save it, please follow the steps listed below.
+
+
+\begin{DoxyEnumerate}
+\item Open the “\+Bundle Editor”\+: Press {\ttfamily $^\wedge$} + {\ttfamily ⌥} + {\ttfamily ⌘} + {\ttfamily B}
+\item Create a new command\+:
+\begin{DoxyEnumerate}
+\item Press {\ttfamily ⌘} + {\ttfamily N}
+\item Select “\+Command”
+\item Press the button “\+Create”
+\end{DoxyEnumerate}
+\item Configure your new command
+\begin{DoxyEnumerate}
+\item Use “\+Reformat Document” or a similar text as “\+Name”
+\item Enter {\ttfamily text.\+html.\+markdown} in the field “\+Scope Selector”
+\item Use {\ttfamily $^\wedge$} + {\ttfamily ⇧} + {\ttfamily H} as “\+Key Equivalent”
+\item Copy the text {\ttfamily callback.\+document.\+will-\/save} into the field “\+Semantic Class”
+\item Select “\+Document” as “\+Input”
+\item Select “\+Replace Input” in the dropdown menu for the option “\+Output”
+\item Select “\+Line Interpolation” in the menu “\+Caret Placement”
+\item Copy the following code into the text field\+:
+
+\`{}\`{}\`{} \#!/bin/bash
+
+if ! \char`\"{}\$\{\+TM\+\_\+\+PRETTIER\+:-\/prettier\}\char`\"{} --stdin --stdin-\/filepath \char`\"{}\$\{\+TM\+\_\+\+FILEPATH\}\char`\"{} then . \char`\"{}\$\+TM\+\_\+\+SUPPORT\+\_\+\+PATH/lib/bash\+\_\+init.\+sh\char`\"{} exit\+\_\+show\+\_\+tool\+\_\+tip fi \`{}\`{}\`{}
+\item Save your new command\+: {\ttfamily ⌘} + {\ttfamily S}
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}\hypertarget{doc_CODING_md_autotoc_md763}{}\doxysubsection{Shell Guidelines}\label{doc_CODING_md_autotoc_md763}
+
+\begin{DoxyItemize}
+\item Please only use \href{https://en.wikipedia.org/wiki/POSIX}{\texttt{ POSIX}} functionality.
+\end{DoxyItemize}\hypertarget{doc_CODING_md_autotoc_md764}{}\doxysubsubsection{Shebang}\label{doc_CODING_md_autotoc_md764}
+Every shell script must start with either of two shebangs\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \#!/bin/sh}
+\item {\ttfamily \#!/usr/bin/env $<$shell$>$}, where {\ttfamily $<$shell$>$} is an appropriate shell, e.\+g. {\ttfamily \#!/usr/bin/env bash}
+\end{DoxyItemize}
+
+Note that even if a shebang is added by a preprocessor macro or similar code generation tools, it must also be present in the templated file.\hypertarget{doc_CODING_md_autotoc_md765}{}\doxysubsubsection{shfmt}\label{doc_CODING_md_autotoc_md765}
+We use \href{https://github.com/mvdan/sh}{\texttt{ {\ttfamily shfmt}}} to format Shell files in the repository.\hypertarget{doc_CODING_md_autotoc_md766}{}\doxyparagraph{Installation}\label{doc_CODING_md_autotoc_md766}
+\doxysubparagraph*{mac\+OS}
+
+You can install \href{https://github.com/mvdan/sh}{\texttt{ {\ttfamily shfmt}}} on mac\+OS using \href{https://brew.sh}{\texttt{ Homebrew}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{brew install shfmt}
+
+\end{DoxyCode}
+
+
+\doxysubparagraph*{General}
+
+\href{https://github.com/mvdan/sh/releases}{\texttt{ shfmt’s Git\+Hub release page}} offers binaries for various operating systems. For example, to install the binary for the current user on Linux you can use the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p "{}\$HOME/bin"{} \&\& cd "{}\$HOME/bin"{} \&\& \(\backslash\)}
+\DoxyCodeLine{  curl -\/L "{}https://github.com/mvdan/sh/releases/download/v3.3.1/shfmt\_v3.3.1\_linux\_amd64"{} -\/o shfmt \&\& \(\backslash\)}
+\DoxyCodeLine{  chmod u+x shfmt}
+
+\end{DoxyCode}
+
+
+Please note that you have to make sure, that your {\ttfamily PATH} includes {\ttfamily \$\+HOME/bin}, if you use the command above\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export PATH=\$PATH:"{}\$HOME/bin"{}}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md767}{}\doxyparagraph{Usage}\label{doc_CODING_md_autotoc_md767}
+We provide the script \`{}reformat-\/shell\`{} that formats the whole codebase with \href{https://github.com/mvdan/sh}{\texttt{ {\ttfamily shfmt}}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/shell}
+
+\end{DoxyCode}
+
+
+You can also reformat specific files by listing filenames after the script\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{scripts/dev/reformat-\/shell scripts/dev/reformat-\/shell \# Reformat the source of `reformat-\/shell`}
+
+\end{DoxyCode}
+\hypertarget{doc_CODING_md_autotoc_md768}{}\doxyparagraph{Tool Integration}\label{doc_CODING_md_autotoc_md768}
+The Git\+Hub project page of \href{https://github.com/mvdan/sh}{\texttt{ {\ttfamily shfmt}}} offers some options to integrate the tool into your development workflow \href{https://github.com/mvdan/sh\#related-projects}{\texttt{ here}}.
+
+\doxysubparagraph*{Text\+Mate}
+
+The steps below show you how to create a \href{https://macromates.com}{\texttt{ Text\+Mate}} command that formats a documents with \href{https://github.com/mvdan/sh}{\texttt{ {\ttfamily shfmt}}} every time you save it.
+
+
+\begin{DoxyEnumerate}
+\item Open the “\+Bundle Editor”\+: Press {\ttfamily $^\wedge$} + {\ttfamily ⌥} + {\ttfamily ⌘} + {\ttfamily B}
+\item Create a new command\+:
+\begin{DoxyEnumerate}
+\item Press {\ttfamily ⌘} + {\ttfamily N}
+\item Select “\+Command”
+\item Press the button “\+Create”
+\end{DoxyEnumerate}
+\item Configure your new command
+\begin{DoxyEnumerate}
+\item Use “\+Reformat Document” or a similar text as “\+Name”
+\item Enter {\ttfamily source.\+shell} in the field “\+Scope Selector”
+\item Use {\ttfamily $^\wedge$} + {\ttfamily ⇧} + {\ttfamily H} as “\+Key Equivalent”
+\item Copy the text {\ttfamily callback.\+document.\+will-\/save} into the field “\+Semantic Class”
+\item Select “\+Document” as “\+Input”
+\item Select “\+Replace Input” in the dropdown menu for the option “\+Output”
+\item Select “\+Line Interpolation” in the menu “\+Caret Placement”
+\item Copy the following code into the text field\+:
+
+\`{}\`{}\`{} \#!/bin/bash
+
+if ! \char`\"{}\$\{\+TM\+\_\+\+SHFMT\+\_\+\+FORMAT\+:-\/shfmt\}\char`\"{} -\/s -\/sr; then . \char`\"{}\$\+TM\+\_\+\+SUPPORT\+\_\+\+PATH/lib/bash\+\_\+init.\+sh\char`\"{} exit\+\_\+show\+\_\+tool\+\_\+tip fi \`{}\`{}\`{}
+\item Save your new command\+: {\ttfamily ⌘} + {\ttfamily S}
+\end{DoxyEnumerate}
+\end{DoxyEnumerate}\hypertarget{doc_CODING_md_autotoc_md769}{}\doxysubsection{Doxygen Guidelines}\label{doc_CODING_md_autotoc_md769}
+{\ttfamily doxygen} is used to document the API and to build the html and pdf output. We also support the import of Markdown pages. Doxygen 1.\+8.\+8 or later is required for this feature (Anyway, you can find the \href{https://doc.libelektra.org/api/master/html/}{\texttt{ API Doc}} online). Links between Markdown files will be converted with the \mbox{\hyperlink{doc_markdownlinkconverter_README_md}{Markdown Link Converter}}. {\bfseries{Markdown pages are used in the pdf, therefore watch which characters you use and provide a proper encoding!}}
+
+
+\begin{DoxyItemize}
+\item use {\ttfamily @} to start Doxygen tags
+\item Do not duplicate information available in Git in Doxygen comments.
+\item Use {\ttfamily @copydoc}, {\ttfamily @copybrief} and {\ttfamily @copydetails} intensively (except for file headers).
+\end{DoxyItemize}
+
+Further Doxygen documentation can be found in the \mbox{\hyperlink{doc_doxygen_README_md}{Doxygen README}}.\hypertarget{doc_CODING_md_autotoc_md770}{}\doxysubsection{File Headers}\label{doc_CODING_md_autotoc_md770}
+Files should start with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{}
+
+\end{DoxyCode}
+
+
+Note\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily @} {\ttfamily file} has {\itshape no} parameters.
+\item {\ttfamily @} {\ttfamily brief} should contain a short statement about the content of the file and is needed so that your file gets listed at \href{https://doc.libelektra.org/api/master/html/files.html}{\texttt{ https\+://doc.\+libelektra.\+org/api/master/html/files.\+html}}
+\end{DoxyItemize}
+
+The duplication of the filename, author and date is not needed, because this information is tracked using Git and \mbox{\hyperlink{doc_AUTHORS_md}{doc/\+AUTHORS.md}} already.\hypertarget{doc_CODING_md_autotoc_md771}{}\doxysection{Further Readings}\label{doc_CODING_md_autotoc_md771}
+
+\begin{DoxyItemize}
+\item Make sure to read \mbox{\hyperlink{doc_DESIGN_md}{DESIGN}} together with this document. 
+\end{DoxyItemize}

@@ -1,0 +1,129 @@
+.TH "globbing.c" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+globbing.c \- Library for performing globbing on keynames\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbease\&.h>\fP
+.br
+\fC#include <kdbglobbing\&.h>\fP
+.br
+\fC#include <kdbhelper\&.h>\fP
+.br
+\fC#include <ctype\&.h>\fP
+.br
+\fC#include <fnmatch\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBelektraKeyGlob\fP (const Key *key, const char *pattern)"
+.br
+.RI "checks whether a given Key matches a given globbing pattern "
+.ti -1c
+.RI "int \fBelektraKsGlob\fP (KeySet *result, KeySet *input, const char *pattern)"
+.br
+.RI "filters a given KeySet by applying a globbing pattern "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Library for performing globbing on keynames\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see LICENSE\&.md or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "int elektraKeyGlob (const Key * key, const char * pattern)"
+
+.PP
+checks whether a given Key matches a given globbing pattern WARNING: this method will not work correctly, if key parts contain embedded (escaped) slashes\&.
+.PP
+The globbing patterns for this function are a superset of those from glob(7) used with the FNM_PATHNAME flag: 
+.PD 0
+
+.IP "\(bu" 2
+'*' matches any series of characters other than '/' 
+.IP "\(bu" 2
+'?' matches any single character except '/'  
+.IP "\(bu" 2
+'#', when used as '/#/' (or '/#' at the end of \fCpattern\fP), matches a valid array item  
+.IP "\(bu" 2
+'_', when used as '/_/'(or '/_' at the end of \fCpattern\fP), matches a key part that is \fBnot\fP a valid array item  
+.IP "\(bu" 2
+everything between '[' and ']' is treated as a character class, matching exactly one of the given characters (see glob(7) for details)  
+.IP "\(bu" 2
+if the pattern ends with '/__', matching key names may contain arbitrary suffixes  
+.PP
+.PP
+\fBNote\fP
+.RS 4
+'*' cannot match an empty key name part\&. This also means patterns like 'something&#47;*' will not match the key 'something'\&. This is because each slash ('/') in the pattern has to correspond to a slash in the canonical key name, which neither end in a slash nor contain multiple slashes in sequence\&.
+.PP
+use '[_]', '[#]', '[*]', '[?]' and '[[]' to match the literal characters '_', '#', '*', '?' and '['\&. Using backslash ('\\') for escaping is not supported\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the Key to match against the globbing pattern 
+.br
+\fIpattern\fP the globbing pattern used 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP if \fCkey\fP is not NULL, \fCpattern\fP is not NULL and \fCpattern\fP matches \fCkey\fP 
+.br
+\fIELEKTRA_GLOB_NOMATCH\fP otherwise
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+isArrayName(), for info on valid array items 
+.RE
+.PP
+
+.SS "int elektraKsGlob (KeySet * result, KeySet * input, const char * pattern)"
+
+.PP
+filters a given KeySet by applying a globbing pattern 
+.PP
+\fBParameters\fP
+.RS 4
+\fIresult\fP the KeySet to which the matching keys should be appended 
+.br
+\fIinput\fP the KeySet whose keys should be filtered 
+.br
+\fIpattern\fP the globbing pattern used 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of Keys appended to result or -1, if \fCresult\fP, \fCinput\fP or \fCpattern\fP are NULL
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBelektraKeyGlob()\fP, for explanation of globbing pattern 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

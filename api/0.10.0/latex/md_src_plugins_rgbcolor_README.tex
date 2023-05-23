@@ -1,0 +1,85 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the rgbcolor plugin is in keys below
+\item infos/author = Philipp Gackstatter \href{mailto:philipp.gackstatter@student.tuwien.ac.at}{\texttt{ philipp.\+gackstatter@student.\+tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/ordering = type
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep
+\item infos/metadata = check/rgbcolor
+\item infos/description = Validation and normalization of rgbcolors
+\end{DoxyItemize}\hypertarget{md_src_plugins_rgbcolor_README_src_plugins_rgbcolor_README_md}{}\doxysection{Introduction}\label{md_src_plugins_rgbcolor_README_src_plugins_rgbcolor_README_md}
+This plugin validates hex-\/formatted rgb color strings and normalizes them to decimal rgba format. It also accepts \href{https://www.w3.org/TR/css-color-3/\#svg-color}{\texttt{ named colors}} and normalizes them.\hypertarget{md_src_plugins_rgbcolor_README_autotoc_md498}{}\doxysection{Usage}\label{md_src_plugins_rgbcolor_README_autotoc_md498}
+Add the metakey {\ttfamily check/rgbcolor} with an arbitrary value (e.\+g. {\ttfamily \char`\"{}\char`\"{}}) to the key that you want to check and normalize.\hypertarget{md_src_plugins_rgbcolor_README_autotoc_md499}{}\doxysection{Installation}\label{md_src_plugins_rgbcolor_README_autotoc_md499}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_rgbcolor_README_autotoc_md500}{}\doxysection{Examples}\label{md_src_plugins_rgbcolor_README_autotoc_md500}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Mount a config file with the rgbcolor plugin}
+\DoxyCodeLine{sudo kdb mount color.ecf user:/tests/color dump rgbcolor}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Suceeds, since the value is a valid rgbcolor. Quotes are important!}
+\DoxyCodeLine{kdb set user:/tests/color/hex "{}\#a1C2b3"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Tell the plugin to validate the key and normalize if necessary}
+\DoxyCodeLine{kdb meta-\/set user:/tests/color/hex check/rgbcolor "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Colors are normalized to 32-\/bit unsigned integers}
+\DoxyCodeLine{\# This one is normalized to 0xa1C2b3ff}
+\DoxyCodeLine{kdb get user:/tests/color/hex}
+\DoxyCodeLine{\#> 2713891839}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Color names are supported (https://www.w3.org/TR/css-\/color-\/3/\#svg-\/color)}
+\DoxyCodeLine{kdb set user:/tests/color/hex "{}yellowgreen"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# yellowgreen is 0x9acd32ff}
+\DoxyCodeLine{kdb get user:/tests/color/hex}
+\DoxyCodeLine{\#> 2597139199}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/color/hex/subcolor "{}\#abc"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/color/hex/subcolor check/rgbcolor "{}"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Expanded to rgba: \#aabbccff}
+\DoxyCodeLine{kdb get user:/tests/color/hex/subcolor}
+\DoxyCodeLine{\#> 2864434431}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/color/hex/subcolor "{}\#abcd"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Expanded to rgba: \#aabbccdd}
+\DoxyCodeLine{kdb get user:/tests/color/hex/subcolor}
+\DoxyCodeLine{\#> 2864434397}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/color/hex/subcolor "{}\#aabbcc"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Expanded to rgba: \#aabbccff}
+\DoxyCodeLine{kdb get user:/tests/color/hex/subcolor}
+\DoxyCodeLine{\#> 2864434431}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set incorrect value}
+\DoxyCodeLine{kdb set user:/tests/color/hex fff}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set incorrect value}
+\DoxyCodeLine{kdb set user:/tests/color/hex/subcolor "{}not a named color"{}}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set incorrect value}
+\DoxyCodeLine{kdb set user:/tests/color/hex "{}fff"{}}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Try to set incorrect value}
+\DoxyCodeLine{kdb set user:/tests/color/hex "{}\#12345"{}}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Old values are still there}
+\DoxyCodeLine{kdb get user:/tests/color/hex}
+\DoxyCodeLine{\#> 2597139199}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo modifications to the key database}
+\DoxyCodeLine{kdb rm -\/r user:/tests/color}
+\DoxyCodeLine{sudo kdb umount user:/tests/color}
+
+\end{DoxyCode}
+ 

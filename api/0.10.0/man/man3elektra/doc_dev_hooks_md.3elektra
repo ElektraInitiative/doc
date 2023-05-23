@@ -1,0 +1,98 @@
+.TH "doc_dev_hooks_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_hooks_md \- Hooks 
+ Hooks are central points in the KDB lifecycle, where specialized plugins are called\&.
+.SH "Selecting which Plugin will be Used for a Specific Hook"
+.PP
+The names of the plugins are hard coded\&. This \fBdecision\fP was made, because these plugins are meant to fulfil very specific purposes\&. A symlink replacing the shared library file of the plugin could be used to change the implementation\&.
+.SH "Interface of the hooks"
+.PP
+If a plugin should be able to act upon a hook, it must export all the functions that the hook requires\&. These exports are of the form \fCsystem:/elektra/modules/<plugin name>/exports/hook/<hook name>/<hook function>\fP\&.
+.PP
+For example, the \fCgopts\fP hook only requires the \fCget\fP function\&. A plugin that wants to act upon the \fCgopts\fP hook therefore has to export \fCsystem:/elektra/modules/<plugin name>/exports/hook/gopts/get\fP\&.
+.PP
+Other hooks (e\&.g\&. \fCspec\fP) require multiple exported functions\&.
+.SS "<tt>gopts</tt> hook"
+Hard coded to search for a plugin named \fCgopts\fP\&.
+.PP
+The following function \fBmust\fP be exported:
+.PP
+.IP "\(bu" 2
+\fCget\fP
+.IP "  \(bu" 4
+Signature: \fC(Plugin * handle, KeySet * returned, Key * parentKey)\fP
+.IP "  \(bu" 4
+Called in \fCkdbGet\fP after the storage phase, after \fCnotification/send\fP hook but before the \fCspec\fP hook\&.
+.IP "  \(bu" 4
+TODO: Describe what the function should do
+.PP
+
+.PP
+.SS "<tt>spec</tt> hook"
+Hard coded to search for a plugin named \fCspec\fP\&.
+.PP
+The following functions \fBmust\fP be exported:
+.PP
+.IP "\(bu" 2
+\fCcopy\fP
+.IP "  \(bu" 4
+Signature: \fC(Plugin * handle, KeySet * returned, Key * parentKey, bool isKdbGet)\fP
+.IP "  \(bu" 4
+Called in:
+.IP "    \(bu" 6
+\fCkdbGet\fP: after the storage phase, after \fCnotification/send\fP and \fCgopts\fP hook\&.
+.IP "    \(bu" 6
+\fCkdbSet\fP: right after the backends are initialized
+.PP
+
+.IP "  \(bu" 4
+Should copy all the spec meta keys into the keyset
+.PP
+
+.IP "\(bu" 2
+\fCremove\fP
+.IP "  \(bu" 4
+Signature: \fC(Plugin * handle, KeySet * returned, Key * parentKey)\fP
+.IP "  \(bu" 4
+Called in \fCkdbSet\fP right after the prestorage phase
+.IP "  \(bu" 4
+Should remove all the spec meta keys from the keyset
+.PP
+
+.PP
+.SS "<tt>notification/send</tt> hook"
+We look within the array \fCsystem:/elektra/hook/notification/send/plugins\fP for the plugins that shall be loaded\&. The name of the plugin \fBmust\fP be the value of the keys directly below this, e\&.g\&. \fCsystem:/elektra/hook/notification/send/plugins/#0 (= dbus)\fP\&.
+.PP
+The following functions \fBmay\fP be exported (optional):
+.PP
+.IP "\(bu" 2
+\fCget\fP:
+.IP "  \(bu" 4
+Signature: \fC(Plugin * handle, KeySet * returned, Key * parentKey)\fP
+.IP "  \(bu" 4
+Called in \fCkdbGet\fP after the storage phase\&.
+.PP
+
+.IP "\(bu" 2
+\fCset\fP:
+.IP "  \(bu" 4
+Signature: \fC(Plugin * handle, KeySet * returned, Key * parentKey)\fP
+.IP "  \(bu" 4
+Called in \fCkdbSet\fP after the storage phase\&.
+.PP
+
+.PP
+.SH "Lifecycle"
+.PP
+.IP "1." 4
+Hooks are initialized within \fCkdbOpen\fP after the contract has been processed\&. This includes loading the plugins\&.
+.IP "2." 4
+The appropriate hooks are called within each \fCkdbGet\fP and \fCkdbSet\fP call\&.
+.IP "3." 4
+Hooks are deinitialized within \fCkdbClose\fP\&. This includes unloading the plugins\&.
+.PP
+.SH "Additional information"
+.PP
+To specify the place of a hook plugin add \fCinfos/placements = hook\fP to your plugins \fCREADME\&.md\fP\&. 

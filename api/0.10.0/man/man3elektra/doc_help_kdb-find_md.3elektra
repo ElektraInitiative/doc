@@ -1,0 +1,73 @@
+.TH "doc_help_kdb-find_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-find_md \- kdb-find(1) -- Find keys in the key database 
+ 
+.SH "SYNOPSIS"
+.PP
+\fCkdb find <regex>\fP
+.PP
+Where \fCregex\fP is a regular expression which contains the key to find\&.
+.SH "DESCRIPTION"
+.PP
+This command will list the name of all keys that contain \fCregex\fP\&.
+.SH "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&. Prints additional information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information\&. Prints additional debug information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-0\fP, \fC--null\fP: Use binary 0 termination\&.
+.PP
+.SH "EXAMPLES"
+.PP
+.PP
+.nf
+# Backup-and-Restore: user:/tests/find
+
+# We use the `dump` plugin, since some storage plugins, e\&.g\&. INI,
+# create intermediate keys, such as `user:/tests/find/tests/foo`
+# for the following test\&.
+sudo kdb mount find\&.ecf user:/tests/find dump
+
+# Create the keys we use for the examples
+kdb set user:/tests/find/tests val1
+kdb set user:/tests/find/tests/foo/bar val2
+kdb set user:/tests/find/tests/fizz/buzz fizzbuzz
+kdb set user:/tests/find/tostfizz val3
+kdb set user:/tests/find/tust/level lvl
+
+# list all keys containing /tests/find/t[eo]
+kdb find '/tests/find/t[eo]'
+#> user:/tests/find/tests
+#> user:/tests/find/tests/fizz/buzz
+#> user:/tests/find/tests/foo/bar
+#> user:/tests/find/tostfizz
+
+# list all keys containing fizz
+kdb find 'fizz'
+#> user:/tests/find/tests/fizz/buzz
+#> user:/tests/find/tostfizz
+
+kdb rm -r /tests/find
+sudo kdb umount user:/tests/find
+.fi
+.PP
+.SH "SEE ALSO"
+.PP
+.IP "\(bu" 2
+If the user would also like to see the values of the keys below \fCpath\fP then you should consider the \fBkdb-export(1)\fP command\&.
+.IP "\(bu" 2
+\fBelektra-key-names(7)\fP for an explanation of key names\&. 
+.PP
+

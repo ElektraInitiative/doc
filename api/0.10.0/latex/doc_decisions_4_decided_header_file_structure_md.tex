@@ -1,0 +1,115 @@
+\label{doc_decisions_4_decided_header_file_structure_md_md_doc_decisions_4_decided_header_file_structure}%
+\Hypertarget{doc_decisions_4_decided_header_file_structure_md_md_doc_decisions_4_decided_header_file_structure}%
+ \hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2058}{}\doxysection{Problem}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2058}
+kdb.\+h contains the public API for both libelektra-\/core and libelektra-\/kdb. It is confusing and makes it hard to see what library a function actually belongs to.
+
+The big problem is \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}. It has two main problems\+:
+
+
+\begin{DoxyEnumerate}
+\item It contains stuff from many different libraries. I found at least libelektra-\/core, libelektra-\/kdb and libelektra-\/highlevel.
+\item It contains things that are different levels of \char`\"{}private\char`\"{}.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2059}{}\doxysection{Constraints}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2059}
+
+\begin{DoxyItemize}
+\item Each library should have at least one separate header file\+:
+
+Without this constraint, we would constantly include things that aren\textquotesingle{}t needed. This is inconvenient as it clutters the auto-\/suggestions of IDEs. It also slows down the compile process, since the compiler has to parse everything that was included.
+\item Non-\/public API and public API should be kept in separate files
+\item Some non-\/public APIs need to be accessible for testing, such headers should not be packaged/installed
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2060}{}\doxysection{Assumptions}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2060}
+
+\begin{DoxyItemize}
+\item There are different categories of \char`\"{}private\char`\"{}\+:
+\begin{DoxyEnumerate}
+\item Some parts are truly private, i.\+e., shouldn\textquotesingle{}t be used outside the library that defines them. These things are only there because a library was split into multiple {\ttfamily .c} files. This includes e.\+g., {\ttfamily opmphm\+New} or {\ttfamily struct \+\_\+\+Backend\+Data}.
+
+Symbols belonging to this category should not appear at all in the {\ttfamily symbols.\+map} file. Headers declaring such symbols must never be installed.
+\item Other things are truly private, but must be tested. This includes e.\+g., most {\ttfamily backends$\ast$} functions or the {\ttfamily elektra\+Key\+Name$\ast$} functions.
+
+Symbols belonging to this category should not appear in at all in the {\ttfamily symbols.\+map} file. Headers declaring such symbols must never be installed.
+\item Some things are not part of the public API and will never be part of the public API. This includes the {\ttfamily struct \+\_\+\+Key} and {\ttfamily struct \+\_\+\+Key\+Set}, but {\ttfamily elektra\+Malloc} and the high-\/level functions needed for codegen. These things will never be public API, because we don\textquotesingle{}t want to make all the guarantees associated with that. Nonetheless, they cannot truly be private, because functions in other libraries need access. Each of these functions/structs/symbols has a specific \char`\"{}target audience\char`\"{} that needs access.
+
+Symbols belonging to this category should not appear in a public section of the {\ttfamily symbols.\+map} file. Headers declaring such symbols generally should not be installed.
+\item Finally, there things that aren\textquotesingle{}t part of the public API, but may be in future. This includes e.\+g., {\ttfamily ks\+Find\+Hierarchy} or {\ttfamily elektra\+Read\+Array\+Number}. These functions could be public, but for various reasons are not. Maybe they are not well-\/tested, or maybe we just don\textquotesingle{}t want to commit to the function yet.
+
+Symbols belonging to this category should not appear in a public section of the {\ttfamily symbols.\+map} file. Headers declaring such symbols can be installed, if symbols are in a kind of experimental pre-\/release cycle. If there is no concrete plan to make symbols public, the headers should, however, not be installed.
+\end{DoxyEnumerate}
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2061}{}\doxysection{Considered Alternatives}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2061}
+\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2062}{}\doxysection{Decision}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2062}
+The decision is split into 4 subsections \char`\"{}\+Libraries\char`\"{}, \char`\"{}\+Plugins\char`\"{}, \char`\"{}\+Tools\char`\"{} and \char`\"{}\+Tests\char`\"{}, because the different parts of Elektra have different requirements.\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2063}{}\doxysubsection{Libraries}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2063}
+A library can be monolithic or modularized. Monolithic libraries should be small and bigger libraries with large APIs should be modularized.
+
+A monolithic library {\ttfamily foo} may have these headers (covering categories 3 \& 4 from above)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily src/include/elektra/foo.\+h}\+: Contains the full public API of {\ttfamily libelektra-\/foo}. Will be installed as {\ttfamily $<$include-\/root$>$/elektra/foo.h}.
+\item {\ttfamily src/include/internal/foo.\+h}\+: Contains the internal API of {\ttfamily libelektra-\/foo}. Will not be installed.
+\end{DoxyItemize}
+
+A modularized library {\ttfamily foo} may have these headers (covering categories 3 \& 4 from above)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily src/include/elektra/foo.\+h}\+: Declares the public API of {\ttfamily libelektra-\/foo}, by including {\ttfamily \#include $<$elektra/foo/$\ast$.h$>$}. Will be installed as {\ttfamily $<$include-\/root$>$/elektra/foo/public.h}.
+
+Such a header may only contain {\ttfamily \#include $<$elektra/foo/$\ast$.h$>$} lines.
+\item {\ttfamily src/include/elektra/foo/$\ast$.h}\+: Additional public API header of {\ttfamily libelektra-\/foo}. Will be installed as {\ttfamily $<$include-\/root$>$/elektra/foo/$\ast$.h}.
+
+Any one {\ttfamily installed.\+h} of these installed headers must be included from {\ttfamily src/include/elektra/foo.\+h} via a line {\ttfamily \#include $<$elektra/foo/installed.\+h$>$}.
+\item {\ttfamily src/include/internal/foo.\+h}\+: Declares the internal API of {\ttfamily libelektra-\/foo}, by including {\ttfamily \#include $<$internal/foo/$\ast$.h$>$}. Will not be installed.
+
+Such a header may only contain {\ttfamily \#include $<$internal/foo/$\ast$.h$>$} lines.
+\item {\ttfamily src/include/internal/foo/$\ast$.h}\+: Additional internal header of {\ttfamily libelektra-\/foo}. Will not be installed.
+
+Any one {\ttfamily installed.\+h} of these installed headers must be included from {\ttfamily src/include/internal/foo.\+h} via a line {\ttfamily \#include $<$internal/foo/installed.\+h$>$}.
+\end{DoxyItemize}
+
+Additionally, all libraries may also have private headers\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily src/lib/foo/$\ast$$\ast$/$\ast$.h}\+: Additional headers may be present. These headers may only be used by other files within {\ttfamily src/lib/foo}, according to the rules in \mbox{\hyperlink{doc_decisions_4_decided_header_include_md}{Including Headers}}.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2064}{}\doxysubsection{Plugins}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2064}
+Plugins do not declare their API via header files. Their headers are never installed and can be named any way the developer wants.
+
+Importantly, however, headers belonging to plugins must not be used outside the plugin.\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2065}{}\doxysubsection{Tools}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2065}
+Tools do not have a C API, so their headers are also never installed. Consequently, there are no naming rules for header files belonging to tools.
+
+Just like with plugins, the headers belonging to tools must not be used elsewhere.\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2066}{}\doxysubsection{Tests}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2066}
+For category 2 from above (private but needs to be tested), one of the following should be done\+:
+
+
+\begin{DoxyEnumerate}
+\item Declare functions as {\ttfamily static} in a {\ttfamily .c} file and {\ttfamily \#include \char`\"{}\char`\"{}} this file from the test.
+\item Add a private non-\/installed header (e.\+g., {\ttfamily src/lib/foo/testapi.\+h}) that declares the API that needs testing, {\ttfamily \#include \char`\"{}\char`\"{}} that and compile the test sources together with the {\ttfamily .o} files from the library (static linking).
+\end{DoxyEnumerate}
+
+If a symbol is needed in only one file and for tests, option 1 should be preferred. For symbols that are used in multiple files, a header needs to exist anyway. In any case, these unit tests should not be installed and should statically link the library into the test executable. This way we don\textquotesingle{}t pollute our {\ttfamily symbols.\+map} files and keep the number of exported symbols down.\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2067}{}\doxysection{Rationale}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2067}
+
+\begin{DoxyItemize}
+\item This structure makes the {\ttfamily \#include}s simple and works nicely with our directory structure.
+\item Having a uniform naming convention simplifies things, both for developers writing Elektra and those using Elektra.
+\item Requiring libraries must either be fully modularized (main headers are only {\ttfamily \#includes}) or completely monolithic, avoids the situation where a library has some parts in {\ttfamily foo.\+h} and other parts in extra headers. This is bad, because it encourages users to simply include {\ttfamily foo.\+h}, which defeats the point of modularized headers.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2068}{}\doxysection{Implications}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2068}
+
+\begin{DoxyItemize}
+\item The location of a header file within the source tree determines what API it contains\+:
+\begin{DoxyItemize}
+\item Public\+: Will be installed, must be stable, can be used anywhere
+\item Internal\+: Will not be installed, doesn\textquotesingle{}t have to be stable, can be used anywhere, but public headers
+\item Private\+: Will not be installed, doesn\textquotesingle{}t have to be stable, can only be used in the same library
+\end{DoxyItemize}
+\item Some libraries are currently neither fully modularized nor fully monolithic. The headers for these libraries must be restructured.
+\item There is no room for experimental APIs, i.\+e., headers that should be installed, but are not (yet) stable. Currently, we don\textquotesingle{}t plan to have any such APIs in the 1.\+0 release. The plan is that anything that is not internal/private in 1.\+0 is stable. If the need arises to introduce experimental APIs, a new decision must be reached about this.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2069}{}\doxysection{Related Decisions}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2069}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_4_decided_header_include_md}{Including Headers}}
+\item \mbox{\hyperlink{doc_decisions_4_decided_library_directory_structure_md}{Library Directory Structure}}
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_header_file_structure_md_autotoc_md2070}{}\doxysection{Notes}\label{doc_decisions_4_decided_header_file_structure_md_autotoc_md2070}
+
+\begin{DoxyItemize}
+\item The Linux kernel also has many header files with many cross-\/dependencies. Recently people started to look into the effect of this \char`\"{}dependency hell\char`\"{} on compile-\/time (see \href{https://lore.kernel.org/lkml/YdIfz+LMewetSaEB@gmail.com/T/}{\texttt{ LKML}}). 
+\end{DoxyItemize}

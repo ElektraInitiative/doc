@@ -1,0 +1,137 @@
+\label{doc_decisions_0_drafts_builder_functions_md_md_doc_decisions_0_drafts_builder_functions}%
+\Hypertarget{doc_decisions_0_drafts_builder_functions_md_md_doc_decisions_0_drafts_builder_functions}%
+ \hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1714}{}\doxysection{Problem}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1714}
+The structs for {\ttfamily Key} and {\ttfamily Key\+Set} are opaque, i.\+e., only the {\ttfamily typedef}s are part of the public headers, the actual {\ttfamily struct} definitions are in a private header. Because of that, {\ttfamily libelektra-\/core} must provide a way to construct a new {\ttfamily Key} or {\ttfamily Key\+Set}.
+
+Both {\ttfamily Key} and {\ttfamily Key\+Set} are rather complex structures consisting of multiple parts (name, value, metadata, and collection of {\ttfamily Key}s respectively), and {\ttfamily libelektra-\/core} is supposed to be minimal. It therefore makes sense to provide additional functions outside {\ttfamily libelektra-\/core} that make building {\ttfamily Key}s and {\ttfamily Key\+Set}s easier.
+
+We call these functions \char`\"{}builder functions\char`\"{} compared to the \mbox{\hyperlink{doc_decisions_0_drafts_constructor_functions_md}{Constructor Functions for {\ttfamily Key} and {\ttfamily Key\+Set}}}constructor functions\char`\"{}\char`\"{} in {\ttfamily libelektra-\/core}.\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1715}{}\doxysection{Constraints}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1715}
+
+\begin{DoxyItemize}
+\item If the builder functions are in a non-\/language specific library, they must be directly callable from all languages for which Elektra provides bindings.
+\item In accordance with the \mbox{\hyperlink{doc_decisions_4_decided_keyname_md}{Namespace and Name of Keys}}Namespace and Name of Keys\char`\"{} decision\char`\"{}, the builder functions must not use the escaped name. Only the unescaped name may be used, but the namespace may be passed as a separate parameter, if this has benefits. Additionally, it might make sense to take the parts of a keyname as separate arguments.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1716}{}\doxysection{Assumptions}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1716}
+\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1717}{}\doxysection{Considered Alternatives}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1717}
+\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1718}{}\doxysubsection{Language Agnostic}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1718}
+\begin{quote}
+{\bfseries{Note}}\+: This is basically, the \char`\"{}\+Full Arguments\char`\"{} solution from the \mbox{\hyperlink{doc_decisions_0_drafts_constructor_functions_md}{constructor functions decision}}. \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * keyBuild (\textcolor{keyword}{const} KeyName * name, \textcolor{keyword}{const} KeyValue * value, \textcolor{keyword}{const} KeyMeta metadata[]);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// allocates space for at least `alloc` keys}}
+\DoxyCodeLine{\textcolor{comment}{// inserts all keys from `keys` until it finds a NULL pointer, `keys` must contain at least one NULL}}
+\DoxyCodeLine{KeySet * ksBuild (\textcolor{keywordtype}{size\_t} alloc, \textcolor{keyword}{const} Key * keys[]);}
+
+\end{DoxyCode}
+
+
+This could be called as\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} a = 7;}
+\DoxyCodeLine{}
+\DoxyCodeLine{ksBuild(}
+\DoxyCodeLine{  3,}
+\DoxyCodeLine{  (Key*[]) \{}
+\DoxyCodeLine{    keyBuild (}
+\DoxyCodeLine{      \&(KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = \textcolor{stringliteral}{"{}foo\(\backslash\)0bar"{}}, .size = 8 \},}
+\DoxyCodeLine{      \&(KeyValue)\{.value = \textcolor{stringliteral}{"{}1234"{}}, .size = 5\},}
+\DoxyCodeLine{      (KeyMeta[])\{}
+\DoxyCodeLine{        \{.name = \textcolor{stringliteral}{"{}type"{}}, .nameSize = 5, .value = \{.value = \textcolor{stringliteral}{"{}long"{}}, .size = 5\}\},}
+\DoxyCodeLine{        \{.name = \textcolor{stringliteral}{"{}length\(\backslash\)0min"{}}, .nameSize = 11, .value = \{.value = \textcolor{stringliteral}{"{}4"{}}, .size = 2\}\},}
+\DoxyCodeLine{      \}}
+\DoxyCodeLine{    ),}
+\DoxyCodeLine{    keyBuild (}
+\DoxyCodeLine{      \&(KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = \textcolor{stringliteral}{"{}foo"{}}, .size = 4 \},}
+\DoxyCodeLine{      \&(KeyValue)\{.value = \&a, .size = \textcolor{keyword}{sizeof}(a)\},}
+\DoxyCodeLine{      NULL}
+\DoxyCodeLine{    ),}
+\DoxyCodeLine{    keyBuild (\&(KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = \textcolor{stringliteral}{"{}baz"{}}, .size = 4 \}, NULL, NULL)}
+\DoxyCodeLine{    NULL}
+\DoxyCodeLine{  \}}
+\DoxyCodeLine{);}
+
+\end{DoxyCode}
+
+
+One neat benefit of this solution is that these simple functions can be called from any language.\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1719}{}\doxysubsection{Variadic Arguments}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1719}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ElektraNamespace ns, ...);}
+
+\end{DoxyCode}
+
+
+This could be called as\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with value 1234 and metadata: meta:/type=long, meta:/length/min=4}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}, \textcolor{stringliteral}{"{}bar"{}}, NULL, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, 5, \textcolor{stringliteral}{"{}1234"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8a040582834bb2d90049947d7ef74e87e2}{KEY\_META}}, \textcolor{stringliteral}{"{}type"{}}, NULL, \textcolor{stringliteral}{"{}long"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8a040582834bb2d90049947d7ef74e87e2}{KEY\_META}}, \textcolor{stringliteral}{"{}length"{}}, \textcolor{stringliteral}{"{}min"{}}, NULL, 4, NULL);}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with value 1234 and no metadata}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}, \textcolor{stringliteral}{"{}bar"{}}, NULL, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, 5, \textcolor{stringliteral}{"{}1234"{}}, NULL);}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with no value and no metadata}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}, \textcolor{stringliteral}{"{}bar"{}}, NULL, NULL);}
+
+\end{DoxyCode}
+
+
+Compared to the language agnostic version, this loose type safety and doesn\textquotesingle{}t really provide any advantages. Separating the keyname parts into separate arguments could also be done in the language agnostic version, by using an array {\ttfamily const char $\ast$ parts\mbox{[}\mbox{]}} inside the {\ttfamily Key\+Name} struct.\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1720}{}\doxysubsection{Macros and Bindings}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1720}
+Some macros could make the language agnostic version above more ergonomic in C. Bindings in other languages, could also provide wrappers around the {\ttfamily key\+Build} and {\ttfamily ks\+Build} functions. This could for example, take language-\/native array types as arguments to avoid passing sizes as separate arguments.
+
+In C this could look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define KS\_BUILD(...) (ksBuild (0, (Key *[])\{\_\_VA\_ARGS\_\_, NULL\}))}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define KEY\_NAME(ns\_, name\_) (KeyName)\{.ns = (ns\_), .name = (name\_), .size = sizeof (name\_)\}}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define KEY\_VALUE\_STRING(s) (KeyValue)\{.value = (s), .size = strlen((s))\}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define KEY\_VALUE\_PTR(v) (KeyValue)\{.value = \&(v), .size = sizeof((v))}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#define KEY\_META\_STRING(name\_, value\_) (KeyMeta)\{.name = (name\_), .nameSize = sizeof (name\_), .value = \{ .value = (value\_), .size = strlen(value\_) \}\}}}
+
+\end{DoxyCode}
+
+
+This can be used like so\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} a = 7;}
+\DoxyCodeLine{}
+\DoxyCodeLine{KS\_BUILD(}
+\DoxyCodeLine{  keyBuild (}
+\DoxyCodeLine{    \&KEY\_NAME (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo\(\backslash\)0bar"{}}),}
+\DoxyCodeLine{    \&KEY\_VALUE\_STRING (\textcolor{stringliteral}{"{}1234"{}}),}
+\DoxyCodeLine{    (KeyMeta[])\{}
+\DoxyCodeLine{      KEY\_META\_STRING(\textcolor{stringliteral}{"{}type"{}}, \textcolor{stringliteral}{"{}long"{}}),}
+\DoxyCodeLine{      KEY\_META\_STRING(\textcolor{stringliteral}{"{}length\(\backslash\)0min"{}}, \textcolor{stringliteral}{"{}4"{}}),}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{  ),}
+\DoxyCodeLine{  keyBuild (}
+\DoxyCodeLine{    \&KEY\_NAME (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}),}
+\DoxyCodeLine{     \&KEY\_VALUE\_PTR(a),}
+\DoxyCodeLine{    NULL}
+\DoxyCodeLine{  ),}
+\DoxyCodeLine{  keyBuild (\&KEY\_NAME (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}baz"{}}), NULL, NULL)}
+\DoxyCodeLine{);}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1721}{}\doxysection{Decision}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1721}
+\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1722}{}\doxysection{Rationale}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1722}
+\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1723}{}\doxysection{Implications}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1723}
+
+\begin{DoxyItemize}
+\item 
+\item 
+\item 
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1724}{}\doxysection{Related Decisions}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1724}
+
+\begin{DoxyItemize}
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_builder_functions_md_autotoc_md1725}{}\doxysection{Notes}\label{doc_decisions_0_drafts_builder_functions_md_autotoc_md1725}

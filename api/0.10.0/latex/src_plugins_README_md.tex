@@ -1,0 +1,274 @@
+\label{src_plugins_README_md_md_src_plugins_README}%
+\Hypertarget{src_plugins_README_md_md_src_plugins_README}%
+ Multiple plugins can be mounted into the \mbox{\hyperlink{doc_help_elektra-glossary_md}{key database}} (KDB). On every access to the key data base they are executed and thus can change the functionality and behavior.
+
+Unlike Elektra\textquotesingle{}s core the plugins have all kinds of dependencies. It is the responsibility of the plugin to find and check its dependencies using CMake. If a dependency cannot be found, the plugin will automatically disable itself.\hypertarget{src_plugins_README_md_autotoc_md446}{}\doxysection{Description}\label{src_plugins_README_md_autotoc_md446}
+Elektra has a wide range of different plugins. The plugin folders should contain a README.\+md with further information. (Or follow links below.) The plugins are\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{plugins.png}%Overview Plugins
+\end{DoxyInlineImage}
+\hypertarget{src_plugins_README_md_autotoc_md447}{}\doxysubsection{C-\/\+Interface}\label{src_plugins_README_md_autotoc_md447}
+All plugins implement the same interface\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} calls {\ttfamily \mbox{\hyperlink{elektra_2plugin_8c_a32a70a7876542c51d153164ac5108a57}{elektra\+Plugin\+Open()}}} of every plugin to let them do their initialisation.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} requests {\ttfamily elektra\+Plugin\+Get()} of every plugin in the queried backends to return a key set.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} usually calls {\ttfamily elektra\+Plugin\+Set()} of every plugin in the queried backends to store the configuration.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} also calls {\ttfamily elektra\+Plugin\+Error()} for every plugin when an error happens. Because of {\ttfamily elektra\+Plugin\+Error()}, plugins are guaranteed to have their chance for necessary cleanups.
+\item {\ttfamily \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}} makes sure that plugins can finally free their own resources in {\ttfamily elektra\+Plugin\+Close()}.
+\end{DoxyItemize}
+
+Furthermore, plugins might export symbols\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily checkconf} can be called during mounting to ensure a plugin has valid configuration.
+\item {\ttfamily genconf} can be called to produce all valid configurations of a plugin.
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md448}{}\doxysubsection{KDB-\/\+Interface}\label{src_plugins_README_md_autotoc_md448}
+
+\begin{DoxyItemize}
+\item To list all plugins use \mbox{\hyperlink{doc_help_kdb-plugin-list_md}{kdb-\/plugin-\/list(1)}}.
+\item To check a plugin use \mbox{\hyperlink{doc_help_kdb-plugin-check_md}{kdb-\/plugin-\/check(1)}}.
+\item For information on a plugin use \mbox{\hyperlink{doc_help_kdb-plugin-info_md}{kdb-\/plugin-\/info(1)}}.
+\item For mount plugin(s) use \mbox{\hyperlink{doc_help_kdb-mount_md}{kdb-\/mount(1)}}.
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md449}{}\doxysection{Installation}\label{src_plugins_README_md_autotoc_md449}
+See \mbox{\hyperlink{doc_INSTALL_md}{INSTALL}}. Many plugins are already part of the core package {\ttfamily libelektra5}. The package that includes a plugin which does not belong to the {\ttfamily libelektra5} package can be found in it\textquotesingle{}s README.\+md.\hypertarget{src_plugins_README_md_autotoc_md450}{}\doxysection{See Also}\label{src_plugins_README_md_autotoc_md450}
+For an easy introduction, see \mbox{\hyperlink{doc_tutorials_plugins_md}{this tutorial how to write a storage plugin}}. For more background information of the \mbox{\hyperlink{doc_dev_plugins-framework_md}{plugins framework, continue here}}. Otherwise, you can visit the \href{https://doc.libelektra.org/api/latest/html/group__plugin.html}{\texttt{ the API documentation}}.\hypertarget{src_plugins_README_md_autotoc_md451}{}\doxysection{Plugins}\label{src_plugins_README_md_autotoc_md451}
+\hypertarget{src_plugins_README_md_autotoc_md452}{}\doxysubsection{Resolver}\label{src_plugins_README_md_autotoc_md452}
+Before configuration is actually written, the file name needs to be determined (resolvers will be automatically added by kdb mount)\+:
+
+
+\begin{DoxyItemize}
+\item resolver uses advanced POSIX APIs to handle conflicts gracefully
+\item noresolver does not resolve as no file name is needed (for non-\/file storage plugins)
+\item wresolver minimalistic resolver for non-\/\+POSIX systems
+\end{DoxyItemize}
+
+Furthermore, there are following experimental resolvers\+:
+
+
+\begin{DoxyItemize}
+\item blockresolver resolves tagged blocks inside config files
+\item curlget fetches configuration file from a remote host
+\item gitresolver checks out and commits files to a local Git repository
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md453}{}\doxysubsection{Storage}\label{src_plugins_README_md_autotoc_md453}
+Are responsible for reading writing the configuration to configuration files.
+
+Read and write everything a Key\+Set might contain\+:
+
+
+\begin{DoxyItemize}
+\item dump makes a dump of a Key\+Set in an Elektra-\/specific format
+\item quickdump uses binary portable format based on dump, but more efficient
+\item mmapstorage uses binary, not portable memory mapped file for a high performance storage
+\end{DoxyItemize}
+
+Read (and write) standard config files\+:
+
+
+\begin{DoxyItemize}
+\item toml reads and writes data using a parser generated by \href{https://github.com/westes/flex}{\texttt{ Flex}} and \href{https://www.gnu.org/software/bison}{\texttt{ Bison}}
+\item hosts reads/writes hosts files
+\item kconfig reads/writes KConfig ini files
+\item line reads/writes any file line by line
+\item yajl reads/writes JSON.
+\item augeas reads/writes many different configuration files using the Augeas library
+\item xfconf reads/writes to arbitrary xfconf channels
+\end{DoxyItemize}
+
+Using semi-\/structured data for config files, mainly suitable for spec-\/namespace (put a focus on having nice syntax for metadata)\+:
+
+
+\begin{DoxyItemize}
+\item ni parses INI files based on (including metadata)
+\end{DoxyItemize}
+
+Only suited for import/export\+:
+
+
+\begin{DoxyItemize}
+\item mini dependency free, line based key-\/value storage plugin.
+\item simpleini line-\/based key-\/value pairs with configurable format (without sections). Only works on glibc systems.
+\item xerces uses XML (without a specific schema).
+\item xmltool uses XML in the deprecated Elektra XML schema for importing configuration from Elektra 0.\+7.
+\item c writes Elektra C-\/structures ({\ttfamily ks\+New(.. key\+New(...})
+\end{DoxyItemize}
+
+Plugins that just show some functionality, (currently) not intended for productive use\+:
+
+
+\begin{DoxyItemize}
+\item csvstorage for csv files
+\item dpkg reads /var/lib/dpkg/\{available,status\}
+\item file reads and writes a file from/to a single key
+\item fstab for fstab files.
+\item mozprefs for Mozilla preference files
+\item passwd for passwd files
+\item specload calls an external application to request its specification, depends on quickdump
+\item yamlcpp reads and writes data in the \href{http://www.yaml.org}{\texttt{ YAML}} format using \href{https://github.com/jbeder/yaml-cpp}{\texttt{ yaml-\/cpp}}
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md454}{}\doxysubsection{System Information}\label{src_plugins_README_md_autotoc_md454}
+Information compiled in Elektra\+:
+
+
+\begin{DoxyItemize}
+\item version is a built-\/in plugin directly within the core so that it cannot give wrong version information
+\item constants various constants fixed when Elektra was compiled
+\item desktop contains information which desktop is currently running
+\end{DoxyItemize}
+
+Providing information found on the system not available in persistent files\+:
+
+
+\begin{DoxyItemize}
+\item uname information from the uname syscall.
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md455}{}\doxysubsection{Filter}\label{src_plugins_README_md_autotoc_md455}
+{\itshape Filter plugins} process keys and their values in both directions. In one direction they undo what they do in the other direction. Most filter plugins available now encode and decode values. Storage plugins that use characters to separate key names, values or metadata will not work without them.
+
+Rewrite unwanted characters within strings ({\bfseries{code}}-\/plugins)\+:
+
+
+\begin{DoxyItemize}
+\item ccode using the technique from arrays in the programming language C
+\item hexcode using hex codes
+\end{DoxyItemize}
+
+Rewrite unwanted characters within binary data ({\bfseries{binary}}-\/plugins)\+:
+
+
+\begin{DoxyItemize}
+\item base64 using the Base64 encoding scheme (RFC4648)
+\end{DoxyItemize}
+
+Other filters\+:
+
+
+\begin{DoxyItemize}
+\item crypto encrypts / decrypts confidential values
+\item fcrypt encrypts / decrypts entire files
+\item gpgme encrypts / decrypts confidential values (with GPGME)
+\item iconv makes sure the configuration will have correct character encoding
+\end{DoxyItemize}
+
+Experimental transformations (are {\bfseries{not}} recommended to be used in production)\+:
+
+
+\begin{DoxyItemize}
+\item directoryvalue converts directory values to leaf values
+\item hexnumber converts between hexadecimal and decimal
+\item keytometa transforms keys to metadata
+\item rename renames keys according to different rules
+\item profile renames keys according to current profile
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md456}{}\doxysubsection{Notification and Logging}\label{src_plugins_README_md_autotoc_md456}
+Log/\+Send out all changes to configuration to\+:
+
+
+\begin{DoxyItemize}
+\item dbus sends notifications for every change via dbus {\ttfamily notification}
+\item journald logs key database changes to journald
+\item syslog logs key database changes to syslog
+\item zeromqsend sends notifications for every change via Zero\+MQ sockets {\ttfamily notification}
+\end{DoxyItemize}
+
+Notification of key changes\+:
+
+
+\begin{DoxyItemize}
+\item internalnotification get updates automatically when registered keys were changed
+\item dbusrecv receives notifications via dbus {\ttfamily notification}
+\item zeromqrecv receives notifications via Zero\+MQ sockets {\ttfamily notification}
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md457}{}\doxysubsection{Debug}\label{src_plugins_README_md_autotoc_md457}
+Trace everything that happens within KDB\+:
+
+
+\begin{DoxyItemize}
+\item counter count and print how often a plugin is used
+\item timeofday prints timestamps
+\item tracer traces all calls
+\item iterate iterate over all keys and run exported functions on tagged keys
+\item logchange prints the change of every key on the console
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md458}{}\doxysubsection{Checker}\label{src_plugins_README_md_autotoc_md458}
+Copies metadata to keys\+:
+
+
+\begin{DoxyItemize}
+\item glob using globbing techniques (needed by some plugins)
+\item spec copies metadata from spec namespace (the standard way)
+\end{DoxyItemize}
+
+Plugins that check if values are valid based on metadata (typically copied by the {\ttfamily spec} plugin just before) to validate values\+:
+
+
+\begin{DoxyItemize}
+\item type type checking (CORBA types) with enum functionality
+\item ipaddr checks IP addresses using regular expressions
+\item email checks email addresses using regular expressions
+\item network by using network APIs
+\item path by checking files on file system
+\item unit validates and normalizes units of memory (e.\+g. 20KB to 20000 Bytes)
+\item blacklist blacklist and reject values
+\item length validates that string length is less or equal to given value
+\end{DoxyItemize}
+
+The same but experimental\+:
+
+
+\begin{DoxyItemize}
+\item conditionals by using if-\/then-\/else like statements
+\item date validates date and time data
+\item mathcheck by mathematical expressions using key values as operands
+\item macaddr checks if MAC addresses are valid and normalizes them
+\item range checks if a value is within a given range
+\item reference checks if a value is a valid reference to another key
+\item rgbcolor validates and normalizes hexcolors
+\item validation by using regex
+\end{DoxyItemize}
+
+Other validation mechanisms not based on metadata\+:
+
+
+\begin{DoxyItemize}
+\item filecheck does sanity checks on a file
+\item lineendings tests file for consistent line endings
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md459}{}\doxysubsection{Interpreter}\label{src_plugins_README_md_autotoc_md459}
+These plugins start an interpreter and allow you to execute a script in an interpreted language whenever Elektra’s key database gets accessed. Note that they depend on the presence of the respective binding during run-\/time\+:
+
+
+\begin{DoxyItemize}
+\item jni java plugins started by jni, works with jna plugins
+\item lua Lua plugins
+\item python Python 3 plugins
+\item ruby Ruby plugins
+\item shell executes shell commandos
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md460}{}\doxysubsection{Other Important Plugins}\label{src_plugins_README_md_autotoc_md460}
+
+\begin{DoxyItemize}
+\item cache caches keysets from previous {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} calls
+\item sync uses POSIX APIs to sync configuration files with the hard disk
+\item gopts global plugin to automatically call {\ttfamily elektra\+Get\+Opts}
+\item process proxy plugin that uses separate executables as plugin implementations
+\item backend is the default plugin implementing backend functionality for configuration files
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md461}{}\doxysubsection{Plugins for Development}\label{src_plugins_README_md_autotoc_md461}
+
+\begin{DoxyItemize}
+\item template to be copied for new plugins
+\item cpptemplate a template for C++ based plugins
+\item doc contains the documentation of the plugin interface
+\item error yields errors as described in metadata (handy for test purposes)
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md462}{}\doxysubsection{Internal Plugins}\label{src_plugins_README_md_autotoc_md462}
+Internally used and hard coded into {\ttfamily libelektra-\/kdb}. Don\textquotesingle{}t try to use manually.
+
+
+\begin{DoxyItemize}
+\item missing
+\item modules
+\item version
+\end{DoxyItemize}\hypertarget{src_plugins_README_md_autotoc_md463}{}\doxysubsection{Deprecated Plugins}\label{src_plugins_README_md_autotoc_md463}
+Please avoid, if possible, to use following plugins\+:
+
+
+\begin{DoxyItemize}
+\item (currently none 🎉) 
+\end{DoxyItemize}

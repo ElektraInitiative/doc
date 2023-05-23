@@ -1,0 +1,505 @@
+.TH "doc_news__preparation_next_release_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news__preparation_next_release_md \- 0\&.9\&.<<VERSION>> Release 
+ This release did not happen yet\&.
+.PP
+Please always update this file within \fBevery PR\fP:
+.PP
+.IP "1." 4
+write what changed
+.IP "2." 4
+use links pointing to your change (See \fBDocumentation Guidelines\fP)
+.IP "3." 4
+add your name at the end of the line \fBSyntax:\fP _(your name)_
+.PP
+.PP
+For example, Max would write:
+.PP
+.PP
+.nf
+- Added a new [doc plugin](https://www\&.libelektra\&.org/plugins/doc) _(Max)_
+.fi
+.PP
+.PP
+Pick a random line to write your changes to minimize the chances of conflicts in this file\&.
+.PP
+For non-trivial changes, you can choose to be part of the highlighted changes\&. Please write a highlight section in this case\&.
+.PP
+After the horizontal line the release notes for the next version starts\&.
+.PP
+.PP
+.PP
+<<\fCscripts/generate-news-entry\fP>>
+.PP
+We are proud to release Elektra 0\&.9\&.<<VERSION>>\&.
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP\&.
+.PP
+You can try out the latest Elektra release using our docker image \fCelektra/elektra\fP\&. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run:
+.PP
+.PP
+.nf
+docker pull elektra/elektra
+docker run -it elektra/elektra
+.fi
+.PP
+.SH "Highlights"
+.PP
+.IP "\(bu" 2
+New Changetracking API
+.IP "\(bu" 2
+New spec plugin
+.IP "\(bu" 2
+<<HIGHLIGHT>>
+.PP
+.SS "New Changetracking API"
+We've created a new KeySet diffing and changetracking API for both internal and external use\&. Several plugins already had their own implementations to detect changes made to the key database\&. Every implementation did something different and results varied\&. With this new release every plugin now uses the same shared implementation, with identical results!
+.PP
+To try the amazing new API yourself, take a look at \fBthe tutorial\fP\&.
+.PP
+Elektra's internal code now also uses this new API to detect which backends to execute\&. This can lead to better performance in I/O bound cases, where previously certain keys would have been detected as changed when they weren't\&.
+.PP
+We ran some memory benchmarks and found a slightly increased memory usage on a stock instance of Elektra\&. If you're using many plugins that do changetracking, the overhead will decrease\&.
+.PP
+Number of Keys   Old Implementation (bytes)   New Implementation (bytes)   Memory Increase (%)    50   225792 bytes   229580 bytes   1,68 %    500   383180 bytes   411238 bytes   7,32 %    5000   1992294 bytes   2306867 bytes   15,79 %    50000   18245222 bytes   21181235 bytes   16,09 %    500000   178782208 bytes   207827763 bytes   16,25 %   
+.PP
+Apart from memory benchmark, we also ran some performance benchmarks\&. As the benchmark is heavily I/O bound, the biggest bottleneck is the I/O performance of the system\&. We could not reliably detect a real, reliably reproducible performance impact measured in seconds\&. Alternatively, we have measured executed instructions\&. There seems to be about 10 % overhead, but we don't expect it to be noticeable in real-world workloads\&.
+.PP
+Number of Keys   Old Implementation (Instructions)   New Implementation (Instructions)   Performance Overhead (%)    50   18910449   19583227   3,56 %    500   63001911   68948096   9,44 %    5000   526801917   586344210   11,30 %    50000   5730261920   6340292587   10,65 %    500000   104614374974   110702166761   5,82 %   
+.SS "New spec plugin"
+The spec plugin was rewritten to use the standardized error handling in Elektra\&. It is now strictly defined that the \fCspec\fP plugin throws a warning on \fCkdbGet\fP and on any other call an error\&.
+.PP
+Default values are now created in the \fCdefault\fP namespace\&. The instantiated array specifications are now also created in the \fCdefault\fP namespace\&.
+.PP
+Keys with a require metakey and no default metakey do throw an error now\&.
+.PP
+Known limitations:
+.PP
+.IP "\(bu" 2
+\fC#\fP and \fC_\fP keys do not work on MINGW
+.IP "\(bu" 2
+No defaults for \fC_\fP globbing character
+.PP
+.PP
+For more information see \fBSpec Plugin\fP\&.
+.SS "Go into repo"
+The go binding is now inside of \fClibelektra\fP repository\&. It is now also included into our build pipeline\&. For more information on how to use it see \fBgo readme\fP\&.
+.PP
+.RS 4
+NOTE: On information how to publish new versions of \fCgo-elektra\fP to go packages see \fCgo-publishing\fP\&. 
+.RE
+.PP
+.SH "Plugins"
+.PP
+The following text lists news about the \fCplugins\fP we updated in this release\&.
+.SS "General"
+.IP "\(bu" 2
+Updated target name of shared object files according to \fC#3486\fP
+.PP
+.SS "spec"
+.IP "\(bu" 2
+Rewrite spec plugin, fix bugs and use correct error handling _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Remove info metakey from spec plugin _(Tomislav Makar @tmakar)_
+.PP
+.SS "counter"
+.IP "\(bu" 2
+Move \fCstatic\fP variables into functions to avoid global variables _(@kodebach)_
+.PP
+.SS "logchange"
+.IP "\(bu" 2
+Utilize new changetracking API _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Add Maximilian Irlinger as maintainer _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "yajl"
+.IP "\(bu" 2
+The \fCitKs\fP global variable workaround, which was used to replace the now removed internal \fCKeySet\fP cursor, was replaced with a custom context struct\&. _(@kodebach)_
+.PP
+.SS "toml"
+.IP "\(bu" 2
+The \fCflex\fP lexer and \fCbison\fP parser are now fully reentrant and therefore thread-safe\&. _(@kodebach)_
+.PP
+.SS "multifile"
+.IP "\(bu" 2
+Remove multifile plugin as it is unmaintained and conflicts with the new backend architecture _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "c"
+.IP "\(bu" 2
+Add Florian Lindner as maintainer _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Use separate symbols for \fCset\fP and \fCcommit\fP functions to satisfy \fCkdb plugin-check\fP _(@kodebach)_
+.IP "\(bu" 2
+Use new \fC\fBelektraPluginGetPhase()\fP\fP instead of counting executions _(@kodebach)_
+.PP
+.SS "mmapstorage"
+.RS 4
+\fBNote\fP: The plugin is currently disabled, because it is not yet compatible with the COW data structures\&. 
+.RE
+.PP
+TODO: remove above note, when COW support is added\&.
+.PP
+.IP "\(bu" 2
+The magic data structures are now fully compile-time constants\&. The magic number to detect endianness is generated in CMake instead of at runtime\&. _(@kodebach)_
+.PP
+.SS "syslog"
+.IP "\(bu" 2
+Convert to hook plugin _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Utilize new changetracking API _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "lineendings"
+.IP "\(bu" 2
+Add Florian Lindner as maintainer _(Florian Lindner @flo91)_
+.PP
+.SS "length"
+.IP "\(bu" 2
+Add Florian Lindner as maintainer _(Florian Lindner @flo91)_
+.PP
+.SS "missing"
+.IP "\(bu" 2
+Add Florian Lindner as maintainer _(Florian Lindner @flo91)_
+.PP
+.SS "unit"
+.IP "\(bu" 2
+Add Florian Lindner as maintainer _(Florian Lindner @flo91)_
+.PP
+.SS "dbus"
+.IP "\(bu" 2
+Utilize new changetracking API _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Add Maximilian Irlinger as maintainer _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "internalnotifications"
+.IP "\(bu" 2
+Utilize new changetracking API _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Add Maximilian Irlinger as maintainer _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SH "Libraries"
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.SS "Compatibility"
+.SS "Core"
+.IP "\(bu" 2
+The \fCsyslog\fP logging code now calls \fCopenlog\fP before every \fCsyslog\fP to avoid the use of a global variable\&. _(@kodebach)_
+.IP "\(bu" 2
+Fix memleak in \fBkdb\&.c\fP, #4925 _(@hannes99)_
+.PP
+.SS "loader"
+.IP "\(bu" 2
+Adapt target rename with \fC-plugin-\fP in \fC\fBdl\&.c\fP\fP _(Tomislav Makar @tmakar)_
+.PP
+.SS "go"
+.IP "\(bu" 2
+Golang is now included to build \fCgo binding\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+From now on we use tags which are prefixed with \fCv\fP so go package versioning works _(Tomislav Makar @tmakar)_
+.PP
+.SS "kdb"
+.IP "\(bu" 2
+Add new changetracking API _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Fix unwanted removal of subkeys when using mv _(Hannes Laimer @hannes99)_
+.IP "\(bu" 2
+Fix inconsistent return values in code, tests and man pages _(Hannes Laimer @hannes99)_
+.IP "\(bu" 2
+Remove \fCsmount\fP alias _(Hannes Laimer @hannes99)_
+.PP
+.SH "Bindings"
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up-to-date with the multi-language support provided by Elektra\&.
+.SS "jna"
+.IP "\(bu" 2
+Updated Java binding related dependencies\&. _(Michael Tucek @tucek)_
+.IP "\(bu" 2
+Updated \fCKDBException\fP to only access error key at construction time\&. _(Michael Tucek @tucek)_
+.IP "\(bu" 2
+Removed public naive resource release API\&. To migrate just remove calls to the affected methods \fCKey#release()\fP, \fCKeySet#release()\fP and \fCKDBException#releaseErrorKey()\fP _(Michael Tucek @tucek)_
+.IP "\(bu" 2
+Enabled strict javadoc checking for Gradle build _(Michael Tucek @tucek)_
+.IP "\(bu" 2
+add merging based on elektraMerge _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Added support for \fCksIncRef\fP for \fCKeySet\fP _(Michael Tucek @tucek)_
+.IP "\(bu" 2
+Enabled \fCReferenceCleaner\fP _(Michael Tucek @tucek)_
+.PP
+.SS "go-elektra"
+.IP "\(bu" 2
+Move \fCgo-elektra\fP binding from repository into bindings folder of \fClibelektra\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Change module for \fCgo-elektra\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Rename \fCgo-elektra\fP module _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Adapt README for \fCgo-elektra\fP and change module name to match \fCgithub\&.com\fP _(Tomislav Makar @tmakar)_
+.PP
+.SS "<<Binding>>"
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.SS "<<Binding>>"
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.SS "<<Binding>>"
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.SS "<<Binding>>"
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.PP
+.SH "Tools"
+.PP
+.SS "elektrad"
+.IP "\(bu" 2
+Implemented new request to add multiple metakeys for one key _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Adding bulk creation request for configuration keys _(Tomislav Makar @tmakar)_
+.PP
+.SS "webd"
+.IP "\(bu" 2
+Implemented new request to add multiple metakeys for one key _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Adding bulk creation request for configuration keys _(Tomislav Makar @tmakar)_
+.PP
+.SH "Scripts"
+.PP
+.SS "Jenkins"
+.IP "\(bu" 2
+Use only v prefix for tags not in real version _(Tomislav Makar @tmakar)_
+.PP
+.SS "Release"
+.IP "\(bu" 2
+Exclude v prefix from \fCpopulate-release-notes\&.sh\fP script _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Handle tag prefix \fCv\fP correctly in \fCrelease\&.sh\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Check for \fCv\fP prefix in \fCmake-source-package\fP script and \fCJenkinsfile\&.release\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Use correct tags for \fCgit-release-stats\fP script _(Tomislav Makar @tmakar)_
+.PP
+.SH "Documentation"
+.PP
+.IP "\(bu" 2
+Adapt and remove outdated docs https://issues.libelektra.org/4882 _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Added missing dependencies in COMPILE\&.md for APT-based systems _(Michael Tucek @tucek)_
+.IP "\(bu" 2
+Add \fCdefault\fP namespace to \fBnamespaces documentation\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Added Tomislav Makar to \fCAUTHORS\&.md\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Added Florian Lindner to \fCAUTHORS\&.md\fP _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+\&.github rework _(Markus Raab)_
+.IP "\(bu" 2
+Added \fChook\fP to \fCplacements\fP contract in \fCCONTRACT\&.ini\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Added \fChook\fP information to \fBhooks\&.md\fP
+.IP "\(bu" 2
+Added Hannes Laimer to \fCAUTHORS\&.md\fP _(Hannes Laimer @hannes99)_
+.IP "\(bu" 2
+Add README to tools/kdb _(Hannes Laimer @hannes99)_
+.IP "\(bu" 2
+Fixed shell-recorder test in \fB`install-webui\&.md`\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Add new shell-recorder test in \fB`install-webui\&.md`\fP for newly implemented request for adding multiple metakeys for one key _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+Small fixes in decisions\&. _(Markus Raab)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+Remove wikipedia from release todos in \fBRELEASE\&.md\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+<<TODO>>
+.IP "\(bu" 2
+Update AUTHORS\&.md info _(@kodebach)_
+.IP "\(bu" 2
+Add Stefan Hanreich to AUTHORS\&.md _(Stefan Hanreich @lawli3t)_
+.PP
+.SS "Use Cases"
+.IP "\(bu" 2
+Add specification use case for \fBarray-specification\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Add specification use case for \fBunderline-specification\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Add specification use case for \fBsimple-specification\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Add specification use case for \fBenum-specification\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Add complete specification for \fCdockerd\fP configuration file (\fCdaemon\&.json\fP) _(Tomislav Makar @tmakar)_
+.PP
+.SS "Decisions"
+.IP "\(bu" 2
+Decide and implement \fBdecision process\fP _(Markus Raab)_
+.IP "\(bu" 2
+Decided future \fBlibrary split\fP _(@kodebach)_
+.IP "\(bu" 2
+Decided \fCdecision process\fP _(Markus Raab)_
+.IP "\(bu" 2
+Draft for \fBman pages\fP _(Markus Raab)_
+.IP "\(bu" 2
+Add decision for \fBchange tracking\fP _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Create \fBdecision\fP for allowed and prohibited operation seqences _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Add decisions about \fBlocation of headers\fP and \fBuse of `#include`\fP in the repo _(@kodebach)_
+.IP "\(bu" 2
+Add decision about \fBmetadata semantics\fP _(@kodebach)_
+.IP "\(bu" 2
+Many small fixes to adapt to documentation guidelines and new decision process\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add decision for \fBread-only keynames\fP _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Revive \fBkeyname decision\fP _(@kodebach)_
+.IP "\(bu" 2
+Add decision for \fBcopy-on-write\fP and provide implementation suggestions\&. _(Maximilian Irlinger @atmaxinger)_
+.IP "\(bu" 2
+Added explanation on why we wanted to migrate from Maven to \fBGradle\fP for Java-related build facilities\&. _(Michael Tucek @tucek)_
+.PP
+.SS "Tutorials"
+.IP "\(bu" 2
+Add basic tutorial about changetracking _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SS "Man Pages"
+.SH "Tests"
+.PP
+.IP "\(bu" 2
+Add shell test to verify correct behavior for https://github.com/ElektraInitiative/libelektra/issues/4061 _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Add link to \fClinkchecker\&.whitelist\fP _(Tomislav Makar @tmakar)_
+.PP
+.SH "Build"
+.PP
+.SS "Docker"
+.IP "\(bu" 2
+CentOS 8 Stream: manually install \fCconfig-manager\fP DNF plugin\&. _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SH "Infrastructure"
+.PP
+.SS "Cirrus"
+.IP "\(bu" 2
+Rename deprecated \fCd-bus\fP to \fCdbus\fP in \fCmacOS\&.yml\fP and \fC\&.cirrus\&.yml\fP \fCIssue-#4900\fP _(Tomislav Makar @tmakar)_
+.IP "\(bu" 2
+Push FreeBSD 12\&.3 to 12\&.4 since 12\&.3 is end of life\&. _(Richard Stöckl @eiskasten)_
+.PP
+.SS "GitHub Actions"
+.SH "Website"
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up-to-date\&. Furthermore, we changed:
+.SH "Miscellaneous"
+.PP
+.IP "\(bu" 2
+Many global variables that where used as constants have been made fully \fCconst\fP _(@kodebach)_
+.PP
+.SH "Outlook"
+.PP
+We are currently working on following topics:
+.PP
+.IP "\(bu" 2
+Rewriting tools in C _(@hannes99)_
+.IP "\(bu" 2
+Elektrify KDE and GNOME _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Elektrify XFCE _(Richard Stöckl @Eiskasten)_
+.IP "\(bu" 2
+Mounting SQL databases _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Recording Configuration _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Ansible-Elektra _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Configure Olimex Base Images _(Maximilian Irlinger)_
+.IP "\(bu" 2
+Improving Build Server Infrastructure _(Lukas Hartl)_
+.IP "\(bu" 2
+Improve Java Development Experience _(Michael Tucek)_
+.PP
+.SH "Statistics"
+.PP
+We closed \fC<> issues\fP for this release\&.
+.PP
+<<\fCscripts/git-release-stats 0\&.9\&.VER-1 0\&.9\&.<<VERSION>>\fP>>
+.PP
+Thanks to all authors for making this release possible!
+.SH "Join the Initiative!"
+.PP
+We welcome new contributors! Read \fChere\fP about how to get started\&.
+.PP
+As first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.
+.SH "Get the Release!"
+.PP
+You can download the release from
+.PP
+.IP "\(bu" 2
+\fChere\fP or
+.IP "\(bu" 2
+\fCGitHub\fP
+.PP
+.PP
+The \fChashsums are:\fP
+.PP
+<<\fCscripts/generate-hashsums elektra-0\&.9\&.<<VERSION>>\&.tar\&.gz\fP>>
+.PP
+The release tarball is also available signed using GnuPG from
+.PP
+.IP "\(bu" 2
+\fChere\fP or
+.IP "\(bu" 2
+\fCGitHub\fP
+.PP
+.PP
+The following GPG Key was used to sign this release: 12CC44541E1B8AD9B66AFAD55262E7353324914A
+.PP
+Already built API documentation can be found
+.PP
+.IP "\(bu" 2
+\fChere\fP or
+.IP "\(bu" 2
+\fCGitHub\fP\&.
+.PP
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments, please contact us via our issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP\&.
+.PP
+Best regards, \fCElektra Initiative\fP 

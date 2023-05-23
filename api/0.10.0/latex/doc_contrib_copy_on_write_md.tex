@@ -1,0 +1,76 @@
+\label{doc_contrib_copy_on_write_md_md_doc_contrib_copy_on_write}%
+\Hypertarget{doc_contrib_copy_on_write_md_md_doc_contrib_copy_on_write}%
+ The two basic Elektra datastructures {\ttfamily Key} and {\ttfamily Key\+Set} implement full copy-\/on-\/write (COW) functionality. If a key or a keyset gets copied, only a shallow copy with references to the original data (name, value, contained keys, etc.) is created. When this shared data is modified, new memory is allocated to keep the shared version in tact. Each piece of data (name, value, etc.) has a separate reference count to facilitate this. As a consequence, duplicated keys or keysets only require a fraction of the memory compared to their source counterparts.\hypertarget{doc_contrib_copy_on_write_md_autotoc_md1704}{}\doxysection{Working principle}\label{doc_contrib_copy_on_write_md_autotoc_md1704}
+The main principle for the copy-\/on-\/write approach is simple\+: separate the data from the identity of a {\ttfamily Key} or {\ttfamily Key\+Set}. Developers using Elektra only get references to {\ttfamily Key} and {\ttfamily Key\+Set} objects. Those objects themselves do not hold any data. They only contain references to other entities holding the data. This allows transparently sharing the data-\/holding entities between multiple identifying entities.
+
+The main entities for copy-\/on-\/write are depicted in the following diagram\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{classDiagram}
+\DoxyCodeLine{    Key *-\/-\/ "{}0..1"{} KeyName : keyName}
+\DoxyCodeLine{    Key *-\/-\/ "{}0..1"{} KeyData : keyData}
+\DoxyCodeLine{}
+\DoxyCodeLine{    KeySet *-\/-\/ "{}0..1"{} KeySetData : data}
+\DoxyCodeLine{}
+\DoxyCodeLine{    Key o-\/-\/ "{}0..1"{} KeySet : meta}
+\DoxyCodeLine{    KeySetData o-\/-\/ "{}*"{} Key : array}
+\DoxyCodeLine{}
+\DoxyCodeLine{    Key : -\/ uint16\_t refs}
+\DoxyCodeLine{    Key : -\/ keyflag\_t flags}
+\DoxyCodeLine{}
+\DoxyCodeLine{    KeyName : -\/ char * name}
+\DoxyCodeLine{    KeyName : -\/ char * uname}
+\DoxyCodeLine{    KeyName : -\/ uint16\_t refs}
+\DoxyCodeLine{    KeyName : -\/ uint16\_t flags}
+\DoxyCodeLine{}
+\DoxyCodeLine{    KeyData : -\/ void * data}
+\DoxyCodeLine{    KeyData : -\/ uint16\_t refs}
+\DoxyCodeLine{    KeyData : -\/ uint16\_t flags}
+\DoxyCodeLine{}
+\DoxyCodeLine{    KeySet : -\/ uint16\_t refs}
+\DoxyCodeLine{    KeySet : -\/ ksflag\_t flags}
+\DoxyCodeLine{}
+\DoxyCodeLine{    KeySetData : -\/ uint16\_t refs}
+\DoxyCodeLine{    KeySetData : -\/ uint16\_t flags}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item {\ttfamily Key}\+: logically represents a key. No data is actually stored in it.
+\begin{DoxyItemize}
+\item {\ttfamily Key\+Name}\+: holds the name of a key. May be shared between multiple {\ttfamily Key} objects.
+\item {\ttfamily Key\+Data}\+: holds the value of a key. May be shared between multiple {\ttfamily Key} objects.
+\end{DoxyItemize}
+\item {\ttfamily Key\+Set}\+: logically represents a collection of keys. No data is actually stored in it.
+\begin{DoxyItemize}
+\item {\ttfamily Key\+Set\+Data}\+: holds an array of {\ttfamily Key} objects. May be shared between multiple {\ttfamily Key\+Set} objects.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+When creating instances of {\ttfamily Key} and {\ttfamily Key\+Set} via {\ttfamily key\+New} or {\ttfamily ks\+New}, we allocate the least amount possible. For {\ttfamily Key}, we only allocate a {\ttfamily Key\+Name} entity (while not technically necessary, it significantly simplifies some internal uses). For {\ttfamily Key\+Set}, we allocate no other entities. The missing entities will get allocated when needed.
+
+If the name of a key gets modified, we first ensure that the {\ttfamily Key} holds the only reference to its {\ttfamily Key\+Name}. If it isn\textquotesingle{}t, then a new {\ttfamily Key\+Name} object is allocated for it. Depending on the type of modification, the value of the name is also copied. The modifications to the name are then performed on the new {\ttfamily Key\+Name} entity.
+
+The same applies for the value of a key, and for the data contained in keysets.
+
+When copying the name or value of a key, or data of a keyset, via {\ttfamily key\+Copy}, {\ttfamily ks\+Copy}, {\ttfamily key\+Dup} or {\ttfamily ks\+Dup}, we point the according references in the {\ttfamily destination} object to the entities of the {\ttfamily source} object. The reference counter of those entities is increased accordingly. The previous entities of the {\ttfamily destination} object will get their reference count decreased, and if they reach 0 they will be {\ttfamily free}d.\hypertarget{doc_contrib_copy_on_write_md_autotoc_md1705}{}\doxysection{Reference counting}\label{doc_contrib_copy_on_write_md_autotoc_md1705}
+All entities are reference counted. The reference count is stored in each entity in an unsigned 16-\/bit integer variable {\ttfamily refs}. The special value {\ttfamily UINT16\+\_\+\+MAX} is reserved as an error indicator, so the maximum number of references for each entity is {\ttfamily UINT16\+\_\+\+MAX -\/ 1} or 65534.
+
+The reference counting mechanisms for {\ttfamily Key} and {\ttfamily Key\+Set} are part of the public API.
+
+A reference count of 0 for {\ttfamily Key\+Name}, {\ttfamily Key\+Data} and {\ttfamily Key\+Set\+Data} is illegal outside the public API function calls that cause the creation/deletion these structures.\hypertarget{doc_contrib_copy_on_write_md_autotoc_md1706}{}\doxysection{Integration with $<$tt$>$mmapstorage$<$/tt$>$}\label{doc_contrib_copy_on_write_md_autotoc_md1706}
+The {\ttfamily mmapstorage} plugin needs a flag for every entity to indicate whether the entity is stored via {\ttfamily mmap} or normally allocated via {\ttfamily malloc}. If an entity is flagged as being stored in {\ttfamily mmap}, it must {\bfseries{never}} be freed using {\ttfamily free}.
+
+The following flags are responsible for each entity\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily Key}\+: {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+MMAP\+\_\+\+STRUCT} is set on the {\ttfamily flags} field
+\item {\ttfamily Key\+Name}\+: {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+MMAP\+\_\+\+KEY} is set on the {\ttfamily flags} field
+\item {\ttfamily Key\+Data}\+: {\ttfamily KS\+\_\+\+FLAG\+\_\+\+MMAP\+\_\+\+Data} is set on the {\ttfamily flags} field
+\item {\ttfamily Key\+Set}\+: {\ttfamily KS\+\_\+\+FLAG\+\_\+\+MMAP\+\_\+\+STRUCT} is set on the {\ttfamily flags} field
+\item {\ttfamily Key\+Set\+Data}\+: {\ttfamily KS\+\_\+\+FLAG\+\_\+\+MMAP\+\_\+\+ARRAY} is set on the {\ttfamily flags} field 
+\end{DoxyItemize}

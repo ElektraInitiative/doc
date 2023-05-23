@@ -1,0 +1,670 @@
+\hypertarget{group__kdb}{}\doxysection{KDB}
+\label{group__kdb}\index{KDB@{KDB}}
+
+
+General methods to access the Key database.  
+
+
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{group__kdb_ga2f8953fe5f9f28db54b3ef678ebf40d7}{KDB\+\_\+\+VERSION}}~\char`\"{}x.\+y.\+z\char`\"{}
+\begin{DoxyCompactList}\small\item\em The version information in x.\+y.\+z format as string. \end{DoxyCompactList}\item 
+\#define \mbox{\hyperlink{group__kdb_ga57ee4c9e19daac86934e62441f8755fc}{KDB\+\_\+\+VERSION\+\_\+\+MAJOR}}~x
+\begin{DoxyCompactList}\small\item\em The version information of the major version as number. \end{DoxyCompactList}\item 
+\#define \mbox{\hyperlink{group__kdb_ga3407dacaacc5d83e2046db872b2408a9}{KDB\+\_\+\+VERSION\+\_\+\+MINOR}}~y
+\begin{DoxyCompactList}\small\item\em The version information of the minor version as number. \end{DoxyCompactList}\item 
+\#define \mbox{\hyperlink{group__kdb_gaa67fb397397981929b24f52ed2a2d92d}{KDB\+\_\+\+VERSION\+\_\+\+PATCH}}~z
+\begin{DoxyCompactList}\small\item\em The version information of the patch version as number. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Key\+Set $\ast$ \mbox{\hyperlink{group__kdb_ga1ba80a565f54490f362df95f401bcb29}{ks\+Rename\+Keys}} (Key\+Set $\ast$config, const char $\ast$name)
+\begin{DoxyCompactList}\small\item\em Takes the first key and cuts off this common part for all other keys, instead name will be prepended. \end{DoxyCompactList}\item 
+KDB $\ast$ \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open}} (const Key\+Set $\ast$contract, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Opens the session with the Key database. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close}} (KDB $\ast$handle, Key $\ast$error\+Key)
+\begin{DoxyCompactList}\small\item\em Closes the session with the Key database. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get}} (KDB $\ast$handle, Key\+Set $\ast$ks, Key $\ast$parent\+Key)
+\begin{DoxyCompactList}\small\item\em Retrieve Keys from the Key database in an atomic and universal way. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set}} (KDB $\ast$handle, Key\+Set $\ast$ks, Key $\ast$parent\+Key)
+\begin{DoxyCompactList}\small\item\em Set Keys to the Key database in an atomic and universal way. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+General methods to access the Key database. 
+
+To use them\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <kdb.h>}}
+
+\end{DoxyCode}
+
+
+The kdb$\ast$() methods are used to access the storage, to get and set \mbox{\hyperlink{group__keyset}{Key\+Sets}}.
+
+Parameters common for all these functions are\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape handle}, as returned by \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}, need to be passed to every call
+\item {\itshape parent\+Key} is used for every call to add warnings and set an error. For \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} / \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} it is used to specify which keys should be retrieved/stored.
+\end{DoxyItemize}
+
+\begin{DoxyNote}{Note}
+The parent\+Key is an obligation for you, but only an hint for KDB. KDB does not remember anything about the configuration. You need to pass the same configuration back to \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}, otherwise parts of the configuration get lost. Only keys below the parent\+Key are subject for change, the rest must be left untouched.
+\end{DoxyNote}
+KDB uses different backend implementations that know the details about how to access the storage. One backend consists of multiple plugins. See \mbox{\hyperlink{group__plugin}{writing a new plugin }} for information about how to write a plugin. Backends are state-\/less regarding the configuration (because of that you must pass back the whole configuration for every backend), but have a state for\+:
+
+
+\begin{DoxyItemize}
+\item a two phase-\/commit
+\item a conflict detection (error C02000) and
+\item optimizations that avoid redoing already done operations.
+\end{DoxyItemize}
+
+  
+\begin{DoxyImage}
+\includegraphics[width=\textwidth,height=\textheight/2,keepaspectratio=true]{state.png}
+\doxyfigcaption{State}
+\end{DoxyImage}
+
+
+As we see in the figure, \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} can be called arbitrarily often in any number of threads.
+
+For every handle you got from \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}, for every parent\+Key with a different name, {\itshape only} the shown state transitions are valid. From a freshly opened KDB, only \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} and \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} are allowed, because otherwise conflicts (error C02000) would not be detected.
+
+Once \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was called (for a specific handle+parent\+Key), any number of \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} and \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} can be used with this handle respective parent\+Key, unless \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} had a conflict (error C02000) with another application. Every affair with KDB needs to be finished with \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}.
+
+The name of the parent\+Key in \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} and \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} does not matter.
+
+In the usual case we just have one parent\+Key and one handle. In these cases we just have to remember to use \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} before \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}\+:
+
+
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <kdb.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <stddef.h>}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main}} (\textcolor{keywordtype}{void})}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        KeySet * myConfig = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{        Key * parentKey = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}/sw/MyApp"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{        KDB * handle = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (NULL, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (handle, myConfig, parentKey); \textcolor{comment}{// kdbGet() must be first}}
+\DoxyCodeLine{        \textcolor{comment}{// now any number of any kdbGet()/kdbSet() calls are allowed, e.g.:}}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}} (handle, myConfig, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (myConfig); \textcolor{comment}{// delete the in-\/memory configuration}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (handle, parentKey); \textcolor{comment}{// no more affairs with the key database.}}
+\DoxyCodeLine{        \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (parentKey);             \textcolor{comment}{// working with key/ks does not need kdb}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCodeInclude}
+
+
+To output warnings, you can use following code\+:
+
+
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{        Key * cutpoint = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/warnings"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{        KeySet * warnings = \mbox{\hyperlink{group__keyset_ga6b00cf82b59af4d883a9bad6cf4a4a4a}{ksCut}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (warningKey), cutpoint);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{keywordflow}{if} (!warningKey || \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (warnings) == 0)}
+\DoxyCodeLine{        \{}
+\DoxyCodeLine{                \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (warnings);}
+\DoxyCodeLine{                \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (cutpoint);}
+\DoxyCodeLine{                \textcolor{keywordflow}{return} 1;}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}There are \%zu warnings\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (warnings));}
+\DoxyCodeLine{        elektraCursor i = 1;}
+\DoxyCodeLine{        \textcolor{keywordflow}{while} (i < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (warnings))}
+\DoxyCodeLine{        \{}
+\DoxyCodeLine{                ++i;}
+\DoxyCodeLine{                Key * cur = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (warnings, i);}
+\DoxyCodeLine{                \textcolor{keywordflow}{while} (!\mbox{\hyperlink{group__keytest_ga0150fb549225d8789e7297b919965e72}{keyIsDirectlyBelow}} (cutpoint, cur))}
+\DoxyCodeLine{                \{}
+\DoxyCodeLine{                        printf (\textcolor{stringliteral}{"{}\%s: \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (cur) + \mbox{\hyperlink{group__keyname_gabdbcfa51ed8a387e47ead207affa2d2e}{keyGetNameSize}} (cutpoint), \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (cur));}
+\DoxyCodeLine{                        ++i;}
+\DoxyCodeLine{                        cur = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (warnings, i);}
+\DoxyCodeLine{                \}}
+\DoxyCodeLine{                printf (\textcolor{stringliteral}{"{}\(\backslash\)n"{}});}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (warnings);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (cutpoint);}
+
+\end{DoxyCodeInclude}
+ To output the error, you can use following code\+:
+
+
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{        \textcolor{keyword}{const} Key * metaError = \mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error"{}});}
+\DoxyCodeLine{        \textcolor{keywordflow}{if} (!metaError) \textcolor{keywordflow}{return} 1; \textcolor{comment}{/* There is no current error */}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}number: \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/number"{}})));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}description: : \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/description"{}})));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}module: : \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/module"{}})));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}at: \%s:\%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/file"{}})), \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/line"{}})));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}reason: : \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/reason"{}})));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}mountpoint: : \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/mountpoint"{}})));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}configfile: : \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (errorKey, \textcolor{stringliteral}{"{}error/configfile"{}})));}
+
+\end{DoxyCodeInclude}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{group__kdb_ga2f8953fe5f9f28db54b3ef678ebf40d7}\label{group__kdb_ga2f8953fe5f9f28db54b3ef678ebf40d7}} 
+\index{KDB@{KDB}!KDB\_VERSION@{KDB\_VERSION}}
+\index{KDB\_VERSION@{KDB\_VERSION}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{KDB\_VERSION}{KDB\_VERSION}}
+{\footnotesize\ttfamily \#define KDB\+\_\+\+VERSION~\char`\"{}x.\+y.\+z\char`\"{}}
+
+
+
+The version information in x.\+y.\+z format as string. 
+
+To get the version at run-\/time, you can get the key system\+:/elektra/version/constants/\+KDB\+\_\+\+VERSION
+
+\begin{DoxySeeAlso}{See also}
+VERSION.md. 
+
+\mbox{\hyperlink{group__kdb_ga57ee4c9e19daac86934e62441f8755fc}{KDB\+\_\+\+VERSION\+\_\+\+MAJOR}} 
+
+\mbox{\hyperlink{group__kdb_ga3407dacaacc5d83e2046db872b2408a9}{KDB\+\_\+\+VERSION\+\_\+\+MINOR}} 
+
+\mbox{\hyperlink{group__kdb_gaa67fb397397981929b24f52ed2a2d92d}{KDB\+\_\+\+VERSION\+\_\+\+PATCH}} 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_ga57ee4c9e19daac86934e62441f8755fc}\label{group__kdb_ga57ee4c9e19daac86934e62441f8755fc}} 
+\index{KDB@{KDB}!KDB\_VERSION\_MAJOR@{KDB\_VERSION\_MAJOR}}
+\index{KDB\_VERSION\_MAJOR@{KDB\_VERSION\_MAJOR}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{KDB\_VERSION\_MAJOR}{KDB\_VERSION\_MAJOR}}
+{\footnotesize\ttfamily \#define KDB\+\_\+\+VERSION\+\_\+\+MAJOR~x}
+
+
+
+The version information of the major version as number. 
+
+To get the version at run-\/time, you can get the key system\+:/elektra/version/constants/\+KDB\+\_\+\+VERSION\+\_\+\+MAJOR
+
+\begin{DoxySeeAlso}{See also}
+VERSION.md. 
+
+\mbox{\hyperlink{group__kdb_ga2f8953fe5f9f28db54b3ef678ebf40d7}{KDB\+\_\+\+VERSION}} 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_ga3407dacaacc5d83e2046db872b2408a9}\label{group__kdb_ga3407dacaacc5d83e2046db872b2408a9}} 
+\index{KDB@{KDB}!KDB\_VERSION\_MINOR@{KDB\_VERSION\_MINOR}}
+\index{KDB\_VERSION\_MINOR@{KDB\_VERSION\_MINOR}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{KDB\_VERSION\_MINOR}{KDB\_VERSION\_MINOR}}
+{\footnotesize\ttfamily \#define KDB\+\_\+\+VERSION\+\_\+\+MINOR~y}
+
+
+
+The version information of the minor version as number. 
+
+To get the version at run-\/time, you can get the key system\+:/elektra/version/constants/\+KDB\+\_\+\+VERSION\+\_\+\+MINOR
+
+\begin{DoxySeeAlso}{See also}
+VERSION.md. 
+
+\mbox{\hyperlink{group__kdb_ga2f8953fe5f9f28db54b3ef678ebf40d7}{KDB\+\_\+\+VERSION}} 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_gaa67fb397397981929b24f52ed2a2d92d}\label{group__kdb_gaa67fb397397981929b24f52ed2a2d92d}} 
+\index{KDB@{KDB}!KDB\_VERSION\_PATCH@{KDB\_VERSION\_PATCH}}
+\index{KDB\_VERSION\_PATCH@{KDB\_VERSION\_PATCH}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{KDB\_VERSION\_PATCH}{KDB\_VERSION\_PATCH}}
+{\footnotesize\ttfamily \#define KDB\+\_\+\+VERSION\+\_\+\+PATCH~z}
+
+
+
+The version information of the patch version as number. 
+
+To get the version at run-\/time, you can get the key system\+:/elektra/version/constants/\+KDB\+\_\+\+VERSION\+\_\+\+PATCH
+
+\begin{DoxySeeAlso}{See also}
+VERSION.md. 
+
+\mbox{\hyperlink{group__kdb_ga2f8953fe5f9f28db54b3ef678ebf40d7}{KDB\+\_\+\+VERSION}} 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}\label{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}} 
+\index{KDB@{KDB}!kdbClose@{kdbClose}}
+\index{kdbClose@{kdbClose}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{kdbClose()}{kdbClose()}}
+{\footnotesize\ttfamily int kdb\+Close (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{handle,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Closes the session with the Key database. 
+
+\begin{DoxyPrecond}{Precondition}
+The handle must be a valid handle as returned from \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} 
+
+error\+Key must be a valid key, e.\+g. created with \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}
+\end{DoxyPrecond}
+This is the counterpart of \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}.
+
+You must call this method when you are finished working with the Key database. You can manipulate Key and Key\+Set objects also after \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}, but you must not use any kdb$\ast$() call afterwards.
+
+The {\ttfamily handle} parameter will be finalized and all resources associated to it will be freed. After a \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}, the {\ttfamily handle} cannot be used anymore.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{opened }} key database \\
+\hline
+{\em error\+Key} & the key which holds error/warning information\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 0} & on success \\
+\hline
+{\em -\/1} & on NULL pointer\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} for opening a session with a Key database 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}\label{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}} 
+\index{KDB@{KDB}!kdbGet@{kdbGet}}
+\index{kdbGet@{kdbGet}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{kdbGet()}{kdbGet()}}
+{\footnotesize\ttfamily int kdb\+Get (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{handle,  }\item[{Key\+Set $\ast$}]{ks,  }\item[{Key $\ast$}]{parent\+Key }\end{DoxyParamCaption})}
+
+
+
+Retrieve Keys from the Key database in an atomic and universal way. 
+
+\begin{DoxyPrecond}{Precondition}
+The {\ttfamily handle} must be a valid KDB handle as returned from \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}. 
+
+The Key\+Set {\ttfamily returned} must be a valid Key\+Set, i.\+e., constructed with \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ks\+New()}}. 
+
+The Key\+Set {\ttfamily returned} must contain keys only from the {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/}, {\ttfamily system\+:/}, {\ttfamily default\+:/} or {\ttfamily proc\+:/} namespaces. 
+
+The Key {\ttfamily parent\+Key} must be a valid Key, i.\+e., constructed with \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}. 
+
+The Key {\ttfamily parent\+Key} must not have read-\/only name, value or metadata. 
+
+The Key {\ttfamily parent\+Key} must use the {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/}, {\ttfamily system\+:/}, {\ttfamily default\+:/}, {\ttfamily proc\+:/} or cascading namespace.
+\end{DoxyPrecond}
+If you pass {\ttfamily NULL} or a key with read-\/only metadata as {\ttfamily parent\+Key}, \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} will fail immediately without doing anything. If you pass another invalid {\ttfamily parent\+Key}, or {\ttfamily NULL} as {\ttfamily ks} or {\ttfamily handle}, \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} will set an error on {\ttfamily parent\+Key} and then return immediately.
+
+\begin{DoxyNote}{Note}
+If you pass a non-\/\+NULL {\ttfamily parent\+Key} with writable metadata, \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} will {\bfseries{always}} remove any existing errors and warnings from {\ttfamily parent\+Key}.
+\end{DoxyNote}
+\begin{DoxyWarning}{Warning}
+If you later call \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} with the same {\ttfamily handle} you must make sure to pass all keys from {\ttfamily ks}, which you do not want to remove.
+\end{DoxyWarning}
+\begin{DoxyParagraph}{Loadable Namespaces}
+
+\end{DoxyParagraph}
+Not all namespace can be loaded.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/} and {\ttfamily system\+:/} can be loaded via \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}.
+\item {\ttfamily proc\+:/} keys can be loaded via \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}, but are not persisted or cached.
+\item {\ttfamily default\+:/} keys can be inserted by \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} but they will always stem from a specification in {\ttfamily spec\+:/} keys.
+\item If {\ttfamily ks} contains a key with any other namespace, an error will be returned.
+\end{DoxyItemize}
+
+\begin{DoxyParagraph}{Parent Key}
+
+\end{DoxyParagraph}
+The {\ttfamily parent\+Key} defines which parts of {\ttfamily ks} will be loaded. Everything that is at or below {\ttfamily parent\+Key} wil be loaded together with any key that shares a backend with such a key. Backends are always loaded as an atomic unit.
+
+\begin{DoxyNote}{Note}
+If {\ttfamily parent\+Key} is in the cascading namespace, keys of all loadable namespaces (see above) will be loaded. This is generally the recommended approach.
+\end{DoxyNote}
+Upon sucessfully returning \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} also sets the value of {\ttfamily parent\+Key} to the storage identifier used by the backend that contains (or would contain) {\ttfamily parent\+Key}. For file-\/based backends this is the absolute path of the underlying file. Other backends may use different identifiers, but it always uniquely identifies the underlying storage unit.
+
+\begin{DoxyNote}{Note}
+If {\ttfamily parent\+Key} is in the cascading, {\ttfamily default\+:/} or \`{}proc\+:/ namespace, the value of {\ttfamily parent\+Key} will be set to an empty string. This is done, because those namespaces are not persistable (see \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}) and therfore have no storage identifier.
+\end{DoxyNote}
+\begin{DoxyParagraph}{Key\+Set Modifications}
+
+\end{DoxyParagraph}
+Below or at {\ttfamily parent\+Key}, the Key\+Set {\ttfamily ks} will mostly contain keys loaded from backends. The only exception are {\ttfamily proc\+:/} and {\ttfamily spec\+:/} keys that were already present, before \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was called and do not overlap with an existing backend (for those namespaces). This can be used to provide a hard-\/coded fallback specifications and/or process-\/specific data.
+
+Keys not below (or at) {\ttfamily parent\+Key} that were present when \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} was called, may still be removed. For example, this could be because they overlap with a backend that also has keys below {\ttfamily parent\+Key} (backends are atomic units).
+
+\begin{DoxyParagraph}{Example\+:}
+This example demonstrates the typical usecase within an application (without error handling).
+\end{DoxyParagraph}
+
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <kdb.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <stdio.h>}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main}} (\textcolor{keywordtype}{void})}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        KeySet * myConfig = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{comment}{// for error handling see kdbget\_error.c}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{comment}{// clang-\/format off}}
+\DoxyCodeLine{\textcolor{comment}{}Key * key = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}/sw/tests/myapp/\#0/current/"{}},  \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{KDB * handle = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (NULL, key);}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (handle, myConfig, key);}
+\DoxyCodeLine{Key * result = \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (myConfig, \textcolor{stringliteral}{"{}/sw/tests/myapp/\#0/current/testkey1"{}}, 0);}
+\DoxyCodeLine{        \textcolor{comment}{// clang-\/format on}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (key);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{keyword}{const} \textcolor{keywordtype}{char} * key\_name = \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (result);}
+\DoxyCodeLine{        \textcolor{keyword}{const} \textcolor{keywordtype}{char} * key\_value = \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (result);}
+\DoxyCodeLine{        \textcolor{keyword}{const} \textcolor{keywordtype}{char} * key\_comment = \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (\mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (result, \textcolor{stringliteral}{"{}comment/\#0"{}}));}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}key: \%s value: \%s comment: \%s\(\backslash\)n"{}}, key\_name, key\_value, key\_comment);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (myConfig); \textcolor{comment}{// delete the in-\/memory configuration}}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{comment}{// maybe you want kdbSet() myConfig here}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (handle, 0); \textcolor{comment}{// no more affairs with the key database.}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCodeInclude}
+
+
+When a backend fails \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} will return -\/1 with all error and warning information in the {\ttfamily parent\+Key}. The parameter {\ttfamily returned} will not be changed.
+
+\begin{DoxyParagraph}{Optimization\+:}
+In the first run of kdb\+Get all requested (or more) Keys are retrieved. On subsequent calls only the Keys are retrieved where something was changed inside the Key database. The other Keys stay in the Key\+Set returned as passed.
+\end{DoxyParagraph}
+It is your responsibility to save the original Key\+Set if you need it afterwards.
+
+If you want to be sure to get a fresh Key\+Set again, you need to open a second handle to the Key database using \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{opened }} key database \\
+\hline
+{\em parent\+Key} & Keys below {\ttfamily parent\+Key} will be retrieved from {\ttfamily handle}. It is also used to add warnings and set error information. \\
+\hline
+{\em ks} & the (pre-\/initialized) Key\+Set returned with all keys found will not be changed on error or if no update is required\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 2} & if only {\ttfamily proc\+:/} backends were executed. This means no data was loaded from storage. There might be warnings attached to the parent\+Key! Depending on your use case, you might need to treat them as erorrs! \\
+\hline
+{\em 1} & if the Keys were retrieved successfully. There might be warnings attached to the parent\+Key! Depending on your use case, you might need to treat them as errors! \\
+\hline
+{\em 0} & if there was no update at all -\/ no changes are made to the Key\+Set then. There might be warnings attached to the parent\+Key! Depending on your use case, you might need to treat them as erorrs! \\
+\hline
+{\em -\/1} & on failure -\/ no changes are made to the Key\+Set then\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{ks\+Lookup()}}, \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ks\+Lookup\+By\+Name()}} for powerful lookups after the Key\+Set was retrieved 
+
+\mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} which needs to be called before 
+
+\mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} to save the configuration afterwards 
+
+\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} to finish affairs with the \mbox{\hyperlink{group__key}{Key}} database. 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}\label{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}} 
+\index{KDB@{KDB}!kdbOpen@{kdbOpen}}
+\index{kdbOpen@{kdbOpen}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{kdbOpen()}{kdbOpen()}}
+{\footnotesize\ttfamily KDB$\ast$ kdb\+Open (\begin{DoxyParamCaption}\item[{const Key\+Set $\ast$}]{contract,  }\item[{Key $\ast$}]{error\+Key }\end{DoxyParamCaption})}
+
+
+
+Opens the session with the Key database. 
+
+\begin{DoxyPrecond}{Precondition}
+error\+Key must be a valid key, e.\+g. created with \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}
+\end{DoxyPrecond}
+You must always call this method before retrieving or committing any keys to the database. At the end of a program, after using the Key database (KDB), you must not forget to call \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} to free resources.
+
+The method will bootstrap itself in the following way. The first step is to open the default backend. With it {\ttfamily system\+:/elektra/mountpoints} will be loaded and all needed libraries and mountpoints will be determined. Then the global plugins and global keyset data from the {\ttfamily contract} is processed. Finally, the libraries for backends will be loaded and with it the {\ttfamily KDB} data structure will be initialized.
+
+The pointer to the {\ttfamily KDB} structure returned will be initialized like described above, and it must be passed along on any kdb$\ast$() method your application calls.
+
+Get a {\ttfamily KDB} handle for every thread using elektra. Don\textquotesingle{}t share the handle across threads, and also not the pointer accessing it\+:
+
+
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{void} thread1 (\textcolor{keywordtype}{void})}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        Key * parent = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}/app/part1"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{        KDB * h = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (NULL, parent);}
+\DoxyCodeLine{        \textcolor{comment}{// fetch keys and work with them}}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (h, parent);}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{\textcolor{keywordtype}{void} thread2 (\textcolor{keywordtype}{void})}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        Key * parent = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}/app/part2"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{        KDB * h = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (NULL, parent);}
+\DoxyCodeLine{        \textcolor{comment}{// fetch keys and work with them}}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (h, parent);}
+\DoxyCodeLine{\}}
+
+\end{DoxyCodeInclude}
+ You don\textquotesingle{}t need \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} if you only want to manipulate plain in-\/memory Key or Key\+Set objects.
+
+\begin{DoxyPrecond}{Precondition}
+error\+Key must be a valid key, e.\+g. created with \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}
+\end{DoxyPrecond}
+
+\begin{DoxyParams}{Parameters}
+{\em contract} & the contract that should be ensured before opening the KDB all data is copied and the Key\+Set can safely be used for e.\+g. \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} later \\
+\hline
+{\em error\+Key} & the key which holds errors and warnings which were issued\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+handle to the newly created KDB on success 
+\end{DoxyReturn}
+
+\begin{DoxyRetVals}{Return values}
+{\em NULL} & on failure\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} to close the session of a Key database opened by \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_ga11436b058408f83d303ca5e996832bcf}\label{group__kdb_ga11436b058408f83d303ca5e996832bcf}} 
+\index{KDB@{KDB}!kdbSet@{kdbSet}}
+\index{kdbSet@{kdbSet}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{kdbSet()}{kdbSet()}}
+{\footnotesize\ttfamily int kdb\+Set (\begin{DoxyParamCaption}\item[{KDB $\ast$}]{handle,  }\item[{Key\+Set $\ast$}]{ks,  }\item[{Key $\ast$}]{parent\+Key }\end{DoxyParamCaption})}
+
+
+
+Set Keys to the Key database in an atomic and universal way. 
+
+\begin{DoxyPrecond}{Precondition}
+\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} must be called before \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}\+:
+\begin{DoxyItemize}
+\item initially (after \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}})
+\item after conflict errors in \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. 
+\end{DoxyItemize}
+
+The Key\+Set {\ttfamily returned} must be a valid Key\+Set, i.\+e., constructed with \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ks\+New()}}. 
+
+The Key\+Set {\ttfamily returend} must only contain only keys in the {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/}, {\ttfamily system\+:/}, {\ttfamily default\+:/} or {\ttfamily proc\+:/} namespaces. 
+
+The Key {\ttfamily parent\+Key} must be a valid Key, e.\+g. constructed with \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}. 
+
+The Key {\ttfamily parent\+Key} must not have read-\/only name, value or metadata. 
+
+The Key {\ttfamily parent\+Key} must use the {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/}, {\ttfamily system\+:/}, {\ttfamily default\+:/}, {\ttfamily proc\+:/} or cascading namespace.
+\end{DoxyPrecond}
+If you pass {\ttfamily NULL} or a key with read-\/only metadata as {\ttfamily parent\+Key}, \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} will fail immediately without doing anything. If you pass another invalid {\ttfamily parent\+Key}, or {\ttfamily NULL} as {\ttfamily ks} or {\ttfamily handle}, \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} will set an error on {\ttfamily parent\+Key} and then return immediately.
+
+\begin{DoxyNote}{Note}
+If you pass a non-\/\+NULL {\ttfamily parent\+Key} with writable metadata, \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} will {\bfseries{always}} remove any existing errors and warnings from {\ttfamily parent\+Key}.
+\end{DoxyNote}
+\begin{DoxyParagraph}{Persistable Namespaces}
+
+\end{DoxyParagraph}
+Not all namespace can be persisted.
+
+
+\begin{DoxyItemize}
+\item {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/} and {\ttfamily system\+:/} will be persisted by \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}.
+\item {\ttfamily default\+:/} and {\ttfamily proc\+:/} keys are ignored by \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}.
+\item If {\ttfamily ks} contains a key with any other namespace, an error will be returned.
+\end{DoxyItemize}
+
+In general it is recommended to use a {\ttfamily parent\+Key} in the cascading namespace to cover all namespaces at once.
+
+\begin{DoxyParagraph}{Parent Key}
+
+\end{DoxyParagraph}
+The {\ttfamily parent\+Key} defines which parts of {\ttfamily ks} will be stored. Everything that is at or below {\ttfamily parent\+Key} wil be persisted together with any key that shares a backend with such a key. Backends are always stored as an atomic unit.
+
+\begin{DoxyNote}{Note}
+If {\ttfamily parent\+Key} is in the cascading namespace, keys of all persistable namspaces (see above) will be stored. This is generally the recommended approach.
+\end{DoxyNote}
+\begin{DoxyParagraph}{Key\+Set modifications}
+
+\end{DoxyParagraph}
+The contents of {\ttfamily ks} will mostly not be modified by \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}. The only modifications made are those caused by applying the specification in {\ttfamily spec\+:/} to {\ttfamily dir\+:/}, {\ttfamily user\+:/} and {\ttfamily system\+:/}.
+
+\begin{DoxyParagraph}{Errors}
+If {\ttfamily parent\+Key == NULL} or {\ttfamily parent\+Key} has read-\/only metadata, \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} will immediately return the error code -\/1. In all other error cases the following happens\+:
+\begin{DoxyItemize}
+\item Error information will be written into the metadata of the parent key, if possible.
+\item None of the keys are actually committed in this situation, i.\+e. no configuration file will be modified.
+\end{DoxyItemize}
+\end{DoxyParagraph}
+In case of errors you should present the error message to the user and let the user decide what to do. Possible solutions are\+:
+\begin{DoxyItemize}
+\item remove the problematic key and use \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} again (for validation or type errors)
+\item change the value of the problematic key and use \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} again (for validation errors)
+\item do a \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} (for conflicts, i.\+e. error C02000) and then
+\begin{DoxyItemize}
+\item set the same keyset again (in favour of what was set by this user)
+\item drop the old keyset (in favour of what was set from another application)
+\item merge the original, your own and the other keyset
+\end{DoxyItemize}
+\item export the configuration into a file (for unresolvable errors)
+\item repeating the same \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} might be of limited use, if the user does not explicitly request it, because temporary errors are rare and its unlikely that they fix themselves (e.\+g. disc full, permission problems)
+\end{DoxyItemize}
+
+\begin{DoxyParagraph}{Optimization}
+Only backends that
+\begin{DoxyItemize}
+\item contain at least changed key according to elektra\+Diff\+Calculate(),
+\item contain fewer keys than at the end of \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}} will be called. There won\textquotesingle{}t be an unnecessary write for unchanged keys.
+\end{DoxyItemize}
+\end{DoxyParagraph}
+If none of the backends need an update, \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}} returns 0 and does nothing.
+
+
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{KeySet * myConfig = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{Key * parentKey = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}system:/sw/MyApp"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{KDB * handle = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (NULL, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (handle, myConfig, parentKey); \textcolor{comment}{// kdbGet needs to be called first!}}
+\DoxyCodeLine{KeySet * base = \mbox{\hyperlink{group__keyset_gac59e4b328245463f1451f68d5106151c}{ksDup}} (myConfig);     \textcolor{comment}{// save a copy of original keyset}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// change the keys within myConfig}}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (myConfig, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}system:/sw/MyApp/Test"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}5"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{}
+\DoxyCodeLine{KeySet * ours = \mbox{\hyperlink{group__keyset_gac59e4b328245463f1451f68d5106151c}{ksDup}} (myConfig); \textcolor{comment}{// save a copy of our keyset}}
+\DoxyCodeLine{KeySet * theirs;                  \textcolor{comment}{// needed for 3-\/way merging}}
+\DoxyCodeLine{\textcolor{keywordtype}{int} ret = \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}} (handle, myConfig, parentKey);}
+\DoxyCodeLine{\textcolor{keywordflow}{while} (ret == -\/1) \textcolor{comment}{// as long as we have an error}}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{keywordtype}{int} strategy = showElektraErrorDialog (parentKey);}
+\DoxyCodeLine{        theirs = \mbox{\hyperlink{group__keyset_gac59e4b328245463f1451f68d5106151c}{ksDup}} (ours);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (handle, theirs, parentKey); \textcolor{comment}{// refresh key database}}
+\DoxyCodeLine{        KeySet * result = \mbox{\hyperlink{kdbmerge_8h_a2cc0dc19c99b2bc86feb1f2607df343a}{elektraMerge}}(}
+\DoxyCodeLine{                \mbox{\hyperlink{group__keyset_ga6b00cf82b59af4d883a9bad6cf4a4a4a}{ksCut}}(ours, parentKey), parentKey,}
+\DoxyCodeLine{                \mbox{\hyperlink{group__keyset_ga6b00cf82b59af4d883a9bad6cf4a4a4a}{ksCut}}(theirs, parentKey), parentKey,}
+\DoxyCodeLine{                \mbox{\hyperlink{group__keyset_ga6b00cf82b59af4d883a9bad6cf4a4a4a}{ksCut}}(base, parentKey), parentKey,}
+\DoxyCodeLine{                parentKey, strategy, parentKey);}
+\DoxyCodeLine{        \textcolor{keywordtype}{int} numberOfConflicts = \mbox{\hyperlink{kdbmerge_8h_aa4b4c9a6f50a1f5d602fc84c8abce208}{elektraMergeGetConflicts}} (parentKey);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (theirs);}
+\DoxyCodeLine{        \textcolor{keywordflow}{if} (result != NULL) \{}
+\DoxyCodeLine{                ret = \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}} (handle, result, parentKey);}
+\DoxyCodeLine{        \} \textcolor{keywordflow}{else} \{}
+\DoxyCodeLine{                \textcolor{comment}{// an error happened while merging}}
+\DoxyCodeLine{                \textcolor{keywordflow}{if} (numberOfConflicts > 0 \&\& strategy == \mbox{\hyperlink{kdbmerge_8h_a2c76c3f8b54a741ba9fdbfe6b5e0ee5caeaf7be70515ee5bc9b6dae1c844ec492}{MERGE\_STRATEGY\_ABORT}})}
+\DoxyCodeLine{                \{}
+\DoxyCodeLine{                        \textcolor{comment}{// Error due to merge conflicts}}
+\DoxyCodeLine{                        ret = -\/1;}
+\DoxyCodeLine{                \}}
+\DoxyCodeLine{                \textcolor{keywordflow}{else}}
+\DoxyCodeLine{                \{}
+\DoxyCodeLine{                        \textcolor{comment}{// Internal errors, out of memory etc.}}
+\DoxyCodeLine{                        ret = -\/1;}
+\DoxyCodeLine{                \}}
+\DoxyCodeLine{        \}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (ours);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (base);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga27e5c16473b02a422238c8d970db7ac8}{ksDel}} (myConfig); \textcolor{comment}{// delete the in-\/memory configuration}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (handle, parentKey); \textcolor{comment}{// no more affairs with the key database.}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (parentKey);}
+
+\end{DoxyCodeInclude}
+ show\+Elektra\+Error\+Dialog() and do\+Elektra\+Merge() need to be implemented by the user of Elektra. For do\+Elektra\+Merge a 3-\/way merge algorithm exists in libelektra-\/tools.
+
+
+\begin{DoxyParams}{Parameters}
+{\em handle} & contains internal information of \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{opened }} key database \\
+\hline
+{\em ks} & a Key\+Set which should contain changed keys, otherwise nothing is done \\
+\hline
+{\em parent\+Key} & Keys below {\ttfamily parent\+Key} will be set to {\ttfamily handle}. It is also used to add warnings and set error information.\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em 1} & on success \\
+\hline
+{\em 0} & if nothing had to be done, no changes in KDB \\
+\hline
+{\em -\/1} & on failure, no changes in KDB, an error will be set on {\ttfamily parent\+Key} if possible (see \char`\"{}\+Errors\char`\"{} above)\\
+\hline
+\end{DoxyRetVals}
+\begin{DoxySince}{Since}
+1.\+0.\+0
+\end{DoxySince}
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}} for getting {\ttfamily handle} 
+
+\mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}} that must be called afterwards 
+
+\mbox{\hyperlink{group__keyset_ga4287b9416912c5f2ab9c195cb74fb094}{ks\+Current()}} contains the error Key 
+\end{DoxySeeAlso}
+\mbox{\Hypertarget{group__kdb_ga1ba80a565f54490f362df95f401bcb29}\label{group__kdb_ga1ba80a565f54490f362df95f401bcb29}} 
+\index{KDB@{KDB}!ksRenameKeys@{ksRenameKeys}}
+\index{ksRenameKeys@{ksRenameKeys}!KDB@{KDB}}
+\doxysubsubsection{\texorpdfstring{ksRenameKeys()}{ksRenameKeys()}}
+{\footnotesize\ttfamily Key\+Set$\ast$ ks\+Rename\+Keys (\begin{DoxyParamCaption}\item[{Key\+Set $\ast$}]{config,  }\item[{const char $\ast$}]{name }\end{DoxyParamCaption})}
+
+
+
+Takes the first key and cuts off this common part for all other keys, instead name will be prepended. 
+
+\begin{DoxyReturn}{Returns}
+a new allocated keyset with keys in user namespace.
+\end{DoxyReturn}
+The first key is removed in the resulting keyset. 

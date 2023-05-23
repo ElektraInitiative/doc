@@ -1,0 +1,225 @@
+\label{doc_VISION_md_md_doc_VISION}%
+\Hypertarget{doc_VISION_md_md_doc_VISION}%
+ The vision of Elektra is to have systems in which every configuration setting is easily accessible and specifiable.
+
+We will use Samba and its configuration value {\ttfamily global/workgroup} as running example.\hypertarget{doc_VISION_md_autotoc_md4732}{}\doxysection{Problem}\label{doc_VISION_md_autotoc_md4732}
+Currently, the administrator would first need to locate the configuration file, it could be {\ttfamily /etc/samba/smb.conf}, learn the \href{https://www.samba.org/samba/docs/current/man-html/smb.conf.5.html}{\texttt{ syntax}} and then implement some configuration management code to add or replace the value. Furthermore, application developers need to implement the parser, design tools like \href{https://www.samba.org/samba/docs/old/Samba3-HOWTO/SWAT.html}{\texttt{ SWAT}}, and document in detail how to configure their specific software. This is a huge effort on both sides.\hypertarget{doc_VISION_md_autotoc_md4733}{}\doxysection{Configuration Management}\label{doc_VISION_md_autotoc_md4733}
+We envision, that instead a key-\/value interface allows us to change any configuration value as desired.
+
+Either by either invoking \mbox{\hyperlink{doc_help_kdb_md}{command-\/line tools}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set system:/sw/samba/\#0/current/global/workgroup MYGROUP}
+
+\end{DoxyCode}
+
+
+Also by importing an INI file with the information\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb import system:/sw/samba/\#0/current ini << HERE}
+\DoxyCodeLine{[global]}
+\DoxyCodeLine{workgroup=MYGROUP}
+\DoxyCodeLine{HERE}
+
+\end{DoxyCode}
+
+
+Or using some compiled language like C (shown code uses the \mbox{\hyperlink{src_libs_highlevel_README_md}{high-\/level API}}, with neither code generation nor error handling)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <\mbox{\hyperlink{elektra_8h}{elektra.h}}>}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main}} ()}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        ElektraError* error;}
+\DoxyCodeLine{        Elektra * elektra = \mbox{\hyperlink{group__highlevel_ga45de58b05c7a8ab02f6c54ddd31a56e1}{elektraOpen}} (\textcolor{stringliteral}{"{}system:/sw/samba/\#0/current"{}}, 0, \&error);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__highlevel_ga563a695658e8e6f74183cca674edd1a7}{elektraSetString}} (elektra, \textcolor{stringliteral}{"{}global/workgroup"{}}, \textcolor{stringliteral}{"{}MYGROUP"{}}, \&error);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__highlevel_ga9b688b7250e5f9d8ea6701cc2cc269af}{elektraClose}} (elektra);}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Or using some interpreted language like Python (shown code uses the \mbox{\hyperlink{doc_tutorials_python-kdb_md}{Python binding of the low-\/level API}})\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{import kdb}
+\DoxyCodeLine{k = kdb.KDB()}
+\DoxyCodeLine{ks = kdb.KeySet()}
+\DoxyCodeLine{s = "{}system:/sw/samba/\#0/current"{}}
+\DoxyCodeLine{k.get (ks, s)}
+\DoxyCodeLine{ks.append(kdb.Key(s+"{}/global/workgroup"{}, kdb.KEY\_VALUE, "{}MYGROUP"{}))}
+\DoxyCodeLine{k.set (ks, s)}
+
+\end{DoxyCode}
+
+
+Or if you already use configuration management tools, the vision is that a single statement within the configuration management tool suffices to change a configuration value.
+
+Key-\/value access in \href{https://puppet.libelektra.org}{\texttt{ puppet-\/libelektra}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbkey \{'system:/sw/samba/\#0/current/global/workgroup':}
+\DoxyCodeLine{        ensure => 'present',}
+\DoxyCodeLine{        value => 'MYGROUP'}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Key-\/value access in Chef\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbset 'system:/sw/samba/\#0/current/global/workgroup' do}
+\DoxyCodeLine{        value 'MYGROUP'}
+\DoxyCodeLine{        action :create}
+\DoxyCodeLine{end}
+
+\end{DoxyCode}
+
+
+Key-\/value access in Ansible\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ name: setup samba workgroup}
+\DoxyCodeLine{  connection: local}
+\DoxyCodeLine{  hosts: localhost}
+\DoxyCodeLine{  collections:}
+\DoxyCodeLine{    -\/ elektra\_initiative.libelektra}
+\DoxyCodeLine{  tasks:}
+\DoxyCodeLine{    -\/ name: set workgroup}
+\DoxyCodeLine{      elektra:}
+\DoxyCodeLine{        mountpoint: system:/sw/samba/\#0/current/global}
+\DoxyCodeLine{        keys:}
+\DoxyCodeLine{          workgroup:}
+\DoxyCodeLine{            value: MYGROUP}
+
+\end{DoxyCode}
+
+
+In all these examples, we have set {\ttfamily system\+:/sw/samba/\#0/current/global/workgroup} to {\ttfamily MYGROUP}.\hypertarget{doc_VISION_md_autotoc_md4734}{}\doxysection{Application Integration}\label{doc_VISION_md_autotoc_md4734}
+Different to other solutions, in Elektra \mbox{\hyperlink{doc_tutorials_application-integration_md}{applications itself can be integrated}}, too. In Samba we would simply replace the configuration file parser with code like (\href{https://doc.libelektra.org/api/latest/html/group__key.html}{\texttt{ low-\/level C code}}, no error-\/handling and no cleanup)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <kdb.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include <stdio.h>}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{testio__doc_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main}} (\textcolor{keywordtype}{void})}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        KeySet * myConfig = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{        Key * key = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}/sw/samba/\#0/current"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{        KDB * handle = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (NULL, key);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (handle, myConfig, key);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        Key * result = \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (myConfig, \textcolor{stringliteral}{"{}/sw/samba/\#0/current/global/workgroup"{}}, 0);}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}My workgroup is \%s"{}}, \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (result));}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+If any of the codes above were executed, the application will print {\ttfamily My workgroup is MYGROUP}.
+
+Applications that were modified to directly use Elektra are called to be {\ttfamily elektrified}.
+
+But the vision also includes legacy applications which do not directly use Elektra. Then distributions can mount configuration files, so that the configuration is visible within Elektra.
+
+Elektra uses the same configuration to configure itself, so every way shown above can be used. To make mounting more simple, we introduced an extra tool\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount /etc/samba/smb.conf system:/sw/samba/\#0/current ini}
+
+\end{DoxyCode}
+
+
+Mounting can also be done via configuration management tools.
+
+Mounting in puppet-\/libelektra\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbmount \{'system:/sw/samba/\#0/current':}
+\DoxyCodeLine{        ensure => 'present',}
+\DoxyCodeLine{        file => '/etc/samba/smb.conf',}
+\DoxyCodeLine{        plugins => 'ini'}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{kdbkey \{'system:/sw/samba/global/log level':}
+\DoxyCodeLine{        ensure => 'absent'}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Mounting in Ansible\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ name: setup samba workgroup}
+\DoxyCodeLine{  connection: local}
+\DoxyCodeLine{  hosts: localhost}
+\DoxyCodeLine{  tasks:}
+\DoxyCodeLine{    -\/ name: set workgroup}
+\DoxyCodeLine{    elektra:}
+\DoxyCodeLine{      mountpoint: system:/sw/samba}
+\DoxyCodeLine{      file: /etc/samba/smb.conf}
+\DoxyCodeLine{      plugins: ini}
+
+\end{DoxyCode}
+\hypertarget{doc_VISION_md_autotoc_md4735}{}\doxysection{Specifications}\label{doc_VISION_md_autotoc_md4735}
+Ideally, applications specify their settings. This way, we know which keys exist on a system and which values are expected for these keys. Then administrators do not need to guess.
+
+Next to the documentation for humans, specifications also provide information for software. For example, the Web UI automatically gives input fields according to the type of the configuration setting. For example, a boolean configuration setting gets a checkbox.
+
+Also the specifications are integrated within Elektra in the same way. Again, we can use any of the above ways to specify configuration.
+
+Either by either invoking \mbox{\hyperlink{doc_help_kdb_md}{command-\/line tools}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set-\/meta /sw/samba/\#0/current/global/workgroup type string}
+\DoxyCodeLine{kdb set-\/meta /sw/samba/\#0/current/global/workgroup description "{}This controls what workgroup your server will appear to be in when queried by clients. Note that this parameter also controls the Domain name used with the security = domain setting."{}}
+
+\end{DoxyCode}
+
+
+Key-\/value specifications in \href{https://puppet.libelektra.org}{\texttt{ puppet-\/libelektra}}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbkey \{'system:/sw/samba/\#0/current/global/workgroup':}
+\DoxyCodeLine{        ensure => 'present',}
+\DoxyCodeLine{        check => \{}
+\DoxyCodeLine{                'type' => 'string',}
+\DoxyCodeLine{                'default' => 'WORKGROUP',}
+\DoxyCodeLine{                'description' => 'This controls what workgroup}
+\DoxyCodeLine{                        your server will appear to be in when}
+\DoxyCodeLine{                        queried by clients. Note that this}
+\DoxyCodeLine{                        parameter also controls the Domain}
+\DoxyCodeLine{                        name used with the security = domain}
+\DoxyCodeLine{                        setting.'}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Note, that the specification (in both examples above) actually lands up in {\ttfamily spec\+:/sw/samba/\#0/current/global/workgroup}. The unique path to the configuration setting is {\ttfamily /sw/samba/\#0/current/global/workgroup}, but the specification gets written to the \mbox{\hyperlink{doc_tutorials_namespaces_md}{namespace}} {\ttfamily spec}, while the system-\/configuration gets written to the namespace {\ttfamily system}.\hypertarget{doc_VISION_md_autotoc_md4736}{}\doxysection{Conclusion}\label{doc_VISION_md_autotoc_md4736}
+Here we have shown how Elektra can be used to configure systems more easily. Both application developers and administrators can save time.
+
+The main technique to achieve the vision is unique key names\+: Every configuration setting can be addressed by its unique key name.
+
+With this unique key name, we get an identifier, which can be used at all places throughout the system.
+
+
+\begin{DoxyItemize}
+\item Continue reading \mbox{\hyperlink{doc_BIGPICTURE_md}{big picture}} 
+\end{DoxyItemize}

@@ -1,0 +1,101 @@
+.TH "md_src_plugins_file_README" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_file_README \- Plugin: file 
+
+.IP "\(bu" 2
+infos = Information about the file plugin is in keys below
+.IP "\(bu" 2
+infos/author = Thomas Waser thomas.waser@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/file
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = specific unittest tested nodep libc configurable preview experimental
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = reads complete file into a key
+.PP
+.SH "Introduction"
+.PP
+The file plugin reads the content of a file and stores it into the parent key\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-experimental\fP\&.
+.SH "Configuration"
+.PP
+.IP "\(bu" 2
+\fCbinary\fP
+.PP
+treats the file as a binary file instead of a text file
+.IP "\(bu" 2
+\fCinfo\fP
+.PP
+adds additional information about the file as metadata to the parent key\&.
+.IP "  \(bu" 4
+\fCinfo/size\fP filesize
+.IP "  \(bu" 4
+\fCinfo/ctime\fP time of last status change
+.IP "  \(bu" 4
+\fCinfo/atime\fP time of last access
+.IP "  \(bu" 4
+\fCinfo/mtime\fP time of last modification
+.IP "  \(bu" 4
+\fCinfo/uid\fP user ID of owner
+.IP "  \(bu" 4
+\fCinfo/gid\fP group ID of owner
+.IP "  \(bu" 4
+\fCinfo/mode\fP protection
+.IP "  \(bu" 4
+\fCinfo/inode\fP inode number
+.PP
+
+.PP
+.SH "Usage"
+.PP
+\fCkdb mount file /testfile file\fP
+.SH "Dependencies"
+.PP
+None\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# Mount the file `file/multiline` at `system:/tests/file`
+sudo kdb mount "$PWD/src/plugins/file/file/singleline" system:/tests/file file info=
+
+# Check the content of the file
+kdb get system:/tests/file
+#> this is a single line testfile
+
+#  List available attributes of the mounted file
+kdb meta-ls system:/tests/file
+#> info/atime
+#> info/ctime
+#> info/gid
+#> info/inode
+#> info/mode
+#> info/mtime
+#> info/size
+#> info/uid
+
+# Check out the file’s permissions
+kdb meta-get system:/tests/file info/mode
+# STDOUT-REGEX: 1006[46]4
+
+# Unmount the file
+sudo kdb umount system:/tests/file
+.fi
+.PP
+.SH "Limitations"
+.PP
+None\&. 

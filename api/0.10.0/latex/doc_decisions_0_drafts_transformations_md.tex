@@ -1,0 +1,163 @@
+\label{doc_decisions_0_drafts_transformations_md_md_doc_decisions_0_drafts_transformations}%
+\Hypertarget{doc_decisions_0_drafts_transformations_md_md_doc_decisions_0_drafts_transformations}%
+ \hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1817}{}\doxysection{Problem}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1817}
+Certain plugins, e.\+g. {\ttfamily rename}, perform transformations on keys and keysets within Elektra. Those transformations include, but are not limited to\+:
+
+
+\begin{DoxyItemize}
+\item Changing the names of the keys back and forth
+\item Changing values back and forth for normalization, e.\+g. {\ttfamily true} -\/$>$ {\ttfamily 1}, {\ttfamily 1} -\/$>$ {\ttfamily true}
+\end{DoxyItemize}
+
+While these features are useful, they do create feature-\/interaction problems. More specifically, problems have been observed in conjunction with the following (overlapping) types of plugins\+:
+
+
+\begin{DoxyItemize}
+\item notification plugins
+\item plugins that do change tracking
+\end{DoxyItemize}
+
+The problem, in general, can be described as\+: Which representation of the KDB should be used for notifications/change tracking?
+
+We differentiate between\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape persistent} name/value/metadata\+: How it is actually stored, i.\+e. the state returned by and passed to the {\ttfamily storage} plugins.
+\item {\itshape transient} name/value/metadata\+: How it is at runtime, i.\+e. what is returned by {\ttfamily kdb\+Get} and passed to {\ttfamily kdb\+Set}.
+\item {\itshape intermediate} name/value/metadata\+: Any state inbetween the two.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1818}{}\doxysubsection{Observed problems with changing key names}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1818}
+Suppose there is a plugin that changes key names. It converts to lowercase for the runtime representation, and to uppercase for the stored representation. The plugin is executed in the post-\/storage phase for the {\ttfamily get} operation and the pre-\/storage phase for the {\ttfamily set} operation. This results in the keys being in UPPERCASE in the configuration files, but they are presented in lowercase to other plugins and applications using the Elektra API.
+
+For example, here is a configuration file with a hypothetical format\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{/DISPLAY/BRIGHTNESS = 100}
+
+\end{DoxyCode}
+
+
+As can be seen, the keys are in UPPERCASE within the configuration file. In Elektra keys are case-\/sensitive. As operations on keysets such as {\ttfamily ks\+Lookup} operate with {\itshape runtime} data after the post-\/storage phase, {\ttfamily kdb get /\+DISPLAY/\+BRIGHTNESS} will fail. For Elektra, the key {\ttfamily /\+DISPLAY/\+BRIGHTNESS} does not exist, as the {\ttfamily rename} plugin transformed this into the lowercase {\ttfamily /display/brightness}.
+
+This leads to problems with the notification plugins. As notification plugins are executed after the post-\/storage phase of the {\ttfamily set} operation, they will receive a keyset with the already transformed keys. In this example, the notification plugins will receive all-\/\+UPPERCASE keys, and send out notifications with those all-\/\+UPPERCASE keys. An application listening to those notifications will not be able to query Elektra for those keys, as for Elektra those UPPERCASE keys do not exist.
+
+Apart from the problems with notifications, the way key name changing plugins work also breaks change tracking in plugins like {\ttfamily dbus}. This is because key names are read-\/only when they are contained in a {\ttfamily Key\+Set}. In order to change the name of a key, such a plugin has to create a new key with the changed name, and delete the key with the old name. The {\ttfamily dbus} plugin implements change tracking by checking the \textquotesingle{}key needs sync\textquotesingle{} flag instead of comparing the values. As new keys by design have the \textquotesingle{}key needs sync\textquotesingle{} flag set, the plugins that implement change tracking via the flag will always erroneously detect transformed keys as changed.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1819}{}\doxysubsection{Observed problems with changing values (normalization)}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1819}
+Suppose we have a plugin that changes the value of a key to the hard coded value {\ttfamily 1} during the storage phase of the {\ttfamily set} operation. If a plugin does change tracking, this will lead to false positives.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/limits/openfiles = 1}
+
+\end{DoxyCode}
+
+
+If the user changes the value, e.\+g. using {\ttfamily kdb set user\+:/limits/openfiles 23}, plugins will observe the new value {\ttfamily 23}. The value-\/changing plugin, however, will reset that value back to {\ttfamily 1}. So in practice, the configuration has not been changed. Plugins relying on change tracking plugins (e.\+g. notification plugins) will however think that it has.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1820}{}\doxysection{Constraints}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1820}
+
+\begin{DoxyEnumerate}
+\item We want to enable some kind of transformations
+\item Renaming keys should be possible, at least in storage plugins 3.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1821}{}\doxysection{Assumptions}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1821}
+
+\begin{DoxyEnumerate}
+\item False positives for change tracking algorithms are only a minor problem. False positives are that changes are detected, even though nothing changed.
+\item There is no reason to modify or delete existing {\ttfamily meta\+:/} keys.
+\item Newly generated {\ttfamily meta\+:/...} keys can
+\begin{DoxyItemize}
+\item either stay and get permanently stored during {\ttfamily kdb\+Set}
+\item or be written as {\ttfamily meta\+:/generated/...}. The {\ttfamily meta\+:/generated/...} metakeys are never stored and are automatically removed during {\ttfamily kdb\+Set} before {\ttfamily storage} is called.
+\end{DoxyItemize}
+\end{DoxyEnumerate}\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1822}{}\doxysection{Considered Alternatives}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1822}
+\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1823}{}\doxysubsection{Enable setting and unsetting of the $<$tt$>$key\+Needs\+Sync$<$/tt$>$ flag}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1823}
+Require plugins that rename keys to remove the {\ttfamily key\+Needs\+Sync} flag. This would require making the \textquotesingle{}key sync\textquotesingle{} APIs public. Letting user code modify these internal flags may lead to serious bugs. This does not solve the problem of changing values.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1824}{}\doxysubsection{Use change tracking to replace the $<$tt$>$key\+Needs\+Sync$<$/tt$>$ flag}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1824}
+Eliminate the need of the {\ttfamily key\+Needs\+Sync} flag by utilizing the planned change tracking API. This does not solve the problem of changing values and false positives.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1825}{}\doxysubsection{Store original names and values in metadata.}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1825}
+For key name transformations require that transformation plugins set a metakey (e.\+g. {\ttfamily meta\+:/elektra/runtimename}) with the runtime name before they do any transformations in the {\ttfamily kdb\+Set} phase. This {\itshape must not} be done if this metakey already exists, i.\+e. another plugin already tranformed it beforehand. This allows notification and change tracking functionality to work determine and work with the runtime name of the key.
+
+A similiar thing was already attempted for values, i.\+e. {\ttfamily meta\+:/origvalue}.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1826}{}\doxysubsection{Create an API for transformations}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1826}
+Plugins must use a special function to transform key names, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{const} \textcolor{keywordtype}{char} * (*ElektraNameTransform)(\textcolor{keyword}{const} Key *);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int} elektraApplyNameTransform (KeySet * ks, ElektraNameTransform transform);}
+
+\end{DoxyCode}
+
+
+How the {\ttfamily elektra\+Apply\+Name\+Transform} function marks the original name is an internal implementation detail. May be as {\ttfamily meta\+:/} or something else entireley.
+
+Something similar could be done for the value of a key as well.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1827}{}\doxysubsection{Introduce a new phase for transformations}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1827}
+We could also introduce a new phase between before/after storage exclusively for transformations. Then we can just do a \char`\"{}fake\char`\"{} call to that phase to get back the transient names for change tracking.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1828}{}\doxysubsection{Call value transformation plugin(s) when $<$tt$>$key\+Set\+Value$<$/tt$>$ / $<$tt$>$key\+Set\+String$<$/tt$>$ is called}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1828}
+After a value has been set by the user, call the transformation plugin. We could store those callbacks as metakeys, i.\+e. {\ttfamily meta\+:/generated/transformation/value/callback/\#1}. Alternatively, we could implement a linked list or other data structure for the callbacks.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{struct }callback \{}
+\DoxyCodeLine{    callback\_fn \textcolor{keyword}{function};}
+\DoxyCodeLine{    \textcolor{keyword}{struct }callback * next;}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+There will be 3 possibilities where transformations take place\+:
+
+
+\begin{DoxyEnumerate}
+\item For keys with a registered callback\+:
+\begin{DoxyItemize}
+\item Within {\ttfamily key\+Set\+Value} / {\ttfamily key\+Set\+String} the callbacks are called.
+\end{DoxyItemize}
+\item For new keys, i.\+e. keys without a callback\+:
+\begin{DoxyItemize}
+\item Within {\ttfamily kdb\+Set}, as it is now.
+\end{DoxyItemize}
+\item For new keys that override keys with an intact callback\+:
+\begin{DoxyItemize}
+\item Within {\ttfamily ks\+Append} and/or {\ttfamily ks\+Append\+Key} the callbacks are copied from the original key and then executed on the new key.
+\end{DoxyItemize}
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, parent);}
+\DoxyCodeLine{\textcolor{comment}{// ks contains two keys:}}
+\DoxyCodeLine{\textcolor{comment}{//  -\/ user:/limits/openfiles}}
+\DoxyCodeLine{\textcolor{comment}{//  -\/ user:/background/color}}
+\DoxyCodeLine{}
+\DoxyCodeLine{Key * background = \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}}(ks, \textcolor{stringliteral}{"{}user:/background/color"{}}, 0);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}}(background, \textcolor{stringliteral}{"{}\#ff00ff"{}}); \textcolor{comment}{// (1) -\/> callbacks are called.}}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}user:/my/key"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}1234"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}); \textcolor{comment}{// (2) -\/> transformation will happen inside kdbSet}}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}user:/limits/openfiles"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}23"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}); \textcolor{comment}{// (3) -\/> replaces existing key, callbacks of existing key are copied and then executed}}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, parent);}
+
+\end{DoxyCode}
+
+
+We also need to provide a simple API to plugins to register such callbacks for a key.
+
+As the transformations for existing keys will be applied before {\ttfamily kdb\+Set}, this will elimate false positives in changetracking.
+
+A drawback to this solution is that it adds some complexity to {\ttfamily libelektra-\/core}.\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1829}{}\doxysection{Decision}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1829}
+\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1830}{}\doxysection{Rationale}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1830}
+\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1831}{}\doxysection{Implications}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1831}
+
+\begin{DoxyItemize}
+\item 
+\item 
+\item 
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1832}{}\doxysection{Related Decisions}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1832}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_5_partially_implemented_hooks_md}{Hooks}}
+\item \mbox{\hyperlink{doc_decisions_3_in_review_change_tracking_md}{Change Tracking}}
+\item \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{Operation Sequences}}
+\item \mbox{\hyperlink{doc_decisions_4_decided_internal_cache_md}{Internal Cache}}
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_transformations_md_autotoc_md1833}{}\doxysection{Notes}\label{doc_decisions_0_drafts_transformations_md_autotoc_md1833}
+
+\begin{DoxyItemize}
+\item \href{https://issues.libelektra.org/404}{\texttt{ Issue \#404}} -\/ dbus and rename plugin do not work together
+\item \href{https://issues.libelektra.org/955}{\texttt{ Issue \#955}} -\/ dbus\+: non-\/\+UTF8 key names
+\item \href{https://issues.libelektra.org/3626}{\texttt{ Issue \#3626}} -\/ origvalue 
+\end{DoxyItemize}

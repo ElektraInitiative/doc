@@ -1,0 +1,36 @@
+\label{doc_decisions_6_implemented_base_name_md_md_doc_decisions_6_implemented_base_name}%
+\Hypertarget{doc_decisions_6_implemented_base_name_md_md_doc_decisions_6_implemented_base_name}%
+ \hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2236}{}\doxysection{Problem}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2236}
+A key name is made out of a sequence of key part names, and can be constructed with {\ttfamily key\+Add\+Base\+Name/key\+Set\+Base\+Name}. Both applications and configuration file formats might need arbitrary strings to be encoded within a key name part.
+
+For example\+:
+
+
+\begin{DoxyItemize}
+\item an application uses names of internal components as sections within the configuration.
+\item a parser reads an empty string, to be encoded as base name.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2237}{}\doxysection{Constraints}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2237}
+
+\begin{DoxyItemize}
+\item {\ttfamily key\+Set\+Base\+Name (key, key\+Base\+Name (key))} should be a NOP, which is needed for round-\/trips\+: If a storage plugin serializes what it gets with {\ttfamily key\+Base\+Name}; {\ttfamily key\+Set\+Base\+Name} must lead to the same key.
+\item support any configuration file format (i.\+e., any valid file of some format can be transformed to a Key\+Set, e.\+g. TOML supports empty key part names).
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2238}{}\doxysection{Assumptions}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2238}
+\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2239}{}\doxysection{Considered Alternatives}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2239}
+
+\begin{DoxyItemize}
+\item restrict what {\ttfamily key\+Add\+Base\+Name/key\+Set\+Base\+Name} can accept\+: has the downside that applications would suddenly fail when trying to set some key base names
+\item have additional {\ttfamily key\+Set\+Base\+Name$\ast$} functions that make strings safe to be accepted in {\ttfamily key\+Add\+Base\+Name/key\+Set\+Base\+Name}\+: seems to be a too big change in the storage plugins
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2240}{}\doxysection{Decision}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2240}
+{\ttfamily key\+Add\+Base\+Name/key\+Set\+Base\+Name} never fail with any argument, so any character sequence can be escaped except of NULL bytes. The argument goes unmodified to the unescaped key name.
+
+For arrays there is no escaping needed because an array is only an array if the metadata {\ttfamily array} is appended to the direct parent key. See \mbox{\hyperlink{doc_decisions_5_partially_implemented_array_md}{array}}.\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2241}{}\doxysection{Rationale}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2241}
+
+\begin{DoxyItemize}
+\item hard to use it wrong API\+: having only the functions {\ttfamily key\+Add\+Base\+Name/key\+Set\+Base\+Name}, without any size argument.
+\item applications and storage plugins can pass any C string to {\ttfamily key\+Add\+Base\+Name/key\+Set\+Base\+Name} without any further consideration
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2242}{}\doxysection{Implications}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2242}
+\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2243}{}\doxysection{Related Decisions}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2243}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_5_partially_implemented_array_md}{Array}}
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_base_name_md_autotoc_md2244}{}\doxysection{Notes}\label{doc_decisions_6_implemented_base_name_md_autotoc_md2244}

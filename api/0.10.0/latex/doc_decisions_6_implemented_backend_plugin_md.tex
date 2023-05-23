@@ -1,0 +1,32 @@
+\label{doc_decisions_6_implemented_backend_plugin_md_md_doc_decisions_6_implemented_backend_plugin}%
+\Hypertarget{doc_decisions_6_implemented_backend_plugin_md_md_doc_decisions_6_implemented_backend_plugin}%
+ \hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2227}{}\doxysection{Problem}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2227}
+
+\begin{DoxyItemize}
+\item Old backends (before Elektra 0.\+9.\+12) store plugins in arrays which have a fixed number of slots for each plugin role. The number of plugins which can be assigned is limited, making it easy to reach the limit if many plugins are in use.
+\item As structs, old backends are separate from the plugin interface and integrated into the core of Elektra. This makes it difficult to perform operations such as nesting plugins, or to develop other implementations for backends.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2228}{}\doxysection{Constraints}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2228}
+
+\begin{DoxyItemize}
+\item All existing plugins, except \mbox{\hyperlink{doc_decisions_5_partially_implemented_hooks_md}{hooks}}, should continue working as before.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2229}{}\doxysection{Assumptions}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2229}
+\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2230}{}\doxysection{Considered Alternatives}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2230}
+
+\begin{DoxyItemize}
+\item Multiple storage plugins within a single backend
+\item Improve backend to contain more plugin slots
+\item Making number of plugins per slot unlimited
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2231}{}\doxysection{Decision}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2231}
+
+\begin{DoxyItemize}
+\item The current backend implementation was redeveloped into a backend plugin. The core of Elektra accesses backends through the standard plugin interface.
+\item The new backend plugin supports an unlimited number of plugins in any position where more than one plugin is sensible, e.\+g., unlimited plugins in {\ttfamily poststorage}, but only a single one in {\ttfamily storage} and {\ttfamily resolver}
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2232}{}\doxysection{Rationale}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2232}
+
+\begin{DoxyItemize}
+\item Making backends also plugins detaches their implementation from the core of Elektra, making it possible to develop new kinds of backends without major changes to the core itself.
+\item As plugins, backends can contain further backends, making it possible to nest plugins and enabling new kinds of plugin combinations such as fallback storage options.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2233}{}\doxysection{Implications}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2233}
+The structure of {\ttfamily system\+:/elektra/mountpoints} has to change to accommodate different kinds of backend plugins.\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2234}{}\doxysection{Related Decisions}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2234}
+\hypertarget{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2235}{}\doxysection{Notes}\label{doc_decisions_6_implemented_backend_plugin_md_autotoc_md2235}
+\href{https://issues.libelektra.org/2963}{\texttt{ https\+://issues.\+libelektra.\+org/2963}} 

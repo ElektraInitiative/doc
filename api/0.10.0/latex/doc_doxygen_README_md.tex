@@ -1,0 +1,100 @@
+\label{doc_doxygen_README_md_md_doc_doxygen_README}%
+\Hypertarget{doc_doxygen_README_md_md_doc_doxygen_README}%
+ \href{https://www.doxygen.nl/}{\texttt{ Doxygen}} is used to generate documentation of the API and Markdown files. The output formats can be\+:
+
+
+\begin{DoxyItemize}
+\item HTML sites (online documentation)
+\item Latex files (offline documentation)
+\item RTFs (MS-\/\+Word)
+\item Post\+Script files
+\item hyperlinked PDFs
+\item Unix man pages
+\end{DoxyItemize}
+
+When referencing Markdown files, the links between them will be resolved with the \mbox{\hyperlink{doc_markdownlinkconverter_README_md}{Markdown Link Converter}}.\hypertarget{doc_doxygen_README_md_autotoc_md2700}{}\doxysection{Usage}\label{doc_doxygen_README_md_autotoc_md2700}
+To invoke the generation with Doxygen, the so-\/called Doxyfile is needed\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{doxygen Doxyfile}
+
+\end{DoxyCode}
+
+
+Elektra\textquotesingle{}s Doxyfile is located at {\ttfamily $<$PROJECT\+\_\+\+ROOT$>$/doc/\+Doxyfile}. This file is used for the configuration of the whole documentation generation process. The documentation for the Doxyfile can either be found within the file or at the \href{https://www.doxygen.nl/manual/config.html}{\texttt{ Doxygen Website}}.\hypertarget{doc_doxygen_README_md_autotoc_md2701}{}\doxysection{Mermaid JS}\label{doc_doxygen_README_md_autotoc_md2701}
+\href{https://mermaid.js.org/}{\texttt{ Mermaid JS}} is used for generating diagrams within the API. The graphs and diagrams are stored as {\ttfamily .mmd} files and are located at {\ttfamily $<$PROJECT\+\_\+\+ROOT$>$/doc/images/mermaid}.
+
+Mermaid files can be included using the configured alias in the Doxyfile\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ALIASES += mermaid\{1\}=\textcolor{stringliteral}{"{}@htmlonly <div class=\(\backslash\)"{}mermaid\(\backslash\)"{}> \string^\string^ @endhtmlonly @htmlinclude \(\backslash\)"{}\(\backslash\)1.mmd\(\backslash\)"{} @htmlonly \string^\string^ </div> @endhtmlonly"{}}}
+
+\end{DoxyCode}
+
+
+The alias shows that the new command {\ttfamily mermaid} needs one parameter. This parameter is the name of the Mermaid file {\bfseries{without}} the file extension.
+
+The command can be used inside the API documentation as follows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{}
+
+\end{DoxyCode}
+
+
+In Markdown files there is currently no support for including Mermaid files within them easily. One solution is to write Mermaid code within Markdown\+:
+
+\`{}\`{}\`{}\`{}s\+Markdown 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{graph TD;}
+\DoxyCodeLine{    A-\/-\/>B;}
+\DoxyCodeLine{    A-\/-\/>C;}
+\DoxyCodeLine{    B-\/-\/>D;}
+\DoxyCodeLine{    C-\/-\/>D;}
+
+\end{DoxyCode}
+ \`{}\`{}\`{}\`{}s
+
+The other solution would be to convert the Mermaid files to SVGs and including them automatically. For this task, \href{https://github.com/mermaid-js/mermaid-cli}{\texttt{ Mermaid CLI}} could be used.
+
+{\bfseries{NOTE}}\+: Mermaid CLI is currently not integrated in Elektra.
+
+For further information on Mermaid JS and Doxygen, \href{https://github.com/tttapa/doxygen-mermaid}{\texttt{ this tutorial}} had been used to include Mermaid JS.\hypertarget{doc_doxygen_README_md_autotoc_md2702}{}\doxysection{Working Locally}\label{doc_doxygen_README_md_autotoc_md2702}
+When working with Doxygen locally, some obstacles have to be overcome.
+
+First of all, CMake variables are used all over the Doxyfile\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{...}
+\DoxyCodeLine{PROJECT\_LOGO = @PROJECT\_SOURCE\_DIR@/doc/images/logo/logo\_color\_doxygen.svg}
+\DoxyCodeLine{...}
+
+\end{DoxyCode}
+
+
+{\ttfamily @PROJECT\+\_\+\+SOURCE\+\_\+\+DIR@} is such a variable, they can be detected by the leading and ending @ sign. CMake replaces those variables with meaningful values within the make process of the project.
+
+As developers do not tend to execute the make process each time before testing some changes in the Doxyfile, it is recommended to maintain a copy of the Doxyfile, a local version.
+
+As the main goal is that Doxygen generates useful output, the local version needs to be adapted. This can either be done by searching and replacing variables in the local Doxyfile or using the Doxywizard\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{doxywizard Doxyfile-\/local}
+
+\end{DoxyCode}
+
+
+The \href{https://www.doxygen.nl/manual/doxywizard_usage.html}{\texttt{ Doxywizard}} is a GUI that helps to set values in the Doxyfile. The benefit of using the GUI is that each possible command is explained and invalid values for commands are highlighted red. This helps to find those values that lead to exceptions.
+
+\DoxyHorRuler{0}
+
+
+{\bfseries{NOTE}}\+: The local Doxyfile should never be integrated in the version control system. Each change made to the local Doxyfile needs to be integrated to the actual Doxyfile by {\bfseries{using the CMake variables}} of the project.
+
+\DoxyHorRuler{0}
+ 

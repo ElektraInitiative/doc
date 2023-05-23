@@ -1,0 +1,60 @@
+.TH "doc_decisions_6_implemented_holes_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_6_implemented_holes_md \- Holes and Non-leaf values in KeySets 
+ A hole is the absence of a key, which has keys below it, e\&.g\&. if \fCsome/key\fP is missing in a property file:
+.PP
+.PP
+.nf
+some = value
+some/key/below = value
+.fi
+.PP
+.PP
+\fCsome\fP has a non-leaf value\&. Another example of a non-leaf value in XML (\fCabc\fP): \fC<abc>value<def>value2</def></abc>\fP interpreted by xerces plugin:
+.PP
+.PP
+.nf
+abc/def = value2
+abc = value
+.fi
+.PP
+.SH "Problem"
+.PP
+Config files ideally do not copy any structure if they only want to set a single key\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+strongly hierarchically structured data must still be supported
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+data structure must always be complete
+.IP "\(bu" 2
+prohibit non-leaves values
+.PP
+.SH "Decision"
+.PP
+Support holes and values for non-leaves in a KeySet if the underlying format allows it\&.
+.PP
+If the underlying format does not support it and there is also not an obvious way how to circumvent it -- e\&.g\&., JSON which does not have comments -- holes and values in non-leaves can be supported with key names starting with ®elektra\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+It fits very good to the idea of key-value\&.
+.IP "\(bu" 2
+Some formats support it (e\&.g\&. XML supports non-leaves values; property-files support holes)\&.
+.IP "\(bu" 2
+It can be useful for migration purposes, e\&.g\&. there is \fC/some/key\fP, and later \fC/some/key/enable\fP gets added\&. Then it is beneficial if \fC/some/key\fP still can hold a value\&.
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.SH "Notes"
+.PP
+

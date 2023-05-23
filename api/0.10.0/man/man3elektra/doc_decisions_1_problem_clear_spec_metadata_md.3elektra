@@ -1,0 +1,91 @@
+.TH "doc_decisions_1_problem_clear_spec_metadata_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_1_problem_clear_spec_metadata_md \- Metadata in Spec Namespace 
+ 
+.SH "Problem"
+.PP
+To make storage-plugins suitable for \fCspec\fP they need to be able to store all the metadata as specified in \fCMETADATA\&.ini\fP\&. Most file formats do not have support for that\&.
+.PP
+If metadata is merged from different namespaces, e\&.g\&., \fCspec:\fP and \fCuser:\fP; metadata from one namespace might end up in keys of other namespaces, e\&.g\&.; metadata from \fCspec:\fP might end up in \fCuser:\fP\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+We do not touch what is already described in the \fBstorage plugin tutorial\fP\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Metadata can always safely merged from \fCspec:/\fP to other namespace\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Store metadata in the comments like the \fCini\fP plugin: this exposes internal metadata into the comments and can drastically affect the readability of a storage file\&. Comments should never be touched by a parser\&.
+.IP "\(bu" 2
+Designate metadata to be only for \fCspec:/\fP or to only for restoring configuration file formats\&. Rename metadata \fC<type>\fP in \fCspec:/\fP to \fCcheck/<type>\fP or \fCmake/array\fP\&. This way no merging of metadata would be needed and by the name alone it would be clear to which namespace it belongs\&.
+.IP "\(bu" 2
+Do not support \fCarray\fP or \fCtype\fP if the underlying configuration file format does not support it\&. \fCspec-mount\fP could make sure that the storage plugin supports everything the underlying format needs\&.
+.PP
+.SH "Decision"
+.PP
+Do not store metadata unrelated to the configuration file structure in any namespace except in \fCspec:/\fP\&.
+.PP
+.IP "\(bu" 2
+Trying to store any other metadata in any other namespace leads to an error\&. E\&.g\&. \fCkdb set-meta user:/data metadata_not_suitable_for_storage_plugins something\fP would fail (validated by \fCspec\fP plugin)\&.
+.IP "\(bu" 2
+Metadata that is designed to be stored by storage plugins to preserve configuration file structure\&. E\&.g\&. \fCcomment\fP or \fCorder\fP, might be stored in any namespace\&.
+.PP
+.PP
+Sometimes, the same metadata can be used in several namespaces but with different meanings and ways of serialization, e\&.g\&. \fCtype\fP and \fCarray\fP:
+.PP
+.IP "\(bu" 2
+In \fCspec:/\fP the metadata \fCarray=\fP (empty value) means 'this is an array'\&. If you give it a value e\&.g\&. \fCarray=#4\fP it means 'this is an array with default size X' (e\&.g\&. \fC#4\fP = size 5)\&.
+.IP "\(bu" 2
+In any other namespace \fCarray=\fP means 'this is an empty array' and e\&.g\&. \fCarray=#4\fP means 'this is an array with max index #4'\&. \fCarray=#4\fP is not stored literally but inferred\&.
+.IP "\(bu" 2
+Either the storage plugin does not support arrays, then the metadata will be discarded on \fCkdbSet\fP but \fCspec\fP will keep on adding it for every \fCkdbGet\fP\&.
+.IP "\(bu" 2
+Or, if the storage plugin supports arrays, the data will be serialized as array (even if the metadata comes from \fCspec\fP) and as such available in the next \fCkdbGet\fP from the storage plugin to be validated by \fCspec\fP\&.
+.PP
+.PP
+Use different storage plugins, or plugins with different configurations, for the \fCspec:/\fP namespace:
+.PP
+.IP "\(bu" 2
+\fCni\fP
+.IP "\(bu" 2
+TOML with \fCmeta\fP configuration
+.PP
+.PP
+The \fCkdb mount\fP tool will add the \fCmeta\fP plugin configuration when mounting a storage plugin to \fCspec:/\fP\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+We do not need a storage plugin suitable for everything\&.
+.IP "\(bu" 2
+The problems that internal metadata ends up in configuration files disappears\&.
+.IP "\(bu" 2
+The short names \fCtype\fP and \fCarray\fP can be used in specs\&.
+.IP "\(bu" 2
+Also simple storage plugins (like properties) can still be used with realistic specifications (that include array and/or type)\&.
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+We need to have different (default) plugins in \fCspec:/\fP than in the other namespaces\&.
+.IP "\(bu" 2
+It can be confusing about which metadata we are speaking, e\&.g\&., \fCarray\fP in \fCspec:/\fP has a quite different meaning to \fCarray\fP in other namespaces\&.
+.IP "\(bu" 2
+The spec:/ meaning of array= must obviously be stored\&. The other meaning should never be stored explicitly and instead should be inferred from the stored data\&. Either by the storage plugin (e\&.g\&. JSON array) or by the spec plugin\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBSpec Expressiveness\fP
+.IP "\(bu" 2
+\fBArrays\fP
+.PP
+.SH "Notes"
+.PP
+

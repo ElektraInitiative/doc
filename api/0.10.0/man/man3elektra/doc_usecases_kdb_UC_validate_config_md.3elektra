@@ -1,0 +1,73 @@
+.TH "doc_usecases_kdb_UC_validate_config_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_usecases_kdb_UC_validate_config_md \- Use Case: Validating Configuration with Specification 
+ 
+.SH "Summary"
+.PP
+.IP "\(bu" 2
+\fBScope:\fP \fClibelektra-kdb\fP, \fCspec\fP
+.IP "\(bu" 2
+\fBLevel:\fP Developer Goal, User Goal
+.IP "\(bu" 2
+\fBActors:\fP Elektra, Application, User
+.IP "\(bu" 2
+\fBBrief:\fP After loading configuration, Application can assume the configuration is valid
+.PP
+.SH "Scenarios"
+.PP
+.IP "\(bu" 2
+\fBPrecondition:\fP
+.IP "  \(bu" 4
+A specification, defining how a valid configuration for Application looks like, exists\&.
+.PP
+
+.IP "\(bu" 2
+\fBMain success scenario:\fP
+.IP "  \(bu" 4
+\fBApplication loads configuration\fP During this process Elektra checks the configuration against the specification\&.
+.IP "  \(bu" 4
+Loading configuration results in no errors or warnings\&.
+.IP "  \(bu" 4
+Application knows configuration is valid\&.
+.PP
+
+.IP "\(bu" 2
+\fBAlternative scenario:\fP
+.IP "  \(bu" 4
+User requests to change configuration value via \fBApplication (e\&.g\&. `kdb`) stores configuration\fP\&. During this process Elektra checks the changed configuration against the specification\&.
+.IP "  \(bu" 4
+Elektra blocks the modification, if it violates the specification\&.
+.PP
+
+.IP "\(bu" 2
+\fBError scenario:\fP
+.IP "  \(bu" 4
+\fBApplication loads configuration\fP During this process Elektra checks the configuration against the specification\&.
+.IP "  \(bu" 4
+Loading configuration results in an error or warning\&.
+.IP "  \(bu" 4
+If a configuration is returned at all, Application knows the configuration may not be fully valid and can react accordingly\&.
+.PP
+
+.IP "\(bu" 2
+\fBPostcondition:\fP
+.IP "  \(bu" 4
+Configuration stored in the KDB and modified only via Elektra MUST be valid according to the specification\&.
+.IP "  \(bu" 4
+Configuration loaded by an application \fIwithout\fP error or warning MUST be valid according to the specification\&.
+.IP "  \(bu" 4
+Configuration loaded by an application \fIwith\fP error or warning MUST be valid according to the specification, except where an error or warning indicates otherwise\&.
+.PP
+
+.IP "\(bu" 2
+\fBNon-functional Constraints:\fP
+.IP "  \(bu" 4
+Because validation happens during \fBApplication loads configuration\fP, it MUST also be reasonably performant\&. Results MAY be cached to achieve this performance\&.
+.IP "  \(bu" 4
+Fixing an invalid configuration via Elektra MUST be possible\&. This SHOULD NOT require more changes than necessary, i\&.e\&., fixing invalid configuration MUST NOT be equivalent to 'delete everything and start again'\&. 
+.PP
+
+.PP
+

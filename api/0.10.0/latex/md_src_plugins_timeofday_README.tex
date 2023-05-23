@@ -1,0 +1,58 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the timeofday plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides = tracing
+\item infos/needs =
+\item infos/placements = pregetstorage postgetstorage presetstorage precommit postcommit prerollback postrollback
+\item infos/status = maintained tested nodep configurable global
+\item infos/description = Prints timestamps during execution of backend
+\end{DoxyItemize}\hypertarget{md_src_plugins_timeofday_README_src_plugins_timeofday_README_md}{}\doxysection{Introduction}\label{md_src_plugins_timeofday_README_src_plugins_timeofday_README_md}
+This plugin is a logging plugin which prints a timestamp during all placements of backend.\hypertarget{md_src_plugins_timeofday_README_autotoc_md556}{}\doxysection{Installation}\label{md_src_plugins_timeofday_README_autotoc_md556}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_timeofday_README_autotoc_md557}{}\doxysection{Usage}\label{md_src_plugins_timeofday_README_autotoc_md557}
+If you want to measure how long your storage plugin needs to do the read and write you mount the plugin using\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount file.ysp user:/trace\_point your\_storage\_plugin timeofday}
+
+\end{DoxyCode}
+
+
+Then you can benchmark your storage plugin in the get path\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get user:/benchmark}
+\DoxyCodeLine{\#> get     0000000356      di      0000000356      pos     pregetstorage}
+\DoxyCodeLine{\#> get     0000000530      di      0000000174      pos     postgetstorage}
+\DoxyCodeLine{\#> hello}
+
+\end{DoxyCode}
+
+
+and in the set path\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/benchmark}
+\DoxyCodeLine{\#> get     0000000342      di      0000000342      pos     pregetstorage}
+\DoxyCodeLine{\#> get     0000000532      di      0000000190      pos     postgetstorage}
+\DoxyCodeLine{\#> Set null value}
+\DoxyCodeLine{\#> set     0000000766      di      0000000234      pos     presetstorage}
+\DoxyCodeLine{\#> set     0000001002      di      0000000236      pos     precommit}
+\DoxyCodeLine{\#> set     0000008944      di      0000007942      pos     postcommit}
+
+\end{DoxyCode}
+
+
+The first digit column shows the complete time passed, the second column shows the time from invocation to invocation.\hypertarget{md_src_plugins_timeofday_README_autotoc_md558}{}\doxysection{Module Loading}\label{md_src_plugins_timeofday_README_autotoc_md558}
+Will not log when loaded as module (config {\ttfamily /module} present), unless {\ttfamily /logmodule} is set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb plugin-\/check -\/c "{}logmodule="{} timeofday}
+
+\end{DoxyCode}
+ 

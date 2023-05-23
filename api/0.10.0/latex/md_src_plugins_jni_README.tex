@@ -1,0 +1,133 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the jni plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/provides =
+\item infos/needs =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest configurable global memleak experimental
+\item infos/description = generic Java plugin
+\end{DoxyItemize}\hypertarget{md_src_plugins_jni_README_src_plugins_jni_README_md}{}\doxysection{Introduction}\label{md_src_plugins_jni_README_src_plugins_jni_README_md}
+Allows you to write plugins in Java.
+
+This plugin needs the JNA bindings to work. Furthermore, it requires Java 11 or later.
+
+While the plugin internally uses JNI (thus the name), the Java binding for your Java plugin may use something different, e.\+g. JNA. The requirements for the Java bindings are\+:
+
+
+\begin{DoxyItemize}
+\item needs to have the classes {\ttfamily elektra/\+Key} and {\ttfamily elektra/\+Key\+Set} with
+\begin{DoxyItemize}
+\item a constructor that takes a C-\/\+Pointer as long (J)
+\item a method \char`\"{}release\char`\"{} that gives up ownership (set internal pointer to NULL)
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+The Java plugin itself needs to have the following methods\+:
+
+
+\begin{DoxyItemize}
+\item constructor without arguments (i.\+e. default constructor)
+\item open with argument {\ttfamily elektra/\+Key\+Set} (the plugin\textquotesingle{}s conf) and {\ttfamily elektra/\+Key}
+\item close with argument {\ttfamily elektra/\+Key}
+\item get with arguments {\ttfamily elektra/\+Key\+Set} and {\ttfamily elektra/\+Key}
+\item set with arguments {\ttfamily elektra/\+Key\+Set} and {\ttfamily elektra/\+Key}
+\item error with arguments {\ttfamily elektra/\+Key\+Set} and {\ttfamily elektra/\+Key}
+\end{DoxyItemize}\hypertarget{md_src_plugins_jni_README_autotoc_md284}{}\doxysection{Installation}\label{md_src_plugins_jni_README_autotoc_md284}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/java}. To actually mount plugins, you will additionally need {\ttfamily java-\/elektra}. Furthermore, at least JNA version 5.\+5 is required.\hypertarget{md_src_plugins_jni_README_autotoc_md285}{}\doxysection{Plugin Config}\label{md_src_plugins_jni_README_autotoc_md285}
+You need to pass \+:
+
+
+\begin{DoxyItemize}
+\item classname the classname to use as plugin, e.\+g. {\ttfamily elektra/plugin/\+Echo}
+\item classpath the classpath where to find JNA, the package elektra and other classes needed
+\end{DoxyItemize}
+
+Additionally, you can set\+:
+
+
+\begin{DoxyItemize}
+\item option allows you to pass an option to the jvm, default\+: {\ttfamily -\/verbose\+:gc,class,jni}
+\item ignore allows you to ignore broken options, default\+: {\ttfamily false}
+\item print allows you to print java exceptions for debugging purposes
+\end{DoxyItemize}
+
+If Elektra and a recent jna.\+jar (adapt path below) is already installed, following should output some debug logs and this README\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb plugin-\/info -\/c classname=org/libelektra/plugin/Echo,classpath=.:/usr/share/java/jna.jar:/usr/share/java/libelektra.jar,print= jni}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+Note\+: The Java implementation of the plugin can request any other additional plugin configuration, read about it in the end of the output of plugin-\/info. Plugins dynamically append text after the end of this page. \end{quote}
+You can also mount plugins (see \href{https://issues.libelektra.org/3881}{\texttt{ open issues}})\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount -\/c classname=org/libelektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/libelektra.jar,print= file.properties /jni jni classname=org/libelektra/plugin/PropertiesStorage,classpath=.:/usr/share/java/jna.jar:/usr/share/java/libelektra.jar,print=}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_jni_README_autotoc_md286}{}\doxysection{Compiling}\label{md_src_plugins_jni_README_autotoc_md286}
+If you do not want to use pre-\/compiled versions, you can compile the plugin yourself. Start by enabling the plugin using ({\ttfamily ALL;-\/EXPERIMENTAL} is default)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DPLUGINS="{}ALL;-\/EXPERIMENTAL;jni"{} /path/to/libelektra}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_jni_README_autotoc_md287}{}\doxysubsection{on Debian 10 / Ubuntu 20.\+04 LTS}\label{md_src_plugins_jni_README_autotoc_md287}
+Install package {\ttfamily openjdk-\/11-\/jdk} and make sure that no older Java versions are present in {\ttfamily /usr/lib/jvm}.
+
+If you have manually installed Java, you might get errors related to {\ttfamily Could NOT find JNI} during {\ttfamily cmake}. In this case, please consider setting your {\ttfamily JAVA\+\_\+\+HOME} environment variable accordingly.\hypertarget{md_src_plugins_jni_README_autotoc_md288}{}\doxysubsection{on mac\+OS}\label{md_src_plugins_jni_README_autotoc_md288}
+Older mac\+OS include an old apple specific version of Java, based on 1.\+6. However, for the jni plugin JDK version 11 is required, so either the openjdk or the oracle jdk has to be installed.
+
+For example, install oracle\textquotesingle{}s jdk11 via their provided installer. After that, you have to set the JAVA\+\_\+\+HOME environment variable to the folder where the jdk is installed, usually like
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export JAVA\_HOME="{}/Library/Java/JavaVirtualMachines/jdk-\/11.jdk/Contents/Home/"{}}
+
+\end{DoxyCode}
+
+
+As mac\+OS handles linked libraries differently, there is no ldconfig command. Instead you can export an environment variable to tell Elektra the location of Java\textquotesingle{}s dynamic libraries.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export DYLD\_FALLBACK\_LIBRARY\_PATH="{}/Library/Java/JavaVirtualMachines/jdk-\/11.jdk/Contents/Home/jre/lib:/Library/Java/JavaVirtualMachines/jdk-\/11.jdk/Contents/Home/jre/lib/server/"{}}
+
+\end{DoxyCode}
+
+
+Afterwards, the jni plugin should be included in the build and compile successfully.\hypertarget{md_src_plugins_jni_README_autotoc_md289}{}\doxysubsection{Running the JNI test}\label{md_src_plugins_jni_README_autotoc_md289}
+Make sure to run the test after compiling the plugin. Change to your Elektra\textquotesingle{}s build folder and execute the following command for running the JNI plugin test and verify it works\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ctest -\/V -\/R testmod\_jni}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_jni_README_autotoc_md290}{}\doxysubsection{Troubleshooting}\label{md_src_plugins_jni_README_autotoc_md290}
+If it should still not find the correct jni version, or says the jni version is not 11, then it most likely still searches in the wrong directory for the jni header file. It has been experienced that if the project has been built already without this environment variable set, the Java location is cached. As a result, it will be resolved wrong in future builds, even though the environment variable is set. To resolve this, it should be enough to delete the CMake\+Cache.\+txt file in the build directory and reconfigure the build.\hypertarget{md_src_plugins_jni_README_autotoc_md291}{}\doxysection{Development}\label{md_src_plugins_jni_README_autotoc_md291}
+To know how the methods of your class are called, use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{javap -\/s YourClass}
+
+\end{DoxyCode}
+
+
+Also explained \href{https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/types.html\#wp15773}{\texttt{ here}}
+
+\href{https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/functions.html}{\texttt{ JNI Functions}} \href{https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/invocation.html}{\texttt{ Invocation}}\hypertarget{md_src_plugins_jni_README_autotoc_md292}{}\doxysection{Open Issues}\label{md_src_plugins_jni_README_autotoc_md292}
+
+\begin{DoxyItemize}
+\item Only a single Java plugin can be loaded
+\item Java plugins cannot be used from an Java application
+\item If this plugin is enabled, valgrind detects memory problems even if the plugin is not mounted. 
+\end{DoxyItemize}

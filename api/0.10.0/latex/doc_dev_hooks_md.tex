@@ -1,0 +1,69 @@
+\label{doc_dev_hooks_md_md_doc_dev_hooks}%
+\Hypertarget{doc_dev_hooks_md_md_doc_dev_hooks}%
+ Hooks are central points in the KDB lifecycle, where specialized plugins are called.\hypertarget{doc_dev_hooks_md_autotoc_md2646}{}\doxysection{Selecting which Plugin will be Used for a Specific Hook}\label{doc_dev_hooks_md_autotoc_md2646}
+The names of the plugins are hard coded. This \mbox{\hyperlink{doc_decisions_5_partially_implemented_hooks_md}{decision}} was made, because these plugins are meant to fulfil very specific purposes. A symlink replacing the shared library file of the plugin could be used to change the implementation.\hypertarget{doc_dev_hooks_md_autotoc_md2647}{}\doxysection{Interface of the hooks}\label{doc_dev_hooks_md_autotoc_md2647}
+If a plugin should be able to act upon a hook, it must export all the functions that the hook requires. These exports are of the form {\ttfamily system\+:/elektra/modules/$<$plugin name$>$/exports/hook/$<$hook name$>$/$<$hook function$>$}.
+
+For example, the {\ttfamily gopts} hook only requires the {\ttfamily get} function. A plugin that wants to act upon the {\ttfamily gopts} hook therefore has to export {\ttfamily system\+:/elektra/modules/$<$plugin name$>$/exports/hook/gopts/get}.
+
+Other hooks (e.\+g. {\ttfamily spec}) require multiple exported functions.\hypertarget{doc_dev_hooks_md_autotoc_md2648}{}\doxysubsection{$<$tt$>$gopts$<$/tt$>$ hook}\label{doc_dev_hooks_md_autotoc_md2648}
+Hard coded to search for a plugin named {\ttfamily gopts}.
+
+The following function {\bfseries{must}} be exported\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily get}
+\begin{DoxyItemize}
+\item Signature\+: {\ttfamily (Plugin $\ast$ handle, Key\+Set $\ast$ returned, Key $\ast$ parent\+Key)}
+\item Called in {\ttfamily kdb\+Get} after the storage phase, after {\ttfamily notification/send} hook but before the {\ttfamily spec} hook.
+\item TODO\+: Describe what the function should do
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_dev_hooks_md_autotoc_md2649}{}\doxysubsection{$<$tt$>$spec$<$/tt$>$ hook}\label{doc_dev_hooks_md_autotoc_md2649}
+Hard coded to search for a plugin named {\ttfamily spec}.
+
+The following functions {\bfseries{must}} be exported\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily copy}
+\begin{DoxyItemize}
+\item Signature\+: {\ttfamily (Plugin $\ast$ handle, Key\+Set $\ast$ returned, Key $\ast$ parent\+Key, bool is\+Kdb\+Get)}
+\item Called in\+:
+\begin{DoxyItemize}
+\item {\ttfamily kdb\+Get}\+: after the storage phase, after {\ttfamily notification/send} and {\ttfamily gopts} hook.
+\item {\ttfamily kdb\+Set}\+: right after the backends are initialized
+\end{DoxyItemize}
+\item Should copy all the spec meta keys into the keyset
+\end{DoxyItemize}
+\item {\ttfamily remove}
+\begin{DoxyItemize}
+\item Signature\+: {\ttfamily (Plugin $\ast$ handle, Key\+Set $\ast$ returned, Key $\ast$ parent\+Key)}
+\item Called in {\ttfamily kdb\+Set} right after the prestorage phase
+\item Should remove all the spec meta keys from the keyset
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_dev_hooks_md_autotoc_md2650}{}\doxysubsection{$<$tt$>$notification/send$<$/tt$>$ hook}\label{doc_dev_hooks_md_autotoc_md2650}
+We look within the array {\ttfamily system\+:/elektra/hook/notification/send/plugins} for the plugins that shall be loaded. The name of the plugin {\bfseries{must}} be the value of the keys directly below this, e.\+g. {\ttfamily system\+:/elektra/hook/notification/send/plugins/\#0 (= dbus)}.
+
+The following functions {\bfseries{may}} be exported (optional)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily get}\+:
+\begin{DoxyItemize}
+\item Signature\+: {\ttfamily (Plugin $\ast$ handle, Key\+Set $\ast$ returned, Key $\ast$ parent\+Key)}
+\item Called in {\ttfamily kdb\+Get} after the storage phase.
+\end{DoxyItemize}
+\item {\ttfamily set}\+:
+\begin{DoxyItemize}
+\item Signature\+: {\ttfamily (Plugin $\ast$ handle, Key\+Set $\ast$ returned, Key $\ast$ parent\+Key)}
+\item Called in {\ttfamily kdb\+Set} after the storage phase.
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_dev_hooks_md_autotoc_md2651}{}\doxysection{Lifecycle}\label{doc_dev_hooks_md_autotoc_md2651}
+
+\begin{DoxyEnumerate}
+\item Hooks are initialized within {\ttfamily kdb\+Open} after the contract has been processed. This includes loading the plugins.
+\item The appropriate hooks are called within each {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} call.
+\item Hooks are deinitialized within {\ttfamily kdb\+Close}. This includes unloading the plugins.
+\end{DoxyEnumerate}\hypertarget{doc_dev_hooks_md_autotoc_md2652}{}\doxysection{Additional information}\label{doc_dev_hooks_md_autotoc_md2652}
+To specify the place of a hook plugin add {\ttfamily infos/placements = hook} to your plugins {\ttfamily README.\+md}. 

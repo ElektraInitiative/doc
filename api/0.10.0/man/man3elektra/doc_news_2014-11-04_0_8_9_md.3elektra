@@ -1,0 +1,151 @@
+.TH "doc_news_2014-11-04_0_8_9_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2014-11-04_0_8_9_md \- 0\&.8\&.9 Release 
+
+.IP "\(bu" 2
+guid: 38640673-3e07-4cff-9647-f6bdd89b1b08
+.IP "\(bu" 2
+author: Markus Raab
+.IP "\(bu" 2
+pubDate: Tue, 04 Nov 2014 10:48:14 +0100
+.IP "\(bu" 2
+shortDesc: adds qt-gui, several optimizations & fixes
+.PP
+.PP
+Again we managed to do an amazing feature release in just two month\&. In 416 commits we modified 393 files with 23462 insertions(+) and 9046 deletions(-)\&.
+.SH "Most awaited"
+.PP
+The most awaited feature in this release is certainly the \fIqt-gui\fP developed by Raffael Pancheri\&. It includes a rich feature set including searching, unmounting, importing and exporting\&. A lot of functionality is quite stable now, even though its version is 0\&.0\&.1 alpha\&. If you find any bugs or want to give general feedback, feel free to use the issue tracker of the Elektra Initiative\&. A screenshot can be found \fChere\fP To compile it (together with Elektra), see the README \fChere\fP
+.PP
+Manuel Mausz also has been very active and developed glib+gi bindings\&. These bindings make Elektra more friendly to the glib/gtk/gnome world\&. Using the gobject introspection python3 and lua bindings were developed\&. Additionally he got rid of all clang warnings\&.
+.PP
+Felix Berlakovich also made progress: \fCthe ini plugin\fP now supports multiline and which can be dynamically turned on and off, i\&.e\&. during mounting (thanks to Felix)
+.PP
+Last, but not least, Kai-Uwe ported Elektra to Windows7\&. MinGW is now one more supported compiler (tested on build-server, see later)\&. Astonishingly, it was only little effort necessary: Basically we only needed a new implementation of the resolver, which is now called \fIwresolver\fP\&. Different from the \fIresolver\fP it lacks the sophisticated multi-process and multi-thread atomicity properties\&. On the plus side we now have a resolver that is very easy to study and understand and still works as file resolver (\fInoresolver\fP does not)\&.
+.SH "Interfaces"
+.PP
+ABI/API of the C-API is still completely stable even though under the hood a lot was changed\&. All test cases compiled against the previous version still run against Elektra 0\&.8\&.9\&.
+.PP
+This is, however, not the case for libtools\&. For MinGW porting it was necessary to rename an enum related to merging because it conflicted with an already defined MACRO\&.
+.PP
+For maintainers also some changes are necessary\&. For MinGW and to actually use the flexibility of the new resolver variants two new CMake Variables are introduced: KDB_DEFAULT_RESOLVER and KDB_DEFAULT_STORAGE\&.
+.PP
+More importantly for maintainers the CMake variables regarding SWIG bindings are now abandoned in favor to the new variable BINDINGS that works like PLUGINS and TOOLS\&. Just start with
+.PP
+.PP
+.nf
+-DBINDINGS=ALL
+.fi
+.PP
+.PP
+and CMake should remove the bindings that have missing dependencies on your system\&. Remember that glib and gi (i\&.e\&. \fIgi_python3\fP and \fIgi_lua\fP) bindings were introduced, too\&. Additionally, the \fIcpp\fP binding can now be deactivated if not added to BINDINGS\&.
+.PP
+Finally, the \fIgen\fP tool added a Python package called \fCsupport\fP\&.
+.SH "Other Bits"
+.PP
+A proof of concept storage plugin \fCregexstore\fP was added\&. It allows one to capture individual configuration options within an otherwise not understood configuration file (e\&.g\&. for vimrc or emacs where the configuration file may contain programming constructs)\&.
+.PP
+Most tests now also work with the BUILD_SHARED variant (from our knowledge all would work now, but some are still excluded if BUILD_FULL and BUILD_STATIC is disabled\&. Please report issues if you want to use uncommon CMake combinations)\&.
+.PP
+A small but very important step towards specifying configuration files is the new proposed API method ksLookupBySpec (and ksLookup implementing cascading search)\&. It introduces a \fClogical view\fP of configuration that in difference to the \fCphysical view\fP of configuration does not have namespaces, but everything is below the root '/'\&. Additionally, contextual values now allow one to be compile-time configured using C++-Policies\&. These are small puzzle pieces that will fit into a greater picture at a later time\&.
+.PP
+A (data) race detection tool was implemented\&. Using it a configurable number of processes and threads it tries to \fBkdbSet()\fP a different configuration at (nearly) the same time\&.
+.PP
+With this tool the resolver could be greatly be improved (again)\&. It now uses stat with nanosecond precision that will be updated for every successful \fBkdbSet()\fP\&. Even if the configuration file was modified manually (not using Elektra) the next \fBkdbSet()\fP then is much more likely to fail\&. Additionally a recursive mutex now protects the file locking mechanism\&.
+.PP
+The build server now additionally has following build jobs:
+.PP
+.IP "\(bu" 2
+i386 build: We had an i386 regression, because none of the developers seems to use i386 anymore\&.
+.IP "\(bu" 2
+Configure Debian Script: Calls the scripts/configure-debian(-wheezy)\&.
+.IP "\(bu" 2
+Local Installation: We had an regression that local installation was not possible because of a bash completion file installed to /etc\&. This build tests if it is possible to install Elektra in your home directory (and calls kdb run_all afterwards)
+.IP "\(bu" 2
+Test bindings: Compiles and tests ALL bindings\&.
+.IP "\(bu" 2
+Mingw: Compiles Elektra using mingw\&.
+.PP
+.PP
+Many more examples were written and are used within doxygen\&. Most snippets now can also be found in compilable files:
+.PP
+.IP "\(bu" 2
+\fCkeyNew examples\fP
+.IP "\(bu" 2
+\fCkeyCopy examples\fP
+.IP "\(bu" 2
+\fCC++ deep dup\fP
+.IP "\(bu" 2
+\fCHow to put Key in different data structures\fP
+.IP "\(bu" 2
+\fCMount some config files using augeas\fP
+.IP "\(bu" 2
+\fCMount system information\fP
+.PP
+.PP
+Most plugins now internally use the same CMake function \fCadd_plugin\fP which makes plugin handling more consistent\&.
+.PP
+Felix converted the METADATA spec to ini files and added a proposal how comments can be improved\&.
+.SS "Refactoring:"
+.IP "\(bu" 2
+reuse of utilities in gen code generator
+.IP "\(bu" 2
+the gen support library is now in its own package (\fCsupport\fP)
+.IP "\(bu" 2
+refactor array handling
+.IP "\(bu" 2
+internal comparision functions (keyCompareByName)
+.PP
+.SS "Optimization:"
+.IP "\(bu" 2
+lookupByName does not need to allocate two keys
+.IP "\(bu" 2
+lookups in generated code
+.IP "\(bu" 2
+prefer to use allocation on stack
+.PP
+.SS "Fixes:"
+.IP "\(bu" 2
+disable cast that segfaults on i386 (only testing code was affected)
+.IP "\(bu" 2
+fix keyAddBaseName in xmltool and testing code
+.IP "\(bu" 2
+support non-system installation (e\&.g\&. in home directory)
+.IP "\(bu" 2
+rewrote test cases to use succeed_if_same to avoid crashes on null pointers
+.IP "\(bu" 2
+allow one to use python 2\&.6 for kdb gen
+.IP "\(bu" 2
+improve exception messages
+.IP "\(bu" 2
+use memcasecmp (fix lookup ignoring case)
+.IP "\(bu" 2
+fix memory leaks (ini)
+.IP "\(bu" 2
+text messages for some warnings/errors
+.IP "\(bu" 2
+fix many issues regarding CMake, more variants of setting CMake options are now allowed\&.
+.IP "\(bu" 2
+CMake policies fixes allow us to use CMake version > 3
+.PP
+.SH "Get It!"
+.PP
+You can download the release from \fChere\fP
+.PP
+.IP "\(bu" 2
+size: 1936524
+.IP "\(bu" 2
+md5sum: 001c4ec67229046509a0cb9eda223dc6
+.IP "\(bu" 2
+sha1: 79ea9b83c08ed4c347ed0100b5e0e2d3309b9d04
+.IP "\(bu" 2
+sha256: e0895bba28a27fb37f36f59ef77c95235f3a9c54fb71aa6f648566774d276568
+.PP
+.PP
+already built API documentation can be found \fChere\fP
+.PP
+For more information, see https://www.libelektra.org
+.PP
+Best regards, Markus 

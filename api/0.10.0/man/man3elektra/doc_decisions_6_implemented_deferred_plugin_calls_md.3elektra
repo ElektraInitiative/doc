@@ -1,0 +1,82 @@
+.TH "doc_decisions_6_implemented_deferred_plugin_calls_md" 3elektra "Tue May 23 2023" "Version 0.10.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_6_implemented_deferred_plugin_calls_md \- Deferred Plugin Calls 
+ 
+.SH "Issue"
+.PP
+Calling exported functions is a primary way for coordinating plugins in Elektra\&. Since some plugins encapsulate other plugins, exported functions from encapsulated plugins become unavailable\&.
+.PP
+Encapsulating plugins cannot implement and forward calls for every function exported by encapsulated plugins\&. Instead we need a generic mechanism for function calls to these encapsulated plugins\&.
+.PP
+Since some plugins also lazy-load encapsulated plugins the call mechanism is required to be able to defer these calls until the plugins are loaded\&.
+.PP
+For example when setting I/O bindings with \fCelektraIoSetBinding()\fP the exported function \fCsetIoBinding\fP is called for all globally mounted plugins\&. Since global mounting is implemented using the 'list' plugin which uses lazy-loading for its plugins the exported functions from the plugins are unavailable\&.
+.PP
+Other examples is the 'multifile' plugin which use multiple plugins to support different file formats\&. These plugins also 'hide' functions exported by encapsulated plugins\&.
+.SH "Constraints"
+.PP
+.IP "1." 4
+Plugins encapsulating other plugins shall be able to lazy-load them\&.
+.IP "2." 4
+Callers shall not be entangled in encapsulating plugin details\&.
+.IP "3." 4
+The encapsulation of the plugins shall not be broken\&.
+.IP "4." 4
+The mechanism shall be generic\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "1." 4
+The called functions do not return a value (e\&.g\&. \fCset\fP, \fCopen\fP, \fCclose\fP, \&.\&.\&.)\&. Callbacks can be used as return channel (see 'Implications')
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+Encapsulating plugins export a function called \fCgetEncapsulatedPlugins\fP\&. This would break encapsulation and break lazy-loading since to return the encapsulated plugin handles they have to be loaded\&.
+.IP "\(bu" 2
+Compatible plugins export a function called \fCgetInterfaces\fP\&. It returns a KeySet with well-known interface names like 'notification' or 'ioBinding' and the required functions (e\&.g\&. \fCopen\fP & \fCclose\fP for 'notification' or \fCset\fP for 'ioBinding')\&. While normal plugins simply return their interfaces, encapsulating plugins collect interfaces from its plugins and combine them into a single KeySet\&.
+.PP
+The example below shows a KeySet from a plugin encapsulating two plugins 'A' and 'B'\&. Both plugins implement the 'notification' interface, plugin 'B' also implements the 'ioBinding' interface\&.
+.IP "  \(bu" 4
+\fC/notification/#0/open\fP: address of \fCopenNotification\fP of plugin 'A'
+.IP "  \(bu" 4
+\fC/notification/#0/close\fP: address of \fCcloseNotification\fP of plugin 'A'
+.IP "  \(bu" 4
+\fC/notification/#1/open\fP: address of \fCopenNotification\fP of plugin 'B'
+.IP "  \(bu" 4
+\fC/notification/#1/close\fP: address of \fCcloseNotification\fP of plugin 'B'
+.IP "  \(bu" 4
+\fC/ioBinding/#0/set\fP: address of \fCsetIoBinding\fP of plugin 'B'
+.PP
+.PP
+The upside of this approach is that it makes encapsulating plugins transparent to the caller: it does not know whether the plugin encapsulates other plugins\&. This approach breaks lazy-loading since for combining all interfaces the plugins have to be loaded and their \fCgetInterfaces\fP functions have to be called\&.
+.PP
+.SH "Decision"
+.PP
+Encapsulating plugins export a function called \fCdeferredCall\fP with the declaration \fCvoid elektraDeferredCall (Plugin * plugin, char * name, KeySet * parameters)\fP\&. Encapsulating plugins shall save multiple deferred calls and call the exported functions specified by \fCname\fP passing the \fCparameters\fP KeySet when a plugin is initialized in the same order as received\&.
+.PP
+Plugins that support deferred calls shall have the following declaration for their functions \fCvoid somePluginFunction (Plugin * plugin, KeySet * parameters)\fP\&. The calling developer is responsible for ensuring that the called functions have a compatible declaration\&. Encapsulated plugins that do not export a specified function name are omitted\&.
+.SH "Argument"
+.PP
+The solution allows changing encapsulating plugin implementations without breaking callers\&.
+.SH "Implications"
+.PP
+The called function receive their parameters via a KeySet\&.
+.PP
+While called functions could return data using the \fCparameters\fP KeySet (or a separate KeySet) there is no defined moment when the data can be collected\&. Defining such a moment would break the lazy-loading constraint\&. It is recommended to use callbacks passed as \fCparameters\fP\&. Callback function declarations are not limited by this decision\&.
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+Elektra's invoke functionality will be extended to also allow us to use deferred calls with new functions:
+.IP "\(bu" 2
+\fCint elektraInvokeFunctionDeferred (ElektraInvokeHandle * handle, const char * elektraPluginFunctionName, KeySet * ks)\fP which defers a call if the plugin exports \fCdeferredCall\fP\&.
+.IP "\(bu" 2
+\fCvoid elektraInvokeExecuteDeferredCalls (ElektraInvokeHandle * handle, ElektraDeferredCallList * list)\fP which executes deferred calls for an encapsulated plugin loaded with invoke\&.
+.IP "\(bu" 2
+Functions supporting deferred calls should allow for multiple calls (i\&.e\&. they should be idempotent)\&. This leaves state at affected plugins and does avoid duplicating state (e\&.g\&. 'was this function called for this plugin before?') in encapsulating plugins\&.
+.PP
+.SH "Notes"
+.PP
+Implemented in \fBlibelektra-invoke\fP\&. 
