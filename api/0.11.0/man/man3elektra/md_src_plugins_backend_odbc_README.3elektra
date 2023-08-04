@@ -1,0 +1,149 @@
+.TH "md_src_plugins_backend_odbc_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_backend_odbc_README \- Plugin: backend_odbc 
+
+.IP "\(bu" 2
+infos = Information about the backendOdbc plugin is in the keys below
+.IP "\(bu" 2
+infos/author = Florian Lindner florian.lindner@student.tuwien.ac.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = backend
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = backend
+.IP "\(bu" 2
+infos/status = reviewed unittest experimental
+.IP "\(bu" 2
+infos/description = Plugin implementing full backend functionality for ODBC data sources
+.PP
+.SH "Introduction"
+.PP
+This plugin is a backend plugin that stores and retrieves data using ODBC (Open Database Connectivity) data sources\&. It was tested with unixODBC on Linux, but should also work with iODBC and Microsoft ODBC (on Windows)\&.
+.PP
+.RS 4
+If you want to use it with one of the latter two ODBC implementations, feel free to update this documentation with your experiences! 
+.RE
+.PP
+.SH "Required database scheme"
+.PP
+The minimum requirement is a table with at least two columns:
+.PP
+.IP "\(bu" 2
+Key-name (string, primary key (PK))
+.IP "\(bu" 2
+Key-value (string)
+.PP
+.PP
+Additionally, a second table with at least three columns is required\&.
+.PP
+.IP "\(bu" 2
+Key-name (string, foreign key (FK) to the first table)
+.IP "\(bu" 2
+Metakey-name (string)
+.IP "\(bu" 2
+Metakey-value (string)
+.PP
+.PP
+The primary key of this table consists of two columns: the \fBkey-name\fP and the \fBmetakey-name\fP\&. In the language of ER-modelling, the metatable can therefore by considered a \fBweak-entity\fP\&.
+.PP
+.RS 4
+Currently, only data sources with tables for metadata are supported! So you have to define a meta-table\&. Data sources without a table for metadata will probably be supported in the future\&. If you want to use metadata, the ODBC driver for your data source has to support \fBouter joins\fP\&. This implies that currently, only ODBC drivers with support for outer joins are supported by the ODBC backend\&. 
+.RE
+.PP
+The tables may also contain other columns, but they are not processed by this plugin and must support NULL- or DEFAULT-values, if you want to add tuples to the table via Elektra (e\&.g\&. by calling \fCkdb set <key> <value>\fP)\&.
+.PP
+If the column for the key-name is not defined as a primary key and multiple rows contain the same key-name, they are treated as one key, where the value is taken from the first row and the metadata is combined\&. If multiple metakeys with the same metakey-name exist for a key, the last metavalue is used\&. This behavior is part of the internal algorithm of the plugin and could change in the future\&. So if you want a predictable and expectable behavior, make sure that the described primary- and foreign-key constraints are respected\&.
+.SH "Mounting"
+.PP
+The \fBmountpoint definition\fP for ODBC mountpoints, which is stored at \fCsystem:/elektra/mountpoints/<MP>/definition\fP is defined as follows\&. The placeholder \fC<MP>\fP is the path in the KDB where the root of the defined mountpoint is located\&. This is the path you specify when creating the mountpoint\&.
+.PP
+The key-names for an ODBC mountpoint-definition are:
+.PP
+.PP
+.nf
+system:/elektra/mountpoints/<mp>
+system:/elektra/mountpoints/<mp>/plugins/backend
+system:/elektra/mountpoints/<mp>/plugins/backend/name
+system:/elektra/mountpoints/<mp>/definition/dataSourceName
+system:/elektra/mountpoints/<mp>/definition/userName
+system:/elektra/mountpoints/<mp>/definition/password
+system:/elektra/mountpoints/<mp>/definition/timeout
+system:/elektra/mountpoints/<mp>/definition/table/name
+system:/elektra/mountpoints/<mp>/definition/table/keyColName
+system:/elektra/mountpoints/<mp>/definition/table/valColName
+system:/elektra/mountpoints/<mp>/definition/metaTable/name
+system:/elektra/mountpoints/<mp>/definition/metaTable/keyColName
+system:/elektra/mountpoints/<mp>/definition/metaTable/metaKeyColName
+system:/elektra/mountpoints/<mp>/definition/metaTable/metaValColName
+.fi
+.PP
+.PP
+The key-values for the keys under \fCdefinition\fP are defined as follows:
+.PP
+.IP "\(bu" 2
+\fIdataSourceName:\fP The name of the ODBC data source (as defined in the odbc\&.ini file)
+.IP "\(bu" 2
+\fIuserName:\fP Name of the user that should be used to connect to the data source
+.IP "  \(bu" 4
+can be empty if no username is required or if the value should be read from the odbc\&.ini file
+.PP
+
+.IP "\(bu" 2
+\fIpassword:\fP Password for the user who wants to connect
+.IP "  \(bu" 4
+can be empty if no password is required or if the value should be read from the odbc\&.ini file
+.PP
+
+.IP "\(bu" 2
+\fItimeout:\fP The number of seconds to wait after a connection attempt is considered as failed (0 = wait indefinitely)
+.IP "  \(bu" 4
+if empty, a default value is used
+.PP
+
+.IP "\(bu" 2
+\fItable/name:\fP Name of the table where the data is stored
+.IP "\(bu" 2
+\fItable/keyColName:\fP The name of the column where the keynames are stored
+.IP "\(bu" 2
+\fItable/valColName:\fP The name of the column where the key-values (strings) are stored
+.IP "\(bu" 2
+\fImetaTable/name:\fP The name of the table where the metadata is stored
+.IP "\(bu" 2
+\fImetaTable/keyColName:\fP The name of the column in the MetaTable where the name of the key the metakey belongs to is stored
+.IP "\(bu" 2
+\fImetaTable/metaKeyColName:\fP The name of the column where the name of the metakeys is stored
+.IP "\(bu" 2
+\fImetaTable/metaValColName:\fP The name of the column where the value (string) of the metakeys is stored
+.PP
+.PP
+There is a new command for the kdb-tool: \fCkdb mountOdbc\fP\&. Please be aware that the ODBC backend, in contrast to the classic file-based backend, currently does not support adding other plugins to the mountpoint\&.
+.PP
+The \fCkdb mountOdbc\fP command accepts arguments for the previously described values of the \fImountpoint definition\fP\&. For further details, please refer to the \fBman page\fP for that command\&.
+.PP
+For unmounting, there is no new command necessary\&. Just use the well-known \fCkdb umount <mountpoint>\fP, exactly like for the file-based backend\&.
+.PP
+For more information about the ODBC backend, there is a tutorial available at \fB/doc/tutorials/odbc-backend\&.md\fP\&.
+.SH "Testing and Benchmarking"
+.PP
+There are no dedicated unit tests that actually store, read or delete data from an ODBC data source\&. The reason is, that with the current concept, a valid ODBC data source definition (for unixODBC in \fC/etc/unixODBC/odbc\&.ini\fP) must be present\&. We don't want to write to such an important system file that can influence other applications\&. It would also be cumbersome if we require the user to set up a specific ODBC configuration before running the tests \&.
+.PP
+However, for basic functionality testing and performance evaluation, you can create a valid ODBC mountpoint yourself using \fCkdb mountOdbc\fP and then run the benchmark which is implemented in \fC/benchmarks/mountpoint\&.c\fP for the created mountpoint\&. This approach makes it possible to test and benchmark any valid mountpoint in the KDB\&. So different backends and plugins with different configurations can be tested and benchmarked\&. Just create a mountpoint with the backends, plugins and configuration that you want and run the benchmark with e\&.g\&. \fCbin/benchmark_mountpoint <MP path>/benchmark\fP for this mountpoint\&.
+.PP
+A short example that shows creating a new ODBC mountpoint and running benchmarks for KeySets and metadata:
+.PP
+.PP
+.nf
+bin/kdb mountOdbc Selektra "" "" elektraKeys keyName keyValue metaKeys keyName metaKeyName metaKeyValue "" user:/odbcSqlite
+bin/benchmark_mountpoint -c 1000 user:/odbcSqlite
+bin/benchmark_mountpoint -Mc 1000 user:/odbcSqlite
+.fi
+.PP
+.PP
+More information about benchmarking is available at \fB/benchmarks/README\&.md\fP\&. 

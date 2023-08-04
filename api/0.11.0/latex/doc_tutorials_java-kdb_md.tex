@@ -1,0 +1,192 @@
+\label{doc_tutorials_java-kdb_md_md_doc_tutorials_java_kdb}%
+\Hypertarget{doc_tutorials_java-kdb_md_md_doc_tutorials_java_kdb}%
+ \hypertarget{doc_tutorials_java-kdb_md_autotoc_md4553}{}\doxysection{Introduction}\label{doc_tutorials_java-kdb_md_autotoc_md4553}
+When programming in Java it is possible to access the key database, changing values of existing keys or adding new ones and a few other things. It is also possible to write plugins for Elektra in Java but we will focus on using the Java binding in this tutorial.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4554}{}\doxysection{First Steps}\label{doc_tutorials_java-kdb_md_autotoc_md4554}
+In order to use {\ttfamily kdb} you need to include the dependency in your project. Here you can find a detailed tutorial on how to do that.
+
+After that you can start loading a {\ttfamily KDB} object as follows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    \textcolor{comment}{// code to manipulate keys}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Note that {\ttfamily KDB} implements {\ttfamily Auto\+Closable} which allows \href{https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html}{\texttt{ {\ttfamily try-\/with-\/resouces}}}.
+
+If an error occurs, detailed information can be obtained from the thrown {\ttfamily KDBException}.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4555}{}\doxysection{A word about releasing native resources}\label{doc_tutorials_java-kdb_md_autotoc_md4555}
+There are 3 kinds of native resources having to be cleaned up properly to prevent memory leaks\+: {\ttfamily Key\+Set}, {\ttfamily Key} and {\ttfamily KDB} or rather their backing native key set, key or KDB session.
+
+Fortunately the only resource you are strictly required to release is {\ttfamily KDB} via either {\ttfamily KDB\+::close} or {\ttfamily try-\/with-\/resouces}. For {\ttfamily Key\+Set} and {\ttfamily Key} the garbage collector cleans them up automatically using a \href{https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ref/Cleaner.html}{\texttt{ {\ttfamily Cleaner}}}\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4556}{}\doxysection{Fetching keys}\label{doc_tutorials_java-kdb_md_autotoc_md4556}
+First let\textquotesingle{}s retrieve a key which is already part of the key database. The first thing we need to do is to create a {\ttfamily Key\+Set} your keys are going to be stored in\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keySet = KeySet.create();}
+
+\end{DoxyCode}
+
+
+Now we load all keys located below a specific parent key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var parentKey = Key.create(\textcolor{stringliteral}{"{}user:/"{}});}
+\DoxyCodeLine{\mbox{\hyperlink{namespacekdb}{kdb}}.get(keySet, parentKey);}
+
+\end{DoxyCode}
+
+
+Note on {\ttfamily KDB\+::get}\+: The resulting key set may contain more keys than requested.
+
+Now we can simply fetch the desired key\textquotesingle{}s value as follows\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{String value = keySet.lookup(\textcolor{stringliteral}{"{}user:/my/presaved/key"{}}).map(Key::getString).orElseThrow();}
+
+\end{DoxyCode}
+
+
+So for example if you had executed the command below via shell, before starting the application\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/my/presaved/key it\_works!}
+
+\end{DoxyCode}
+
+
+{\ttfamily value} would equals {\ttfamily it\+\_\+works!}.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4557}{}\doxysection{Saving Keys}\label{doc_tutorials_java-kdb_md_autotoc_md4557}
+Next let\textquotesingle{}s save a new key to the key database. Again, first we need to create an empty {\ttfamily Key\+Set}. We also {\bfseries{need to fetch}} all keys for the namespace before we will be able to save a new key.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});                 \textcolor{comment}{// create key representing the namespace to fetch}}
+\DoxyCodeLine{var keySet = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace);                      \textcolor{comment}{// fetch all keys for the namespace into a new key set}}
+\DoxyCodeLine{var keyToStore = Key.create(\textcolor{stringliteral}{"{}user:/somekey"{}}, \textcolor{stringliteral}{"{}myValue"{}}); \textcolor{comment}{// create key with value to store}}
+\DoxyCodeLine{keySet.append(keyToStore);}
+\DoxyCodeLine{\mbox{\hyperlink{namespacekdb}{kdb}}.set(keySet, keyToStore);}
+
+\end{DoxyCode}
+
+
+If you try to save a key without fetching it beforehand, a {\ttfamily KDBException} will be thrown, telling you to call get before set.
+
+The {\itshape user} namespace is accessible without special rights, but if you try to write to {\itshape system} you will need to have root privileges. Take a look at \mbox{\hyperlink{doc_TESTING_md}{TESTING.md}} to see how to access the system namespace as non-\/root user. This should only be done in testing environments though as it is not intended for productive systems.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4558}{}\doxysection{Examples}\label{doc_tutorials_java-kdb_md_autotoc_md4558}
+\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4559}{}\doxysubsection{Traversing Keys in a $<$tt$>$\+Key\+Set$<$/tt$>$}\label{doc_tutorials_java-kdb_md_autotoc_md4559}
+First we create a new {\ttfamily KDB} handle and fetch all keys for the desired namespace, in this example the whole {\ttfamily user} namespace. Since all keys are put in the passed {\ttfamily key\+Set} variable we can then iterate through it. The {\ttfamily at(int)} method returns a new {\ttfamily Key} object for the native key with the corresponding position within the {\ttfamily key\+Set}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});           \textcolor{comment}{// select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    var keySet = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace);            \textcolor{comment}{// fetch all keys into a new key set}}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} (\textcolor{keywordtype}{int} i = 0; i < keySet.length(); i++) \{    \textcolor{comment}{// traverse the set}}
+\DoxyCodeLine{        var currentKey = keySet.at(i);}
+\DoxyCodeLine{        System.out.println(String.format(\textcolor{stringliteral}{"{}\%s: \%s"{}},}
+\DoxyCodeLine{                currentKey.getName(),              \textcolor{comment}{// fetch the key's name}}
+\DoxyCodeLine{                currentKey.getString()));          \textcolor{comment}{// fetch the key's value}}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+{\ttfamily Key\+Set} also provides an iterator implementation\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});           \textcolor{comment}{// select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    var iter = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace).iterator();   \textcolor{comment}{// fetch all keys into a new key set}}
+\DoxyCodeLine{    \textcolor{keywordflow}{while}(iter.hasNext()) \{                        \textcolor{comment}{// traverse the set}}
+\DoxyCodeLine{        var currentKey = iter.next();}
+\DoxyCodeLine{        System.out.println(String.format(\textcolor{stringliteral}{"{}\%s: \%s"{}},}
+\DoxyCodeLine{                currentKey.getName(),              \textcolor{comment}{// fetch the key's name}}
+\DoxyCodeLine{                currentKey.getString()));          \textcolor{comment}{// fetch the key's value}}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Of course, alternatively a for each loop can be used\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});           \textcolor{comment}{// select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    var keySet = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace);            \textcolor{comment}{// fetch all keys into a new key set}}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} (var currentKey : keySet) \{                \textcolor{comment}{// traverse the set}}
+\DoxyCodeLine{        System.out.println(String.format(\textcolor{stringliteral}{"{}\%s: \%s"{}},}
+\DoxyCodeLine{                currentKey.getName(),              \textcolor{comment}{// fetch the key's name}}
+\DoxyCodeLine{                currentKey.getString()));          \textcolor{comment}{// fetch the key's value}}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Another way to traverse is to use the Stream API which was introduced with Java 8\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});           \textcolor{comment}{// select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    var keySet = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace);            \textcolor{comment}{// fetch all keys into a new key set}}
+\DoxyCodeLine{    keySet.forEach(key -\/> System.out.printf(\textcolor{stringliteral}{"{}\%s: \%s\%n"{}}, key.getName(), key.getString()));                              \textcolor{comment}{// directly format-\/print all key value pairs using foreach}}
+\DoxyCodeLine{    \textcolor{comment}{// or}}
+\DoxyCodeLine{    keySet.stream().map(key -\/> String.format(\textcolor{stringliteral}{"{}\%s: \%s"{}}, key.getName(), key.getString())).forEach(System.out::println);  \textcolor{comment}{// map the key value paris to the desired format first and then print them using foreach and a function reference}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+As the {\ttfamily Key\+Set} implements the {\ttfamily Sorted\+Set$<$Key$>$} interface, all its methods can be used for (not only) a traversal\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});           \textcolor{comment}{// select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    var keySet = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace);            \textcolor{comment}{// fetch all keys into a new key set}}
+\DoxyCodeLine{    keySet.subSet(Key.create(\textcolor{stringliteral}{"{}user:/b"{}}), Key.create(\textcolor{stringliteral}{"{}user:/k"{}}))                                  \textcolor{comment}{// only select the keys starting with "{}user:/a"{} through "{}user:/k"{} (excluded).}}
+\DoxyCodeLine{        .forEach(key -\/> System.out.printf(\textcolor{stringliteral}{"{}\%s: \%s\%n"{}}, key.getName(), key.getString()));          \textcolor{comment}{// directly format-\/print all key value pairs using foreach}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Another way to traverse is to use the Stream API which was introduced with Java 8\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{var keyNamespace = Key.create(\textcolor{stringliteral}{"{}user:/"{}});           \textcolor{comment}{// select a namespace from which all keys should be fetched}}
+\DoxyCodeLine{\textcolor{keywordflow}{try} (KDB \mbox{\hyperlink{namespacekdb}{kdb}} = KDB.open()) \{}
+\DoxyCodeLine{    var keySet = \mbox{\hyperlink{namespacekdb}{kdb}}.get(keyNamespace);            \textcolor{comment}{// fetch all keys into a new key set}}
+\DoxyCodeLine{    keySet.forEach(key -\/> System.out.printf(\textcolor{stringliteral}{"{}\%s: \%s\%n"{}}, key.getName(), key.getString()));                              \textcolor{comment}{// directly format-\/print all key value pairs using foreach}}
+\DoxyCodeLine{    \textcolor{comment}{// or}}
+\DoxyCodeLine{    keySet.stream().map(key -\/> String.format(\textcolor{stringliteral}{"{}\%s: \%s"{}}, key.getName(), key.getString())).forEach(System.out::println);  \textcolor{comment}{// map the key value paris to the desired format first and then print them using foreach and a function reference}}
+\DoxyCodeLine{\} \textcolor{keywordflow}{catch} (KDBException e) \{}
+\DoxyCodeLine{    e.printStackTrace();}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4560}{}\doxysubsection{Read Multiple Keys From KDB}\label{doc_tutorials_java-kdb_md_autotoc_md4560}
+This example shows how to read multiple keys. It provides comments for further clarification. Further information can be found here.\hypertarget{doc_tutorials_java-kdb_md_autotoc_md4561}{}\doxysection{Java Plugin Tutorial}\label{doc_tutorials_java-kdb_md_autotoc_md4561}
+For the tutorial on how to write java plugins, please check out \mbox{\hyperlink{doc_tutorials_java-plugins_md}{this}} page. 

@@ -1,0 +1,59 @@
+\label{doc_decisions_5_partially_implemented_hooks_md_md_doc_decisions_5_partially_implemented_hooks}%
+\Hypertarget{doc_decisions_5_partially_implemented_hooks_md_md_doc_decisions_5_partially_implemented_hooks}%
+ \hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2227}{}\doxysection{Problem}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2227}
+Some components of {\ttfamily kdb\+Get}/{\ttfamily kdb\+Set} should be optional. We use the plugin system for that. However, some of these cases cannot be tied to a mountpoint. This was the idea of global plugins, but that idea proved problematic. In the old global plugins implementation\+:
+
+
+\begin{DoxyItemize}
+\item Notification does not happen once after final commit, but for every plugin.
+\item Problems in spec plugin
+\end{DoxyItemize}
+
+These problems can be traced back to the placement of the plugins. We need to clean up and simplify the placement.\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2228}{}\doxysection{Constraints}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2228}
+
+\begin{DoxyItemize}
+\item Plugin interface should be the same. Many plugins, where appropriate, e.\+g. dbus, should work as global plugins w/o any change in code (i.\+e. only changes in contract)
+\item Global plugins might depend on specific applications or specific mount points (it should be possible to enforce global plugins for specific applications).
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2229}{}\doxysection{Assumptions}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2229}
+
+\begin{DoxyItemize}
+\item Only following plugins need hook functionality\+:
+\begin{DoxyItemize}
+\item mmap
+\item spec
+\item gopts
+\item receiving of notifications (internalnotification)
+\item sending of notifications (dbus, ...)
+\item recording of changes
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2230}{}\doxysection{Considered Alternatives}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2230}
+
+\begin{DoxyItemize}
+\item generic placements like /prerollback /rollback /postrollback /getresolver /pregetcache /pregetstorage /getstorage /postgetstorage /postgetcache /setresolver /presetstorage /setstorage /precommit /commit /postcommit which can be executed at\+: /init /deinit /foreach proved to be too complicated and difficult to test.
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2231}{}\doxysection{Decision}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2231}
+Have hooks and APIs specific for plugins listed in assumptions. These hooks are not shared, so no {\ttfamily list} plugin is needed.
+
+Installed plugins will be used.
+
+We\textquotesingle{}ll hard code the names of the plugins. For changing those plugins symlinks will have to be used.\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2232}{}\doxysection{Rationale}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2232}
+
+\begin{DoxyItemize}
+\item allows adding more types of plugins later, also post-\/1.\+0
+\item much clearer semantics for each type, no need to compromise
+\item easier to implement
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2233}{}\doxysection{Implications}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2233}
+
+\begin{DoxyItemize}
+\item remove {\ttfamily global-\/mount} command
+\item command for mmap/notification/... enable disable (like current {\ttfamily kdb cache} tool)
+\item remove {\ttfamily list} plugin
+\item remove plugins that stop working or disallow global positioning for them
+\item call {\ttfamily spec} as needed several times
+\item remove current global plugins mechanism
+\item rename {\ttfamily global} to {\ttfamily hook} in contract
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2234}{}\doxysection{Related Decisions}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2234}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_5_partially_implemented_array_md}{Array}}
+\item \mbox{\hyperlink{doc_decisions_6_implemented_ensure_md}{Ensure}}
+\end{DoxyItemize}\hypertarget{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2235}{}\doxysection{Notes}\label{doc_decisions_5_partially_implemented_hooks_md_autotoc_md2235}

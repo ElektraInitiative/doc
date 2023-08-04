@@ -1,0 +1,112 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the hexnumber plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\texttt{ k.\+boeswirth+git@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = conv check
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest nodep configurable
+\item infos/metadata = unit/base
+\item infos/ordering = type
+\item infos/description = converts hexadecimal values into decimal and back
+\end{DoxyItemize}\hypertarget{md_src_plugins_hexnumber_README_src_plugins_hexnumber_README_md}{}\doxysection{Introduction}\label{md_src_plugins_hexnumber_README_src_plugins_hexnumber_README_md}
+This plugin is used to read configuration files that use hexadecimal values. All \char`\"{}hex-\/values\char`\"{} (see below) will be converted into decimal when Elektra reads values from the mounted file. When Elektra writes back to the file the converted values will be converted back and stored as before ({\ttfamily 0X} will be replaced with {\ttfamily 0x}).\hypertarget{md_src_plugins_hexnumber_README_autotoc_md269}{}\doxysection{Installation}\label{md_src_plugins_hexnumber_README_autotoc_md269}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/extra}.\hypertarget{md_src_plugins_hexnumber_README_autotoc_md270}{}\doxysubsection{What are \char`\"{}hex-\/values\char`\"{}?}\label{md_src_plugins_hexnumber_README_autotoc_md270}
+There are multiple ways you can signal to the hexnumber plugin, that a value should be converted\+:
+
+
+\begin{DoxyEnumerate}
+\item If a Key has the metadata {\ttfamily unit/base} set to {\ttfamily hex} it will always be interpreted as a hex-\/value. The plugin will also produce an error, if the value contained in such a Key does not start with {\ttfamily 0x} (or {\ttfamily 0X}).
+\item If {\ttfamily unit/base} is not present and
+\begin{DoxyItemize}
+\item the {\ttfamily type} metadata is set to one of the recognized integer-\/types (default\+: {\ttfamily byte}, {\ttfamily short}, {\ttfamily unsigned\+\_\+short}, {\ttfamily long}, {\ttfamily unsigned\+\_\+long}, {\ttfamily long\+\_\+long}, {\ttfamily unsigned\+\_\+long\+\_\+long})
+\item AND the configuration value itself starts with {\ttfamily 0x} (or {\ttfamily 0X}) it will be interpreted as a hex-\/value.
+\end{DoxyItemize}
+\item If forced conversion mode ({\ttfamily /force} plugin configuration, see below) is enabled all values starting with {\ttfamily 0x} (or {\ttfamily 0X}) are considered hex-\/values.
+\end{DoxyEnumerate}\hypertarget{md_src_plugins_hexnumber_README_autotoc_md271}{}\doxysection{Configuration}\label{md_src_plugins_hexnumber_README_autotoc_md271}
+When mounting a backend with the hexnumber plugin, a few settings can be configured.
+
+
+\begin{DoxyEnumerate}
+\item To enable forced conversion mode set {\ttfamily /force} to any value. In forced conversion mode the plugin tries to convert {\bfseries{ALL}} strings starting with {\ttfamily 0x} (or {\ttfamily 0X}) into decimal before passing the value on to the rest of Elektra. This can be useful for importing a configuration file that uses hexadecimal values into Elektra without writing a specification for the file.
+
+NOTE\+: be careful when using this option, as any configuration value that contains invalid non-\/hexadecimal characters (i.\+e. does not match {\ttfamily 0\mbox{[}xX\mbox{]}\mbox{[}0-\/9A-\/\+Fa-\/f\mbox{]}+}) will result in an error.
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.ecf /examples/hexnumber/forced hexnumber /force=1}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item The types recognized as integers can be configured. For this purpose specify all {\itshape additional} types you want to be considered for possible hexadecimal conversion as an Elektra array. All keys with a type from {\ttfamily /accept/types/\#}, or one of the default types, will be converted to hexadecimal if the value starts with {\ttfamily 0x} (or {\ttfamily 0X}).
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.ecf /examples/hexnumber/customtypes hexnumber /accept/types/\#0=customint /accept/types/\#1=othercustomint}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_hexnumber_README_autotoc_md272}{}\doxysection{Usage \& Example}\label{md_src_plugins_hexnumber_README_autotoc_md272}
+
+\begin{DoxyItemize}
+\item To mount a simple backend that uses hexadecimal numbers, you can use\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount test.ecf user:/tests/hexnumber hexnumber}
+
+\end{DoxyCode}
+
+\item A few examples on how to use the plugin\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Example 1: read hex value}
+\DoxyCodeLine{kdb set user:/tests/hexnumber/hex 0x1F}
+\DoxyCodeLine{kdb meta-\/set user:/tests/hexnumber/hex type long}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/hexnumber/hex}
+\DoxyCodeLine{\#> 31}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Example 2: decimal value not converted}
+\DoxyCodeLine{kdb set user:/tests/hexnumber/dec 26}
+\DoxyCodeLine{kdb meta-\/set user:/tests/hexnumber/dec type long}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/hexnumber/dec}
+\DoxyCodeLine{\#> 26}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Example 3: string untouched}
+\DoxyCodeLine{kdb set user:/tests/hexnumber/string value}
+\DoxyCodeLine{kdb meta-\/set user:/tests/hexnumber/string type string}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/hexnumber/string}
+\DoxyCodeLine{\#> value}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Example 4: read hex value with unit/base}
+\DoxyCodeLine{kdb set user:/tests/hexnumber/hex2 0xF}
+\DoxyCodeLine{kdb meta-\/set user:/tests/hexnumber/hex2 unit/base hex}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get user:/tests/hexnumber/hex2}
+\DoxyCodeLine{\#> 15}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Undo changes}
+\DoxyCodeLine{kdb rm -\/r user:/tests/hexnumber}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item To unmount the plugin use the following command\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb umount user:/tests/hexnumber}
+\DoxyCodeLine{\#>}
+
+\end{DoxyCode}
+ 
+\end{DoxyItemize}

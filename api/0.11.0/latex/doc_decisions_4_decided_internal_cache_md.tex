@@ -1,0 +1,197 @@
+\label{doc_decisions_4_decided_internal_cache_md_md_doc_decisions_4_decided_internal_cache}%
+\Hypertarget{doc_decisions_4_decided_internal_cache_md_md_doc_decisions_4_decided_internal_cache}%
+ \hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2107}{}\doxysection{Problem}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2107}
+{\ttfamily kdb\+Get} might return more or fewer keys than requested. This was found confusing several times.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2108}{}\doxysubsection{More Keys}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2108}
+Even if calling {\ttfamily kdb\+Get} with a parent key below a mountpoint, {\ttfamily kdb\+Get} will nevertheless return all keys of the mountpoint. Pseudo code example, assuming there is a mountpoint at {\ttfamily /mountpoint} and a key {\ttfamily /mountpoint/other}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/mountpoint/below"{}}));}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{ksLookup}} (ks, \textcolor{stringliteral}{"{}/mountpoint/other"{}}) == NULL);}
+
+\end{DoxyCode}
+
+
+It was found unexpected that this assert will fail.
+
+In a similar fashion, calling {\ttfamily kdb\+Set} without the seemingly superfluous keys causes Elektra to unintentionally delete them from disk.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/mountpoint/below"{}}));}
+\DoxyCodeLine{KeySet * below = \mbox{\hyperlink{group__keyset_ga6b00cf82b59af4d883a9bad6cf4a4a4a}{ksCut}} (ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/mountpoint/below"{}}));}
+\DoxyCodeLine{}
+\DoxyCodeLine{ksSet (\mbox{\hyperlink{namespacekdb}{kdb}}, below, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/mountpoint/below"{}}));}
+\DoxyCodeLine{\textcolor{comment}{// suddenly /mountpoint/other has been removed from the configuration file on disk, even if the user explicitly stated to only change stuff in /mountpoint/below}}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2109}{}\doxysubsection{Fewer Keys}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2109}
+When doing a second {\ttfamily kdb\+Get} with a new keyset no keys will be returned when no backends report changed data, because kdb internally thinks the data is already up-\/to-\/date\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keywordtype}{void} test\_doubleGet (\textcolor{keywordtype}{void})}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        printf(\textcolor{stringliteral}{"{}running \%s\(\backslash\)n"{}}, \_\_func\_\_);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{comment}{// Setup}}
+\DoxyCodeLine{        Key * parentKey = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/somewhere"{}}, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{        KeySet * ks = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{        KDB * \mbox{\hyperlink{namespacekdb}{kdb}} = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (\mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}}), parentKey);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, parentKey);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}user:/somewhere"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}abc"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{        \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (ks, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}user:/somewhere/key"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}xyz"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks, parentKey);}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdbClose}} (\mbox{\hyperlink{namespacekdb}{kdb}}, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{comment}{// Scenario}}
+\DoxyCodeLine{        \mbox{\hyperlink{namespacekdb}{kdb}} = \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdbOpen}} (\mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}}(0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}}), parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        KeySet * ks1 = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{        KeySet * ks2 = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (0, \mbox{\hyperlink{group__keyset_ga7a28fce3773b2c873c94ac80b8b4cd54}{KS\_END}});}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks1, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/somewhere"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{        succeed\_if (\mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (ks1, \textcolor{stringliteral}{"{}/somewhere/key"{}}, 0) != NULL, \textcolor{stringliteral}{"{}should find key (1)"{}});}
+\DoxyCodeLine{        \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}} (\mbox{\hyperlink{namespacekdb}{kdb}}, ks2, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}}(\textcolor{stringliteral}{"{}/somewhere"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{        succeed\_if (\mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (ks2, \textcolor{stringliteral}{"{}/somewhere/key"{}}, 0) != NULL, \textcolor{stringliteral}{"{}should find key (2)"{}});}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+It was found unexpected that the second assert -\/ should find key (2) -\/ will fail.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2110}{}\doxysection{Constraints}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2110}
+
+\begin{DoxyItemize}
+\item memory consumption must be low for {\ttfamily kdb\+Get}, see \mbox{\hyperlink{doc_GOALS_md}{4. Goal\+: Performance}}, in particular, deep duplication is too expensive
+\item For non-\/optional parts of Elektra, also non-\/\+POSIX systems must be supported
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2111}{}\doxysection{Assumptions}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2111}
+\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2112}{}\doxysection{Considered Alternatives}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2112}
+\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2113}{}\doxysubsection{Keep Current Situation}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2113}
+Improve documentation to make people more aware of these two problems\+:
+
+
+\begin{DoxyItemize}
+\item add a tutorial about {\ttfamily kdb\+Get} semantics
+\item add full examples how to correctly work with {\ttfamily kdb\+Get}
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2114}{}\doxysubsection{Changing $<$tt$>$parent\+Key$<$/tt$>$ according to mountpoints}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2114}
+\char`\"{}\+More keys\char`\"{}\+:
+
+Upon returning from {\ttfamily kdb\+Get}/{\ttfamily kdb\+Set}, set the keyname of parent\+Key to the key that actually is parent of the data that was loaded. I.\+e. to the mountpoint of the backend that contains parent\+Key. {\ttfamily parent\+Key} is already an inout-\/type argument, since we use both it\textquotesingle{}s value and metadata to return some information.
+
+A few people found this behavior just as unexpected as the current problem. E.\+g. a sequence of {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} with the same parent key might lead to different outcomes depending on the mountpoints.
+
+\char`\"{}\+Fewer keys\char`\"{}\+:
+
+This is a bug in the logic of the \char`\"{}nothing changed\char`\"{} optimization. A partial solution would be to copy the keys from {\ttfamily backend\+Data-\/$>$keys}, so they are actually there, and we don\textquotesingle{}t just assume they are there. Still some extra steps are required to make it work in all cases, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{TEST\_F (Simple, NothingToDo2)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{        \textcolor{keyword}{using namespace }\mbox{\hyperlink{namespacekdb}{kdb}};}
+\DoxyCodeLine{        KDB \mbox{\hyperlink{namespacekdb}{kdb}};}
+\DoxyCodeLine{        KeySet ks;}
+\DoxyCodeLine{}
+\DoxyCodeLine{        \textcolor{keyword}{auto} parentKey = \textcolor{stringliteral}{"{}system:"{}} + testRoot;}
+\DoxyCodeLine{}
+\DoxyCodeLine{        EXPECT\_EQ (\mbox{\hyperlink{namespacekdb}{kdb}}.get (ks, parentKey), 0) << \textcolor{stringliteral}{"{}nothing to do in get"{}};}
+\DoxyCodeLine{}
+\DoxyCodeLine{        ks.append (Key (parentKey + \textcolor{stringliteral}{"{}a"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}x"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{        \mbox{\hyperlink{namespacekdb}{kdb}}.set (ks, parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{        EXPECT\_EQ (\mbox{\hyperlink{namespacekdb}{kdb}}.get (ks, parentKey), 0) << \textcolor{stringliteral}{"{}nothing to do in get"{}};}
+\DoxyCodeLine{        EXPECT\_TRUE (ks.lookup (parentKey + \textcolor{stringliteral}{"{}a"{}})) << \textcolor{stringliteral}{"{}key a not found"{}};}
+\DoxyCodeLine{        EXPECT\_EQ (ks.lookup (parentKey + \textcolor{stringliteral}{"{}a"{}}).get<std::string> (), \textcolor{stringliteral}{"{}x"{}}) << \textcolor{stringliteral}{"{}key a with wrong value"{}};}
+\DoxyCodeLine{        \textcolor{comment}{// TODO: adding the line below breaks the test}}
+\DoxyCodeLine{        \textcolor{comment}{//       This is because the Key instance is shared between `ks` and the internal data of `kdb`.}}
+\DoxyCodeLine{        \textcolor{comment}{// ks.lookup(parentKey + "{}a"{}).set("{}y"{});}}
+\DoxyCodeLine{}
+\DoxyCodeLine{        KeySet ks2;}
+\DoxyCodeLine{        EXPECT\_EQ (\mbox{\hyperlink{namespacekdb}{kdb}}.get (ks2, parentKey), 0) << \textcolor{stringliteral}{"{}nothing to do in get"{}};}
+\DoxyCodeLine{        EXPECT\_TRUE (ks2.lookup (parentKey + \textcolor{stringliteral}{"{}a"{}})) << \textcolor{stringliteral}{"{}key a not found"{}};}
+\DoxyCodeLine{        EXPECT\_EQ (ks2.lookup (parentKey + \textcolor{stringliteral}{"{}a"{}}).get<std::string> (), \textcolor{stringliteral}{"{}x"{}}) << \textcolor{stringliteral}{"{}key a with wrong value"{}};}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+A very simple way to make it work would be to make the keys returned by kdb\+Get read-\/only. If we do not do this, we need a deep-\/copy or a copy-\/on-\/write copy.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2115}{}\doxysubsection{Cachefilter Plugin}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2115}
+Naively one would simply cache the whole keyset and use {\ttfamily ks\+Below} to always get the keyset.
+
+This idea was implemented and later on \href{https://github.com/ElektraInitiative/libelektra/commit/a3d95f07160d792fdd0f169d8543138c32a2f580}{\texttt{ discarded\+: a3d95f}}
+
+The main problems are\+:
+
+
+\begin{DoxyItemize}
+\item very high memory consumption (duplication of Key\+Sets)
+\item problems specific to \mbox{\hyperlink{doc_decisions_5_partially_implemented_hooks_md}{hooks}}, see \href{https://issues.libelektra.org/1072}{\texttt{ \#1072}}
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2116}{}\doxysubsection{MMAP Cache with parent key}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2116}
+We make the mmap cache non-\/optional so that we always have a keyset of configuration data internally. The cache will be used to do change tracking. From this keyset, we use {\ttfamily ks\+Below} to return the correct keyset.
+
+Disadvantage\+: mmap implementation for Windows would be needed.
+
+The cache should be updated at the end of every kdb\+Get that was a cache miss. So during kdb\+Set (assuming there is no external modification, i.\+e. conflict) the on-\/disk data of the cache should always be up-\/to-\/date. The idea would be to just read the cached keyset from disk and diff against the current keyset in kdb\+Set.
+
+This would mean enabling change tracking also enables the cache (or at least updating the cache, we don\textquotesingle{}t have to use it in kdb\+Get). If that\textquotesingle{}s not wanted or if the cache data cannot be used directly for some other reason, the same approach could still be used. We\textquotesingle{}d just have to write the keyset to disk during kdb\+Get and use it during kdb\+Set. Since disk space is far less precious than RAM, we could even create separate files for every parent key. If we do go down this route, kdb\+Close should clean up the files created by this KDB instance to avoid wasting disk space.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2117}{}\doxysubsection{MMAP Cache without parent key}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2117}
+We make the mmap cache non-\/optional and only use a single cache, caching everything. We remove the parent key of {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} and always return the keyset of the whole KDB.
+
+
+\begin{DoxyItemize}
+\item Disadvantage\+: mmap implementation for Windows would be needed
+\item Then also symlinks (fallback, override etc.) and constraints for keys outside of the parent\+Key would work. It would make the {\ttfamily -\/a} option of {\ttfamily kdb get} unnecessary.
+\end{DoxyItemize}
+
+It is still unclear whether this would actually be a good default behavior. Normally it is expected for mountpoints to be isolated If symlinks work like this, the isolation is partially broken. One could argue that the problem right now is that such \char`\"{}broken\char`\"{} symlinks are not prevented. The proposed solution doesn\textquotesingle{}t completely fix the problem either
+
+For example\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily system\+:/foo} is a mountpoint, there are no other mountpoints
+\item {\ttfamily spec\+:/foo/bar} refers to {\ttfamily system\+:/abc} via {\ttfamily meta\+:/override}
+\end{DoxyItemize}
+
+Now in a plugin that is part of the mountpoint {\ttfamily system\+:/foo} doing a {\ttfamily ks\+Lookup\+By\+Name (ks, \char`\"{}/foo/bar\char`\"{}, 0)} would NOT use {\ttfamily system\+:/abc}, because that key is never part of the keyset passed to this plugin.
+
+However, in an application that used {\ttfamily system\+:/foo} as the parent, the {\ttfamily meta\+:/override} would work with your proposal. This seems like very confusing behavior, because both the application and the plugin seemingly use the same parent key.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2118}{}\doxysubsection{Data restrictions}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2118}
+Make all the keys returned by kdb\+Get completely read-\/only. To change the data it is required to append an entirely new key to replace the existing one. Then we just need to keep a shallow copy internally.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2119}{}\doxysubsection{API restrictions}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2119}
+Change the API and remove Key\+Set from kdb\+Get and kdb\+Set also option 4 in \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{the operation sequences decision}}. If the keyset is owned by the KDB handle, it should not be such a big surprise, if there is extra data in there.
+
+This only fixes the \char`\"{}\+Fewer Keys\char`\"{} issue.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2120}{}\doxysubsection{Copy On Write}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2120}
+We keep a duplicated keyset in-\/memory and tag the keys as copy-\/on-\/write (COW). From this keyset, we use {\ttfamily ks\+Below} to return the correct keyset. If the user tries to change the value or metadata of these keys, the data gets duplicated. I.\+e. the original keyset is not changed. The name is not relevant. It is always read-\/only, because the key is in at least one keyset (the internal one).
+
+Possible copy-\/on-\/write implementations are described in \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{another decision}}.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2121}{}\doxysection{Decision}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2121}
+Implement the copy-\/on-\/write approach.
+
+We keep a copy of all keys returned by the backends in memory. We use {\ttfamily ks\+Below} to only return a copy-\/on-\/write copy of keys the user requested on {\ttfamily kdb\+Get}.
+
+If the user tries to change the value or metadata of these keys, the data gets duplicated (copy-\/on-\/write). I.\+e. the data of the original keys is not changed. The name is not relevant. It is always read-\/only, because the key is in at least one keyset (the internal one). Possible copy-\/on-\/write implementations are described in \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{another decision}}.
+
+In {\ttfamily kdb\+Set} we use the user-\/provided {\ttfamily Key\+Set} for all backends strictly below {\ttfamily parent\+Key} as before. For the backend that contains {\ttfamily parent\+Key}, we start with the internally cached data. We then remove everything that is at or below {\ttfamily parent\+Key} (via {\ttfamily ks\+Cut}) and replace it with the data from the user-\/provided {\ttfamily Key\+Set}. Keys not at or below {\ttfamily parent\+Key} therefore remain untouched.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2122}{}\doxysection{Rationale}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2122}
+Semantics can be provided without additional code or overhead in the core. As we need copy-\/on-\/write for efficient change tracking anyway, it makes sense to also use this approach for the internal cache. The copy-\/on-\/write solution also does not require any changes or restrictions to the current API.\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2123}{}\doxysection{Implications}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2123}
+
+\begin{DoxyItemize}
+\item Before we can implement this decision, we need to implement the \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{copy-\/on-\/write decision}}.
+\item {\ttfamily kdb\+Get} will only return copy-\/on-\/write copies of keys below {\ttfamily parent\+Key} from the internal cache.
+\item {\ttfamily kdb\+Set} will use the keys within the internal cache to supplement all the keys above {\ttfamily parent\+Key} so that backends can write the correct data.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2124}{}\doxysection{Related Decisions}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2124}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_0a_postponed_global_validation_md}{Global Validation}}
+\item \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{Copy On Write}}
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_internal_cache_md_autotoc_md2125}{}\doxysection{Notes}\label{doc_decisions_4_decided_internal_cache_md_autotoc_md2125}
+Problem \char`\"{}\+Fewer Keys\char`\"{} was found to be a \href{https://pull.libelektra.org/4619}{\texttt{ \char`\"{}horrible problem\char`\"{}}}
+
+Issues where the problem described here was found confusing\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://issues.libelektra.org/760}{\texttt{ \#760}}
+\item \href{https://issues.libelektra.org/1363}{\texttt{ \#1363}}
+\end{DoxyItemize}
+
+@mpranj wrote about the performance for {\ttfamily MMAP Cache without parent key}\+:
+
+\begin{quote}
+in my benchmarks the pointer correction was never a bottleneck. \end{quote}

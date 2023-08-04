@@ -1,0 +1,177 @@
+.TH "doc_GETSTARTED_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_GETSTARTED_md \- Get Started 
+ This document is intended for developers who want to get started with developing with Elektra\&.
+.SH "Skill requirements"
+.PP
+.IP "\(bu" 2
+Operating system
+.PP
+We recommend a Unix-based operating system to run Elektra (Linux, BSD, macOS) but \fCit's also possible to use Windows which is supported but not yet fully tested\fP\&.
+.IP "\(bu" 2
+Using command-line interface and commands
+.PP
+The easiest way to compile, install and use Elektra is by using the terminal\&. We will introduce the basic commands which you will need to run Elektra for the very first time\&. \fCIt's also possible to use CLion\fP
+.IP "\(bu" 2
+Basic knowledge about git
+.PP
+\fCGit\fP is a distributed version control system to track changes of the source code in a project\&. We will use a single Git command to get the source code of Elektra\&.
+.IP "\(bu" 2
+Basic knowledge about make/CMake
+.PP
+Don't panic! \fCmake\fP or \fCCMake\fP are used to generate an executable program from the code\&. If you are not used to these tools, it's not a problem, we will introduce them to you in later sections\&.
+.IP "\(bu" 2
+We also need your skill set to improve Elektra
+.PP
+You can contribute to Elektra to improve the source code, website, documentation, translation etc\&.
+.PP
+.SH "Software requirements"
+.PP
+We need to install some basic tools to run Elektra: CMake, Git and essential build tools (make, gcc, and some standard Unix tools; alternatively \fCninja\fP and \fCclang\fP are also supported but not described here)\&. Depending on your Linux distribution use the following commands to install these tools:
+.PP
+.PP
+.nf
+sudo apt-get install cmake git build-essential
+.fi
+.PP
+.PP
+Or on RPM (Red Hat Package Manager) based systems (like Fedora, openSUSE, CentOS etc\&.):
+.PP
+.PP
+.nf
+sudo yum install -y cmake git gcc-c++
+.fi
+.PP
+.PP
+Or on macOS, most of the build tools can be obtained by installing \fCXcode\fP\&. Other required tools may be installed using \fCbrew\fP\&. First, install brew as described on their website\&. Then issue the following command to get CMake to complete the basic requirements:
+.PP
+.PP
+.nf
+brew install cmake git
+.fi
+.PP
+.SH "Installation"
+.PP
+If you meet all the software requirements you can get the source code of Elektra by using this command:
+.PP
+.PP
+.nf
+git clone https://github\&.com/ElektraInitiative/libelektra\&.git
+.fi
+.PP
+.PP
+Run the following commands to compile Elektra with non-experimental plugins where your system happens to fulfill the dependencies:
+.PP
+.PP
+.nf
+cd libelektra  #navigate to libelektra
+mkdir build  && cd build  #create and navigate to the build directory
+cmake \&.\&.  # watch output to see if everything needed is included
+#  optionally run "ccmake \&.\&." to get an overview of the available build settings (needs cmake-curses-gui)
+cmake --build \&. -- -j5
+.fi
+.PP
+.PP
+Optionally you can also run tests, see \fBhere for more information\fP:
+.PP
+.PP
+.nf
+cmake --build \&. --target run_nokdbtests
+.fi
+.PP
+.PP
+With these commands you will be able to run the 'Hello World!' example, but usually you will need to use some of the \fBplugins\fP, tools and bindings of Elektra\&. Please take a look at the more detailed \fBcompiling documentation\fP\&. After you completed building Elektra on your own, you can execute these commands to install Elektra (please check the \fBinstallation documentation\fPfor the many available packages):
+.PP
+.PP
+.nf
+sudo make install
+sudo ldconfig #optional: check installation documentation for more information
+.fi
+.PP
+.PP
+\fBInstallation documentation\fP contains further information about available packages\&.
+.PP
+Optionally you can also run tests to verify the installed Elektra, see \fBhere for more information\fP:
+.PP
+.PP
+.nf
+kdb run_nokdbtests
+.fi
+.PP
+.SH "Hello first steps!"
+.PP
+This section attempts to give a brief introduction on how to use the key database of Elektra\&. The key database is modified and queried by using the \fCkdb\fP tool\&.
+.PP
+Let's look into an example:
+.PP
+.PP
+.nf
+sudo kdb mount "hello\&.spec\&.ni" "spec:/example/hello" ni
+.fi
+.PP
+.PP
+This first command shows one of the core concepts: In Elektra you mount a file into the key database by specifying a mountpoint\&. In this example we mount the file \fChello\&.spec\&.ni\fP that shall be our configuration specification to the mountpoint \fC/example/hello\fP in the \fCspec\fP \fBnamespace\fP (which is the namespace used for specifications)\&. We could also say that we persistently mount a new \fIbackend\fP\&. The last parameter \fCni\fP specifies that we use the \fBni plugin\fP to write in the ni format (a specialised variant of INI) to the file\&. This can also be omitted in which case the less human-friendly \fBdump plugin\fP is used\&.
+.PP
+Since we did not denote an absolute file path it depends on the namespace where the actual file is stored\&. However, we can always retrieve the location of a file with the \fCfile\fP subcommand, e\&.g\&., \fCkdb file 'spec:/example/hello'\fP\&.
+.PP
+Now let's add some data to our specification:
+.PP
+.PP
+.nf
+sudo kdb set "spec:/example/hello/what" ""
+.fi
+.PP
+.PP
+As you see above we extended the the mountpoint \fC/example/hello\fP with \fC/what\fP\&. Our specification now expects (but not requires) a \fCwhat\fP key in the configuration\&. (If you want to actually require it you need to set the metakey \fCmeta:/require\fP, but more about metakeys below\&.) Note that the value is empty since we just want to specify the key\&.
+.PP
+Now let's show the actual power of Elektra by setting metadata to our specification:
+.PP
+.PP
+.nf
+sudo kdb meta-set "spec:/example/hello/what" default World
+.fi
+.PP
+.PP
+The metakey \fCdefault\fP (having the value \fCWorld\fP) is now associated with the key \fCspec:/example/hello/what\fP\&. It should be noted that the previous setting of \fCwhat\fP is in this scenario redundant and could be omitted because this is done implicitly\&.
+.PP
+Now let's mount our specification:
+.PP
+.PP
+.nf
+sudo kdb meta-set "spec:/example/hello" mountpoint "hello\&.ni"
+sudo kdb spec-mount "/example/hello" ni
+.fi
+.PP
+.PP
+As you see above, we first specify a mountpoint for our configuration (which is just metadata of the parent key \fCspec:/example/hello\fP)\&. Afterwards we use the \fCspec-mount\fP subcommand to mount a new backend by a previously mounted specification\&. Note that there shall not be a namespace given, because \fCspec-mount\fP creates mountpoints for all namespaces (except \fCspec\fP of course)\&.
+.PP
+Now let's enjoy some configuration magic:
+.PP
+.PP
+.nf
+kdb get "/example/hello/what"
+.fi
+.PP
+.PP
+We notice even if we did not set a value for the key \fC/example/hello/what\fP we still get \fCWorld\fP back since this is specified as default value\&. Therein lies the power of Elektra: We can set metadata (like \fBtypes\fP, \fBRegEx\fP or \fBdate\fP validation, etc\&.) that gets handled by plugins\&.
+.PP
+If we want to set a custom value we can do it this way:
+.PP
+.PP
+.nf
+kdb set "user:/example/hello/what" "first few steps"
+.fi
+.PP
+.PP
+Now a \fCkdb get /example/hello/what\fP would return \fCfirst few steps\fP\&.
+.PP
+Note that when we set a value the namespace of the key should be specified explicitly\&. If we don't give a proper namespace (like in the get example above) a so-called \fBcascading lookup\fP is done\&. However, cascading lookups during \fCkdb set\fP only work, if there is already an existing value (i\&.e\&. there is no ambiguity which key we want to set)\&.
+.SH "Further Reading"
+.PP
+Start with your very first Elektra application in C and follow these steps: \fBHello World!\fP
+.PP
+Modify the \fCwebsite\fP with the following \fBtutorial\fP\&. The website is build with angular and hosted with grunt\&.
+.PP
+Also take a look at the \fBwebui\fP\&. 

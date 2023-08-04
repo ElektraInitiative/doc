@@ -1,0 +1,93 @@
+\label{doc_help_kdb-get_md_md_doc_help_kdb_get}%
+\Hypertarget{doc_help_kdb-get_md_md_doc_help_kdb_get}%
+ \hypertarget{doc_help_kdb-get_md_autotoc_md2939}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-get_md_autotoc_md2939}
+{\ttfamily kdb get $<$key name$>$}
+
+Where {\ttfamily key name} is the name of the key.\hypertarget{doc_help_kdb-get_md_autotoc_md2940}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-get_md_autotoc_md2940}
+This command is used to retrieve the value of a key.
+
+If you enter a {\ttfamily key name} starting with a leading {\ttfamily /}, then a cascading lookup will be performed in order to attempt to locate the key. In this case, using the {\ttfamily -\/v} option allows the user to see the full key name of the key if it is found.\hypertarget{doc_help_kdb-get_md_autotoc_md2941}{}\doxysection{LIMITATIONS}\label{doc_help_kdb-get_md_autotoc_md2941}
+Only keys within the mount point or below the {\ttfamily $<$key name$>$} will be considered during a cascading lookup. A workaround is to pass the {\ttfamily -\/a} option. Use the command {\ttfamily kdb get -\/v $<$key name$>$} to see if an override or a fallback was considered by the lookup.\hypertarget{doc_help_kdb-get_md_autotoc_md2942}{}\doxysection{RETURN VALUES}\label{doc_help_kdb-get_md_autotoc_md2942}
+This command will return the following values as an exit status\+:
+
+
+\begin{DoxyItemize}
+\item 0\+: No errors.
+\item 1-\/10\+: standard exit codes, see \mbox{\hyperlink{doc_help_kdb_md}{kdb(1)}}
+\item 11\+: No key found.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-get_md_autotoc_md2943}{}\doxysection{OPTIONS}\label{doc_help_kdb-get_md_autotoc_md2943}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/a}, {\ttfamily -\/-\/all}\+: Consider all of the keys.
+\item {\ttfamily -\/n}, {\ttfamily -\/-\/no-\/newline}\+: Suppress the newline at the end of the output.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Gives a complete trace of all tried keys. Very useful to debug fallback and overrides.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional debug information in case of errors/warnings.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-get_md_autotoc_md2944}{}\doxysection{EXAMPLES}\label{doc_help_kdb-get_md_autotoc_md2944}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: user:/tests/get/examples}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# We use the `dump` plugin, since some storage plugins, e.g. INI,}
+\DoxyCodeLine{\# create intermediate keys.}
+\DoxyCodeLine{sudo kdb mount get.ecf user:/tests/get/examples/kdb-\/get dump}
+\DoxyCodeLine{sudo kdb mount get.ecf spec:/tests/get/examples/kdb-\/get dump}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create the keys we use for the examples}
+\DoxyCodeLine{kdb set user:/tests/get/examples/kdb-\/get/key myKey}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/get/examples/kdb-\/get/anotherKey default defaultValue}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To get the value of a key:}
+\DoxyCodeLine{kdb get user:/tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{\#> myKey}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To get the value of a key using a cascading lookup:}
+\DoxyCodeLine{kdb get /tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{\#> myKey}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To get the value of a key without adding a newline to the end of it:}
+\DoxyCodeLine{kdb get -\/n /tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{\#> myKey}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# To explain why a specific key was used (for cascading keys):}
+\DoxyCodeLine{kdb get -\/v /tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{\#> got 3 keys}
+\DoxyCodeLine{\#> searching spec:/tests/get/examples/kdb-\/get/key, found: <nothing>, options: KDB\_O\_CALLBACK}
+\DoxyCodeLine{\#>     searching proc:/tests/get/examples/kdb-\/get/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching dir:/tests/get/examples/kdb-\/get/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching user:/tests/get/examples/kdb-\/get/key, found: user:/tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{\#> The resulting keyname is user:/tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{\#> The resulting value size is 6}
+\DoxyCodeLine{\#> myKey}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Output if only a default value is set for a key:}
+\DoxyCodeLine{kdb get -\/v /tests/get/examples/kdb-\/get/anotherKey}
+\DoxyCodeLine{\#> got 3 keys}
+\DoxyCodeLine{\#> searching spec:/tests/get/examples/kdb-\/get/anotherKey, found: spec:/tests/get/examples/kdb-\/get/anotherKey, options: KDB\_O\_CALLBACK}
+\DoxyCodeLine{\#> The key was not found in any other namespace, taking the default}
+\DoxyCodeLine{\#> The resulting keyname is default:/tests/get/examples/kdb-\/get/anotherKey}
+\DoxyCodeLine{\#> The resulting value size is 13}
+\DoxyCodeLine{\#> defaultValue}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm user:/tests/get/examples/kdb-\/get/key}
+\DoxyCodeLine{kdb rm spec:/tests/get/examples/kdb-\/get/anotherKey}
+\DoxyCodeLine{sudo kdb umount user:/tests/get/examples/kdb-\/get}
+\DoxyCodeLine{sudo kdb umount spec:/tests/get/examples/kdb-\/get}
+
+\end{DoxyCode}
+
+
+To use bookmarks\+:~\newline
+ {\ttfamily kdb get +kdb/format}
+
+This command will actually get {\ttfamily user\+:/sw/elektra/kdb/\#0/current/format} if the bookmarks commands from \mbox{\hyperlink{doc_help_kdb-set_md}{kdb-\/set(1)}} man pages are executed before.\hypertarget{doc_help_kdb-get_md_autotoc_md2945}{}\doxysection{SEE ALSO}\label{doc_help_kdb-get_md_autotoc_md2945}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_kdb_md}{kdb(1)}} for how to configure the kdb utility and use the bookmarks.
+\item For more about cascading keys see \mbox{\hyperlink{doc_help_elektra-cascading_md}{elektra-\/cascading(7)}}
+\item To get keys in shell scripts, you also can use \mbox{\hyperlink{doc_help_kdb-sget_md}{kdb-\/sget(1)}}
+\item \mbox{\hyperlink{doc_help_elektra-key-names_md}{elektra-\/key-\/names(7)}} for an explanation of key names. 
+\end{DoxyItemize}

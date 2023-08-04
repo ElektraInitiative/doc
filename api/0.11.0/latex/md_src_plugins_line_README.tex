@@ -1,0 +1,125 @@
+
+\begin{DoxyItemize}
+\item infos = Information about line plugin is in keys below
+\item infos/author = Ian Donnelly \href{mailto:ian.s.donnelly@gmail.com}{\texttt{ ian.\+s.\+donnelly@gmail.\+com}}
+\item infos/provides = storage/line
+\item infos/licence = BSD
+\item infos/needs = binary
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest nodep libc final limited
+\item infos/description = storage plugin which stores each line from a file
+\end{DoxyItemize}\hypertarget{md_src_plugins_line_README_src_plugins_line_README_md}{}\doxysection{Introduction}\label{md_src_plugins_line_README_src_plugins_line_README_md}
+This plugin is useful if you have a file in a format not supported by any other plugin and want to use the Elektra tools to edit individual lines.
+
+This plugin is designed to save each line from a file as a key. The keys form an array. The key names are determined by the line number such as {\ttfamily \#3} or {\ttfamily \#\+\_\+12} for lines 4 and 13. The plugin considers {\ttfamily \#0} to be the first line. The plugin will automatically add {\ttfamily \+\_\+} to the beginning of key names in order to keep them in numerical order (like specified for Elektra arrays).
+
+The value of each key hold the content of the actual file line-\/by-\/line.\hypertarget{md_src_plugins_line_README_autotoc_md325}{}\doxysection{Examples}\label{md_src_plugins_line_README_autotoc_md325}
+For example, consider the following content of the file {\ttfamily $\sim$/.config/line} where the numbers on the left represent the line numbers\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1  setting1 true}
+\DoxyCodeLine{2  setting2 false}
+\DoxyCodeLine{3  setting3 1000}
+\DoxyCodeLine{4  \#comment}
+\DoxyCodeLine{5}
+\DoxyCodeLine{6}
+\DoxyCodeLine{7  //some other comment}
+\DoxyCodeLine{8}
+\DoxyCodeLine{9  setting4 -\/1}
+
+\end{DoxyCode}
+
+
+We mount that file by\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount line user:/line line}
+
+\end{DoxyCode}
+
+
+This file would result in the following keyset which is being displayed as {\ttfamily key\+: value}, e.\+g. with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export -\/c "{}format=\%s: \%s"{} user:/line simpleini}
+\DoxyCodeLine{\#> 0: setting1 true}
+\DoxyCodeLine{\#> 1: setting2 false}
+\DoxyCodeLine{\#> 2: setting3 1000}
+\DoxyCodeLine{\#> 3: \#comment}
+\DoxyCodeLine{\#> 4:}
+\DoxyCodeLine{\#> 5:}
+\DoxyCodeLine{\#> 6: //some other comment}
+\DoxyCodeLine{\#> 7:}
+\DoxyCodeLine{\#> 8: setting4 -\/l}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_line_README_autotoc_md326}{}\doxysubsection{Creating Files}\label{md_src_plugins_line_README_autotoc_md326}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:/tests/line}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount line /tests/line base64 line}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/line/add something}
+\DoxyCodeLine{kdb set user:/tests/line/ignored huhu}
+\DoxyCodeLine{kdb set user:/tests/line ignored   \# adding parent key does nothing}
+\DoxyCodeLine{kdb set user:/tests/line/add here}
+\DoxyCodeLine{}
+\DoxyCodeLine{cat `kdb file user:/tests/line`}
+\DoxyCodeLine{\#> something}
+\DoxyCodeLine{\#> huhu}
+\DoxyCodeLine{\#> here}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb ls user:/tests/line}
+\DoxyCodeLine{\# STDOUT-\/REGEX: line.+line/\#0.+line/\#1.+line/\#2}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/line/\#1 huhu}
+\DoxyCodeLine{\# STDOUT-\/REGEX: Set string to "{}huhu"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/line line}
+\DoxyCodeLine{\#> something}
+\DoxyCodeLine{\#> huhu}
+\DoxyCodeLine{\#> here}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb umount /tests/line}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_line_README_autotoc_md327}{}\doxysubsection{Other Tests}\label{md_src_plugins_line_README_autotoc_md327}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:/tests/line}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount line /tests/line base64 line}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# create and initialize testfile}
+\DoxyCodeLine{echo 'setting1 true'        >  `kdb file user:/tests/line`}
+\DoxyCodeLine{echo 'setting2 false'       >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo 'setting3 1000'        >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo '\#comment'             >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo                        >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo                        >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo '//some other comment' >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo                        >> `kdb file user:/tests/line`}
+\DoxyCodeLine{echo 'setting4 -\/1'          >> `kdb file user:/tests/line`}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# output filecontent and display line numbers}
+\DoxyCodeLine{awk '\{print NR-\/1 "{}-\/"{} \$0\}' < `kdb file user:/tests/line`}
+\DoxyCodeLine{\#> 0-\/setting1 true}
+\DoxyCodeLine{\#> 1-\/setting2 false}
+\DoxyCodeLine{\#> 2-\/setting3 1000}
+\DoxyCodeLine{\#> 3-\/\#comment}
+\DoxyCodeLine{\#> 4-\/}
+\DoxyCodeLine{\#> 5-\/}
+\DoxyCodeLine{\#> 6-\///some other comment}
+\DoxyCodeLine{\#> 7-\/}
+\DoxyCodeLine{\#> 8-\/setting4 -\/1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/line}
+\DoxyCodeLine{sudo kdb umount /tests/line}
+
+\end{DoxyCode}
+ 

@@ -1,0 +1,208 @@
+.TH "md_src_plugins_spec_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_spec_README \- Plugin: spec 
+
+.IP "\(bu" 2
+infos = Information about the spec plugin is in keys below
+.IP "\(bu" 2
+infos/author = Tomislav Makar tmakar23@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = check apply
+.IP "\(bu" 2
+infos/placements = hook
+.IP "\(bu" 2
+infos/status = recommended productive unittest nodep global
+.IP "\(bu" 2
+infos/description = allows to give specifications for keys
+.PP
+.SH "Introduction"
+.PP
+The spec plugin is a global plugin that copies metadata from the \fCspec\fP-namespace to other namespaces using their key names as globbing expressions\&. Globbing resembles regular expressions\&. They do not have the same expressive power, but are easier to use\&. The semantics are more suitable to match path names:
+.PP
+.IP "\(bu" 2
+\fC*\fP matches any key name of just one hierarchy\&. This means it complies with any character except slash or null\&.
+.IP "\(bu" 2
+\fC#\fP matches Elektra array elements\&. (e\&.g\&. \fC#0\fP, \fC#_10\fP, \fC#__987\fP)\&.
+.IP "\(bu" 2
+\fC_\fP matches anything that \fC*\fP matches, except array elements\&.
+.PP
+.PP
+The plugin copies the metadata of the corresponding \fCspec\fP key to every matching (see below) key in the other namespaces\&. The copied metadata is removed again during \fCkdbSet\fP (if remained unchanged)\&.
+.PP
+The spec plugin also provides basic validation and structural checking\&. Specifically it supports:
+.PP
+.IP "\(bu" 2
+detection of invalid array key names
+.IP "\(bu" 2
+detection of missing keys
+.IP "\(bu" 2
+validation of array ranges (min/max array size)
+.IP "\(bu" 2
+validating the number of subkeys of \fC_\fP
+.PP
+.SH "Matching Algorithm"
+.PP
+The matching of the spec (globbing) keys to the keys in the other namespaces is based on \fC\fBelektraKeyGlob()\fP\fP, which in turn is based on the well known \fCfnmatch(3)\fP\&. However, there is special handling for array specifications (\fC#\fP) and wildcard specifications (\fC_\fP)\&.
+.SS "Default Values"
+If a spec key has the metakey \fCdefault\fP set and the key does not exist in other namespaces, we create a key in the \fCdefault:/\fP namespace\&. This key has the \fCdefault\fP value as its value\&. We also copy over metadata as always\&.
+.SS "Array Specifications"
+Keys which contain a part that is exactly \fC#\fP (e\&.g\&. \fCmy/#/key\fP or \fCmy/#\fP) are called array specifications\&. These keys are instantiated in order to support \fCdefault\fP values\&. If the key does not exist and \fCdefault\fP is specified in the spec namespace, the key is created in the \fCdefault\fP namespace\&. We also lookup the array size (defined by the \fCarray\fP metakey) using a cascading \fCksLookup\fP\&. This only looks at non-spec namespaces, if we don't find an array size there, we check the array parent in the spec namespace\&. If we still have no array size, the array is deemed to be empty\&. For empty arrays, we will simply validate that they are indeed empty\&.
+.SS "Wildcard Specifications"
+Keys which contain a part that is exactly \fC_\fP (e\&.g\&. \fCmy/_/key\fP or \fCmy/_\fP) are called wildcard specifications\&. It would be nice to have an 'instantiation' procedure for \fC_\fP similar to the one for arrays\&. However, this is not possible with the current implementation, since there is no way of knowing in advance, which keys matching the globbing expression may be requested via \fCksLookup\fP\&.
+.PP
+Instead \fC_\fP is simply treated like \fC*\fP during matching\&. Afterwards we check that no array elements were matched\&.
+.SH "Specification and Validation"
+.PP
+The basic functionality of the plugin is to just copy (using \fC\fBkeyCopyMeta()\fP\fP so we don't waste memory) the metadata of spec keys to all matching (as described above) keys in other namespaces\&. This ensures that other plugins can do their work as expected, without manually setting metadata on every key\&. If a metakey on a target key already exists with different value, it gets overridden\&.
+.PP
+In addition to the basic functionality, the plugin does some validation itself\&.
+.SS "Required Keys"
+If a spec key has the metakey \fCrequire\fP (the value of this metakey is irrelevant and ignored), we ensure that this key exists in at least one other namespace, i\&.e\&. it can be found using a cascading \fCksLookup\fP\&. If the key cannot be found, this causes an \fCerror\fP\&.
+.SS "Array Size Validation"
+As hinted to above, we validate array sizes\&. If a spec key \fCx/#\fP is given, and the spec key \fCx\fP has the metakey \fCarray/min\fP or \fCarray/max\fP set, we validate the array size (given as metakey \fCarray\fP on \fCx\fP) is within the limits of \fCarray/min\fP and \fCarray/max\fP\&. Both \fCarray/min\fP and \fCarray/max\fP have to be valid array-elements similar to \fCarray\fP\&. If the array size is out of bounds, this causes an \fCerror\fP for \fCkdbSet\fP or a warning for \fCkdbGet\fP\&.
+.PP
+Note: We don't actually validate that the array doesn't contain elements above the given array size\&. This is because it doesn't have anything to do with the specification, whether the array contains additional elements\&. Note also that we only copy metadata onto elements within the bounds of the array size\&.
+.SS "Array Specification and Wildcard Specification (Collision)"
+A collision is when two specification keys exist, one as wildcard specification, the other as array specification, and it is not clear in this case what the correct specification is\&.
+.PP
+.PP
+.nf
+spec:/server/_/name => meta:/description = value1
+
+spec:/server/#/name => meta:/description = value2
+.fi
+.PP
+.PP
+The spec plugin does not know what specification to take in this case, so it appends an \fCerror\fP or \fCwarning\fP (if kdbGet)\&.
+.SH "Error Handling"
+.PP
+In case there is an error or warning, it is appended to the \fCparent key\fP\&.
+.SS "Example"
+.PP
+.nf
+parentKey = "system:/sw/org"
+
+# in case there is an error
+system:/sw/org/error/\&.\&.\&.
+
+# in case there is a warning
+system:/sw/org/warning/\&.\&.\&.
+.fi
+.PP
+.PP
+If there is an error, the \fCspec\fP plugin returns \fCELEKTRA_PLUGIN_STATUS_ERROR\fP, otherwise \fCELEKTRA_PLUGIN_STATUS_SUCCESS\fP\&.
+.SS "Cases"
+.IP "\(bu" 2
+Key is required but does not exist
+.IP "  \(bu" 4
+In this case an \fCerror\fP is appended to the \fCparent key\fP
+.PP
+
+.IP "\(bu" 2
+Key has default but does not exist
+.IP "  \(bu" 4
+In this case the key is created
+.PP
+
+.PP
+.SH "Examples (with shell_recorder)"
+.PP
+This sample is creating keys and specifications for an application named \fCwebserver\fP\&. The \fCwebserver\fP application has a \fCname\fP and a \fCport\fP\&. In case a port is already in use, there is also an array key \fCalternative_ports\fP which is used to find another port for binding \fCwebserver\fP\&.
+.PP
+A specification could look like this (\fCyaml\fP):
+.PP
+.PP
+.nf
+- elektra:
+    mountpoint: user:/tests/sw/org/webserver
+    keys:
+      name:
+        value: web1
+        meta:
+          require: true
+      port:
+        value: 5000
+        meta:
+          default: 5000
+      alternative_ports:
+        keys:
+          0:
+            value: 5001
+            meta:
+              description: This is an alternative port if any other is already bound
+          1:
+            value: 5002
+            meta:
+              description: This is an alternative port if any other is already bound
+        meta:
+          array: 2
+.fi
+.PP
+.PP
+.RS 4
+NOTE: 0 and 1 should be #0 and #1, the array elements\&. 
+.RE
+.PP
+Below is an explanation of each command\&.
+.SS "kdb meta-set spec:/tests/sw/org/webserver/name require true"
+Adding a specification key with a require metakey\&. This \fCmeta-set\fP command should throw error as no key with the name \fC/tests/sw/org/webserver/name\fP exists\&.
+.SS "kdb set user:/tests/sw/org/webserver/name web1"
+Set the value for \fCuser:/tests/sw/org/webserver/name\fP to \fCweb1\fP\&.
+.SS "kdb meta-set spec:/tests/sw/org/webserver/port default 5000"
+Adding a specification key with a default metakey\&. After this \fCmeta-set\fP command a \fCdefault:/tests/sw/org/webserver/port\fP with value \fC5000\fP should exist\&.
+.SS "kdb set user:/tests/sw/org/webserver/alternative_ports/#0 5001"
+Adding an array key \fCuser:/tests/sw/org/webserver/alternative_ports/#0\fP which value is set to \fC5001\fP\&.
+.SS "kdb set user:/tests/sw/org/webserver/alternative_ports/#1 5002"
+Adding an array key \fCuser:/tests/sw/org/webserver/alternative_ports/#1\fP which value is set to \fC5002\fP\&.
+.SS "kdb meta-set user:/tests/sw/org/webserver/alternative_ports array '2'"
+Adding a metakey \fCarray\fP with value \fC2\fP at \fCuser:/tests/sw/org/webserver/alternative_ports\fP\&.
+.SS "kdb meta-set spec:/tests/sw/org/webserver/alternative_ports/# description 'This is an alternative port if any other is already bound'"
+Adding a specification metakey \fCdescription\fP\&. After this \fCmeta-set\fP the all the array entries (\fC#0\fP and \fC#1\fP) should contain the \fCdescription\fP\&.
+.SS "kdb meta-get user:/tests/sw/org/webserver/alternative_ports/#0 description"
+Check if the \fCdescription\fP metakey was copied successfully\&.
+.SS "kdb meta-get user:/tests/sw/org/webserver/alternative_ports/#1 description"
+Check if the \fCdescription\fP metakey was copied successfully\&.
+.PP
+.PP
+.nf
+kdb meta-set spec:/tests/sw/org/webserver/name require true
+# RET: 5
+
+kdb set user:/tests/sw/org/webserver/name web1
+# RET: 0
+
+kdb meta-set spec:/tests/sw/org/webserver/port default 5000
+# RET: 0
+
+kdb set user:/tests/sw/org/webserver/alternative_ports/#0 5001
+#> Create a new key user:/tests/sw/org/webserver/alternative_ports/#0 with string "5001"
+
+kdb set user:/tests/sw/org/webserver/alternative_ports/#1 5002
+#> Create a new key user:/tests/sw/org/webserver/alternative_ports/#1 with string "5002"
+
+kdb meta-set user:/tests/sw/org/webserver/alternative_ports array '2'
+# RET: 0
+
+kdb meta-set spec:/tests/sw/org/webserver/alternative_ports/# description 'This is an alternative port if any other is already bound'
+# RET: 0
+
+kdb meta-get user:/tests/sw/org/webserver/alternative_ports/#0 description
+# STDOUT-REGEX: This is an alternative port if any other is already bound
+
+kdb meta-get user:/tests/sw/org/webserver/alternative_ports/#1 description
+# STDOUT-REGEX: This is an alternative port if any other is already bound
+.fi
+.PP
+.SS "Known limitations"
+.IP "\(bu" 2
+\fC#\fP and \fC_\fP keys do not work on MINGW
+.IP "\(bu" 2
+No defaults for \fC_\fP globbing character 
+.PP
+

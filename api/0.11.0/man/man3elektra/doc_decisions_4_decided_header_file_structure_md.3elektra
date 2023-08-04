@@ -1,0 +1,149 @@
+.TH "doc_decisions_4_decided_header_file_structure_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_4_decided_header_file_structure_md \- Header File Structure 
+ 
+.SH "Problem"
+.PP
+kdb\&.h contains the public API for both libelektra-core and libelektra-kdb\&. It is confusing and makes it hard to see what library a function actually belongs to\&.
+.PP
+The big problem is \fBkdbprivate\&.h\fP\&. It has two main problems:
+.PP
+.IP "1." 4
+It contains stuff from many different libraries\&. I found at least libelektra-core, libelektra-kdb and libelektra-highlevel\&.
+.IP "2." 4
+It contains things that are different levels of 'private'\&.
+.PP
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+Each library should have at least one separate header file:
+.PP
+Without this constraint, we would constantly include things that aren't needed\&. This is inconvenient as it clutters the auto-suggestions of IDEs\&. It also slows down the compile process, since the compiler has to parse everything that was included\&.
+.IP "\(bu" 2
+Non-public API and public API should be kept in separate files
+.IP "\(bu" 2
+Some non-public APIs need to be accessible for testing, such headers should not be packaged/installed
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+There are different categories of 'private':
+.IP "  1." 6
+Some parts are truly private, i\&.e\&., shouldn't be used outside the library that defines them\&. These things are only there because a library was split into multiple \fC\&.c\fP files\&. This includes e\&.g\&., \fCopmphmNew\fP or \fCstruct _BackendData\fP\&.
+.PP
+Symbols belonging to this category should not appear at all in the \fCsymbols\&.map\fP file\&. Headers declaring such symbols must never be installed\&.
+.IP "  2." 6
+Other things are truly private, but must be tested\&. This includes e\&.g\&., most \fCbackends*\fP functions or the \fCelektraKeyName*\fP functions\&.
+.PP
+Symbols belonging to this category should not appear in at all in the \fCsymbols\&.map\fP file\&. Headers declaring such symbols must never be installed\&.
+.IP "  3." 6
+Some things are not part of the public API and will never be part of the public API\&. This includes the \fCstruct _Key\fP and \fCstruct _KeySet\fP, but \fCelektraMalloc\fP and the high-level functions needed for codegen\&. These things will never be public API, because we don't want to make all the guarantees associated with that\&. Nonetheless, they cannot truly be private, because functions in other libraries need access\&. Each of these functions/structs/symbols has a specific 'target audience' that needs access\&.
+.PP
+Symbols belonging to this category should not appear in a public section of the \fCsymbols\&.map\fP file\&. Headers declaring such symbols generally should not be installed\&.
+.IP "  4." 6
+Finally, there things that aren't part of the public API, but may be in future\&. This includes e\&.g\&., \fCksFindHierarchy\fP or \fCelektraReadArrayNumber\fP\&. These functions could be public, but for various reasons are not\&. Maybe they are not well-tested, or maybe we just don't want to commit to the function yet\&.
+.PP
+Symbols belonging to this category should not appear in a public section of the \fCsymbols\&.map\fP file\&. Headers declaring such symbols can be installed, if symbols are in a kind of experimental pre-release cycle\&. If there is no concrete plan to make symbols public, the headers should, however, not be installed\&.
+.PP
+
+.PP
+.SH "Considered Alternatives"
+.PP
+.SH "Decision"
+.PP
+The decision is split into 4 subsections 'Libraries', 'Plugins', 'Tools' and 'Tests', because the different parts of Elektra have different requirements\&.
+.SS "Libraries"
+A library can be monolithic or modularized\&. Monolithic libraries should be small and bigger libraries with large APIs should be modularized\&.
+.PP
+A monolithic library \fCfoo\fP may have these headers (covering categories 3 & 4 from above):
+.PP
+.IP "\(bu" 2
+\fCsrc/include/elektra/foo\&.h\fP: Contains the full public API of \fClibelektra-foo\fP\&. Will be installed as \fC<include-root>/elektra/foo\&.h\fP\&.
+.IP "\(bu" 2
+\fCsrc/include/internal/foo\&.h\fP: Contains the internal API of \fClibelektra-foo\fP\&. Will not be installed\&.
+.PP
+.PP
+A modularized library \fCfoo\fP may have these headers (covering categories 3 & 4 from above):
+.PP
+.IP "\(bu" 2
+\fCsrc/include/elektra/foo\&.h\fP: Declares the public API of \fClibelektra-foo\fP, by including \fC#include <elektra/foo/*\&.h>\fP\&. Will be installed as \fC<include-root>/elektra/foo/public\&.h\fP\&.
+.PP
+Such a header may only contain \fC#include <elektra/foo/*\&.h>\fP lines\&.
+.IP "\(bu" 2
+\fCsrc/include/elektra/foo/*\&.h\fP: Additional public API header of \fClibelektra-foo\fP\&. Will be installed as \fC<include-root>/elektra/foo/*\&.h\fP\&.
+.PP
+Any one \fCinstalled\&.h\fP of these installed headers must be included from \fCsrc/include/elektra/foo\&.h\fP via a line \fC#include <elektra/foo/installed\&.h>\fP\&.
+.IP "\(bu" 2
+\fCsrc/include/internal/foo\&.h\fP: Declares the internal API of \fClibelektra-foo\fP, by including \fC#include <internal/foo/*\&.h>\fP\&. Will not be installed\&.
+.PP
+Such a header may only contain \fC#include <internal/foo/*\&.h>\fP lines\&.
+.IP "\(bu" 2
+\fCsrc/include/internal/foo/*\&.h\fP: Additional internal header of \fClibelektra-foo\fP\&. Will not be installed\&.
+.PP
+Any one \fCinstalled\&.h\fP of these installed headers must be included from \fCsrc/include/internal/foo\&.h\fP via a line \fC#include <internal/foo/installed\&.h>\fP\&.
+.PP
+.PP
+Additionally, all libraries may also have private headers:
+.PP
+.IP "\(bu" 2
+\fCsrc/lib/foo/**/*\&.h\fP: Additional headers may be present\&. These headers may only be used by other files within \fCsrc/lib/foo\fP, according to the rules in \fBIncluding Headers\fP\&.
+.PP
+.SS "Plugins"
+Plugins do not declare their API via header files\&. Their headers are never installed and can be named any way the developer wants\&.
+.PP
+Importantly, however, headers belonging to plugins must not be used outside the plugin\&.
+.SS "Tools"
+Tools do not have a C API, so their headers are also never installed\&. Consequently, there are no naming rules for header files belonging to tools\&.
+.PP
+Just like with plugins, the headers belonging to tools must not be used elsewhere\&.
+.SS "Tests"
+For category 2 from above (private but needs to be tested), one of the following should be done:
+.PP
+.IP "1." 4
+Declare functions as \fCstatic\fP in a \fC\&.c\fP file and \fC#include ''\fP this file from the test\&.
+.IP "2." 4
+Add a private non-installed header (e\&.g\&., \fCsrc/lib/foo/testapi\&.h\fP) that declares the API that needs testing, \fC#include ''\fP that and compile the test sources together with the \fC\&.o\fP files from the library (static linking)\&.
+.PP
+.PP
+If a symbol is needed in only one file and for tests, option 1 should be preferred\&. For symbols that are used in multiple files, a header needs to exist anyway\&. In any case, these unit tests should not be installed and should statically link the library into the test executable\&. This way we don't pollute our \fCsymbols\&.map\fP files and keep the number of exported symbols down\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+This structure makes the \fC#include\fPs simple and works nicely with our directory structure\&.
+.IP "\(bu" 2
+Having a uniform naming convention simplifies things, both for developers writing Elektra and those using Elektra\&.
+.IP "\(bu" 2
+Requiring libraries must either be fully modularized (main headers are only \fC#includes\fP) or completely monolithic, avoids the situation where a library has some parts in \fCfoo\&.h\fP and other parts in extra headers\&. This is bad, because it encourages users to simply include \fCfoo\&.h\fP, which defeats the point of modularized headers\&.
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+The location of a header file within the source tree determines what API it contains:
+.IP "  \(bu" 4
+Public: Will be installed, must be stable, can be used anywhere
+.IP "  \(bu" 4
+Internal: Will not be installed, doesn't have to be stable, can be used anywhere, but public headers
+.IP "  \(bu" 4
+Private: Will not be installed, doesn't have to be stable, can only be used in the same library
+.PP
+
+.IP "\(bu" 2
+Some libraries are currently neither fully modularized nor fully monolithic\&. The headers for these libraries must be restructured\&.
+.IP "\(bu" 2
+There is no room for experimental APIs, i\&.e\&., headers that should be installed, but are not (yet) stable\&. Currently, we don't plan to have any such APIs in the 1\&.0 release\&. The plan is that anything that is not internal/private in 1\&.0 is stable\&. If the need arises to introduce experimental APIs, a new decision must be reached about this\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBIncluding Headers\fP
+.IP "\(bu" 2
+\fBLibrary Directory Structure\fP
+.PP
+.SH "Notes"
+.PP
+.IP "\(bu" 2
+The Linux kernel also has many header files with many cross-dependencies\&. Recently people started to look into the effect of this 'dependency hell' on compile-time (see \fCLKML\fP)\&. 
+.PP
+

@@ -1,0 +1,69 @@
+.TH "doc_decisions_3_decided_elixir_bindings_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_3_decided_elixir_bindings_md \- Elixir Bindings 
+ 
+.SH "Problem"
+.PP
+When creating Elixir bindings one needs a way to use some kind of foreign function interface\&. In Erlang (which is the basis for Elixir) such a foreign function interface exists in the form of NIFs (native implemented functions)\&. The question is how this NIF interface should be implemented\&.
+.SH "Constraints"
+.PP
+.IP "1." 4
+Elektra's C API is given\&.
+.IP "2." 4
+The implementation should be completed in a given time frame of around 20 to 40 person-hours\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "1." 4
+The compatibility of the Elixir bindings is not very important\&.
+.PP
+.SH "Solutions"
+.PP
+.SS "By hand"
+Implement the NIFs by hand\&. That is, every function of the Elektra C API which one wishes to expose to the Elixir binding has to be explicitly implemented as a NIF\&. The big disadvantage is, of course, that this process is error-prone\&. Furthermore, any change in the C API has to be manually carried over to the NIF\&.
+.SS "Use Nifty code generation tool"
+Use the existing code generation tool \fCNifty\fP\&.
+.PP
+Reasons for not choosing this approach are:
+.PP
+.IP "\(bu" 2
+Installation process required several patches of Nifty\&.
+.IP "\(bu" 2
+Resource management is not that supplied by the Erlang NIF library but a custom one\&.
+.PP
+.SS "Write own code generation tool"
+Write a custom generation tool\&.
+.PP
+In principle one should be able to take a C header file and convert this to a NIF in an automatic fashion\&.
+.PP
+Solving this problem in general clearly would be a daunting task\&. However, when restricting oneself to the use case for creating an interface for, say, Elektra's KDB this might actually have been feasible\&.
+.PP
+The main difference to Nifty would be that one could adopt the memory management tools provided by the Erlang NIF library directly\&. Furthermore, it would be possible to write an improved interface for the types, e\&.g\&. binary and string\&.
+.PP
+The main reson for not choosing this approach were time constraints\&.
+.SH "Decision"
+.PP
+The chosen approach was to use 'Alternative A', i\&.e\&., to implement the NIFs by hand\&.
+.SH "Rationale"
+.PP
+The main reason for this choice were time constraints\&.
+.PP
+Since I have assumed that the compatiblity of the Elixir bindings is not very important, it is acceptable if future changes break these bindings\&.
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+Every incompatible change in the C API needs manual changes in the Elixir binding\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fCGitHub PR: Elixir Bindings\fP
+.PP
+.SH "Notes"
+.PP
+.IP "\(bu" 2
+If there were a guarantee that the C API does not change, then the chosen approach would be unproblematic\&. 
+.PP
+

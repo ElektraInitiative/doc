@@ -1,0 +1,509 @@
+\label{doc_decisions_6_implemented_copy_on_write_md_md_doc_decisions_6_implemented_copy_on_write}%
+\Hypertarget{doc_decisions_6_implemented_copy_on_write_md_md_doc_decisions_6_implemented_copy_on_write}%
+ \hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2291}{}\doxysection{Problem}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2291}
+One of Elektra\textquotesingle{}s core goals is low memory usage. Currently, there are many places within Elektra where keys and keysets are duplicated and copied around. Most of those copied keys are never modified, but are required to be detached from the lifetime of the original instance. We want to introduce an in-\/memory copy-\/on-\/write mechanism to lower our memory usage.
+
+In the near future, Elektra will also gain facilities for \mbox{\hyperlink{doc_decisions_3_in_review_change_tracking_md}{change tracking}} and session recording, both of which will potentially again duplicate keys. There are also aspirations to create a new, simple \mbox{\hyperlink{doc_decisions_4_decided_internal_cache_md}{internal cache}} that would also benefit from a copy-\/on-\/write mechanism.\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2292}{}\doxysection{Constraints}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2292}
+
+\begin{DoxyEnumerate}
+\item The lifetime of a {\ttfamily Key} and a {\ttfamily Key\+Set} must be unaffected by copy-\/on-\/write.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2293}{}\doxysection{Assumptions}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2293}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2294}{}\doxysection{Considered Alternatives}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2294}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2295}{}\doxysubsection{$<$tt$>$mmapstorage$<$/tt$>$-\/like copy-\/on-\/write implementation}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2295}
+There is already some kind of copy-\/on-\/write semantics within {\ttfamily libelektra-\/core} to support the {\ttfamily mmapstorage} plugin. We can build on this and add a more generic copy-\/on-\/write to it.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * key = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}dir:/something"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}my value"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga505575ebef060066984fe0f590081e37}{keyCopy}} (key\_dup, key, ELEKTRA\_CP\_COW);}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(key) == \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(key\_dup));}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (key\_dup, \textcolor{stringliteral}{"{}other value"{}}); \textcolor{comment}{// COW done here}}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(key) != \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(key\_dup));}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyname_ga7699091610e7f3f43d2949514a4b35d9}{keySetName}} (key\_dup, \textcolor{stringliteral}{"{}dir:/valid"{}}) == -\/1); \textcolor{comment}{// must fail, as we have a COW key}}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(key) == \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}}(key\_dup)); \textcolor{comment}{// stays always valid}}
+
+\end{DoxyCode}
+
+
+This is already implemented for the MMAP cache, so the implementation should be straightforward\+: Do the same COW duplications as done for MMAP but with a different flag.
+
+For the metadata, however, also COW Key\+Sets might be needed (at least with the current API). Example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga505575ebef060066984fe0f590081e37}{keyCopy}} (cow, key, ELEKTRA\_CP\_COW);}
+\DoxyCodeLine{KeySet * cowMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (cow);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (cowMeta, \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/whatever"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}abc"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{ksRemoveByName (cowMeta, \textcolor{stringliteral}{"{}meta:/type"{}});}
+
+\end{DoxyCode}
+
+
+{\bfseries{Pros\+:}}
+
+
+\begin{DoxyItemize}
+\item Elektra doesn\textquotesingle{}t require MMAP
+\end{DoxyItemize}
+
+{\bfseries{Cons\+:}}
+
+
+\begin{DoxyItemize}
+\item Lifetime of a copied COW key MUST be less than the key it was copied from. We can not track how many keys point to the same data and name this way, so we can only free data and name if the key does not have the COW flag. If the original key gets deleted, using a COW key that points to the same data and name will lead to corrupt data. The same is true for updating values of the original key.
+
+This is only problematic if we want to use COW for keys outside of {\ttfamily KDB}. If it is only for use within {\ttfamily KDB}, especially for usage as internal cache and in change tracking, we could always guarantee that the original keys are going to last as long as the {\ttfamily KDB} instance. However, we need to document for the users of Elektra that keys returned from {\ttfamily kdb\+Get} are only valid until {\ttfamily kdb\+Close}. If they want to continue using them afterwards, they\textquotesingle{}d have to deep copy them.
+
+Triggering the delete problem\+:
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * originalKey;}
+\DoxyCodeLine{Key * copiedKey;}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga505575ebef060066984fe0f590081e37}{keyCopy}} (copiedKey, originalKey, ELEKTRA\_CP\_COW);}
+\DoxyCodeLine{}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (copiedKey) == \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (originalKey));}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (copiedKey) == \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (originalKey));}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (originalKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (copiedKey); \textcolor{comment}{// Error! Original value has been deleted. Pointer to data in copiedKey points to freed memory}}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (copiedKey);   \textcolor{comment}{// Error! Original name has been deleted.}}
+
+\end{DoxyCode}
+
+
+Triggering the update problem\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * originalKey;}
+\DoxyCodeLine{Key * copiedKey;}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_ga505575ebef060066984fe0f590081e37}{keyCopy}} (copiedKey, originalKey, ELEKTRA\_CP\_COW);}
+\DoxyCodeLine{}
+\DoxyCodeLine{assert (\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(copiedKey) == \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(originalKey));}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (originalKey, \textcolor{stringliteral}{"{}new value!"{}});}
+\DoxyCodeLine{}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}}(copiedKey); \textcolor{comment}{// Error! Original value has been deleted. Pointer to data in copiedKey points to potentially freed memory}}
+
+\end{DoxyCode}
+
+
+The same problems in principle exist for {\ttfamily mmapstorage} where {\ttfamily kdb\+Set} frees ({\ttfamily munmap}) the keyset. We can still let users access the flag {\ttfamily ELEKTRA\+\_\+\+CP\+\_\+\+COW}, we just need to clearly document what is forbidden. Maybe set the {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+RO\+\_\+\+VALUE} on the original key, so that the API itself detects the error. There is, however, no flag for {\ttfamily key\+Del} that we could set.\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2296}{}\doxysubsubsection{Changes to $<$tt$>$libelektra-\/core$<$/tt$>$}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2296}
+The {\ttfamily struct \+\_\+\+Key} will be extended with two more pointers, if we want to eliminate the lifetime problem\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily struct \+\_\+\+Key $\ast$ orig\+Data}\+: points to the key containing the referenced data
+\item {\ttfamily struct \+\_\+\+Key $\ast$ orig\+Name}\+: points to the key containing the referenced name
+\end{DoxyItemize}
+
+Those two pointers are needed for memory management. Each referenced key will also have its reference counter increased. This way, an original key can be {\ttfamily \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{key\+Del()}}}d without impacting the copied keys.
+
+Three new key flags will be added\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+VALUE}\+: the value points to a value of another key
+\item {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+NAME}\+: the name points to the name of another key
+\item {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+META}\+: metakeys are copy-\/on-\/write
+\end{DoxyItemize}
+
+A new copy flag will be added\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily KEY\+\_\+\+CP\+\_\+\+COW}\+: instructs {\ttfamily key\+Copy} to copy whatever it should copy as copy-\/on-\/write. This will NOT be part of {\ttfamily KEY\+\_\+\+CP\+\_\+\+ALL}. We don\textquotesingle{}t want developers outside of Elektra to accidentally use this.
+\end{DoxyItemize}
+
+If {\ttfamily \mbox{\hyperlink{group__key_ga505575ebef060066984fe0f590081e37}{key\+Copy()}}} is instructed to do a copy-\/on-\/write copy\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily dest-\/$>$data.\+v} and {\ttfamily dest-\/$>$data.\+c} point to the exact same location as in the source. {\ttfamily dest-\/$>$data\+Size} is set to the same value as {\ttfamily source-\/$>$data\+Size}. {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+VALUE} is set on {\ttfamily dest-\/$>$flags}. {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+RO\+\_\+\+VALUE} is set on {\ttfamily source-\/$>$flags}. {\ttfamily dest-\/$>$original\+Data} is set to {\ttfamily source}. {\ttfamily source-\/$>$refs} is incremented.
+\item {\ttfamily dest-\/$>$key} points to {\ttfamily source-\/$>$key}. {\ttfamily dest-\/$>$key\+Size} is set to the same value as {\ttfamily source-\/$>$key\+Size}. {\ttfamily dest-\/$>$ukey} points to {\ttfamily source-\/$>$ukey}. {\ttfamily dest-\/$>$key\+USize} is set to the same value as {\ttfamily source-\/$>$key\+USize}. {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+NAME} is set on {\ttfamily dest-\/$>$flags}. {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+RO\+\_\+\+NAME} is set on {\ttfamily source-\/$>$flags}. {\ttfamily dest-\/$>$original\+Name} is set to {\ttfamily source}. {\ttfamily source-\/$>$refs} is incremented.
+\item {\ttfamily dest-\/$>$meta} points to a {\bfseries{new}} keyset. The keys in {\ttfamily dest-\/$>$meta} are also copied with {\ttfamily KEY\+\_\+\+CP\+\_\+\+COW}, i.\+e. they are also copy-\/on-\/write keys. {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+META} is set on {\ttfamily dest-\/$>$flags}. {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+RO\+\_\+\+META} is set on {\ttfamily source-\/$>$flags}.
+\end{DoxyItemize}
+
+The source key will remain as a read-\/only key. This constraint is needed, because the source key is the only key we can free the resources on. If the data or the name would change in the source key, all COW-\/copied keys would suddenly have another value. For the same reason, the source key will need to live longer than all COW-\/copied keys from it.
+
+A {\ttfamily \mbox{\hyperlink{group__key_ga505575ebef060066984fe0f590081e37}{key\+Copy()}}} without {\ttfamily KEY\+\_\+\+CP\+\_\+\+COW} from an COW key will create a deep copy of the key. These keys are \char`\"{}normal\char`\"{} non-\/\+COW keys and can live on their own.
+
+Every {\ttfamily key$\ast$()} method that modifies data on a COW-\/copied key will need to allocate new memory for this data and remove the {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+DATA} flag. Every {\ttfamily key$\ast$()} method that modifies the name of a COW-\/copied key will need to allocate new memory for this name and remove the {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+COW\+\_\+\+NAME} flag. Every {\ttfamily key$\ast$()} method that modifies metadata needs to make sure that the same happens for metakeys.
+
+Keysets are not copy-\/on-\/write. A {\ttfamily ks\+Deep\+Dup()} of a keyset with COW keys will create a keyset with deep-\/copied non-\/\+COW keys. Internally we may need a {\ttfamily ks\+Cow\+Dup()} function to create a keyset with copy-\/on-\/write keys from another keyset. Whether this function will be part of the public API is a point for discussion.\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2297}{}\doxysubsection{Full-\/blown copy-\/on-\/write implementation}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2297}
+Make Elektra\textquotesingle{}s {\ttfamily Key} and {\ttfamily Key\+Set} data structures copy-\/on-\/write. This requires some major refactoring of code within {\ttfamily libelektra-\/core}. Code that does only interact with the data structures via the public {\ttfamily libelektra-\/core} API should not notice any differences. The {\ttfamily mmapstorage} plugin needs to be updated.
+
+Unlike \char`\"{}mmapstorage-\/like COW implementation\char`\"{} key\+Dup, key\+Copy, ks\+Copy and ks\+Dup will always use COW. {\ttfamily ks\+Copy} and {\ttfamily ks\+Dup} is needed for (de)duplication of metadata. Furthermore, the API has better usability if Key and Key\+Set behave the same, especially for bindings where duplication might happen implicitly.\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2298}{}\doxysubsubsection{Changes to $<$tt$>$\+Key$<$/tt$>$}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2298}
+For the {\ttfamily Key}, we need to extract everything for the data and name into their own structs. This is done for memory-\/management reasons, as we need to track how many keys point to the same data and/or name.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_KeyData \{}
+\DoxyCodeLine{    \textcolor{keyword}{union }\{}
+\DoxyCodeLine{        \textcolor{keywordtype}{char} * c;}
+\DoxyCodeLine{        \textcolor{keywordtype}{void} * v;}
+\DoxyCodeLine{    \} data;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keywordtype}{size\_t} dataSize;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    uint16\_t refs;}
+\DoxyCodeLine{\};}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_KeyName \{}
+\DoxyCodeLine{    \textcolor{keywordtype}{char} * key;}
+\DoxyCodeLine{    \textcolor{keywordtype}{size\_t} keySize;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keywordtype}{char} * ukey;}
+\DoxyCodeLine{    \textcolor{keywordtype}{size\_t} keyUSize;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    uint16\_t refs;}
+\DoxyCodeLine{\};}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_Key \{}
+\DoxyCodeLine{    \textcolor{keyword}{struct }\_KeyData * keyData;}
+\DoxyCodeLine{    \textcolor{keyword}{struct }\_KeyName * \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}};}
+\DoxyCodeLine{    KeySet * meta;}
+\DoxyCodeLine{    keyflag\_t flags;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    uint16\_t refs;}
+\DoxyCodeLine{\};}
+
+\end{DoxyCode}
+
+
+@mpranj\textquotesingle{}s thoughts regarding moving name and data to separate structures\+:
+
+\begin{quote}
+1. If they \mbox{[}key name and data\mbox{]} are a separate entity, {\ttfamily mmapstorage} will need a flag once again for each of those. This is used to mark whether the data is in an mmap region or not. (or we find some bit somewhere that we can steal for this purpose)
+
+
+\begin{DoxyEnumerate}
+\item Adding more indirections is probably not going to help performance. (I understand that we save memory here) 
+\end{DoxyEnumerate}\end{quote}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2299}{}\doxysubsubsection{Changes to $<$tt$>$\+Key\+Set$<$/tt$>$}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2299}
+For {\ttfamily Key\+Set}, we need to split out everything to do with the stored keys into a separate datastructure. This includes the array itself, the sizes and the hashmap.
+
+Why don\textquotesingle{}t we just add the number of references to the original {\ttfamily Key\+Set}?
+
+
+\begin{DoxyItemize}
+\item If we delete a copied Key\+Set, we don\textquotesingle{}t know which Key\+Set is the original, so we couldn\textquotesingle{}t decrement the counter. This could be dealt with storing a pointer to the original Key\+Set.
+\item If the original Key\+Set is deleted, we don\textquotesingle{}t know which other Key\+Sets point at the data, so updating their count would not work
+\item In similar fashion, if you update the original Key\+Set, the copied Key\+Sets will also contain the new data (if the memory address does not change). This is unexpected behavior.
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_KeySetData \{}
+\DoxyCodeLine{    \textcolor{keyword}{struct }\_Key ** array;}
+\DoxyCodeLine{    \textcolor{keywordtype}{size\_t} size;  }
+\DoxyCodeLine{    \textcolor{keywordtype}{size\_t} alloc; }
+\DoxyCodeLine{    \mbox{\hyperlink{structOpmphm}{Opmphm}} * opmphm;}
+\DoxyCodeLine{    OpmphmPredictor * \mbox{\hyperlink{opmphmpredictor_8c_a6dab3e7c921f8adc655bd893cfbfb4cb}{opmphmPredictor}};}
+\DoxyCodeLine{}
+\DoxyCodeLine{    uint16\_t refs; }
+\DoxyCodeLine{\};}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_KeySet \{}
+\DoxyCodeLine{    \textcolor{keyword}{struct }\_KeySetData * data;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    ksflag\_t flags;}
+\DoxyCodeLine{}
+\DoxyCodeLine{    uint16\_t refs; }
+\DoxyCodeLine{\};}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2300}{}\doxysubsubsection{Reference Counting}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2300}
+We need reference counting for the internal COW datastructures. We do it the same way reference counting currently works for {\ttfamily Key} and {\ttfamily Key\+Set}. One tweak though is that the refcount should never be 0, as this does not make sense for internal datastructures.
+
+This means we always increment the refcount after creation and always decrement before deletion, so that the refcount is never zero. An example implementation is shown below\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keywordtype}{void} keySetValue(Key * key, \textcolor{keywordtype}{void} * value, \textcolor{keywordtype}{size\_t} size) \{}
+\DoxyCodeLine{  \textcolor{comment}{// [...] removal of current value from key}}
+\DoxyCodeLine{  \textcolor{keyword}{struct }\_KeyData data = keyDataNew (value, size);}
+\DoxyCodeLine{  keyDataIncRef (data);}
+\DoxyCodeLine{  key-\/>data = data;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{static} \textcolor{keywordtype}{void} \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}}(Key * key) \{}
+\DoxyCodeLine{  keyDataDecRef (key-\/>data);}
+\DoxyCodeLine{  keyDataDel (key-\/>data);}
+\DoxyCodeLine{  \textcolor{comment}{// [...] other cleanup}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2301}{}\doxysubsubsection{Variation 1 -\/ Rc\+Buffer}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2301}
+Instead of using different structs for {\ttfamily \+\_\+\+Key\+Data}, and {\ttfamily \+\_\+\+Key\+Name} use a more generic struct for reference counting. This would avoid some duplication on the reference counting code for the key. Keysets will still have their own data struct, as it contains more than just a pointer and a size.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
+\DoxyCodeLine{        \textcolor{keywordtype}{void} * data;}
+\DoxyCodeLine{        \textcolor{keywordtype}{size\_t} size;}
+\DoxyCodeLine{        uint16\_t refs;}
+\DoxyCodeLine{\} RcBuffer;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_Key \{}
+\DoxyCodeLine{        RcBuffer * uname;}
+\DoxyCodeLine{        RcBuffer * ename; \textcolor{comment}{// will be removed soon}}
+\DoxyCodeLine{        RcBuffer * value;}
+\DoxyCodeLine{}
+\DoxyCodeLine{        KeySet * meta;}
+\DoxyCodeLine{        keyflag\_t flags;}
+\DoxyCodeLine{        uint16\_t refs;}
+\DoxyCodeLine{\};}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2302}{}\doxysubsubsection{Possible Edge Cases}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2302}
+In general, it should be possible to always do copy-\/on-\/write. From a users perspective, copy-\/on-\/write copies of a key (and a keyset) should behave the same. There is, however, one edge case\+: the user modifying the value of a key directly. This is shown in the following example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * key;}
+\DoxyCodeLine{\textcolor{keyword}{struct }foo myFoo = \{}
+\DoxyCodeLine{  .x = 0}
+\DoxyCodeLine{\};}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_gaa50a5358fd328d373a45f395fa1b99e7}{keySetBinary}} (key, \&myFoo, \textcolor{keyword}{sizeof}(myFoo));}
+\DoxyCodeLine{}
+\DoxyCodeLine{Key * dup = keyDup (key);}
+\DoxyCodeLine{}
+\DoxyCodeLine{((\textcolor{keyword}{struct }foo *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (key))-\/>x = 1;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// with COW}}
+\DoxyCodeLine{assert (((\textcolor{keyword}{struct} foo *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (dup))-\/>x == 1);}
+\DoxyCodeLine{\textcolor{comment}{// without COW}}
+\DoxyCodeLine{assert (((\textcolor{keyword}{struct} foo *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (dup))-\/>x == 0);}
+
+\end{DoxyCode}
+
+
+This edge case can be accounted for by providing a private function {\ttfamily key\+Detach}, that forces that the key has its very own copy of the data.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{((\textcolor{keyword}{struct }foo *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (keyDetach(key)))-\/>x = 1;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// with COW}}
+\DoxyCodeLine{assert (((\textcolor{keyword}{struct} foo *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (dup))-\/>x == 0);}
+\DoxyCodeLine{\textcolor{comment}{// without COW}}
+\DoxyCodeLine{assert (((\textcolor{keyword}{struct} foo *)\mbox{\hyperlink{group__keyvalue_ga6f29609c5da53c6dc26a98678d5752af}{keyValue}} (dup))-\/>x == 0);}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2303}{}\doxysubsubsection{Compatibility with $<$tt$>$mmapstorage$<$/tt$>$ plugin}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2303}
+If we do change the internal data structures it makes much more sense to fix the cache and mmapstorage afterwards (or in tandem). The most important constraint for mmap is that any structure (or bytes) that is an allocation unit (e.\+g. we malloc() the bytes needed for Key\+Set struct, so this is an unit) needs to have a flag to determine whether those bytes are actually malloc()ed or they are mmap()ed. Thus all the newly added structures as proposed will need some kind of an mmap flag.
+
+{\ttfamily mmapstorage} only calls {\ttfamily munmap} in some error cases, so basically {\ttfamily munmap} is almost never done and the keyset is never invalidated.
+
+During {\ttfamily kdb\+Set} the storage plugins always write to a temp file, due to how the resolver works. We also don\textquotesingle{}t need to mmap the temp file here\+: when doing {\ttfamily kdb\+Set} we already have the {\ttfamily Key\+Set} at hand, mmap-\/ing it is not needed at all, because we have the data. We just want to update the cache file. The {\ttfamily mmap}/{\ttfamily munmap} in kdb\+Set are just so we can write the Key\+Set to a file in our format. ({\ttfamily mmap()} is just simpler, but we could also {\ttfamily malloc()} a region and then {\ttfamily fwrite()} the stuff)
+
+Therefore the only case where we return a {\ttfamily mmap()}ed Key\+Set should be in {\ttfamily kdb\+Get}.
+
+When the {\ttfamily mmapstorage} was designed/implemented, not all structures had refcounters, so there was no way to know when a {\ttfamily munmap} is safe. This was simply out of scope at that point in time.
+
+If refcounting is now implemented for all structures, we might be able to properly {\ttfamily munmap} in future.
+
+Two ideas to deal with this in conjunction with our reference counting implementation\+:
+
+If we have {\ttfamily free} function-\/pointer along side the refcount, {\ttfamily mmapstorage} (and also other plugins with different allocators) could set it to their own implementation. To mimic the current behavior of {\ttfamily mmapstorage} this would point to a no-\/op function. However, we could also improve things and keep track of when all data has been freed and only then call {\ttfamily munmap}.
+
+Another simpler way to avoid the flag, which doesn\textquotesingle{}t really allow for further improvements, would be using the refcount. {\ttfamily mmapstorage} could set the refcount to a value that is otherwise illegal. This would allow us to detect the keys. Depending on the refcount implementation good values would probably be 0 or UINT16\+\_\+\+MAX. The special value would have to ignored by all refcounting functions (inc, dec, del) and turn the functions into no-\/ops.\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2304}{}\doxysubsubsection{Possible Optimizations}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2304}
+
+\begin{DoxyItemize}
+\item This approach requires more allocations than previously. We have not fully benchmarked whether this is a big issue. One optimization could be an expanding \char`\"{}pool\char`\"{} of {\ttfamily \+\_\+\+Key\+Set\+Data}, {\ttfamily \+\_\+\+Key\+Data} and {\ttfamily \+\_\+\+Key\+Name}. We could then allocate multiple of them at the same time, and borrow and give back instance from and to the pool.
+\item Embed the {\ttfamily Key\+Set $\ast$ meta} directly in {\ttfamily struct \+\_\+\+Key}. This may help with performance in cases we need metadata. It will, however, increase memory usage. This should only be considered after some benchmarking shows this is a real issue.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2305}{}\doxysection{Memory comparison of COW approaches}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2305}
+The following calculations are based on the AMD64 platform. All results are in bytes unless stated otherwise.
+
+Example key\+: {\ttfamily user\+:/hosts/ipv6/example.com = 2606\+:2800\+:220\+:1\+:248\+:1893\+:25c8\+:1946}
+
+We want to measure the following properties for the key\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key\+: size of a simple malloc of the key struct
+\item Empty Key (with name)\+: size of simple malloc of all structs, so that the key has a name, but without including the size of the name
+\item Empty Key (with name + data)\+: size of a simple malloc of all structs, so that the key has a name and data, but without including the size of the name or data
+\item Single Example Key\+: a single instance of the key defined above
+\item Example Key + 1 Duplicate\+: two instances of the key defined above, one of them is a duplication of the first
+\item Example Key + 2 Duplicates\+: three instances of the key defined above, two of them are duplications of the first
+\end{DoxyItemize}
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{7}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Approach   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name + data)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Single Example Key   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key + 1 Duplicate   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key + 2 Duplicates    }\\\cline{1-7}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Approach   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name + data)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Single Example Key   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key + 1 Duplicate   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key + 2 Duplicates    }\\\cline{1-7}
+\endhead
+Current Implementation   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 153   &\PBS\raggedleft 306   &\PBS\raggedleft 459    \\\cline{1-7}
+mmapstorage-\/like COW implementation (without additional pointers)   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 153   &\PBS\raggedleft 217   &\PBS\raggedleft 281    \\\cline{1-7}
+mmapstorage-\/like COW implementation (with additional pointers)   &\PBS\raggedleft 80   &\PBS\raggedleft 80   &\PBS\raggedleft 80   &\PBS\raggedleft 169   &\PBS\raggedleft 249   &\PBS\raggedleft 329    \\\cline{1-7}
+Full-\/blown COW implementation   &\PBS\raggedleft 32   &\PBS\raggedleft 72   &\PBS\raggedleft 96   &\PBS\raggedleft 185   &\PBS\raggedleft 217   &\PBS\raggedleft 249    \\\cline{1-7}
+Full-\/blown COW implementation -\/ Variant 1 (Rc\+Buffer)   &\PBS\raggedleft 40   &\PBS\raggedleft 88   &\PBS\raggedleft 112   &\PBS\raggedleft 201   &\PBS\raggedleft 241   &\PBS\raggedleft 281   \\\cline{1-7}
+\end{longtabu}
+
+
+We want to measure the following properties for the keyset\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key\+Set\+: size of a simple malloc of the keyset struct
+\item Empty Key\+Set (with data)\+: size of a simple malloc of all structs
+\item Example Key\+Set\+: size of a keyset with 15 keys + NULL byte
+\item Example Key\+Set + 1 Duplicate\+: two instance of Example Key\+Set, one of them is a duplication
+\item Example Key\+Set + 2 Duplicates\+: three instances of Example Key\+Set, two of them are duplications
+\end{DoxyItemize}
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{6}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Approach   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key\+Set   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key\+Set (with data)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key\+Set   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key\+Set + 1 Duplicate   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key\+Set + 2 Duplicates    }\\\cline{1-6}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Approach   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key\+Set   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key\+Set (with data)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key\+Set   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key\+Set + 1 Duplicate   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Example Key\+Set + 2 Duplicates    }\\\cline{1-6}
+\endhead
+Current Implementation   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 192   &\PBS\raggedleft 384   &\PBS\raggedleft 576    \\\cline{1-6}
+mmapstorage-\/like COW implementation (without additional pointers)   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 192   &\PBS\raggedleft 384   &\PBS\raggedleft 576    \\\cline{1-6}
+mmapstorage-\/like COW implementation (with additional pointers)   &\PBS\raggedleft 64   &\PBS\raggedleft 64   &\PBS\raggedleft 192   &\PBS\raggedleft 384   &\PBS\raggedleft 576    \\\cline{1-6}
+Full-\/blown COW implementation   &\PBS\raggedleft 16   &\PBS\raggedleft 64   &\PBS\raggedleft 192   &\PBS\raggedleft 208   &\PBS\raggedleft 224   \\\cline{1-6}
+\end{longtabu}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2306}{}\doxysubsection{Calculations}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2306}
+Raw data size\+:
+
+
+\begin{DoxyItemize}
+\item keyname \+: {\ttfamily 28 + 1} = {\ttfamily 29}
+\item unescaped keyname (measured)\+: {\ttfamily 25}
+\item data\+: {\ttfamily 34 + 1} = {\ttfamily 35}
+\end{DoxyItemize}
+
+Current Implementation\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 64}
+\item Empty Key (with name)\+: {\ttfamily 64}
+\item Empty Key (with name + data)\+: {\ttfamily 64}
+\item Single Example Key = {\ttfamily Empty Key + keyname + unescaped keyname + data} = {\ttfamily 64 + 29 + 25 + 35} = {\ttfamily 153}
+\item Single Example Key + 1 Duplicate = {\ttfamily Single Example Key $\ast$ 2} = {\ttfamily 153 $\ast$ 2} = {\ttfamily 306}
+\item Single Example Key + 2 Duplicates = {\ttfamily Single Example Key $\ast$ 3} = {\ttfamily 153 $\ast$ 3} = {\ttfamily 459}
+\item Empty Key\+Set \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 64}
+\item Empty Key\+Set (with data)\+: {\ttfamily 64}
+\item Example Key\+Set\+: {\ttfamily Empty Key\+Set (with data) + 16 $\ast$ pointer to keys} = {\ttfamily 64 + 16 $\ast$ 8} = {\ttfamily 192}
+\item Example Key\+Set + 1 Duplicate\+: {\ttfamily Example Key\+Set $\ast$ 2} = {\ttfamily 192 $\ast$ 2} = {\ttfamily 384}
+\item Example Key\+Set + 2 Duplicates\+: {\ttfamily Example Key\+Set $\ast$ 3} = {\ttfamily 192 $\ast$ 3} = {\ttfamily 576}
+\end{DoxyItemize}
+
+mmapstorage-\/like COW implementation (without additional pointers)\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 64}
+\item Empty Key (with name)\+: {\ttfamily 64}
+\item Empty Key (with name + data)\+: {\ttfamily 64}
+\item Single Example Key = {\ttfamily Empty Key + keyname + unescaped keyname + data} = {\ttfamily 64 + 29 + 25 + 35} = {\ttfamily 153}
+\item Single Example Key + 1 Duplicate = {\ttfamily Single Example Key + Empty Key} = {\ttfamily 153 + 64} = {\ttfamily 217}
+\item Single Example Key + 2 Duplicates = {\ttfamily Single Example Key + Empty Key $\ast$ 2} = {\ttfamily 153 + 64 $\ast$ 2} = {\ttfamily 281}
+\item Key\+Sets are not COW in this approach -\/-\/$>$ same as current implementation
+\end{DoxyItemize}
+
+mmapstorage-\/like COW implementation (with additional pointers)\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key\+Set \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 64}
+\item Empty Key \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 80}
+\item Empty Key (with name)\+: {\ttfamily 80}
+\item Empty Key (with name + data)\+: {\ttfamily 80}
+\item Single Example Key = {\ttfamily Empty Key + keyname + unescaped keyname + data} = {\ttfamily 80 + 29 + 25 + 35} = {\ttfamily 169}
+\item Single Example Key + 1 Duplicate = {\ttfamily Single Example Key + Empty Key} = {\ttfamily 169 + 80} = {\ttfamily 249}
+\item Single Example Key + 2 Duplicates = {\ttfamily Single Example Key + Empty Key $\ast$ 2} = {\ttfamily 169 + 80 $\ast$ 2} = {\ttfamily 329}
+\item Key\+Sets are not COW in this approach -\/-\/$>$ same as current implementation
+\end{DoxyItemize}
+
+Full-\/blown COW implementation\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 32}
+\item Empty Key (with name) \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily Empty Key + sizeof(\+Key\+Name)} = {\ttfamily 32 + 40} = {\ttfamily 72}
+\item Empty Key (with name + data) \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily Empty Key + sizeof(\+Key\+Name) + sizeof(\+Key\+Data)} = {\ttfamily 32 + 40 + 24} = {\ttfamily 96}
+\item Single Example Key = {\ttfamily Empty Key (with name + data) + keyname + unescaped keyname + data} = {\ttfamily 96 + 29 + 25 + 35} = {\ttfamily 185}
+\item Single Example Key + 1 Duplicate = {\ttfamily Single Example Key + Empty Key} = {\ttfamily 185 + 32} = {\ttfamily 217}
+\item Single Example Key + 2 Duplicates = {\ttfamily Single Example Key + Empty Key $\ast$ 2} = {\ttfamily 185 + 32 $\ast$ 2} = {\ttfamily 249}
+\item Empty Key\+Set \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 16}
+\item Empty Key\+Set (with data)\+: {\ttfamily Empty Key\+Set + sizeof(\+Key\+Set\+Data)} = {\ttfamily 16 + 48} = {\ttfamily 64}
+\item Example Key\+Set\+: {\ttfamily Empty Key\+Set (with data) + 16 $\ast$ pointer to keys} = {\ttfamily 64 + 16 $\ast$ 8} = {\ttfamily 192}
+\item Example Key\+Set + 1 Duplicate\+: {\ttfamily Example Key\+Set + Empty Key\+Set} = {\ttfamily 192 + 16} = {\ttfamily 208}
+\item Example Key\+Set + 2 Duplicates\+: {\ttfamily Example Key\+Set + Empty Key\+Set $\ast$ 2} = {\ttfamily 192 + 16 $\ast$ 2} = {\ttfamily 224}
+\end{DoxyItemize}
+
+Full-\/blown COW implementation -\/ Variant 1 (Rc\+Buffer)\+:
+
+
+\begin{DoxyItemize}
+\item Empty Key \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 40}
+\item Empty Key (with name) \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily Empty Key + sizeof(\+Rc\+Buffer)$\ast$2} = {\ttfamily 40 + 24$\ast$2} = {\ttfamily 88}
+\item Empty Key (with name + data) \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily Empty Key + sizeof(\+Rc\+Buffer)$\ast$3} = {\ttfamily 40 + 24$\ast$3} = {\ttfamily 112}
+\item Single Example Key = {\ttfamily Empty Key (with name + data) + keyname + unescaped keyname + data} = {\ttfamily 112 + 29 + 25 + 35} = {\ttfamily 201}
+\item Single Example Key + 1 Duplicate = {\ttfamily Single Example Key + Empty Key} = {\ttfamily 201 + 40} = {\ttfamily 241}
+\item Single Example Key + 2 Duplicates = {\ttfamily Single Example Key + Empty Key $\ast$ 2} = {\ttfamily 201 + 40 $\ast$ 2} = {\ttfamily 281}
+\item Empty Key\+Set \mbox{[}measured via {\ttfamily sizeof}\mbox{]}\+: {\ttfamily 16}
+\item Empty Key\+Set (with data)\+: {\ttfamily Empty Key\+Set + sizeof(\+Key\+Set\+Data)} = {\ttfamily 16 + 48} = {\ttfamily 64}
+\item Example Key\+Set\+: {\ttfamily Empty Key\+Set (with data) + 16 $\ast$ pointer to keys} = {\ttfamily 64 + 16 $\ast$ 8} = {\ttfamily 192}
+\item Example Key\+Set + 1 Duplicate\+: {\ttfamily Example Key\+Set + Empty Key\+Set} = {\ttfamily 192 + 16} = {\ttfamily 208}
+\item Example Key\+Set + 2 Duplicates\+: {\ttfamily Example Key\+Set + Empty Key\+Set $\ast$ 2} = {\ttfamily 192 + 16 $\ast$ 2} = {\ttfamily 224}
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2307}{}\doxysubsection{Allocations \& Indirections comparison of COW approaches}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2307}
+For allocations want to measure the following properties\+:
+
+
+\begin{DoxyItemize}
+\item Empty key\+: how many objects to allocate for an empty key
+\item Empty Key (with name)\+: how many objects to allocate for an empty key + name
+\item Empty Key (with name + data)\+: how many objects to allocate for an empty key + name + data
+\item Duplication\+: how many objects to allocate for a duplication
+\item Key + 1 Duplication\+: how many objects to allocate for a full key + 1 duplication
+\item Key + 2 Duplications\+: how many objects to allocate for a full key + 2 duplications
+\end{DoxyItemize}
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{7}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Approach   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name + data)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Duplication   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Key + 1 Duplication   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Key + 2 Duplications    }\\\cline{1-7}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Approach   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Empty Key (with name + data)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Duplication   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Key + 1 Duplication   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Key + 2 Duplications    }\\\cline{1-7}
+\endhead
+Current Implementation   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 2   &\PBS\raggedleft 3    \\\cline{1-7}
+mmapstorage-\/like COW implementation (without additional pointers)   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 2   &\PBS\raggedleft 3    \\\cline{1-7}
+mmapstorage-\/like COW implementation (with additional pointers)   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 1   &\PBS\raggedleft 2   &\PBS\raggedleft 3    \\\cline{1-7}
+Full-\/blown COW implementation   &\PBS\raggedleft 1   &\PBS\raggedleft 2   &\PBS\raggedleft 3   &\PBS\raggedleft 1   &\PBS\raggedleft 4   &\PBS\raggedleft 5   \\\cline{1-7}
+\end{longtabu}
+\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2308}{}\doxysection{Decision}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2308}
+Implement the full-\/blown COW approach.\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2309}{}\doxysection{Rationale}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2309}
+
+\begin{DoxyItemize}
+\item It is the most versatile option.
+\item No restrictions on the lifetime of {\ttfamily Key} and {\ttfamily Key\+Set} objects.
+\item Completely transparent to developers using Elektra\textquotesingle{}s public API.
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2310}{}\doxysection{Implications}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2310}
+
+\begin{DoxyItemize}
+\item The {\ttfamily mmapstorage} plugins needs to be updated
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2311}{}\doxysection{Related Decisions}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2311}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_3_in_review_change_tracking_md}{change tracking}}
+\item \mbox{\hyperlink{doc_decisions_4_decided_internal_cache_md}{internal cache}}
+\end{DoxyItemize}\hypertarget{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2312}{}\doxysection{Notes}\label{doc_decisions_6_implemented_copy_on_write_md_autotoc_md2312}

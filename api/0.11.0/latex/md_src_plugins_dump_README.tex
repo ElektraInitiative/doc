@@ -1,0 +1,134 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the dump plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}, Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\texttt{ k.\+boeswirth+git@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage/dump
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = productive maintained conformant unittest tested nodep -\/1000
+\item infos/metadata =
+\item infos/description = Dumps into a format tailored for complete Key\+Set semantics
+\end{DoxyItemize}\hypertarget{md_src_plugins_dump_README_src_plugins_dump_README_md}{}\doxysection{Introduction}\label{md_src_plugins_dump_README_src_plugins_dump_README_md}
+This plugin is a storage plugin that supports full Elektra semantics. Combined with a resolver plugin it already assembles a fully featured backend. No other plugins are needed.\hypertarget{md_src_plugins_dump_README_autotoc_md194}{}\doxysection{Format}\label{md_src_plugins_dump_README_autotoc_md194}
+The file starts with the magic word {\ttfamily kdb\+Open} followed by a version number (currently {\ttfamily 2}) and a newline. The plugin can read files of version {\ttfamily 1} and {\ttfamily 2}, but it only writes version {\ttfamily 2}.
+
+After this first line, the format consists of a series of commands. The supported commands are {\ttfamily \$key}, {\ttfamily \$meta} and {\ttfamily \$copymeta}. We use the {\ttfamily \$} prefix to make the commands standout more. However, {\ttfamily \$} does not always mean command. Keynames and values could also start with {\ttfamily \$}, but since the plugin always knows whether a command or something else comes next, we do not need any kind of escaping.
+
+The {\ttfamily \$key} command creates a new key. It takes 5 arguments. The first 3 are on the same line separated by a space. The other two are on separate lines\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\$key <type> <nsize> <vsize>}
+\DoxyCodeLine{<name>}
+\DoxyCodeLine{<value>}
+
+\end{DoxyCode}
+
+
+{\ttfamily $<$type$>$} is either {\ttfamily string} or {\ttfamily binary} and indicates what kind of value the key contains. {\ttfamily $<$nsize$>$} and {\ttfamily $<$vsize$>$} are the name size and value size respectively. For the name and for string values, the size does not include the null-\/terminator present in C strings. For binary keys all bytes (including any null-\/terminators) are counted. {\ttfamily $<$name$>$} and {\ttfamily $<$value$>$} are the keyname and key value. Because we know their length, they can contain arbitrary characters. Even newlines are allowed. The newlines between {\ttfamily $<$name$>$} and {\ttfamily $<$value$>$}, and after {\ttfamily $<$value$>$} are just to make the file more readable. They must be present, but they do not determine where {\ttfamily $<$name$>$} or {\ttfamily $<$value$>$} end.
+
+The {\ttfamily \$meta} command adds a new metakey to the last key. It is very similar to the {\ttfamily \$key} command, but it only takes 4 arguments. There is no type argument, because metakeys always have string values.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\$meta <nsize> <vsize>}
+\DoxyCodeLine{<name>}
+\DoxyCodeLine{<value>}
+
+\end{DoxyCode}
+
+
+The arguments work just like they do for {\ttfamily \$key}.
+
+Finally, there is {\ttfamily \$copymeta}. It is needed, because a {\ttfamily key\+Copy\+Meta} call results in two keys with the same metakey (equal pointers). To achieve this, we indicate which metakey should be copied from which key. The {\ttfamily \$copymeta} command also takes 4 arguments\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\$copymeta <knsize> <mnsize>}
+\DoxyCodeLine{<keyname>}
+\DoxyCodeLine{<metaname>}
+
+\end{DoxyCode}
+
+
+{\ttfamily $<$keyname$>$} is the name of the key from which the metadata is copied and {\ttfamily $<$knsize$>$} is its size (without the null-\/terminator). Similarly, {\ttfamily $<$metaname$>$} is the name of the metakey that is copied and {\ttfamily $<$mnsize$>$} is its size (without the null-\/terminator).
+
+There is also {\ttfamily \$end}. It is used to signal the end of the data to the plugin. The {\ttfamily \$end} command is completely optional. Without it, the plugin will just read the file until the end. However, in streaming use {\ttfamily \$end} is needed, because there is no end of the \char`\"{}file\char`\"{}.\hypertarget{md_src_plugins_dump_README_autotoc_md195}{}\doxysubsection{Format Examples}\label{md_src_plugins_dump_README_autotoc_md195}
+The following is an example {\ttfamily dump} file that was mounted at {\ttfamily system\+:/elektra/mountpoints}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdbOpen 2}
+\DoxyCodeLine{\$key binary 0 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\$meta 6 0}
+\DoxyCodeLine{binary}
+\DoxyCodeLine{}
+\DoxyCodeLine{\$meta 7 27}
+\DoxyCodeLine{comment}
+\DoxyCodeLine{Below are the mount points.}
+\DoxyCodeLine{\$key string 4 18}
+\DoxyCodeLine{dbus}
+\DoxyCodeLine{serialized Backend}
+\DoxyCodeLine{\$key string 11 0}
+\DoxyCodeLine{dbus/config}
+\DoxyCodeLine{}
+\DoxyCodeLine{\$meta 7 71}
+\DoxyCodeLine{comment}
+\DoxyCodeLine{This is a configuration for a backend,}
+\DoxyCodeLine{see subkeys for more information}
+\DoxyCodeLine{\$key string 12 0}
+\DoxyCodeLine{fstab/config}
+\DoxyCodeLine{}
+\DoxyCodeLine{\$copymeta 11 7}
+\DoxyCodeLine{dbus/config}
+\DoxyCodeLine{comment}
+\DoxyCodeLine{\$end}
+
+\end{DoxyCode}
+
+
+A few things you might have noticed\+:
+
+
+\begin{DoxyItemize}
+\item The first key has an empty name, because it is the root key of this mountpoint.
+\item The value size of {\ttfamily 0} for the first key makes it a {\ttfamily NULL} key, but only because it is {\ttfamily binary}. The third key ({\ttfamily \$key string 11 0}) also has value size 0, but is a {\ttfamily string} key. This means its value is an empty string {\ttfamily \char`\"{}\char`\"{}}.
+\item The empty lines after {\ttfamily \$key binary 0 -\/1} and {\ttfamily dbus/config} are because the respective names/values are empty.
+\item The comment above {\ttfamily \$key string 25 0} shows that newlines in key values are completely fine, because we know what size the value has to be.
+\end{DoxyItemize}\hypertarget{md_src_plugins_dump_README_autotoc_md196}{}\doxysection{Limitations}\label{md_src_plugins_dump_README_autotoc_md196}
+(status -\/1000)
+
+
+\begin{DoxyItemize}
+\item It is quite slow
+\end{DoxyItemize}\hypertarget{md_src_plugins_dump_README_autotoc_md197}{}\doxysection{Examples}\label{md_src_plugins_dump_README_autotoc_md197}
+Export a Key\+Set using {\ttfamily dump}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export system:/example dump > example.ecf}
+
+\end{DoxyCode}
+
+
+Import a Key\+Set using {\ttfamily dump}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cat example.ecf | kdb import system:/example dump}
+
+\end{DoxyCode}
+
+
+Using grep/diff or other Unix tools on the dump file. Make sure that you treat it as text file, e.\+g.\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{grep -\/-\/text 'mount points' example.ecf}
+
+\end{DoxyCode}
+ 

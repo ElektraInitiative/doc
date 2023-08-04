@@ -1,0 +1,164 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the spec plugin is in keys below
+\item infos/author = Tomislav Makar \href{mailto:tmakar23@gmail.com}{\texttt{ tmakar23@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = check apply
+\item infos/placements = hook
+\item infos/status = recommended productive unittest nodep global
+\item infos/description = allows to give specifications for keys
+\end{DoxyItemize}\hypertarget{md_src_plugins_spec_README_src_plugins_spec_README_md}{}\doxysection{Introduction}\label{md_src_plugins_spec_README_src_plugins_spec_README_md}
+The spec plugin is a global plugin that copies metadata from the {\ttfamily spec}-\/namespace to other namespaces using their key names as globbing expressions. Globbing resembles regular expressions. They do not have the same expressive power, but are easier to use. The semantics are more suitable to match path names\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily $\ast$} matches any key name of just one hierarchy. This means it complies with any character except slash or null.
+\item {\ttfamily \#} matches Elektra array elements. (e.\+g. {\ttfamily \#0}, {\ttfamily \#\+\_\+10}, {\ttfamily \#\+\_\+\+\_\+987}).
+\item {\ttfamily \+\_\+} matches anything that {\ttfamily $\ast$} matches, except array elements.
+\end{DoxyItemize}
+
+The plugin copies the metadata of the corresponding {\ttfamily spec} key to every matching (see below) key in the other namespaces. The copied metadata is removed again during {\ttfamily kdb\+Set} (if remained unchanged).
+
+The spec plugin also provides basic validation and structural checking. Specifically it supports\+:
+
+
+\begin{DoxyItemize}
+\item detection of invalid array key names
+\item detection of missing keys
+\item validation of array ranges (min/max array size)
+\item validating the number of subkeys of {\ttfamily \+\_\+}
+\end{DoxyItemize}\hypertarget{md_src_plugins_spec_README_autotoc_md531}{}\doxysection{Matching Algorithm}\label{md_src_plugins_spec_README_autotoc_md531}
+The matching of the spec (globbing) keys to the keys in the other namespaces is based on {\ttfamily \mbox{\hyperlink{globbing_8c_ad7700821df72fc0fc3bfc336e4368d29}{elektra\+Key\+Glob()}}}, which in turn is based on the well known {\ttfamily fnmatch(3)}. However, there is special handling for array specifications ({\ttfamily \#}) and wildcard specifications ({\ttfamily \+\_\+}).\hypertarget{md_src_plugins_spec_README_autotoc_md532}{}\doxysubsection{Default Values}\label{md_src_plugins_spec_README_autotoc_md532}
+If a spec key has the metakey {\ttfamily default} set and the key does not exist in other namespaces, we create a key in the {\ttfamily default\+:/} namespace. This key has the {\ttfamily default} value as its value. We also copy over metadata as always.\hypertarget{md_src_plugins_spec_README_autotoc_md533}{}\doxysubsection{Array Specifications}\label{md_src_plugins_spec_README_autotoc_md533}
+Keys which contain a part that is exactly {\ttfamily \#} (e.\+g. {\ttfamily my/\#/key} or {\ttfamily my/\#}) are called array specifications. These keys are instantiated in order to support {\ttfamily default} values. If the key does not exist and {\ttfamily default} is specified in the spec namespace, the key is created in the {\ttfamily default} namespace. We also lookup the array size (defined by the {\ttfamily array} metakey) using a cascading {\ttfamily ks\+Lookup}. This only looks at non-\/spec namespaces, if we don\textquotesingle{}t find an array size there, we check the array parent in the spec namespace. If we still have no array size, the array is deemed to be empty. For empty arrays, we will simply validate that they are indeed empty.\hypertarget{md_src_plugins_spec_README_autotoc_md534}{}\doxysubsection{Wildcard Specifications}\label{md_src_plugins_spec_README_autotoc_md534}
+Keys which contain a part that is exactly {\ttfamily \+\_\+} (e.\+g. {\ttfamily my/\+\_\+/key} or {\ttfamily my/\+\_\+}) are called wildcard specifications. It would be nice to have an \char`\"{}instantiation\char`\"{} procedure for {\ttfamily \+\_\+} similar to the one for arrays. However, this is not possible with the current implementation, since there is no way of knowing in advance, which keys matching the globbing expression may be requested via {\ttfamily ks\+Lookup}.
+
+Instead {\ttfamily \+\_\+} is simply treated like {\ttfamily $\ast$} during matching. Afterwards we check that no array elements were matched.\hypertarget{md_src_plugins_spec_README_autotoc_md535}{}\doxysection{Specification and Validation}\label{md_src_plugins_spec_README_autotoc_md535}
+The basic functionality of the plugin is to just copy (using {\ttfamily \mbox{\hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{key\+Copy\+Meta()}}} so we don\textquotesingle{}t waste memory) the metadata of spec keys to all matching (as described above) keys in other namespaces. This ensures that other plugins can do their work as expected, without manually setting metadata on every key. If a metakey on a target key already exists with different value, it gets overridden.
+
+In addition to the basic functionality, the plugin does some validation itself.\hypertarget{md_src_plugins_spec_README_autotoc_md536}{}\doxysubsection{Required Keys}\label{md_src_plugins_spec_README_autotoc_md536}
+If a spec key has the metakey {\ttfamily require} (the value of this metakey is irrelevant and ignored), we ensure that this key exists in at least one other namespace, i.\+e. it can be found using a cascading {\ttfamily ks\+Lookup}. If the key cannot be found, this causes an {\ttfamily error}.\hypertarget{md_src_plugins_spec_README_autotoc_md537}{}\doxysubsection{Array Size Validation}\label{md_src_plugins_spec_README_autotoc_md537}
+As hinted to above, we validate array sizes. If a spec key {\ttfamily x/\#} is given, and the spec key {\ttfamily x} has the metakey {\ttfamily array/min} or {\ttfamily array/max} set, we validate the array size (given as metakey {\ttfamily array} on {\ttfamily x}) is within the limits of {\ttfamily array/min} and {\ttfamily array/max}. Both {\ttfamily array/min} and {\ttfamily array/max} have to be valid array-\/elements similar to {\ttfamily array}. If the array size is out of bounds, this causes an {\ttfamily error} for {\ttfamily kdb\+Set} or a warning for {\ttfamily kdb\+Get}.
+
+Note\+: We don\textquotesingle{}t actually validate that the array doesn\textquotesingle{}t contain elements above the given array size. This is because it doesn\textquotesingle{}t have anything to do with the specification, whether the array contains additional elements. Note also that we only copy metadata onto elements within the bounds of the array size.\hypertarget{md_src_plugins_spec_README_autotoc_md538}{}\doxysubsection{Array Specification and Wildcard Specification (\+Collision)}\label{md_src_plugins_spec_README_autotoc_md538}
+A collision is when two specification keys exist, one as wildcard specification, the other as array specification, and it is not clear in this case what the correct specification is.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{spec:/server/\_/name => meta:/description = value1}
+\DoxyCodeLine{}
+\DoxyCodeLine{spec:/server/\#/name => meta:/description = value2}
+
+\end{DoxyCode}
+
+
+The spec plugin does not know what specification to take in this case, so it appends an {\ttfamily error} or {\ttfamily warning} (if kdb\+Get).\hypertarget{md_src_plugins_spec_README_autotoc_md539}{}\doxysection{Error Handling}\label{md_src_plugins_spec_README_autotoc_md539}
+In case there is an error or warning, it is appended to the {\ttfamily parent key}.\hypertarget{md_src_plugins_spec_README_autotoc_md540}{}\doxysubsection{Example}\label{md_src_plugins_spec_README_autotoc_md540}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{parentKey = "{}system:/sw/org"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# in case there is an error}
+\DoxyCodeLine{system:/sw/org/error/...}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# in case there is a warning}
+\DoxyCodeLine{system:/sw/org/warning/...}
+
+\end{DoxyCode}
+
+
+If there is an error, the {\ttfamily spec} plugin returns {\ttfamily ELEKTRA\+\_\+\+PLUGIN\+\_\+\+STATUS\+\_\+\+ERROR}, otherwise {\ttfamily ELEKTRA\+\_\+\+PLUGIN\+\_\+\+STATUS\+\_\+\+SUCCESS}.\hypertarget{md_src_plugins_spec_README_autotoc_md541}{}\doxysubsection{Cases}\label{md_src_plugins_spec_README_autotoc_md541}
+
+\begin{DoxyItemize}
+\item Key is required but does not exist
+\begin{DoxyItemize}
+\item In this case an {\ttfamily error} is appended to the {\ttfamily parent key}
+\end{DoxyItemize}
+\item Key has default but does not exist
+\begin{DoxyItemize}
+\item In this case the key is created
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{md_src_plugins_spec_README_autotoc_md542}{}\doxysection{Examples (with shell\+\_\+recorder)}\label{md_src_plugins_spec_README_autotoc_md542}
+This sample is creating keys and specifications for an application named {\ttfamily webserver}. The {\ttfamily webserver} application has a {\ttfamily name} and a {\ttfamily port}. In case a port is already in use, there is also an array key {\ttfamily alternative\+\_\+ports} which is used to find another port for binding {\ttfamily webserver}.
+
+A specification could look like this ({\ttfamily yaml})\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/ elektra:}
+\DoxyCodeLine{    mountpoint: user:/tests/sw/org/webserver}
+\DoxyCodeLine{    keys:}
+\DoxyCodeLine{      name:}
+\DoxyCodeLine{        value: web1}
+\DoxyCodeLine{        meta:}
+\DoxyCodeLine{          require: true}
+\DoxyCodeLine{      port:}
+\DoxyCodeLine{        value: 5000}
+\DoxyCodeLine{        meta:}
+\DoxyCodeLine{          default: 5000}
+\DoxyCodeLine{      alternative\_ports:}
+\DoxyCodeLine{        keys:}
+\DoxyCodeLine{          0:}
+\DoxyCodeLine{            value: 5001}
+\DoxyCodeLine{            meta:}
+\DoxyCodeLine{              description: This is an alternative port if any other is already bound}
+\DoxyCodeLine{          1:}
+\DoxyCodeLine{            value: 5002}
+\DoxyCodeLine{            meta:}
+\DoxyCodeLine{              description: This is an alternative port if any other is already bound}
+\DoxyCodeLine{        meta:}
+\DoxyCodeLine{          array: 2}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+NOTE\+: 0 and 1 should be \#0 and \#1, the array elements. \end{quote}
+Below is an explanation of each command.\hypertarget{md_src_plugins_spec_README_autotoc_md543}{}\doxysubsection{kdb meta-\/set spec\+:/tests/sw/org/webserver/name require true}\label{md_src_plugins_spec_README_autotoc_md543}
+Adding a specification key with a require metakey. This {\ttfamily meta-\/set} command should throw error as no key with the name {\ttfamily /tests/sw/org/webserver/name} exists.\hypertarget{md_src_plugins_spec_README_autotoc_md544}{}\doxysubsection{kdb set user\+:/tests/sw/org/webserver/name web1}\label{md_src_plugins_spec_README_autotoc_md544}
+Set the value for {\ttfamily user\+:/tests/sw/org/webserver/name} to {\ttfamily web1}.\hypertarget{md_src_plugins_spec_README_autotoc_md545}{}\doxysubsection{kdb meta-\/set spec\+:/tests/sw/org/webserver/port default 5000}\label{md_src_plugins_spec_README_autotoc_md545}
+Adding a specification key with a default metakey. After this {\ttfamily meta-\/set} command a {\ttfamily default\+:/tests/sw/org/webserver/port} with value {\ttfamily 5000} should exist.\hypertarget{md_src_plugins_spec_README_autotoc_md546}{}\doxysubsection{kdb set user\+:/tests/sw/org/webserver/alternative\+\_\+ports/\#0 5001}\label{md_src_plugins_spec_README_autotoc_md546}
+Adding an array key {\ttfamily user\+:/tests/sw/org/webserver/alternative\+\_\+ports/\#0} which value is set to {\ttfamily 5001}.\hypertarget{md_src_plugins_spec_README_autotoc_md547}{}\doxysubsection{kdb set user\+:/tests/sw/org/webserver/alternative\+\_\+ports/\#1 5002}\label{md_src_plugins_spec_README_autotoc_md547}
+Adding an array key {\ttfamily user\+:/tests/sw/org/webserver/alternative\+\_\+ports/\#1} which value is set to {\ttfamily 5002}.\hypertarget{md_src_plugins_spec_README_autotoc_md548}{}\doxysubsection{kdb meta-\/set user\+:/tests/sw/org/webserver/alternative\+\_\+ports array \textquotesingle{}2\textquotesingle{}}\label{md_src_plugins_spec_README_autotoc_md548}
+Adding a metakey {\ttfamily array} with value {\ttfamily 2} at {\ttfamily user\+:/tests/sw/org/webserver/alternative\+\_\+ports}.\hypertarget{md_src_plugins_spec_README_autotoc_md549}{}\doxysubsection{kdb meta-\/set spec\+:/tests/sw/org/webserver/alternative\+\_\+ports/\# description \textquotesingle{}\+This is an alternative port if any other is already bound\textquotesingle{}}\label{md_src_plugins_spec_README_autotoc_md549}
+Adding a specification metakey {\ttfamily description}. After this {\ttfamily meta-\/set} the all the array entries ({\ttfamily \#0} and {\ttfamily \#1}) should contain the {\ttfamily description}.\hypertarget{md_src_plugins_spec_README_autotoc_md550}{}\doxysubsection{kdb meta-\/get user\+:/tests/sw/org/webserver/alternative\+\_\+ports/\#0 description}\label{md_src_plugins_spec_README_autotoc_md550}
+Check if the {\ttfamily description} metakey was copied successfully.\hypertarget{md_src_plugins_spec_README_autotoc_md551}{}\doxysubsection{kdb meta-\/get user\+:/tests/sw/org/webserver/alternative\+\_\+ports/\#1 description}\label{md_src_plugins_spec_README_autotoc_md551}
+Check if the {\ttfamily description} metakey was copied successfully.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/webserver/name require true}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/sw/org/webserver/name web1}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/webserver/port default 5000}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/sw/org/webserver/alternative\_ports/\#0 5001}
+\DoxyCodeLine{\#> Create a new key user:/tests/sw/org/webserver/alternative\_ports/\#0 with string "{}5001"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/sw/org/webserver/alternative\_ports/\#1 5002}
+\DoxyCodeLine{\#> Create a new key user:/tests/sw/org/webserver/alternative\_ports/\#1 with string "{}5002"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set user:/tests/sw/org/webserver/alternative\_ports array '2'}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/sw/org/webserver/alternative\_ports/\# description 'This is an alternative port if any other is already bound'}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/sw/org/webserver/alternative\_ports/\#0 description}
+\DoxyCodeLine{\# STDOUT-\/REGEX: This is an alternative port if any other is already bound}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/get user:/tests/sw/org/webserver/alternative\_ports/\#1 description}
+\DoxyCodeLine{\# STDOUT-\/REGEX: This is an alternative port if any other is already bound}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_spec_README_autotoc_md552}{}\doxysubsection{Known limitations}\label{md_src_plugins_spec_README_autotoc_md552}
+
+\begin{DoxyItemize}
+\item {\ttfamily \#} and {\ttfamily \+\_\+} keys do not work on MINGW
+\item No defaults for {\ttfamily \+\_\+} globbing character 
+\end{DoxyItemize}

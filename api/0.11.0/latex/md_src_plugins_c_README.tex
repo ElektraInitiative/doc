@@ -1,0 +1,57 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the c plugin is in keys below
+\item infos/author = Markus Raab \href{mailto:elektra@libelektra.org}{\texttt{ elektra@libelektra.\+org}}
+\item infos/maintainer = Florian Lindner \href{mailto:florian.lindner@student.tuwien.ac.at}{\texttt{ florian.\+lindner@student.\+tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/needs = ccode
+\item infos/provides = storage/c
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained reviewed unittest nodep libc writeonly preview
+\item infos/metadata =
+\item infos/description = C code Key\+Set exports for Elektra
+\end{DoxyItemize}\hypertarget{md_src_plugins_c_README_src_plugins_c_README_md}{}\doxysection{Usage}\label{md_src_plugins_c_README_src_plugins_c_README_md}
+Export a subset of the KDB as C code which creates a Key\+Set ({\ttfamily ks\+New($<$number of keys$>$, key\+New(...), ...)}). This can be useful for generating test data or help to generate code for already defined configuration data.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb export user:/testdata c}
+
+\end{DoxyCode}
+
+
+The output can be used in C code for generating Key\+Sets and the keys inside them. So one use case is to extract a part of the KDB and copy the generated code to create the exported part of the KDB programmatically, e.\+g. for another Elektra installation.
+
+It can also be useful if you develop your own application and first create the necessary keys manually. Then you can export them from the KDB and just paste the generated code in the right place of the codebase of your application.
+
+\begin{quote}
+Please note that if you use this plugin for creating a mountpoint (e.\+g. by calling {\ttfamily kdb mount $<$filename$>$ $<$key$>$ c}), only the content written by the last {\ttfamily kdb\+Set (...)} which includes the mountpoint will be inside the file. If you call {\ttfamily kdb\+Set (...)} for such a mountpoint, the previous content of the file is erased.
+
+This is because the c plugin is implemented as a write-\/only plugin. It\textquotesingle{}s recommended to only use it for exporting parts of the KDB by calling {\ttfamily kdb export $<$parent key$>$}. \end{quote}
+\hypertarget{md_src_plugins_c_README_autotoc_md88}{}\doxysection{Example}\label{md_src_plugins_c_README_autotoc_md88}
+In this example, we add some keys and metakeys to the KDB and export them with the c plugin. The output can directly be used inside C source code which uses Elektra.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/cplugin/key1 value1}
+\DoxyCodeLine{\#> Create a new key user:/tests/cplugin/key1 with string "{}value1"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/cplugin/key2 value2}
+\DoxyCodeLine{\#> Create a new key user:/tests/cplugin/key2 with string "{}value2"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/set user:/tests/cplugin/key2 metakey2.1 metaval2.1}
+\DoxyCodeLine{kdb set user:/tests/cplugin/key2 metakey2.2 metaval2.2}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/cplugin/key3 value3}
+\DoxyCodeLine{\#> Create a new key user:/tests/cplugin/key3 with string "{}value3"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/cplugin c}
+\DoxyCodeLine{\#> ksNew (3,}
+\DoxyCodeLine{\#>      keyNew ("{}user:/tests/cplugin/key1"{}, KEY\_VALUE, "{}value1"{}, KEY\_END),}
+\DoxyCodeLine{\#>      keyNew ("{}user:/tests/cplugin/key2"{}, KEY\_VALUE, "{}value2"{}, KEY\_META, "{}metakey2.1"{}, "{}metaval2.1"{}, KEY\_META, "{}metakey2.2"{}, "{}metaval2.2"{}, KEY\_END),}
+\DoxyCodeLine{\#>      keyNew ("{}user:/tests/cplugin/key3"{}, KEY\_VALUE, "{}value3"{}, KEY\_END),}
+\DoxyCodeLine{\#>      KS\_END);}
+
+\end{DoxyCode}
+ 

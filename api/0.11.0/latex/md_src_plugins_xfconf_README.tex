@@ -1,0 +1,59 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the xfconf plugin is in keys below
+\item infos/author = Richard Stöckl \href{mailto:e11908080@student.tuwien.ac.at}{\texttt{ e11908080@student.\+tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage/xml
+\item infos/recommends =
+\item infos/placements = getstorage setstorage
+\item infos/status = maintained unittest libc configurable memleak experimental limited unfinished concept
+\item infos/metadata =
+\item infos/description = storage plugin for xfconf
+\end{DoxyItemize}\hypertarget{md_src_plugins_xfconf_README_src_plugins_xfconf_README_md}{}\doxysection{Introduction}\label{md_src_plugins_xfconf_README_src_plugins_xfconf_README_md}
+The xfconf plugin is a storage plugin to mount the xfconf configuration settings. This allows to operate on the XFCE configuration with libelektra. As usual, this allows the plugin to read and write to the XFCE configuration.
+
+For further understanding how xfconf is structured, please refer to the Xfconf binding.
+
+The list of all channels is stored in the {\ttfamily system\+:/elektra/modules/xfconf/channels} which is an array of all channel names. Channels cannot be created manually with libelektra. Instead, when mounting a channel (see \href{\#plugin-configuration}{\texttt{ Plugin Configuration}} how to specify a channel) and setting a key value below the mount, it will be automatically created.
+
+You may also refer to the \href{https://docs.xfce.org/xfce/xfconf/start}{\texttt{ official XFCE documentation of xfconf}} to learn more about it.\hypertarget{md_src_plugins_xfconf_README_autotoc_md629}{}\doxysection{Dependencies}\label{md_src_plugins_xfconf_README_autotoc_md629}
+The xfconf library from the XFCE project is the main dependency of this plugin. Usually, this library is called something such as {\ttfamily xfconf} (Arch, Fedora, {\ttfamily xfconf-\/devel} for compiling), {\ttfamily libxfconf-\/0} (Debian, {\ttfamily libxfconf-\/0-\/dev} for compmiling) or {\ttfamily xfce4-\/conf} (Free\+BSD) in the package manager. As xfconf itself depends on dbus and glib, these are dependecies too but should be installed with the package manager automatically. This plugin is tested with the xfconf versions {\ttfamily 4.\+16} and above.
+
+Before you can start working with the plugin, you have to make sure dbus is running. If you use a common desktop environment this should already be fulfilled. Otherwise, {\ttfamily export \$(dbus-\/launch)} can be used to start it. You may also need to use {\ttfamily systemd-\/machine-\/id-\/setup} to create {\ttfamily /etc/machine-\/id}.
+
+Note that this plugin does not support mac\+OS since Xfce is not commonly used there, Mac Ports only provides a very old version ({\ttfamily 4.\+12}) and Brew does not provide Xfce at all.\hypertarget{md_src_plugins_xfconf_README_autotoc_md630}{}\doxysection{Usage}\label{md_src_plugins_xfconf_README_autotoc_md630}
+The usage is identical to most storage plugins except that the channel option during mount must be defined in order to tell xfconf which channel to mount.\hypertarget{md_src_plugins_xfconf_README_autotoc_md631}{}\doxysection{Plugin Configuration}\label{md_src_plugins_xfconf_README_autotoc_md631}
+The required {\ttfamily channel} configuration option is used to tell xfconf which channel to mount.\hypertarget{md_src_plugins_xfconf_README_autotoc_md632}{}\doxysection{Examples}\label{md_src_plugins_xfconf_README_autotoc_md632}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: user:/tests/xfconf}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# mount the xfwm channel}
+\DoxyCodeLine{kdb mount -\/R noresolver none /test/xfwm xfconf "{}channel=xfwm4"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# store old button layout}
+\DoxyCodeLine{set "{}OLD\_LAYOUT=\$(kdb get /test/xfwm/general/button\_layout)"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# set only a close button}
+\DoxyCodeLine{kdb set system:/test/xfwm/general/button\_layout "{}C|"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# read the new layout}
+\DoxyCodeLine{kdb get /test/xfwm/general/button\_layout}
+\DoxyCodeLine{\#> C|}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# restore old layout}
+\DoxyCodeLine{kdb set /test/xfwm/general/button\_layout "{}\$OLD\_LAYOUT"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# umount the channel}
+\DoxyCodeLine{kdb umount /test/xfwm}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_xfconf_README_autotoc_md633}{}\doxysection{Locks}\label{md_src_plugins_xfconf_README_autotoc_md633}
+Xfconf uses so-\/called locks to prevent users or applications to set properties to a new value. They can be referred as a type of constant. As of now, locks cannot be set or unset in xfconf which makes locked properties read-\/only forever.\hypertarget{md_src_plugins_xfconf_README_autotoc_md634}{}\doxysection{Limitations}\label{md_src_plugins_xfconf_README_autotoc_md634}
+
+\begin{DoxyItemize}
+\item xfconf locks can only be read but not set as this is not possible in xfconf
+\item comments and sorting are not implemented due the lack of both in xfconf
+\item due to memory leaks in xfconf upstream, valgrind reports errors when running the tests 
+\end{DoxyItemize}

@@ -1,0 +1,38 @@
+\label{doc_decisions_4_decided_misc_namespace_md_md_doc_decisions_4_decided_misc_namespace}%
+\Hypertarget{doc_decisions_4_decided_misc_namespace_md_md_doc_decisions_4_decided_misc_namespace}%
+ \hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2178}{}\doxysection{Problem}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2178}
+A {\ttfamily Key\+Set} is powerful data structure, which could be use for data other than configuration data. Especially with the hashmap implementation, using a {\ttfamily Key\+Set} for generic data can be useful. For this generic data we do not care about the namespace-\/related features.
+
+However, because a {\ttfamily Key} cannot exist without a namespace, we need to choose a namespace.\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2179}{}\doxysection{Constraints}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2179}
+
+\begin{DoxyItemize}
+\item The outcome must be compatible with the \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{Types of {\ttfamily Key\+Set}s}}Types of \`{}\+Key\+Set\`{}s\char`\"{} decision\char`\"{}.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2180}{}\doxysection{Assumptions}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2180}
+
+\begin{DoxyItemize}
+\item The \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{Types of {\ttfamily Key\+Set}s}}Types of \`{}\+Key\+Set\`{}s\char`\"{} decision\char`\"{} leads to separate types of {\ttfamily Key\+Set}s that are restricted w.\+r.\+t. the namespaces they may contain.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2181}{}\doxysection{Considered Alternatives}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2181}
+\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2182}{}\doxysubsection{Use cascading $<$tt$>$\+Key$<$/tt$>$s}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2182}
+We could use the existing {\ttfamily KEY\+\_\+\+NS\+\_\+\+CASCADING} for one of the types of {\ttfamily Key\+Set}s.
+
+This may be confusing to users of the APIs. The purpose of {\ttfamily KEY\+\_\+\+NS\+\_\+\+CASCADING} becomes muddied. It is no longer just for lookup, but would now have a secondary purpose.\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2183}{}\doxysubsection{Introduce separate $<$tt$>$\+KEY\+\_\+\+NS\+\_\+\+MISC$<$/tt$>$ namespace}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2183}
+We introduce a new {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC}, which is used exclusively for generic and miscellaneous data. It implies a separate \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{type of \`{}\+Key\+Set\`{}}}.
+
+This leaves {\ttfamily KEY\+\_\+\+NS\+\_\+\+CASCADING} for its original purpose, while still solving the issue with generic data.\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2184}{}\doxysection{Decision}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2184}
+Introduce separate {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC} namespace.
+
+In the unescaped form this will be {\ttfamily \textbackslash{}x09} (byte with decimal value {\ttfamily 9}). In the escaped form it will be {\ttfamily misc\+:/}.
+
+{\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC} has a separate \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{type of \`{}\+Key\+Set\`{}}}. Such a {\ttfamily Key\+Set} can only contain {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC} keys. It may not be used for metadata or with {\ttfamily kdb\+Get}/{\ttfamily kdb\+Set}.
+
+A cascading lookup is still allowed for such {\ttfamily Key\+Set}s. However, the {\ttfamily KEY\+\_\+\+NS\+\_\+\+CASCADING} will simply be replaced with {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC} and then an exact name lookup is performed, as if the {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC} namespace was given directly.\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2185}{}\doxysection{Rationale}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2185}
+Introducing a new namespace is much cleaner than reusing one of the existing ones. It fits better with the separate \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{types of \`{}\+Key\+Set\`{}s}}.\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2186}{}\doxysection{Implications}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2186}
+
+\begin{DoxyItemize}
+\item Some code already uses cascading keys for general data. It must be updated to the new {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC}.
+\item The cascading logic for {\ttfamily ks\+Lookup} needs to adapted for {\ttfamily KEY\+\_\+\+NS\+\_\+\+MISC}.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2187}{}\doxysection{Related Decisions}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2187}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{Types of {\ttfamily Key\+Set}s}}Types of \`{}\+Key\+Set\`{}s\char`\"{}\char`\"{}.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_misc_namespace_md_autotoc_md2188}{}\doxysection{Notes}\label{doc_decisions_4_decided_misc_namespace_md_autotoc_md2188}

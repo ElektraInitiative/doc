@@ -1,0 +1,97 @@
+.TH "doc_tutorials_recording_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_recording_md \- Recording Changes to the KDB 
+ Elektra provides a powerful session recording feature\&. You can control it through the \fCkdb\fP command-line utility\&.
+.PP
+Session recording will track all the changes done to the KDB while it is enabled\&. This includes changes done by elektrified applications themselves too, not only changes done through the \fCkdb\fP utility\&. The recorded changes can be exported, undone or used for auditing purposes\&.
+.PP
+There are seven commands to interact with the session recording feature:
+.PP
+.IP "\(bu" 2
+\fCkdb record-start\fP: starts recording\&. If there are existing recorded changes, they will NOT be removed\&. New changes will be appended\&.
+.IP "\(bu" 2
+\fCkdb record-stop\fP: stops recording\&.
+.IP "\(bu" 2
+\fCkdb record-reset\fP: removes all recorded changes\&.
+.IP "\(bu" 2
+\fCkdb record-export\fP: export the changes\&.
+.IP "\(bu" 2
+\fCkdb record-undo\fP: undo everything that has been recorded\&.
+.IP "\(bu" 2
+\fCkdb record-state\fP: show information about the state of session recording\&. This includes information about what keys will be recorded and which changes have already been made to the KDB\&.
+.IP "\(bu" 2
+\fCkdb record-rm\fP: Remove specific keys from the recording\&.
+.PP
+.PP
+For a more detailed description and options for each command, please take a look at their respective man pages\&.
+.SH "A Simple Recording Session"
+.PP
+.PP
+.nf
+# Seed some data first
+kdb set user:/test/name Franz
+kdb set user:/test/color Red
+
+# Enable session recording for all keys below user:/
+kdb record-start user:/
+# RET:0
+
+kdb set user:/test/name Hans
+kdb set user:/test/age 29
+kdb rm user:/test/color
+
+# View the current state of session recording
+kdb record-state
+#> Recording is active for user:/⏎⏎Added 1 key(s)⏎Modified 1 key(s)⏎Removed 1 key(s)⏎⏎Added key user:/test/age⏎Modified key user:/test/name⏎Removed key user:/test/color
+
+# Stop session recording again
+kdb record-stop
+# RET:0
+.fi
+.PP
+.SH "Exporting Recorded changes"
+.PP
+One of the most powerful features of session recording is the ability to export the recorded changes\&. This allows you to apply the specific modifications on other computers, without having to export and overwrite the complete configuration\&.
+.PP
+.PP
+.nf
+kdb record-export [<source>] [<format>]
+.fi
+.PP
+.PP
+Where \fCsource\fP and \fCformat\fP are optional parameters\&. The \fCsource\fP parameter lets you specify which keys you want to export\&. By default, this is all keys, or \fC/\fP\&. The \fCformat\fP parameter lets you specify which format you want to export the changes in\&. By default, we use the \fCansible\fP format\&. Note that the format is just the name of the Elektra storage plugin you want to use\&.
+.PP
+You can also use the \fC-c\fP option to specify a list of configuration parameters for the storage plugin\&. See the README of the plugin for more details about which parameters are supported\&.
+.PP
+.PP
+.nf
+# Export recorded changes into an Ansible playbook
+kdb record-export / ansible -c playbook/name="Recording Tutorial"
+# RET:0
+.fi
+.PP
+.PP
+.PP
+.nf
+---
+- name: Recording Tutorial
+  hosts: all
+  collections:
+    - elektra_initiative\&.libelektra
+  tasks:
+    - name: Set Elektra Keys
+      elektra:
+        keys:
+          - user:
+              test:
+                age:
+                  - value: 29
+                color:
+                  - remove: true
+                name:
+                  - value: Hans
+.fi
+.PP
+ 

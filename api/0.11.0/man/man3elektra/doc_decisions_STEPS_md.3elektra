@@ -1,0 +1,196 @@
+.TH "doc_decisions_STEPS_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_STEPS_md \- Steps 
+ This document describes all steps a decision can run through\&.
+.PP
+.PP
+.nf
+flowchart LR
+  s((Start)) --> Drafts --> prob(Problem Clear) --> alt(Solutions Clear) --> review(In Review) -- merge --> Decided
+    -- merge --> part(Partially Implemented) --> Implemented
+  %% Shortcuts:
+  s --> Decided
+  Drafts -- merge --> Decided
+  prob -- merge --> Decided
+  alt -- merge --> Decided
+  Decided -- merge --> Implemented
+.fi
+.PP
+.PP
+Additionally, decision that are not yet 'Decided' may be become 'Drafts', 'Rejected' or 'Postponed' at any point, e\&.g\&., if the decision author stops working on the decision\&.
+.PP
+The label \fCmerge\fP on the edges means that a decision PR must be merged before it can target the next step\&.
+.PP
+.RS 4
+The first PR for a decision usually creates the decision in the 'Drafts' state\&. If during the reviews of this PR it becomes clear that the decision is further along, can be moved to 'Problem Clear', 'Solutions Clear' or even 'In Review' before the merge\&. 
+.RE
+.PP
+Short summary:
+.PP
+.IP "1." 4
+The first PR for a decision is created as 'Drafts' (recommended!), 'Problem Clear', 'Solutions Clear' or 'Decided'\&.
+.IP "2." 4
+A decision PR that wants to merge a decision as 'Decided' must:
+.IP "  1." 6
+Only contain changes to one decision\&.
+.IP "  2." 6
+Already start with the decision as 'Decided'\&.
+.IP "  3." 6
+Already have a clearly stated problem and all the solutions fully explored\&.
+.IP "  4." 6
+Only contain discussions/reviews about deciding between one of the solutions or details thereof\&.
+.IP "  5." 6
+If there is any change in the direction of the decision then the PR cannot be merged as 'Decided'\&. The decision must at least be moved back to 'In Review'\&.
+.PP
+
+.IP "3." 4
+After a decision is merged as 'Decided', it can be moved to 'Partially Implemented' or 'Implemented' by any PR\&.
+.PP
+.PP
+The rest of the document describes the steps in full details\&.
+.SH "Drafts"
+.PP
+.RS 4
+This step is highly recommended and it is even required if the problem is not yet clear to all the core developers\&. 
+.RE
+.PP
+The first step is to create a PR with:
+.PP
+.IP "\(bu" 2
+\fBone\fP decision, where at least the 'Problem' is filled out and 'Decision', 'Rationale' and 'Implications' are \fBnot\fP yet filled out\&.
+.IP "\(bu" 2
+optional backlinks from related decisions\&.
+.PP
+.PP
+This step is brainstorming for completely new ideas\&.
+.PP
+.RS 4
+No agreement about anything is needed to merge decisions in this stage\&. 
+.RE
+.PP
+.SH "Problem Clear"
+.PP
+This step is very important:
+.PP
+.IP "\(bu" 2
+it clarifies the importance of the problem, answering: Why should we put our time and energy in this problem and not in another problem\&.
+.IP "\(bu" 2
+it clarifies the scope of the decision\&.
+.IP "\(bu" 2
+it clarifies relation to other problems\&.
+.PP
+.PP
+Decisions will have much smoother further steps if this step is done carefully without prejudice\&. It is especially important that one shouldn't have a fixed mind-set about a preferred solution from the beginning\&.
+.PP
+.RS 4
+Everyone must agree that the problem exists and is worth solving so that a decision PR in 'Problem Clear' step can be merged\&. A problem is clear if everyone would be able to describe an experiment or test case that shows if a solution fixes the problem\&. 
+.RE
+.PP
+.SH "Solutions Clear"
+.PP
+.RS 4
+This step is recommended if it is not yet clear to the core developers which solution is the best\&. 
+.RE
+.PP
+Here you must ensure:
+.PP
+.IP "\(bu" 2
+problem, constraint and assumptions are well-explained and sound
+.IP "\(bu" 2
+links from/to related decisions are created
+.IP "\(bu" 2
+there are several solutions described, each with rationale and implication
+.IP "\(bu" 2
+'Decision', 'Rationale' and 'Implications' are \fBnot\fP yet filled out
+.PP
+.PP
+Here the decision should not only have one decision but should describe several solutions\&. For each solution a proposal, rationale and optionally implications should be given\&.
+.PP
+.RS 4
+The solutions are clear if all reviewers understand the given solutions and no reviewer can come up with better solutions\&. The solution space is clear\&. I\&.e\&. the trade-offs, combinations and pros/cons of the solutions are explored\&. Decision author and reviewers are satisfied that every useful solution is present in the decision\&. 
+.RE
+.PP
+.SH "In Review"
+.PP
+Now it is allowed to have the decision from the previous round in the 'Decision' section\&. In this step, the last details of the chosen decision get polished:
+.PP
+.IP "\(bu" 2
+consistency with other decisions
+.IP "\(bu" 2
+links from/to related decisions have been checked
+.IP "\(bu" 2
+'Decision', 'Rationale' and 'Implications' are fully filled out
+.PP
+.PP
+.RS 4
+Without merges in between, this is the last step reachable for a decision PR that started in 'Drafts'\&. 
+.RE
+.PP
+.SH "Decided"
+.PP
+.RS 4
+This step is mandatory\&. I\&.e\&., there must be a dedicated decision PR that puts the decision into 'Decided'\&. 
+.RE
+.PP
+.IP "\(bu" 2
+'Decision', 'Rationale' and 'Implications' are now filled out and fixed according to the reviews
+.IP "\(bu" 2
+decisions of this step usually already have an implementation PR
+.PP
+.PP
+Decisions that need an update, e\&.g\&. because assumptions changed, sometimes directly start with the step 'Decided'\&.
+.PP
+.RS 4
+In this step, decision PRs only modify a \fIsingle\fP decision\&. Only exceptions like backlinks from other decisions are allowed\&. 
+.RE
+.PP
+.SH "Partially Implemented"
+.PP
+We want to avoid this step, ideally PRs fully implement decisions\&.
+.PP
+Nevertheless, this can be useful for decisions that need to be done for every module like plugin or library\&. It is for decisions where only a few not-so-important modules are missing and/or issues exist for the remaining pieces\&.
+.PP
+The 'Implication' must clearly say how much of the decision is already implemented\&.
+.SH "Implemented"
+.PP
+.RS 4
+This step is mandatory\&. I\&.e\&., there must be a decision PR that puts the decision into 'Implemented'\&. 
+.RE
+.PP
+.IP "\(bu" 2
+Here the details of the decisions are stripped from the decision and moved to the documentation\&.
+.IP "\(bu" 2
+The documentation links to the decision\&.
+.IP "\(bu" 2
+The decision links to the new documentation\&.
+.PP
+.PP
+.RS 4
+In this step, decision PRs only modify a \fIsingle\fP decision\&. Here more exceptions are allowed, in particular documentation updates are okay\&. 
+.RE
+.PP
+.SH "Postponed"
+.PP
+This step is:
+.PP
+.IP "\(bu" 2
+for decisions that would be useful contributions but there is currently nobody with the time to focus on the problem\&.
+.IP "\(bu" 2
+a graveyard for neglected decisions, e\&.g\&., where the decision authors focus on something more important instead\&.
+.PP
+.PP
+.RS 4
+The purpose of this step is to have a clean 'Drafts' folder\&. 
+.RE
+.PP
+.SH "Rejected"
+.PP
+Alternatively, decisions might be rejected (e\&.g\&. status quo wins)\&. This step is for decisions for which a consensus exists that the decision should not be taken right now\&. If circumstances change, the decision may be revisited\&.
+.PP
+.RS 4
+The purpose of this final step is to have a clean 'Drafts' folder\&. 
+.RE
+.PP
+

@@ -1,0 +1,114 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the backend\+Odbc plugin is in the keys below
+\item infos/author = Florian Lindner \href{mailto:florian.lindner@student.tuwien.ac.at}{\texttt{ florian.\+lindner@student.\+tuwien.\+ac.\+at}}
+\item infos/licence = BSD
+\item infos/provides = backend
+\item infos/needs =
+\item infos/recommends =
+\item infos/placements = backend
+\item infos/status = reviewed unittest experimental
+\item infos/description = Plugin implementing full backend functionality for ODBC data sources
+\end{DoxyItemize}\hypertarget{md_src_plugins_backend_odbc_README_src_plugins_backend_odbc_README_md}{}\doxysection{Introduction}\label{md_src_plugins_backend_odbc_README_src_plugins_backend_odbc_README_md}
+This plugin is a backend plugin that stores and retrieves data using ODBC (Open Database Connectivity) data sources. It was tested with unix\+ODBC on Linux, but should also work with i\+ODBC and Microsoft ODBC (on Windows).
+
+\begin{quote}
+If you want to use it with one of the latter two ODBC implementations, feel free to update this documentation with your experiences! \end{quote}
+\hypertarget{md_src_plugins_backend_odbc_README_autotoc_md66}{}\doxysection{Required database scheme}\label{md_src_plugins_backend_odbc_README_autotoc_md66}
+The minimum requirement is a table with at least two columns\+:
+
+
+\begin{DoxyItemize}
+\item Key-\/name (string, primary key (PK))
+\item Key-\/value (string)
+\end{DoxyItemize}
+
+Additionally, a second table with at least three columns is required.
+
+
+\begin{DoxyItemize}
+\item Key-\/name (string, foreign key (FK) to the first table)
+\item Metakey-\/name (string)
+\item Metakey-\/value (string)
+\end{DoxyItemize}
+
+The primary key of this table consists of two columns\+: the {\bfseries{key-\/name}} and the {\bfseries{metakey-\/name}}. In the language of ER-\/modelling, the metatable can therefore by considered a {\bfseries{weak-\/entity}}.
+
+\begin{quote}
+Currently, only data sources with tables for metadata are supported! So you have to define a meta-\/table. Data sources without a table for metadata will probably be supported in the future. If you want to use metadata, the ODBC driver for your data source has to support {\bfseries{outer joins}}. This implies that currently, only ODBC drivers with support for outer joins are supported by the ODBC backend. \end{quote}
+The tables may also contain other columns, but they are not processed by this plugin and must support NULL-\/ or DEFAULT-\/values, if you want to add tuples to the table via Elektra (e.\+g. by calling {\ttfamily kdb set $<$key$>$ $<$value$>$}).
+
+If the column for the key-\/name is not defined as a primary key and multiple rows contain the same key-\/name, they are treated as one key, where the value is taken from the first row and the metadata is combined. If multiple metakeys with the same metakey-\/name exist for a key, the last metavalue is used. This behavior is part of the internal algorithm of the plugin and could change in the future. So if you want a predictable and expectable behavior, make sure that the described primary-\/ and foreign-\/key constraints are respected.\hypertarget{md_src_plugins_backend_odbc_README_autotoc_md67}{}\doxysection{Mounting}\label{md_src_plugins_backend_odbc_README_autotoc_md67}
+The \mbox{\hyperlink{doc_dev_mountpoints_md}{mountpoint definition}} for ODBC mountpoints, which is stored at {\ttfamily system\+:/elektra/mountpoints/$<$MP$>$/definition} is defined as follows. The placeholder {\ttfamily $<$MP$>$} is the path in the KDB where the root of the defined mountpoint is located. This is the path you specify when creating the mountpoint.
+
+The key-\/names for an ODBC mountpoint-\/definition are\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/plugins/backend}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/plugins/backend/name}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/dataSourceName}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/userName}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/password}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/timeout}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/table/name}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/table/keyColName}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/table/valColName}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/metaTable/name}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/metaTable/keyColName}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/metaTable/metaKeyColName}
+\DoxyCodeLine{system:/elektra/mountpoints/<mp>/definition/metaTable/metaValColName}
+
+\end{DoxyCode}
+
+
+The key-\/values for the keys under {\ttfamily definition} are defined as follows\+:
+
+
+\begin{DoxyItemize}
+\item {\itshape data\+Source\+Name\+:} The name of the ODBC data source (as defined in the odbc.\+ini file)
+\item {\itshape user\+Name\+:} Name of the user that should be used to connect to the data source
+\begin{DoxyItemize}
+\item can be empty if no username is required or if the value should be read from the odbc.\+ini file
+\end{DoxyItemize}
+\item {\itshape password\+:} Password for the user who wants to connect
+\begin{DoxyItemize}
+\item can be empty if no password is required or if the value should be read from the odbc.\+ini file
+\end{DoxyItemize}
+\item {\itshape timeout\+:} The number of seconds to wait after a connection attempt is considered as failed (0 = wait indefinitely)
+\begin{DoxyItemize}
+\item if empty, a default value is used
+\end{DoxyItemize}
+\item {\itshape table/name\+:} Name of the table where the data is stored
+\item {\itshape table/key\+Col\+Name\+:} The name of the column where the keynames are stored
+\item {\itshape table/val\+Col\+Name\+:} The name of the column where the key-\/values (strings) are stored
+\item {\itshape meta\+Table/name\+:} The name of the table where the metadata is stored
+\item {\itshape meta\+Table/key\+Col\+Name\+:} The name of the column in the Meta\+Table where the name of the key the metakey belongs to is stored
+\item {\itshape meta\+Table/meta\+Key\+Col\+Name\+:} The name of the column where the name of the metakeys is stored
+\item {\itshape meta\+Table/meta\+Val\+Col\+Name\+:} The name of the column where the value (string) of the metakeys is stored
+\end{DoxyItemize}
+
+There is a new command for the kdb-\/tool\+: {\ttfamily kdb mount\+Odbc}. Please be aware that the ODBC backend, in contrast to the classic file-\/based backend, currently does not support adding other plugins to the mountpoint.
+
+The {\ttfamily kdb mount\+Odbc} command accepts arguments for the previously described values of the {\itshape mountpoint definition}. For further details, please refer to the \mbox{\hyperlink{doc_help_kdb-mountOdbc_md}{man page}} for that command.
+
+For unmounting, there is no new command necessary. Just use the well-\/known {\ttfamily kdb umount $<$mountpoint$>$}, exactly like for the file-\/based backend.
+
+For more information about the ODBC backend, there is a tutorial available at \mbox{\hyperlink{doc_tutorials_odbc-backend_md}{/doc/tutorials/odbc-\/backend.md}}.\hypertarget{md_src_plugins_backend_odbc_README_autotoc_md68}{}\doxysection{Testing and Benchmarking}\label{md_src_plugins_backend_odbc_README_autotoc_md68}
+There are no dedicated unit tests that actually store, read or delete data from an ODBC data source. The reason is, that with the current concept, a valid ODBC data source definition (for unix\+ODBC in {\ttfamily /etc/unix\+ODBC/odbc.ini}) must be present. We don\textquotesingle{}t want to write to such an important system file that can influence other applications. It would also be cumbersome if we require the user to set up a specific ODBC configuration before running the tests .
+
+However, for basic functionality testing and performance evaluation, you can create a valid ODBC mountpoint yourself using {\ttfamily kdb mount\+Odbc} and then run the benchmark which is implemented in \href{/home/jenkins/workspace/libelektra-release/benchmarks/mountpoint.c}{\texttt{ /benchmarks/mountpoint.c}} for the created mountpoint. This approach makes it possible to test and benchmark any valid mountpoint in the KDB. So different backends and plugins with different configurations can be tested and benchmarked. Just create a mountpoint with the backends, plugins and configuration that you want and run the benchmark with e.\+g. {\ttfamily bin/benchmark\+\_\+mountpoint $<$MP path$>$/benchmark} for this mountpoint.
+
+A short example that shows creating a new ODBC mountpoint and running benchmarks for Key\+Sets and metadata\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{bin/kdb mountOdbc Selektra "{}"{} "{}"{} elektraKeys keyName keyValue metaKeys keyName metaKeyName metaKeyValue "{}"{} user:/odbcSqlite}
+\DoxyCodeLine{bin/benchmark\_mountpoint -\/c 1000 user:/odbcSqlite}
+\DoxyCodeLine{bin/benchmark\_mountpoint -\/Mc 1000 user:/odbcSqlite}
+
+\end{DoxyCode}
+
+
+More information about benchmarking is available at /benchmarks/\+README.md. 

@@ -1,0 +1,206 @@
+.TH "kdbrecord.h" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdbrecord.h \- Defines for record\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <kdb\&.h>\fP
+.br
+\fC#include <kdbdiff\&.h>\fP
+.br
+\fC#include <kdbplugin\&.h>\fP
+.br
+\fC#include <kdbtypes\&.h>\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "bool \fBelektraRecordEnableRecording\fP (KDB *handle, const Key *parentKey, Key *errorKey)"
+.br
+.RI "Enable session recording\&. "
+.ti -1c
+.RI "bool \fBelektraRecordDisableRecording\fP (KDB *handle, Key *errorKey)"
+.br
+.RI "Disable session recording\&. "
+.ti -1c
+.RI "bool \fBelektraRecordResetSession\fP (KDB *handle, Key *errorKey)"
+.br
+.RI "Clears all recorded data\&. "
+.ti -1c
+.RI "bool \fBelektraRecordRecord\fP (KDB *handle, KDB *sessionStorageHandle, KeySet *newKeys, Key *parentKey, Key *errorKey)"
+.br
+.RI "Diff and record changes to the KDB instance in \fChandle\fP\&. "
+.ti -1c
+.RI "bool \fBelektraRecordUndo\fP (KDB *handle, KDB *sessionStorageHandle, Key *parentKey, Key *errorKey)"
+.br
+.RI "Undo changes that were recorded in the current recording session\&. "
+.ti -1c
+.RI "bool \fBelektraRecordRemoveKeys\fP (KDB *handle, KeySet *toRemove, bool recursive, Key *errorKey)"
+.br
+.RI "Removes the provided keys from the recording session\&. "
+.ti -1c
+.RI "bool \fBelektraRecordIsActive\fP (KDB *handle)"
+.br
+.RI "Check whether session recording is active in the given KDB instance\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Defines for record\&. 
+
+
+.PP
+\fBCopyright\fP
+.RS 4
+BSD License (see doc/COPYING or https://www.libelektra.org) 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "bool elektraRecordDisableRecording (KDB * handle, Key * errorKey)"
+
+.PP
+Disable session recording\&. This affects both the given \fChandle\fP as well as every KDB instance that will be created after this method has been called\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance to use 
+.br
+\fIerrorKey\fP used for reporting errors and warnings\&. As usual, they will be found as meta keys attached to this key\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fItrue\fP - recording has been disabled successfully @retfal false - there was an error disabling recording - see \fCerrorKey\fP for further details 
+.RE
+.PP
+
+.SS "bool elektraRecordEnableRecording (KDB * handle, const Key * parentKey, Key * errorKey)"
+
+.PP
+Enable session recording\&. This affects both the given \fChandle\fP as well as every KDB instance that will be created after this method has been called\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance to use 
+.br
+\fIparentKey\fP recording will be enabled for every key that is same or below this key 
+.br
+\fIerrorKey\fP used for reporting errors and warnings\&. As usual, they will be found as meta keys attached to this key\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fItrue\fP - recording has been enabled successfully @retfal false - there was an error enabling recording - see \fCerrorKey\fP for further details 
+.RE
+.PP
+
+.SS "bool elektraRecordIsActive (KDB * handle)"
+
+.PP
+Check whether session recording is active in the given KDB instance\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance to check 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI\fP .RE
+.PP
+
+.SS "bool elektraRecordRecord (KDB * handle, KDB * sessionStorageHandle, KeySet * newKeys, Key * parentKey, Key * errorKey)"
+
+.PP
+Diff and record changes to the KDB instance in \fChandle\fP\&. This function is mainly intended for use in the recorder plugin\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance that changes occured on 
+.br
+\fIsessionStorageHandle\fP the KDB instances that shall be used to persist the session diff\&. You can use the same as for \fChandle\fP\&. 
+.br
+\fInewKeys\fP the keyset with changed keys 
+.br
+\fIparentKey\fP only changes same or below this key will be determined 
+.br
+\fIerrorKey\fP used for reporting errors and warnings\&. As usual, they will be found as meta keys attached to this key\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fItrue\fP - changes were recorded successfully @retfal false - there was an error during recording - see \fCerrorKey\fP for further details 
+.RE
+.PP
+
+.SS "bool elektraRecordRemoveKeys (KDB * handle, KeySet * toRemove, bool recursive, Key * errorKey)"
+
+.PP
+Removes the provided keys from the recording session\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance to use for accessing recording data\&. 
+.br
+\fItoRemove\fP the keys in this keyset will be removed\&. 
+.br
+\fIrecursive\fP if \fCtrue\fP, also the keys below every specified key will be removed\&. 
+.br
+\fIerrorKey\fP used for reporting errors and warnings\&. As usual, they will be found as meta keys attached to this key\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fItrue\fP - removal was successful @retfal false - there was an error during the removal operation - see \fCerrorKey\fP for further details 
+.RE
+.PP
+
+.SS "bool elektraRecordResetSession (KDB * handle, Key * errorKey)"
+
+.PP
+Clears all recorded data\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance to use 
+.br
+\fIerrorKey\fP used for reporting errors and warnings\&. As usual, they will be found as meta keys attached to this key\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fItrue\fP - recording session has been cleared successfully @retfal false - there was an error clearing the recording session - see \fCerrorKey\fP for further details 
+.RE
+.PP
+
+.SS "bool elektraRecordUndo (KDB * handle, KDB * sessionStorageHandle, Key * parentKey, Key * errorKey)"
+
+.PP
+Undo changes that were recorded in the current recording session\&. After executing this function, the state of KDB should be the same as it was before starting the recording session\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIhandle\fP the KDB instance to use for accessing configuration data 
+.br
+\fIsessionStorageHandle\fP the KDB instance to use for accessing recording data\&. This can be the same as for \fChandle\fP 
+.br
+\fIparentKey\fP only changes same or below this key are undone\&. 
+.br
+\fIerrorKey\fP used for reporting errors and warnings\&. As usual, they will be found as meta keys attached to this key\&. 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fItrue\fP - changes were undone successfully @retfal false - there was an error during the undo operation - see \fCerrorKey\fP for further details 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

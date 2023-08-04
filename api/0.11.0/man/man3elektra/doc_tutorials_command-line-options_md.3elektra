@@ -1,0 +1,517 @@
+.TH "doc_tutorials_command-line-options_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_tutorials_command-line-options_md \- Command-line Options 
+ 
+.SH "Introduction"
+.PP
+Many applications use command-line options and environment variables as a way to override configuration values\&. In Elektra this can be automated by providing a specification that maps command-line options and environment variables to keys in the KDB\&.
+.PP
+The recommended way to do this is via the \fCgopts\fP plugin\&. This plugin internally calls the actual parser \fCelektraGetOpts\fP\&. However, since there are some downsides to calling the parser manually, we cannot generally recommend doing so\&. If you think you have a use case for calling \fCelektraGetOpts\fP directly, take a look at the section \fCAdvanced Use: Calling \fCelektraGetOpts\fP directly\fP below\&.
+.PP
+The parser uses a specification together with \fCargc\fP/\fCargv\fP and a list of environment variables to create keys in the \fCproc:/\fP namespace\&. Because the keys are in the \fCproc:/\fP namespace, they will be preferred over all other namespaces in a standard cascading lookup\&. This allows us to use command-line options or environment variables to override standard configuration keys\&.
+.SH "Setup"
+.PP
+While you could manually mount and configure \fCgopts\fP, it is \fInot recommended\fP doing so\&. Instead, you should use \fCelektraGOptsContract\fP to create a contract for use with \fC\fBkdbOpen()\fP\fP\&. This contract ensures that \fCgopts\fP is automatically mounted and correctly configured\&. To use \fCelektraGOptsContract\fP, include \fC\fBkdbgopts\&.h\fP\fP\&. This gives you access to these two functions:
+.PP
+.PP
+.nf
+int elektraGOptsContract (KeySet * contract, int argc, const char * const * argv, const char * const * envp, const Key * parentKey, KeySet * goptsConfig);
+
+int elektraGOptsContractFromStrings (KeySet * contract, size_t argsSize, const char * args, size_t envSize, const char * env, const Key * parentKey, KeySet * goptsConfig);
+.fi
+.PP
+.PP
+Whenever possible, we recommend that you use \fCelektraGOptsContract\fP since it has less memory and processing overhead than \fCelektraGOptsContractFromStrings\fP\&. However, to use \fCelektraGOptsContract\fP the pointers given for \fCargv\fP and \fCenvp\fP must remain valid until after calling \fC\fBkdbClose()\fP\fP, because the \fCgopts\fP plugin will directly use these pointers\&. In the standard use case (i\&.e\&. using the \fCargv\fP from \fC\fBmain()\fP\fP and the global \fCenviron\fP for \fCenvp\fP), this restriction is not a problem\&.
+.PP
+An example for using \fCelektraGOptsContract\fP could look like this:
+.PP
+.PP
+.nf
+extern char ** environ;
+
+int main (int argc, char ** argv)
+{
+  Key * parentKey = keyNew ("/sw/org/example/#0/current", KEY_END);
+
+  KeySet * contract = ksNew (0, KS_END);
+  KeySet * goptsConfig = ksNew (0, KS_END);
+
+  // error handling omitted for brevity
+  elektraGOptsContract (contract, argc, argv, environ, parentKey, goptsConfig);
+
+  KDB * kdb = kdbOpen (contract, parentKey);
+}
+.fi
+.PP
+.PP
+If you cannot provide pointers that meet the requirements, you may use \fCelektraGOptsContractFromStrings\fP\&. This function copies its arguments \fCargs\fP and \fCenv\fP into separate memory, so the pointers need only be valid for the duration of the function call\&. This is mainly useful for language bindings, since in many programming languages manual memory management is not possible and there is no (easy) way to ensure the \fCargv\fP and \fCenvp\fP pointers meet the necessary requirements\&.
+.PP
+The \fCgopts\fP plugin can also use operating system specific functions to retrieve the command-line arguments and environment variables internally\&. We recommend that you do not rely on this behavior whenever possible, since it can be a bit flaky (especially for command-line arguments)\&. However, if for example you are writing a library or for some other reason do not have access to the necessary data, you can use this fallback\&.
+.PP
+If you pass \fCargc=0\fP \fBand\fP \fCargv=NULL\fP to \fCelektraGOptsContract\fP or \fCargsSize=0\fP \fBand\fP \fCargs=NULL\fP to \fCelektraGOptsContractFromStrings\fP, \fCgopts\fP will fallback to the internal lookup of command-line options\&. Similarly, if you pass \fCenvp=NULL\fP to \fCelektraGOptsContract\fP or \fCenvSize=0\fP \fBand\fP \fCenv=NULL\fP to \fCelektraGOptsContractFromStrings\fP, environment variables will be retrieved internally\&.
+.PP
+The other parameters are the same for both functions\&. The contract will be written into the \fCcontract\fP KeySet\&. The \fCparentKey\fP indicates where to find the specification\&. The actual namespace that \fCparentKey\fP uses is irrelevant (we recommend a cascading key, so that it can be re-used for \fC\fBkdbGet()\fP\fP)\&. The parser will use the keys below the \fCspec:/\fP namespace key equivalent to \fCparentKey\fP as the specification, and it will write keys to the equivalent key in \fCproc:/\fP\&.
+.PP
+The last parameter \fCgoptsConfig\fP can be used to provide additional configuration values to \fCgopts\fP\&. For example, this can be used to configure the auto-generated help message\&. The keys that \fCgopts\fP accepts in this KeySet will be explained throughout the document \&. A full list can be found in the \fB`gopts` README\fP\&.
+.SH "Specification"
+.PP
+This section describes the specification used by the command-line option and environment variable parser\&.
+.SS "Options"
+To define a command-line option either set the \fCopt\fP metakey to the short option you want to use, or set \fCopt/long\fP to the long option you want to use\&. For short options, only the first character of the given value will be used ('\\0' is ignored)\&. Short and long options can be used simultaneously\&.
+.PP
+Additionally, a key can also be associated with multiple short/long options\&. To achieve this treat \fCopt\fP as an array\&. For example for two options \fC-a\fP and \fC-b\fP you would set \fCopt=#1\fP, \fCopt/#0=a\fP and \fCopt/#1=b\fP\&. If not explicitly stated otherwise, you can replace \fCopt\fP with any \fCopt/#\fP array element in all meta-keys mentioned in this document\&. This of course includes long options (i\&.e\&. \fCopt/#0/long\fP, etc\&.)\&.
+.PP
+While you can specify multiple options (or environment variables, see below) for a single key, only one of them can be used at the same time\&. Using two or more options (or variables) that are all linked to the same key, will result in an error\&.
+.SS "Option Arguments"
+Per default an option is expected to have an argument\&. Arguments to short and long options are given in the same way as with \fCgetopt_long(3)\fP (i\&.e\&. \fC-oarg\fP, \fC-o arg\fP, \fC--option arg\fP or \fC--option=arg\fP)\&.
+.PP
+To change whether an option expects an argument set \fCopt/arg\fP to either \fC'none'\fP or \fC'optional'\fP (the default is \fC'required'\fP)\&.
+.PP
+.IP "\(bu" 2
+If you choose \fC'none'\fP, the corresponding key will be set to \fC'1'\fP, if the option is used\&. This value can be changed by setting \fCopt/flagvalue\fP\&.
+.IP "\(bu" 2
+An option that is set to \fC'optional'\fP is treated the same as with \fC'none'\fP, except that you can also set the value with the long option form \fC--option=value\fP\&. This also means that \fCopt/flagvalue\fP is used, if no argument is given\&. Contrary to \fCgetopt_long(3)\fP options with optional arguments can still have short forms\&. They just cannot have an argument in this form\&.
+.PP
+.SS "Environment Variables"
+Elektra also supports parsing environment variables in a similar manner\&. For these there are however, less configuration options\&. You can simply specify one or more environment variables for a key using the \fCenv\fP metakey (or \fCenv/#\fP meta-array for multiple)\&.
+.SS "Arrays"
+Both, options and environment variables, expose special behavior, if used in combination with arrays\&.
+.PP
+If an option is specified on a key with basename \fC#\fP, the option can be used repeatedly\&. All occurrences will be collected into the array\&.
+.PP
+Environment variables obviously cannot be repeated, instead a behavior similar to that used for PATH is adopted\&. On Windows the variable will be split at each ';' character\&. On all other systems ':' is used as a separator\&.
+.SS "Parameter Arguments"
+All unused elements of \fCargv\fP are collected into an array\&. You can access this array by specifying \fCargs=remaining\fP on a key with basename \fC#\fP\&. The array will be copied into this key\&. As is the case with getopt(3) processing of options will stop, if \fC--\fP is encountered in \fCargv\fP\&.
+.PP
+If we parse command-line options like the POSIX version of getopt(3) does, then we would also stop processing options at the first non-option argument\&. This is not the case by default, but we can enable this behavior\&. To do so, you need to pass a Key \fC/posixly\fP with value \fC1\fP in the \fCgoptsConfig\fP KeySet of the \fCgopts\fP contract\&.
+.PP
+Additionally, there is \fCargs=indexed\fP\&. If it is specified on a key, the key must also have the metakey \fCargs/index=N\fP set to an integer \fCN\fP\&. Such a key will be set to the unused element at index \fCN\fP\&. If a key has \fCargs=indexed\fP and \fCargs/index=N\fP, then there must also be keys for all integers \fC0 <= X < N\fP with \fCargs=indexed\fP and \fCargs/index=N\fP set\&. For example, you cannot use \fCargs/index=0\fP and \fCargs/index=2\fP without \fCargs/index=1\fP\&.
+.PP
+Combining \fCargs=indexed\fP and \fCargs=remaining\fP in the same specification (on different keys) is also possible\&. The key with \fCargs=remaining\fP will only contain those elements not used via \fCargs=indexed\fP\&. For example, if there are keys with \fCargs/index=0\fP and \fCargs/index=1\fP then the \fCargs=remaining\fP array will start with the third (index 2) parameter argument\&. Note however, the \fCargs=remaining\fP array \fBalways\fP starts with index \fC#0\fP, even if it doesn't contain the first parameter argument\&.
+.SS "Example"
+.PP
+.nf
+[from]
+args = indexed
+args/index = 0
+
+[to]
+args = indexed
+args/index = 1
+
+[more/#]
+args = remaining
+.fi
+.PP
+.PP
+If an application \fCapp\fP with the specification above is called as \fC\&./app apple banana cherry date\fP, then the keys will be assigned as follows:
+.PP
+.IP "\(bu" 2
+\fCfrom = apple\fP
+.IP "\(bu" 2
+\fCto = banana\fP
+.IP "\(bu" 2
+\fCmore/#0 = cherry\fP
+.IP "\(bu" 2
+\fCmore/#1 = date\fP
+.PP
+.SS "Sub-Commands"
+The parser also supports sub-commands\&. Explaining sub-commands is easiest through the help of an example: \fCadd\fP and \fCcommit\fP are both sub-commands of \fCgit\fP, since we can call \fCgit add\fP and \fCgit commit\fP and they do entirely different things\&. The most important impact of using sub-commands is their effect on option arguments\&. For example calling \fCgit -p add\fP and \fCgit add -p\fP result in different behavior, since the \fC-p\fP option is interpreted differently\&. The options that \fCgit\fP understands are separate from the options that its sub-command \fCadd\fP knows\&. However, the option \fC-p\fP is understood by both\&. In \fCgit\fP it is short for \fC--paginate\fP and in \fCadd\fP it is short for \fC--patch\fP\&.
+.PP
+An important thing to know about sub-commands is that they automatically turn on POSIX mode\&. This means \fBall\fP options for a specific sub-command must be given before any non-option arguments (such as parameters or sub-commands)\&. Otherwise, we couldn't distinguish between \fCgit -p add\fP and \fCgit add -p\fP\&. In other words, an option argument is always assigned to the first sub-command to its left\&. Any element of \fCargv\fP that is not an argument for a sub-command, either switches to a new sub-command or is the start of the parameter arguments\&.
+.PP
+A sub-command is created by specifying \fCcommand\fP on a key\&. To enable sub-command processing the parent key of the whole specification must have \fCcommand\fP set to an empty string\&. All keys marked with \fCcommand\fP \fBdirectly\fP below another key \fCK\fP marked with \fCcommand\fP (e\&.g\&. the parent key) are sub-commands of \fCK\fP\&. It is an error, if the immediate parent of a key \fCX\fP marked with \fCcommand\fP is not marked with \fCcommand\fP and \fCX\fP is not the parent of the whole specification\&.
+.PP
+To inform the application about the invoked sub-commands, the parser sets each \fCcommand\fP key to one of two values:
+.PP
+.IP "\(bu" 2
+The basename of the key, whose command was invoked\&.
+.IP "\(bu" 2
+An empty string otherwise\&.
+.PP
+.PP
+For example consider \fC\&./app add more\fP: The parent key will be set to the basename of whatever key \fCcommand=add\fP was specified on, the key for \fCadd\fP will be set to the basename corresponding to \fCmore\fP and the key for \fCmore\fP is set to an empty string, because none of its sub-commands were invoked\&. A more detailed example is shown below\&.
+.PP
+Every key considered by the parser is assigned either to the root command, or a single sub-command\&. Specifically, each key is assigned to the command of its immediate parent\&. If sub-commands are used and the immediate parent of an \fCopt\fP or \fCargs\fP key has no \fCcommand\fP metadata an error occurs\&. The value of a key will \fBonly\fP be set, if the corresponding sub-command was invoked\&.
+.PP
+Lastly, it is allowed to have keys with \fCargs\fP and \fCcommand\fP below the same parent\&. If a matching sub-command is found among the \fCcommand\fP keys, processing will continue there\&. Otherwise, the \fCargs\fP keys will be considered\&. This allows an application to implement dynamic commands (like \fCgit\fP or \fCkdb\fP) by using the \fCargs=remaining\fP array to invoke another application\&.
+.PP
+If an unknown sub-command is encountered without an \fCargs\fP key, an error is returned\&.
+.PP
+All of this is best understood with an example:
+.PP
+.PP
+.nf
+[kdb]
+command = ""
+
+[kdb/printversion]
+description = "print version information and exit (ignoring all other options/commands/parameters)"
+opt = v
+opt/long = version
+opt/arg = none
+
+[kdb/getter]
+description = "get a key's value"
+command = get
+
+[kdb/getter/verbose]
+description = "print additional information about where the value comes from"
+opt = v
+opt/long = verbose
+opt/arg = none
+
+[kdb/getter/keyname]
+description = "name of the key to read"
+args = indexed
+args/index = 0
+
+[kdb/setter]
+description = "set a key's value"
+command = set
+
+[kdb/setter/verbose]
+description = "print additional information about where the value will be stored"
+opt = v
+opt/long = verbose
+opt/arg = none
+
+[kdb/setter/keyname]
+description = "name of the key to write"
+args = indexed
+args/index = 0
+
+[kdb/setter/value]
+description = "value to be written"
+args = indexed
+args/index = 1
+
+[kdb/dynamic/#]
+description = "dynamically call a user-supplied command"
+args = remaining
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+If we invoke \fCkdb -v\fP, keys below \fCkdb/getter\fP, \fCkdb/setter\fP and \fCkdb/dynamic\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = ''\fP
+.IP "  \(bu" 4
+\fCkdb/printversion = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.PP
+
+.IP "\(bu" 2
+If we invoke \fCkdb get -v name\fP, keys below \fCkdb/setter\fP and \fCkdb/dynamic\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = getter\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/getter/verbose = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter/keyname = name\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.PP
+
+.IP "\(bu" 2
+If we invoke \fCkdb -v set -v\fP, keys below \fCkdb/getter\fP and \fCkdb/dynamic\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = setter\fP
+.IP "  \(bu" 4
+\fCkdb/printversion = 1\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/setter/verbose = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.PP
+
+.IP "\(bu" 2
+If we invoke \fCkdb -v custom -v -x z\fP, keys below \fCkdb/getter\fP and \fCkdb/setter\fP are not touched\&. The result is:
+.IP "  \(bu" 4
+\fCkdb = ''\fP
+.IP "  \(bu" 4
+\fCkdb/printversion = 1\fP
+.IP "  \(bu" 4
+\fCkdb/getter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/setter = ''\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#0 = custom\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#1 = -v\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#2 = -x\fP
+.IP "  \(bu" 4
+\fCkdb/dynamic/#3 = z\fP
+.PP
+
+.PP
+.PP
+To determine what code to execute, an application would just start with the parent key \fCkdb\fP in the example above\&. It would then repeatedly look at the current key's value, append that to the current key and continue, until the current key's value was the empty string \fC''\fP\&. Each of the examined keys corresponds to one of the sub-commands in the invocation and the keys directly below those, contain the relevant options (and for the last sub-command also parameters)\&.
+.PP
+The C code for this example is located in \fCexamples/optsCommands\&.c\fP\&.
+.SS "Precedence"
+The order of precedence is simple:
+.PP
+.IP "\(bu" 2
+If a short option for a key is found, it will always be used\&.
+.IP "\(bu" 2
+If none of the short options for a key are found, we look for long options\&.
+.IP "\(bu" 2
+If neither short nor long options are found, environment variables are considered\&.
+.PP
+.SS "Limitations"
+.IP "\(bu" 2
+Both options and environment variables can only be specified on a single key\&. If you need to have the value of one option/environment variable in multiple keys, you may use \fCfallback\fPs\&.
+.IP "\(bu" 2
+\fC-\fP cannot be used as a short option, because it would collide with the 'option end marker'\&.
+.IP "\(bu" 2
+\fChelp\fP cannot be used as a long option, because it would collide with the help option\&.
+.PP
+.SH "Help Message"
+.PP
+When the help option \fC--help\fP is encountered in \fCargv\fP, the parser only reads the specification, but does not create any keys in the \fCproc:/\fP namespace\&. It will however, generate a standard help message that you can print\&.
+.PP
+To find you, whether \fC--help\fP was encountered, check if the KeySet returned by \fC\fBkdbGet()\fP\fP contains the special key \fCproc:/elektra/gopts/help\fP with value \fC1\fP\&. If it does, the auto-generated help message is stored in the key \fCproc:/elektra/gopts/help/message\fP\&.
+.PP
+.PP
+.nf
+int main (int argc, char ** argv)
+{
+  // setup omitted for brevity
+  KeySet * ks = ksNew (0, KS_END);
+
+  // error handling omitted for brevity
+  kdbGet (kdb, ks, parentKey);
+
+  Key * help = ksLookupByName (ks, "proc:/elektra/gopts/help");
+  if (help != NULL && strcmp (keyString (help), "1") == 0)
+  {
+    printf ("%s\n", keyString (ksLookupByName (ks, "proc:/elektra/gopts/help/message")));
+    // cleanup omitted for brevity
+    return 0;
+  }
+}
+.fi
+.PP
+.PP
+.RS 4
+\fBNote\fP: The key \fCproc:/elektra/gopts/help\fP will always be generated\&. Only if its value is set to \fC1\fP, the \fC--help\fP option was encountered\&. 
+.RE
+.PP
+.SS "Structure of the Help Message"
+The help message consists of a usage line and an options list\&. The program name for the usage line is taken from \fCargv[0]\fP\&. If the value contains a slash (\fC/\fP) it will be considered a path and only the part after the last slash will be used\&.
+.PP
+The options list will contain exactly one entry for each key that has at least one option\&. Each entry has two parts\&. First all the options for the key are listed and then (possibly on the next line, if there are a lot of options), the description for the key is listed\&. The description is taken from the \fCopt/help\fP or alternatively the \fCdescription\fP metakey\&.
+.PP
+\fBNote:\fP \fCopt/help\fP is specified \fIonly once per key\fP\&. That means even if the key uses \fCopt/#0\fP, \fCopt/#1\fP, etc\&. (unlike most other metadata) the description will always be taken from \fCopt/help\fP directly, because there can only be one description\&. In general, we recommend using \fCdescription\fP, because it is used by other parts of Elektra as well\&. \fCopt/help\fP is intended to provide a less verbose description more suitable for the command-line\&.
+.SS "Sub-Commands"
+If sub-commands are in use, the generated help message will apply to the invoked sub-command only\&. For example \fC\&./app --help\fP generates the general help message for \fC\&./app\fP containing only options valid for the root command\&. But \fC\&./app more --help\fP generates the help message for the sub-command \fCmore\fP and contains options valid to this sub-command\&.
+.SS "Modifying the Help Message"
+The standard help message can be modified in a few different ways:
+.PP
+.IP "\(bu" 2
+The usage line can be replaced by a custom string (see below)\&.
+.IP "\(bu" 2
+A custom string can be inserted between the usage line and the options list (see below)\&.
+.IP "\(bu" 2
+An option can be hidden from the help message by setting \fCopt/hidden\fP to \fC'1'\fP\&. This hides both the long and short form of the option\&. If you want to hide just one form, use an array of two options and hide just one index\&.
+.IP "\(bu" 2
+If the option has an \fC'optional'\fP or \fC'required'\fP argument, the string \fCARG\fP will be used as a placeholder by default\&. You can change this, by setting \fCopt/arg/help\fP for the corresponding option\&.
+.PP
+.SS "Custom Usage Line"
+To use a custom usage line, you can either \fCmanually generate the help message\fP or you can pass the key \fC/help/usage\fP in the \fCgoptsConfig\fP KeySet\&. The value of \fC/help/usage\fP will be used to replace the default usage line\&.
+.PP
+Please note, that this will replace the whole usage line including the program name taken from \fCargv[0]\fP\&.
+.SS "Adding a Prefix Text"
+If you just want to add information above the options list, but not replace the whole usage line, you can do so by adding a prefix text\&. This can be done by \fCmanually generating the help message\fP or by passing the key \fC/help/prefix\fP in the \fCgoptsConfig\fP KeySet\&. The value of \fC/help/prefix\fP will be inserted between the usage line and the options list\&.
+.SH "Examples"
+.PP
+The following specification describes a command line interface similar to the one used by \fCrm\fP\&. (It is based on \fCrm (GNU coreutils) 8\&.30\fP)\&.
+.PP
+.PP
+.nf
+[force]
+opt = f
+opt/long = force
+opt/arg = none
+description = ignore nonexistent files and arguments, never prompt
+
+[interactive]
+opt = #1
+opt/#0 = i
+opt/#0/long = interactive
+opt/#0/arg = optional
+opt/#0/flagvalue = always
+opt/#0/arg/help = WHEN
+opt/#1 = I
+opt/#1/flagvalue = once
+opt/#1/arg = none
+description = prompt according to WHEN: never, once (-I), or always (-i); without WHEN, prompt always
+
+[singlefs]
+opt/long = one-file-system
+opt/arg = none
+description = when removing a hierarchy recursively, skip any directory that is on a file system different from that of the corresponding line argument
+
+[nopreserve]
+opt/long = no-preserve-root
+opt/arg = none
+description = do not treat '/' specially
+
+[preserve]
+opt/long = preserve-root
+opt/arg = optional
+opt/arg/help = all
+opt/flagvalue = root
+description = do not remove '/' (default); with 'all', reject any command line argument on a separate device from its parent
+
+[recursive]
+opt = #1
+opt/#0 = r
+opt/#0/long = recursive
+opt/#0/arg = none
+opt/#1 = R
+opt/#1/arg = none
+description = remove directories and their contents recursively
+
+[emptydirs]
+opt = d
+opt/long = dir
+opt/arg = none
+description = remove empty directories
+
+[verbose]
+opt = v
+opt/long = verbose
+opt/arg = none
+env = VERBOSE
+description = explain what is being done
+
+[showversion]
+opt/long = version
+opt/arg = none
+description = output version information and exit
+
+[files/#]
+args = remaining
+env = FILES
+description = the files that shall be deleted
+.fi
+.PP
+.PP
+If this specification is used in a program called \fCerm\fP (for Elektra rm), which is called like this:
+.PP
+.PP
+.nf
+FILES="one\&.txt:other\&.log" VERBOSE=1 erm -fi --recursive
+.fi
+.PP
+.PP
+The following keys will be created (assuming the specification is mounted at \fCspec:/sw/org/erm/#0/current\fP):
+.PP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/force = '1'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/interactive = 'always'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/recursive = '1'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/verbose = '1'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/files [array] = '#1'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/files/#0 = 'one\&.txt'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/files/#1 = 'other\&.log'\fP
+.PP
+.PP
+Calling \fCFILES='abcd\&.txt' erm 123\&.txt 456\&.txt\fP meanwhile will result in:
+.PP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/files [array] = '#1'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/files/#0 = '123\&.txt'\fP
+.IP "\(bu" 2
+\fCproc:/sw/org/erm/#0/current/files/#1 = '456\&.txt'\fP
+.PP
+.PP
+NOTE: \fCproc:/sw/org/erm/#0/current/files [array] = '#1'\fP means the \fCarray\fP metadata of \fCproc:/sw/org/erm/#0/current/files\fP is \fC#1\fP\&.
+.PP
+You can find a full working example \fChere\fP\&. However, it uses a hard coded specification which is a bit harder to read\&.
+.PP
+.SH "Advanced Use: Calling <tt>elektraGetOpts</tt> directly"
+.PP
+The actual command line parser is implemented in \fCelektraGetOpts\fP\&.
+.PP
+.PP
+.nf
+int elektraGetOpts (KeySet * ks, int argc, const char ** argv, const char ** envp, Key * parentKey);
+.fi
+.PP
+.PP
+To access this function, you first need to link your application against \fClibelektra-opts\fP and then include the header \fC\fBkdbopts\&.h\fP\fP\&.
+.PP
+.RS 4
+\fBNote:\fP \fClibelektra-opts\fP is an internal library and \fC\fBkdbopts\&.h\fP\fP an internal header\&. We do not make and guarantees to the API stability of the functions declared in \fC\fBkdbopts\&.h\fP\fP\&. We will do our best to keep the API compatible, but the only way to have guaranteed API stability and backwards compatibility is to only use the parser via \fCgopts\fP\&. 
+.RE
+.PP
+Calling \fCelektraGetOpts\fP directly has some disadvantages\&. The main one being that there is no way to validate the values of command-line options\&. When you use \fCgopts\fP, you can for example add the metadata \fCtype=long\fP to a key with a command-line option specification and the \fCtype\fP plugin will validate that the value generated by the command-line option parser is actually of type \fClong\fP\&. But since \fCelektraGetOpts\fP has no way of delegating to plugins (as it is independent of \fCkdbGet\fP), you need to do all validation manually\&.
+.PP
+So why would you want to call \fCelektraGetOpts\fP directly? The advantage of calling \fCelektraGetOpts\fP directly is that you have more control over where the specification comes from\&. With \fCgopts\fP we need to mount the specification before starting our application (at least before calling \fCkdbOpen\fP)\&. But if we call \fCelektraGetOpts\fP directly, we can pass whatever KeySet we want\&. This can be useful, if you are writing a custom configuration tool (like the standard \fCkdb\fP tool, but specific to your use case)\&. Such tools normally don't need (or want) to be configured via persistent config files, but often have an advanced command-line interface\&. Using the fairly feature-rich parser implemented in \fCelektraGetOpts\fP could be a good option here\&.
+.PP
+.SH "Advanced Use: Manually Generating the Help Message"
+.PP
+When using \fCgopts\fP you automatically get a generated help message via the key \fCproc:/elektra/gopts/help/message\fP, whenever the \fC--help\fP option is used\&. But if you want to show the help message in another case, or you cannot use the auto-generated message for some reason (e\&.g\&. you want to add a prefix text, but the content of this text is not known before calling \fC\fBkdbOpen()\fP\fP), then you need to generate the help message manually\&.
+.PP
+If you are using \fCelektraGetOpts\fP directly, manually generating the help message is the only option\&.
+.PP
+The help message can be generated with \fCelektraGetOptsHelpMessage\fP\&.
+.PP
+.PP
+.nf
+char * elektraGetOptsHelpMessage (Key * helpKey, const char * usage, const char * prefix);
+.fi
+.PP
+.PP
+To access this function, you first need to link your application against \fClibelektra-opts\fP and then include the header \fC\fBkdbopts\&.h\fP\fP\&.
+.PP
+.RS 4
+\fBNote:\fP \fClibelektra-opts\fP is an internal library and \fC\fBkdbopts\&.h\fP\fP an internal header\&. We do not make and guarantees to the API stability of the functions declared in \fC\fBkdbopts\&.h\fP\fP\&. We will do our best to keep the API compatible, but the only way to have guaranteed API stability and backwards compatibility is to only use the parser via \fCgopts\fP\&. 
+.RE
+.PP
+Calling \fCelektraGetOptsHelpMessage\fP allocates a new string that will contain the generated help message\&. You need to free the string with \fCelektraFree\fP, once you are done with it\&.
+.PP
+The parameter \fChelpKey\fP has to be the same key as passed to \fCelektraGetOpts\fP as \fCparentKey\fP, if you called \fCelektraGetOpts\fP directly\&. If you used \fCgopts\fP, you should pass the key \fCproc:/elektra/gopts/help\fP\&.
+.PP
+The parameter \fCusage\fP is used to replace the default usage line, if it is not \fCNULL\fP\&. The string \fCprefix\fP is inserted between the usage line and the options list, if it is not \fCNULL\fP\&.
+.PP
+With \fCgopts\fP this could look something like this:
+.PP
+.PP
+.nf
+int main (int argc, char ** argv)
+{
+  // setup omitted for brevity
+  kdbGet (kdb, ks, parentKey);
+
+  if (/* custom condition */)
+  {
+    Key * help = ksLookupByName (ks, "proc:/elektra/gopts/help", 0);
+    char * helpMessage = elektraGetOptsHelpMessage (help, "custom usage", "custom prefix");
+    printf ("%s\n", helpMessage);
+    elektraFree (helpMessage);
+  }
+}
+.fi
+.PP
+ 

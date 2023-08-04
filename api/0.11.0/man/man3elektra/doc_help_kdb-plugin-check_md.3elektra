@@ -1,0 +1,107 @@
+.TH "doc_help_kdb-plugin-check_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-plugin-check_md \- kdb-plugin-check(1) -- Perform internal checks 
+ 
+.SH "SYNOPSIS"
+.PP
+\fCkdb plugin-check [<plugin>]\fP
+.SH "DESCRIPTION"
+.PP
+This command is used to perform checks on the key database or an Elektra plugin\&.
+.PP
+Where the option argument, \fCplugin\fP is the plugin that a user wants to check\&. Use \fC-c\fP to pass options to that plugin\&. If no \fCplugin\fP argument is provided a check will be performed on the key database itself\&. Special values are returned upon exit to represent the outcome of a check\&.
+.SH "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-f\fP, \fC--force\fP: The user can also use this tool to perform write tests\&. Please note that this can result in configuration files being changed!
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&. Prints additional information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-c\fP, \fC--plugins-config <plugins-config>\fP: Add a plugin configuration in addition to \fC/module\fP\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information\&. Prints additional debug information in case of errors/warnings\&.
+.PP
+.SH "RETURN VALUES"
+.PP
+There are two different types of checks, a check on a plugin (by specifying the name of a plugin as an argument) or a check on the key database itself\&.
+.PP
+The outcome of a check on the key database is returned as an exit status\&. This integer represents an 8-bit pattern\&. Each bit represents a specific outcome as described below:
+.PP
+.IP "\(bu" 2
+0: No errors (no output)
+.IP "\(bu" 2
+Bit 1: Warning on opening the key database\&.
+.IP "\(bu" 2
+Bit 2: Error on opening the key database\&.
+.IP "\(bu" 2
+Bit 3: Warning on getting the value of a key\&.
+.IP "\(bu" 2
+Bit 4: Error on getting the value of a key\&.
+.IP "\(bu" 2
+Bit 5: Warning on setting the value of a key\&. (only checked when \fC-f\fP is used)
+.IP "\(bu" 2
+Bit 6: Error on setting the value of a key (only checked when \fC-f\fP is used)
+.IP "\(bu" 2
+Bit 7: Warning on closing the key database\&.
+.IP "\(bu" 2
+Bit 8: Error on closing the key database\&.
+.PP
+.PP
+So if the following number was returned \fC9\fP the user could figure out more detail by considering the bits: \fC00001001\fP The user would know that there was a warning on open and an error on get\&.
+.PP
+If a plugin name is given, checks will only be done on the given plugin\&. The returned values for a check on a plugin are returned as much simpler numbers\&.
+.PP
+Return values on plugin checking:
+.PP
+.IP "\(bu" 2
+0: Everything ok\&. (no output)
+.IP "\(bu" 2
+11: No such plugin found or plugin could not be opened\&.
+.IP "\(bu" 2
+12: Plugin did not pass checks\&.
+.IP "\(bu" 2
+13: Plugin has warnings\&.
+.PP
+.PP
+Please report any output caused by official plugins to \fChttps://git\&.libelektra\&.org/issues\fP\&.
+.PP
+Since the error code is a return value, it is not automatically displayed to the shell\&. If the user wants to have the value printed, they must do so manually (by running a command such as \fCecho $?\fP)\&.
+.SH "EXAMPLES"
+.PP
+To check the Key Database:
+.br
+ \fCkdb plugin-check\fP
+.PP
+To check the Key Database and then print the result:
+.br
+ \fCkdb plugin-check\fP followed by:
+.br
+ \fCecho $?\fP
+.PP
+To check the Key Database including write checks:
+.br
+ \fCkdb plugin-check -f\fP Note that this type of check may change configuration files\&.
+.PP
+To check the \fCline\fP plugin:
+.br
+ \fCkdb plugin-check line\fP
+.SH "SEE ALSO"
+.PP
+.IP "\(bu" 2
+For an introductions into plugins, read \fBelektra-plugins\fP\&.
+.IP "\(bu" 2
+To list all plugins use \fBkdb-plugin-list(1)\fP\&.
+.IP "\(bu" 2
+For information on a plugin use \fBkdb-plugin-info(1)\fP\&. 
+.PP
+

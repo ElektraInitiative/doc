@@ -1,0 +1,166 @@
+\label{doc_dev_kdb-operations_md_md_doc_dev_kdb_operations}%
+\Hypertarget{doc_dev_kdb-operations_md_md_doc_dev_kdb_operations}%
+ There are four main {\itshape operations} in {\ttfamily libelektra-\/kdb}\+: {\ttfamily open}, {\ttfamily get}, {\ttfamily set} and {\ttfamily close}. For each of these there is a {\ttfamily kdb$\ast$} function the user calls to trigger the operation and plugins export a function for each of the operations they support (at least {\ttfamily get}).
+
+Additionally, plugins may implement {\ttfamily commit} and {\ttfamily error}. These are part of the {\ttfamily set} operation and there is no corresponding {\ttfamily kdb\+Commit} or {\ttfamily kdb\+Error} function available in {\ttfamily libelektra-\/kdb}.
+
+The operations {\ttfamily get} and {\ttfamily set} also have different {\itshape phases}\+:
+
+
+\begin{DoxyItemize}
+\item The {\ttfamily get} operation has\+: {\ttfamily init}, {\ttfamily resolver}, {\ttfamily cachecheck}, {\ttfamily prestorage}, {\ttfamily storage} and {\ttfamily poststorage}.
+\item The {\ttfamily set} operation has\+: {\ttfamily resolver}, {\ttfamily prestorage}, {\ttfamily storage} and {\ttfamily poststorage} followed by {\ttfamily precommit}, {\ttfamily commit} and {\ttfamily postcommit} if the previous phases where successful or by {\ttfamily prerollback}, {\ttfamily rollback} and {\ttfamily postrollback} if the previous phases failed.
+\end{DoxyItemize}
+
+These phases are implemented by a backend plugin. Read the Documentation on Backend Plugins for more information on what backend plugins do.
+
+\begin{quote}
+{\bfseries{Note}} The steps of the operations described below, are referenced in the source code with {\ttfamily // Step X} comments. \end{quote}
+\hypertarget{doc_dev_kdb-operations_md_autotoc_md2697}{}\doxysection{$<$tt$>$open$<$/tt$>$ Operation}\label{doc_dev_kdb-operations_md_autotoc_md2697}
+The {\ttfamily open} operation implemented in {\ttfamily kdb\+Open} is the first thing that happens to all {\ttfamily KDB} instances.
+
+The basic flow of this operation is\+:
+
+
+\begin{DoxyEnumerate}
+\item Create empty {\ttfamily KDB} instance
+\item Configure {\ttfamily KDB} instance for bootstrap
+\item Run bootstrap {\ttfamily get} operation\+: This loads the contents of {\ttfamily system\+:/elektra/mountpoints} so that the mountpoints can be configured.
+\item Process contract and set up plugins for hooks (see \mbox{\hyperlink{doc_dev_hooks_md}{Hooks}})
+\item Parse mountpoints\+: This transforms the contents of {\ttfamily system\+:/elektra/mountpoints} into the internal state stored in a {\ttfamily KDB} instance.
+\item Reconfigure {\ttfamily KDB} with real mountpoints\+: This switches the {\ttfamily KDB} instance from bootstrap mode to use the real mountpoint state created above.
+\item Add hard coded mountpoints to {\ttfamily KDB} instance\+: There are a few hard coded mountpoints (root mountpoints, {\ttfamily system\+:/elektra/modules}, {\ttfamily system\+:/elektra/version}, etc.) that are always present. They are added in this step.
+\end{DoxyEnumerate}
+
+Namespaces in mountpoint configs\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily dir\+:/}, {\ttfamily user\+:/} and {\ttfamily system\+:/} mountpoints can be created without restrictions, except for the reserved sections listed below.
+\item {\ttfamily spec\+:/} mountpoints can be created with the same restrictions, but they are also treated specially during {\ttfamily get} and {\ttfamily set}.
+\item {\ttfamily proc\+:/} mountpoints are always read-\/only and receive special treatment during {\ttfamily get}
+\item {\ttfamily default\+:/} mountpoints are read-\/only and receive special treatment during {\ttfamily get}, specifically they only go through the {\ttfamily poststorage} phase
+\item mountpoints in all other namespaces are entirely illegal
+\end{DoxyItemize}
+
+\begin{quote}
+{\bfseries{Note}} The special treatments of the various namespaces are explained below in the sections for the {\ttfamily get} and {\ttfamily set} operation. \end{quote}
+Reserved sections\+:
+
+
+\begin{DoxyItemize}
+\item Creating a mountpoint for {\ttfamily /elektra} or below in {\itshape any namespace} is forbidden. This section of the KDB is reserved for Elektra\textquotesingle{}s own config.
+\item {\ttfamily system\+:/elektra/mountpoints}, {\ttfamily user\+:/elektra/mountpoints} and {\ttfamily dir\+:/elektra/mountpoints} are all required for the bootstrap process and use a hard coded backend. The backends are implemented by a standard file-\/based backend plugin that is defined at compile-\/time of {\ttfamily libelektra-\/kdb}.
+\item {\ttfamily system\+:/elektra/version} and {\ttfamily system\+:/elektra/modules} will always use hard coded read-\/only backends containing information about this Elektra installation. The backends are implemented by special purpose backend plugins.
+\end{DoxyItemize}\hypertarget{doc_dev_kdb-operations_md_autotoc_md2698}{}\doxysection{$<$tt$>$get$<$/tt$>$ Operation}\label{doc_dev_kdb-operations_md_autotoc_md2698}
+The purpose of the {\ttfamily get} operation is to read data stored in backends into a {\ttfamily KDB} instance.
+
+\begin{quote}
+{\bfseries{Note\+:}} Some details of a {\ttfamily get} operation are defined in the contract with backend plugins. \end{quote}
+Properties of {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}\+:
+
+
+\begin{DoxyItemize}
+\item After calling {\ttfamily kdb\+Get (kdb, ks, parent\+Key)}, the Key\+Set {\ttfamily ks} will contain {\itshape all keys} (including their values) that are stored in {\itshape any backend} with a mountpoint that is {\itshape below {\ttfamily parent\+Key}}.
+\item After calling {\ttfamily kdb\+Get (kdb, ks, parent\+Key)}, below {\ttfamily parent\+Key} the Key\+Set {\ttfamily ks} will {\itshape mostly} contain keys that are stored in a backend. The exception here are {\ttfamily proc\+:/} and {\ttfamily spec\+:/} keys. For other namespaces, all keys below {\ttfamily parent\+Key} will be removed from {\ttfamily ks}. For {\ttfamily proc\+:/} and {\ttfamily spec\+:/} only keys that overlap with a backend that was loaded will be removed from {\ttfamily ks}.
+\item The Key\+Set {\ttfamily ks} {\itshape may} contain other keys not below {\ttfamily parent\+Key}\+:
+\begin{DoxyEnumerate}
+\item Keys that are not below {\ttfamily parent\+Key}, but are stored in a backend that contains other keys which are below {\ttfamily parent\+Key}. These keys are returned, because backends are treated as one atomic unit. Either all keys within a backend are read, or none of them are.
+\item Keys that were already present in {\ttfamily ks} when {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} was called and do not conflict with the goal of representing the current state of the KDB below {\ttfamily parent\+Key}.
+\end{DoxyEnumerate}
+\item After calling {\ttfamily kdb\+Get (kdb, ks, parent\+Key)}, the Key {\ttfamily parent\+Key} will only have the {\ttfamily meta\+:/error/$\ast$} or {\ttfamily meta\+:/warnings/\#/$\ast$} metakeys, if the errors/warnings originate from this {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} call. In other words, {\ttfamily kdb\+Get ()} first clears any existing errors/warnings and only then starts doing the actual work.
+\item It is an error to use a {\ttfamily parent\+Key} with a namespace other than\+: {\ttfamily default\+:/}, {\ttfamily proc\+:/}, {\ttfamily spec\+:}, {\ttfamily dir\+:/}, {\ttfamily user\+:/}, {\ttfamily system\+:/} or cascading
+\end{DoxyItemize}
+
+To the caller it looks as if {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} had removed all keys below {\ttfamily parent\+Key}, as well as some others, from {\ttfamily ks} and then loaded the data from the backends. Which backends are actually read is an implementation detail. Which keys are removed from {\ttfamily ks} depends on the backends that are read.
+
+{\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} will always try to be efficient in achieving its goal of reading the keys below {\ttfamily parent\+Key}. It is only guaranteed that below {\ttfamily parent\+Key} the Key\+Set {\ttfamily ks} correctly represents the state of the KDB. For the rest of {\ttfamily ks} there are no such guarantees.
+
+\begin{quote}
+{\bfseries{Note\+:}} In the list below \char`\"{}phase\char`\"{} always refers to a phase of the {\ttfamily get} operation as described in \mbox{\hyperlink{doc_dev_backend-plugins_md}{the backend plugin contract}}. \end{quote}
+The flow of this operation is\+:
+
+
+\begin{DoxyEnumerate}
+\item Determine the backends needed to read all keys below {\ttfamily parent\+Key}
+\item Run the {\ttfamily open} operation for all required backends that haven\textquotesingle{}t been opened
+\item Run the {\ttfamily init} phase on all the backends that haven\textquotesingle{}t been initialized
+\item Run the {\ttfamily resolver} phase on all backends
+\item From now on ignore all backends, which indicated that there is no update.
+\item If all backends are now ignored, {\bfseries{return}}.
+\item If a global cache plugin is enabled\+: Ask the global cache plugin for the cache handles (normally modification times) for all backends.
+\item If all backends have an existing cache entry\+: Run the {\ttfamily cachecheck} phase on all backends
+\item If all backends indicated the cache is still valid\+: Ask the global cache plugin for the cached data and {\bfseries{return}}.
+\item Run the {\ttfamily prestorage} and {\ttfamily storage} phase on all backends.
+\item Run the {\ttfamily poststorage} phase of all {\ttfamily spec\+:/} backends.
+\item Merge the data from all backends
+\item If enabled, run the {\ttfamily gopts/get} hook.
+\item Run the {\ttfamily spec/copy} hook.
+\item Split data back into individual backends.
+\item Run the {\ttfamily poststorage} phase for all non-\/{\ttfamily spec\+:/} backends.
+\item Remove all keys which are below the parent key of any backend that has been read from {\ttfamily ks}.
+\item Merge the data from all backends into {\ttfamily ks}.
+\item If a global cache plugin is enabled, update cache.
+\item Run the {\ttfamily notification/send} hook. Then {\bfseries{return}}.
+\end{DoxyEnumerate}
+
+\begin{quote}
+{\bfseries{Note\+:}} In case of error, we abort immediately, restore {\ttfamily ks} to its original state and return. \end{quote}
+Influence of namespaces\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily spec\+:/} backends go through {\ttfamily init}, {\ttfamily resolver}, {\ttfamily cache}, {\ttfamily presetstorage} and {\ttfamily storage} phases as normal, but their {\ttfamily poststorage} phase is called earlier. This is required, because any validation and post-\/processing of {\ttfamily spec\+:/} keys needs to happen, before they are used as the specification for other keys in the actual {\ttfamily poststorage} phase.
+\item {\ttfamily dir\+:/}, {\ttfamily user\+:/} and {\ttfamily system\+:/} go through all phases as described above.
+\item {\ttfamily proc\+:/} mountpoints go through all the phases as described above, but they are not stored in the cache.
+\item {\ttfamily default\+:/} backends only go through the {\ttfamily poststorage} phase. This is because {\ttfamily default\+:/} keys are generated from the specification (stored as {\ttfamily spec\+:/} keys). Therefore, no {\ttfamily default\+:/} keys can exist before the specification is processed by the {\ttfamily spec/copy} hook.
+\item keys with other namespaces are always illegal in {\ttfamily ks}
+\end{DoxyItemize}\hypertarget{doc_dev_kdb-operations_md_autotoc_md2699}{}\doxysection{$<$tt$>$set$<$/tt$>$ Operation}\label{doc_dev_kdb-operations_md_autotoc_md2699}
+The purpose of the {\ttfamily set} operation is to write data from a {\ttfamily KDB} instance into backends.
+
+\begin{quote}
+{\bfseries{Note\+:}} Some details of a {\ttfamily set} operation are defined in the contract with backend plugins. \end{quote}
+Properties of {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}\+:
+
+
+\begin{DoxyItemize}
+\item When calling {\ttfamily kdb\+Set (kdb, ks, parent\+Key)} the contents (key names, values and metadata) of {\ttfamily ks} will {\itshape mostly} not be modified. The only modifications that are made to {\ttfamily ks} are those that originate from the {\ttfamily spec/copy} hook.
+\item {\itshape All keys} in {\ttfamily ks} that are below {\ttfamily parent\+Key} will be persisted in the KDB, when a {\ttfamily kdb\+Set (kdb, ks, parent\+Key)} call returns successfully. Additionally, any key in {\ttfamily ks} that shares a backend with another key which is below {\ttfamily parent\+Key} will also be persisted.
+\item Calling {\ttfamily kdb\+Set} may result in an error, if {\ttfamily kdb\+Get} wasn\textquotesingle{}t called on this {\ttfamily KDB} instance with the same {\ttfamily parent\+Key} at least once.
+\item After calling {\ttfamily kdb\+Set (kdb, ks, parent\+Key)}, the Key {\ttfamily parent\+Key} will only have the {\ttfamily meta\+:/error/$\ast$} or {\ttfamily meta\+:/warnings/\#/$\ast$} metakeys, if the errors/warnings originate from this {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} call. In other words, {\ttfamily kdb\+Set ()} first clears any existing errors/warnings and only then starts doing the actual work.
+\item It is an error to use a {\ttfamily parent\+Key} with a namespace other than\+: {\ttfamily default\+:/}, {\ttfamily proc\+:/}, {\ttfamily spec\+:}, {\ttfamily dir\+:/}, {\ttfamily user\+:/}, {\ttfamily system\+:/} or cascading
+\end{DoxyItemize}
+
+The flow of this operation is\+:
+
+
+\begin{DoxyEnumerate}
+\item Determine the backends needed to write all keys below {\ttfamily parent\+Key}.
+\item Check that all backends are opened and initialized (i.\+e. {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} was called).
+\item Run the {\ttfamily spec/copy} hook on {\ttfamily ks} (to add metakeys to newly created keys).
+\item Deep-\/\+Copy {\ttfamily ks} (below {\ttfamily parent\+Key}) into a new Key\+Set {\ttfamily set\+\_\+ks}
+\item Split {\ttfamily set\+\_\+ks} into individual backends
+\item Determine which backends contain changed data. Any backend that contains a key that needs sync (via {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+SYNC}) could contain changed data. From now on ignore all backends that have not changed. From now on also ignore all backends that were initialized as read-\/only. Issue a warning, if a change was detected (via {\ttfamily KEY\+\_\+\+FLAG\+\_\+\+SYNC}) in a read-\/only backend. \begin{quote}
+{\bfseries{Note}}\+: Steps 4-\/6 might be combined into a single procedure that deep-\/copies only keys from changed backends into separate Key\+Sets per backend \end{quote}
+7. Run the {\ttfamily resolver} and {\ttfamily prestorage} on all backends (abort immediately on error and go to e).
+\item Merge the results into a new version of {\ttfamily set\+\_\+ks}.
+\item Run the {\ttfamily spec/remove} hook on {\ttfamily set\+\_\+ks} (to remove copied metakeys).
+\item Split {\ttfamily set\+\_\+ks} into individual backends again.
+\item Run the {\ttfamily storage} and {\ttfamily poststorage} phases on all backends (abort immediately on error and go to e).
+\item If everything was successful\+: Run the {\ttfamily precommit} and {\ttfamily commit} phases on all backends (abort immediately on error and go to e), then run the {\ttfamily postcommit} phase on all backends (record all errors as warnings and ignore them) and {\bfseries{return}}.
+\end{DoxyEnumerate}
+
+
+\begin{DoxyEnumerate}
+\item If there was an error\+: Run the {\ttfamily prerollback}, {\ttfamily rollback} and {\ttfamily postrollback} phases on all backends and {\bfseries{return}}.  
+\end{DoxyEnumerate}
+
+Influence of namespaces\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily default\+:/} and {\ttfamily proc\+:/} keys are completely ignored by {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}
+\item {\ttfamily spec\+:/}, {\ttfamily dir\+:/}, {\ttfamily user\+:/} and {\ttfamily system\+:/} go through all phases as described above.
+\item keys with other namespaces are always illegal in {\ttfamily ks}
+\end{DoxyItemize}\hypertarget{doc_dev_kdb-operations_md_autotoc_md2700}{}\doxysection{$<$tt$>$close$<$/tt$>$ Operation}\label{doc_dev_kdb-operations_md_autotoc_md2700}
+The {\ttfamily close} operation is very simple. It simply frees up all resources used by a {\ttfamily KDB} instance. 

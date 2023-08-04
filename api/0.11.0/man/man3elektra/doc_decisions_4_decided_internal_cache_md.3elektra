@@ -1,0 +1,226 @@
+.TH "doc_decisions_4_decided_internal_cache_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_4_decided_internal_cache_md \- Internal KeySet Cache 
+ 
+.SH "Problem"
+.PP
+\fCkdbGet\fP might return more or fewer keys than requested\&. This was found confusing several times\&.
+.SS "More Keys"
+Even if calling \fCkdbGet\fP with a parent key below a mountpoint, \fCkdbGet\fP will nevertheless return all keys of the mountpoint\&. Pseudo code example, assuming there is a mountpoint at \fC/mountpoint\fP and a key \fC/mountpoint/other\fP:
+.PP
+.PP
+.nf
+kdbGet (kdb, ks, keyNew("/mountpoint/below"));
+assert (ksLookup (ks, "/mountpoint/other") == NULL);
+.fi
+.PP
+.PP
+It was found unexpected that this assert will fail\&.
+.PP
+In a similar fashion, calling \fCkdbSet\fP without the seemingly superfluous keys causes Elektra to unintentionally delete them from disk\&.
+.PP
+.PP
+.nf
+kdbGet (kdb, ks, keyNew("/mountpoint/below"));
+KeySet * below = ksCut (ks, keyNew("/mountpoint/below"));
+
+ksSet (kdb, below, keyNew("/mountpoint/below"));
+// suddenly /mountpoint/other has been removed from the configuration file on disk, even if the user explicitly stated to only change stuff in /mountpoint/below
+.fi
+.PP
+.SS "Fewer Keys"
+When doing a second \fCkdbGet\fP with a new keyset no keys will be returned when no backends report changed data, because kdb internally thinks the data is already up-to-date:
+.PP
+.PP
+.nf
+static void test_doubleGet (void)
+{
+        printf("running %s\n", __func__);
+
+        // Setup
+        Key * parentKey = keyNew("/somewhere", KS_END);
+        KeySet * ks = ksNew(0, KS_END);
+        KDB * kdb = kdbOpen (ksNew(0, KS_END), parentKey);
+        kdbGet (kdb, ks, parentKey);
+        ksAppendKey (ks, keyNew ("user:/somewhere", KEY_VALUE, "abc", KEY_END));
+        ksAppendKey (ks, keyNew ("user:/somewhere/key", KEY_VALUE, "xyz", KEY_END));
+        kdbSet (kdb, ks, parentKey);
+        kdbClose (kdb, parentKey);
+
+        // Scenario
+        kdb = kdbOpen (ksNew(0, KS_END), parentKey);
+
+        KeySet * ks1 = ksNew (0, KS_END);
+        KeySet * ks2 = ksNew (0, KS_END);
+
+        kdbGet (kdb, ks1, keyNew("/somewhere", KEY_END));
+        succeed_if (ksLookupByName (ks1, "/somewhere/key", 0) != NULL, "should find key (1)");
+        kdbGet (kdb, ks2, keyNew("/somewhere", KEY_END));
+        succeed_if (ksLookupByName (ks2, "/somewhere/key", 0) != NULL, "should find key (2)");
+}
+.fi
+.PP
+.PP
+It was found unexpected that the second assert - should find key (2) - will fail\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+memory consumption must be low for \fCkdbGet\fP, see \fB4\&. Goal: Performance\fP, in particular, deep duplication is too expensive
+.IP "\(bu" 2
+For non-optional parts of Elektra, also non-POSIX systems must be supported
+.PP
+.SH "Assumptions"
+.PP
+.SH "Considered Alternatives"
+.PP
+.SS "Keep Current Situation"
+Improve documentation to make people more aware of these two problems:
+.PP
+.IP "\(bu" 2
+add a tutorial about \fCkdbGet\fP semantics
+.IP "\(bu" 2
+add full examples how to correctly work with \fCkdbGet\fP
+.PP
+.SS "Changing <tt>parentKey</tt> according to mountpoints"
+'More keys':
+.PP
+Upon returning from \fCkdbGet\fP/\fCkdbSet\fP, set the keyname of parentKey to the key that actually is parent of the data that was loaded\&. I\&.e\&. to the mountpoint of the backend that contains parentKey\&. \fCparentKey\fP is already an inout-type argument, since we use both it's value and metadata to return some information\&.
+.PP
+A few people found this behavior just as unexpected as the current problem\&. E\&.g\&. a sequence of \fCkdbGet\fP and \fCkdbSet\fP with the same parent key might lead to different outcomes depending on the mountpoints\&.
+.PP
+'Fewer keys':
+.PP
+This is a bug in the logic of the 'nothing changed' optimization\&. A partial solution would be to copy the keys from \fCbackendData->keys\fP, so they are actually there, and we don't just assume they are there\&. Still some extra steps are required to make it work in all cases, e\&.g\&.:
+.PP
+.PP
+.nf
+TEST_F (Simple, NothingToDo2)
+{
+        using namespace kdb;
+        KDB kdb;
+        KeySet ks;
+
+        auto parentKey = "system:" + testRoot;
+
+        EXPECT_EQ (kdb\&.get (ks, parentKey), 0) << "nothing to do in get";
+
+        ks\&.append (Key (parentKey + "a", KEY_VALUE, "x", KEY_END));
+        kdb\&.set (ks, parentKey);
+
+        EXPECT_EQ (kdb\&.get (ks, parentKey), 0) << "nothing to do in get";
+        EXPECT_TRUE (ks\&.lookup (parentKey + "a")) << "key a not found";
+        EXPECT_EQ (ks\&.lookup (parentKey + "a")\&.get<std::string> (), "x") << "key a with wrong value";
+        // TODO: adding the line below breaks the test
+        //       This is because the Key instance is shared between `ks` and the internal data of `kdb`\&.
+        // ks\&.lookup(parentKey + "a")\&.set("y");
+
+        KeySet ks2;
+        EXPECT_EQ (kdb\&.get (ks2, parentKey), 0) << "nothing to do in get";
+        EXPECT_TRUE (ks2\&.lookup (parentKey + "a")) << "key a not found";
+        EXPECT_EQ (ks2\&.lookup (parentKey + "a")\&.get<std::string> (), "x") << "key a with wrong value";
+}
+.fi
+.PP
+.PP
+A very simple way to make it work would be to make the keys returned by kdbGet read-only\&. If we do not do this, we need a deep-copy or a copy-on-write copy\&.
+.SS "Cachefilter Plugin"
+Naively one would simply cache the whole keyset and use \fCksBelow\fP to always get the keyset\&.
+.PP
+This idea was implemented and later on \fCdiscarded: a3d95f\fP
+.PP
+The main problems are:
+.PP
+.IP "\(bu" 2
+very high memory consumption (duplication of KeySets)
+.IP "\(bu" 2
+problems specific to \fBhooks\fP, see \fC#1072\fP
+.PP
+.SS "MMAP Cache with parent key"
+We make the mmap cache non-optional so that we always have a keyset of configuration data internally\&. The cache will be used to do change tracking\&. From this keyset, we use \fCksBelow\fP to return the correct keyset\&.
+.PP
+Disadvantage: mmap implementation for Windows would be needed\&.
+.PP
+The cache should be updated at the end of every kdbGet that was a cache miss\&. So during kdbSet (assuming there is no external modification, i\&.e\&. conflict) the on-disk data of the cache should always be up-to-date\&. The idea would be to just read the cached keyset from disk and diff against the current keyset in kdbSet\&.
+.PP
+This would mean enabling change tracking also enables the cache (or at least updating the cache, we don't have to use it in kdbGet)\&. If that's not wanted or if the cache data cannot be used directly for some other reason, the same approach could still be used\&. We'd just have to write the keyset to disk during kdbGet and use it during kdbSet\&. Since disk space is far less precious than RAM, we could even create separate files for every parent key\&. If we do go down this route, kdbClose should clean up the files created by this KDB instance to avoid wasting disk space\&.
+.SS "MMAP Cache without parent key"
+We make the mmap cache non-optional and only use a single cache, caching everything\&. We remove the parent key of \fCkdbGet\fP and \fCkdbSet\fP and always return the keyset of the whole KDB\&.
+.PP
+.IP "\(bu" 2
+Disadvantage: mmap implementation for Windows would be needed
+.IP "\(bu" 2
+Then also symlinks (fallback, override etc\&.) and constraints for keys outside of the parentKey would work\&. It would make the \fC-a\fP option of \fCkdb get\fP unnecessary\&.
+.PP
+.PP
+It is still unclear whether this would actually be a good default behavior\&. Normally it is expected for mountpoints to be isolated If symlinks work like this, the isolation is partially broken\&. One could argue that the problem right now is that such 'broken' symlinks are not prevented\&. The proposed solution doesn't completely fix the problem either
+.PP
+For example:
+.PP
+.IP "\(bu" 2
+\fCsystem:/foo\fP is a mountpoint, there are no other mountpoints
+.IP "\(bu" 2
+\fCspec:/foo/bar\fP refers to \fCsystem:/abc\fP via \fCmeta:/override\fP
+.PP
+.PP
+Now in a plugin that is part of the mountpoint \fCsystem:/foo\fP doing a \fCksLookupByName (ks, '/foo/bar', 0)\fP would NOT use \fCsystem:/abc\fP, because that key is never part of the keyset passed to this plugin\&.
+.PP
+However, in an application that used \fCsystem:/foo\fP as the parent, the \fCmeta:/override\fP would work with your proposal\&. This seems like very confusing behavior, because both the application and the plugin seemingly use the same parent key\&.
+.SS "Data restrictions"
+Make all the keys returned by kdbGet completely read-only\&. To change the data it is required to append an entirely new key to replace the existing one\&. Then we just need to keep a shallow copy internally\&.
+.SS "API restrictions"
+Change the API and remove KeySet from kdbGet and kdbSet also option 4 in \fBthe operation sequences decision\fP\&. If the keyset is owned by the KDB handle, it should not be such a big surprise, if there is extra data in there\&.
+.PP
+This only fixes the 'Fewer Keys' issue\&.
+.SS "Copy On Write"
+We keep a duplicated keyset in-memory and tag the keys as copy-on-write (COW)\&. From this keyset, we use \fCksBelow\fP to return the correct keyset\&. If the user tries to change the value or metadata of these keys, the data gets duplicated\&. I\&.e\&. the original keyset is not changed\&. The name is not relevant\&. It is always read-only, because the key is in at least one keyset (the internal one)\&.
+.PP
+Possible copy-on-write implementations are described in \fBanother decision\fP\&.
+.SH "Decision"
+.PP
+Implement the copy-on-write approach\&.
+.PP
+We keep a copy of all keys returned by the backends in memory\&. We use \fCksBelow\fP to only return a copy-on-write copy of keys the user requested on \fCkdbGet\fP\&.
+.PP
+If the user tries to change the value or metadata of these keys, the data gets duplicated (copy-on-write)\&. I\&.e\&. the data of the original keys is not changed\&. The name is not relevant\&. It is always read-only, because the key is in at least one keyset (the internal one)\&. Possible copy-on-write implementations are described in \fBanother decision\fP\&.
+.PP
+In \fCkdbSet\fP we use the user-provided \fCKeySet\fP for all backends strictly below \fCparentKey\fP as before\&. For the backend that contains \fCparentKey\fP, we start with the internally cached data\&. We then remove everything that is at or below \fCparentKey\fP (via \fCksCut\fP) and replace it with the data from the user-provided \fCKeySet\fP\&. Keys not at or below \fCparentKey\fP therefore remain untouched\&.
+.SH "Rationale"
+.PP
+Semantics can be provided without additional code or overhead in the core\&. As we need copy-on-write for efficient change tracking anyway, it makes sense to also use this approach for the internal cache\&. The copy-on-write solution also does not require any changes or restrictions to the current API\&.
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+Before we can implement this decision, we need to implement the \fBcopy-on-write decision\fP\&.
+.IP "\(bu" 2
+\fCkdbGet\fP will only return copy-on-write copies of keys below \fCparentKey\fP from the internal cache\&.
+.IP "\(bu" 2
+\fCkdbSet\fP will use the keys within the internal cache to supplement all the keys above \fCparentKey\fP so that backends can write the correct data\&.
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBGlobal Validation\fP
+.IP "\(bu" 2
+\fBCopy On Write\fP
+.PP
+.SH "Notes"
+.PP
+Problem 'Fewer Keys' was found to be a \fC'horrible problem'\fP
+.PP
+Issues where the problem described here was found confusing:
+.PP
+.IP "\(bu" 2
+\fC#760\fP
+.IP "\(bu" 2
+\fC#1363\fP
+.PP
+.PP
+@mpranj wrote about the performance for \fCMMAP Cache without parent key\fP:
+.PP
+.RS 4
+in my benchmarks the pointer correction was never a bottleneck\&. 
+.RE
+.PP
+

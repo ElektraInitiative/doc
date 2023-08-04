@@ -1,0 +1,76 @@
+.TH "md_src_plugins_c_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_c_README \- Plugin: c 
+
+.IP "\(bu" 2
+infos = Information about the c plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/maintainer = Florian Lindner florian.lindner@student.tuwien.ac.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs = ccode
+.IP "\(bu" 2
+infos/provides = storage/c
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained reviewed unittest nodep libc writeonly preview
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = C code KeySet exports for Elektra
+.PP
+.SH "Usage"
+.PP
+Export a subset of the KDB as C code which creates a KeySet (\fCksNew(<number of keys>, keyNew(\&.\&.\&.), \&.\&.\&.)\fP)\&. This can be useful for generating test data or help to generate code for already defined configuration data\&.
+.PP
+.PP
+.nf
+kdb export user:/testdata c
+.fi
+.PP
+.PP
+The output can be used in C code for generating KeySets and the keys inside them\&. So one use case is to extract a part of the KDB and copy the generated code to create the exported part of the KDB programmatically, e\&.g\&. for another Elektra installation\&.
+.PP
+It can also be useful if you develop your own application and first create the necessary keys manually\&. Then you can export them from the KDB and just paste the generated code in the right place of the codebase of your application\&.
+.PP
+.RS 4
+Please note that if you use this plugin for creating a mountpoint (e\&.g\&. by calling \fCkdb mount <filename> <key> c\fP), only the content written by the last \fCkdbSet (\&.\&.\&.)\fP which includes the mountpoint will be inside the file\&. If you call \fCkdbSet (\&.\&.\&.)\fP for such a mountpoint, the previous content of the file is erased\&.
+.PP
+This is because the c plugin is implemented as a write-only plugin\&. It's recommended to only use it for exporting parts of the KDB by calling \fCkdb export <parent key>\fP\&. 
+.RE
+.PP
+.SH "Example"
+.PP
+In this example, we add some keys and metakeys to the KDB and export them with the c plugin\&. The output can directly be used inside C source code which uses Elektra\&.
+.PP
+.PP
+.nf
+kdb set user:/tests/cplugin/key1 value1
+#> Create a new key user:/tests/cplugin/key1 with string "value1"
+
+kdb set user:/tests/cplugin/key2 value2
+#> Create a new key user:/tests/cplugin/key2 with string "value2"
+
+kdb meta-set user:/tests/cplugin/key2 metakey2\&.1 metaval2\&.1
+kdb set user:/tests/cplugin/key2 metakey2\&.2 metaval2\&.2
+
+kdb set user:/tests/cplugin/key3 value3
+#> Create a new key user:/tests/cplugin/key3 with string "value3"
+
+kdb export user:/tests/cplugin c
+#> ksNew (3,
+#>      keyNew ("user:/tests/cplugin/key1", KEY_VALUE, "value1", KEY_END),
+#>      keyNew ("user:/tests/cplugin/key2", KEY_VALUE, "value2", KEY_META, "metakey2\&.1", "metaval2\&.1", KEY_META, "metakey2\&.2", "metaval2\&.2", KEY_END),
+#>      keyNew ("user:/tests/cplugin/key3", KEY_VALUE, "value3", KEY_END),
+#>      KS_END);
+.fi
+.PP
+ 

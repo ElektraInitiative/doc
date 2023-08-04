@@ -1,0 +1,114 @@
+.TH "doc_contrib_recording_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_contrib_recording_md \- Session Recording Technical Documentation 
+ A recording session is a period of time during which changes to the Key Database (KDB) are tracked and accumulated\&. It begins when recording starts and ends when recording stops\&. Throughout the recording session, all changes made to the KDB are recorded, including additions, modifications, and deletions of keys and their associated values\&. The recording session provides a complete audit trail of all changes made to the KDB during the specified period of time\&.
+.PP
+After every \fCkdbSet\fP, changes are calculated using Elektra's powerful changetracking API\&. The result of the calculation is an \fCElektraDiff\fP instance we'll call \fIpart diff\fP throughout this document\&. The session recording plugin merges those \fIpart diffs\fP together and creates and persists an overall \fIsession diff\fP\&.
+.PP
+Conceptually, this is depicted in the following image:
+.PP
+.PP
+Importantly, the \fIsession diff\fP is shared across processes\&. The \fIsession diff\fP persistently records all changes made to the whole KDB from any process between the start and end of the session\&. Because of the cross-process nature of a \fIsession diff\fP, it is also susceptible to 'simultaneous write' conflicts\&.
+.PP
+We prevent inconsistent data by using locks\&. As long as recording is enabled, there is a global lock on write operations in Elektra\&. If a conflict occurs, it looks to the applications the same as if there was a conflict writing configuration data\&. The high-level Elektra bindings already resolve such conflicts transparently\&.
+.PP
+All persistable namespaces are monitored for changes\&.
+.PP
+An important concept for modified keys is the distinction between \fIold\fP and \fInew\fP keys\&. Old keys refer to the keys how they were (values, metadata) \fIbefore\fP the modifications\&. New keys, on the other hand, refer to how the keys are \fIafter\fP the modifications\&. This concept does not apply to \fIadded\fP or \fIremoved\fP keys\&. You can think of added keys of only having new keys, and removed keys only having old keys\&.
+.PP
+We currently have no way of recording changes done outside of Elektra, i\&.e\&. when the configuration files got edited manually\&.
+.SH "Storage of the Session Diff"
+.PP
+The session diff is persisted in the respective namespace under \fC<namespace>:/elektra/record/session\fP\&. I\&.e\&. all keys in the diff of the \fCsystem\fP namespace are under \fCsystem:/elektra/record/session\fP\&.
+.PP
+The recording plugin needs its own KDB instance to store the session diff within Elektra\&. We provide hard coded default mountpoints for the
+.PP
+.IP "\(bu" 2
+\fCdir:/elektra/record/session\fP,
+.IP "\(bu" 2
+\fCsystem:/elektra/record/session\fP,
+.IP "\(bu" 2
+\fCspec:/elektra/record/session\fP and
+.IP "\(bu" 2
+\fCuser:/elektra/record/session\fP keys\&.
+.PP
+.PP
+These mountpoints store the keys in the same storage format as the default mountpoints like \fCsystem:/\fP and \fCuser:/\fP\&. The session storage file called \fCrecord-session\&.cfg\fP is located in the respective standard directories for their namespace\&.
+.PP
+The following list describes some important keys:
+.PP
+.IP "\(bu" 2
+\fC/elektra/record/config/active\fP
+.IP "  \(bu" 4
+If the key is present, session recording is active\&.
+.IP "  \(bu" 4
+The keys value is the parent key of the session\&.
+.IP "  \(bu" 4
+We will only record changes made to keys same or below of this parent key\&.
+.PP
+
+.IP "\(bu" 2
+\fC/elektra/record/session\fP
+.IP "  \(bu" 4
+Contains all the recorded data\&.
+.IP "  \(bu" 4
+Should be mounted into separate files in each namespace\&.
+.PP
+
+.IP "\(bu" 2
+\fC/elektra/record/session/diff/added\fP
+.IP "  \(bu" 4
+Contains all added keys\&.
+.PP
+
+.IP "\(bu" 2
+\fC/elektra/record/session/diff/modified/old\fP
+.IP "  \(bu" 4
+Contains the \fIold\fP values and metadata for the keys that have been modified\&.
+.PP
+
+.IP "\(bu" 2
+\fC/elektra/record/session/diff/modified/new\fP
+.IP "  \(bu" 4
+Contains the \fInew\fP values and metadata for the keys that have been modified\&.
+.PP
+
+.IP "\(bu" 2
+\fC/elektra/record/session/diff/removed\fP
+.IP "  \(bu" 4
+Contains all removed keys\&.
+.PP
+
+.PP
+.SH "Calculating the Session Diff"
+.PP
+Keys in a diff are divided into different categories:
+.PP
+.IP "\(bu" 2
+Added: the key is new and did not exist before
+.IP "\(bu" 2
+Modified: the key existed before and still exists but its value or metadata has been modified
+.IP "\(bu" 2
+Removed: the key has been removed
+.PP
+.PP
+Keys that stayed the same and therefore are not represented in a diff are called \fIunchanged\fP keys in the following paragraphs\&. The diagram below visualizes the state transitions when merging diffs\&.
+.PP
+The green ovals depict the state of a key in the session diff\&. The arrows depict the actions/state of a key in the new part diff\&.
+.PP
+For example, if a key is in \fCAdded\fP state in the session diff, and it is in \fCRemoved\fP state in the new part diff, then the key will be unchanged in the new version of the session diff\&. The transitions from \fCunchanged\fP to \fCAdded\fP, \fCModified\fP or \fCRemoved\fP are not depicted, as they are quite trivial\&.
+.PP
+.PP
+This functionality is quite generic and thus implemented as part of the normal diff API as \fCelektraDiffAppend\fP\&.
+.SH "Architecture"
+.PP
+The core recording feature has two main components:
+.PP
+.IP "1." 4
+Recording C API (\fClibelektra-record\fP): Implements everything the tooling needs\&.
+.IP "2." 4
+Recording Plugin (\fClibelektra-recorder\fP): Gets loaded as a hook plugin and calls the appropriate functions in \fClibelektra-record\fP\&. 
+.PP
+

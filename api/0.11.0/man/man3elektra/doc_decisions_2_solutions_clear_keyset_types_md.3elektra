@@ -1,0 +1,95 @@
+.TH "doc_decisions_2_solutions_clear_keyset_types_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_2_solutions_clear_keyset_types_md \- Types of \fCKeySet\fPs 
+ 
+.SH "Problem"
+.PP
+A \fCKeySet\fP can be used in different ways\&. Among these are at least:
+.PP
+.IP "\(bu" 2
+As originally intended, a set of configuration data
+.IP "\(bu" 2
+Metadata of a \fCKey\fP
+.IP "\(bu" 2
+General associative array data structure
+.PP
+.PP
+Only \fCKeySet\fPs with one kind of keys makes sense\&. These types have slightly different requirements, and therefore need to be treated differently\&. Currently, keys of different types can be arbitrary intermixed, leading to many error variants and error code that is time-consuming (full iteration is needed)\&.
+.PP
+The \fCKeySet\fP for metadata (returned by \fCkeyMeta\fP) also has the special requirement, that it must be restricted to metadata keys, even when it is empty\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+API must be minimal
+.IP "\(bu" 2
+API must be safe to use for each of the different types
+.IP "\(bu" 2
+\fCKeySet\fP returned by \fCkeyMeta\fP must always be limited to \fCmeta:/\fP keys
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+The types are not different enough to warrant the overhead of entirely different APIs and data structures\&.
+.IP "\(bu" 2
+Introducing a type safe API with different C-types for each type of \fCKeySet\fP, is not worth the necessary API duplication\&.
+.PP
+.SH "Considered Alternatives"
+.PP
+.SS "No restrictions"
+Leave \fCKeySet\fP entirely unrestricted, so it can be used for each use case\&.
+.PP
+Sometimes there can be odd edge cases\&. For example, what should a storage plugin do, if it receives a \fCKeySet\fP with both configuration data and metadata\&.
+.SS "Restriction based on first <tt>Key</tt>"
+To effectively create different kinds of \fCKeySet\fPs, we restrict which \fCKey\fPs can be inserted into a \fCKeySet\fP based on the first \fCKey\fP in a \fCKeySet\fP\&.
+.PP
+Any \fCKey\fP except cascading keys can be inserted into an empty \fCKeySet\fP\&. Only \fCKey\fPs matching the type of a \fCKeySet\fP can be inserted into a non-empty \fCKeySet\fP\&. The type of a \fCKeySet\fP is determined by the first \fCKey\fP, i\&.e\&., \fCksAtCursor(ks, 0)\fP\&. Transitively, this means the type of a \fCKeySet\fP is fixed when the first \fCKey\fP is inserted and when a \fCKeySet\fP is cleared, it becomes 'type-less' again\&.
+.PP
+The different types of \fCKeySet\fP will be:
+.PP
+.IP "1." 4
+Metadata: Can only contain \fCKey\fPs with namespace \fCKEY_NS_META\fP\&.
+.IP "2." 4
+General data: Can only contain \fCKey\fPs with namespace \fCKEY_NS_MISC\fP\&.
+.IP "3." 4
+Config data: Can only contain a mix of \fCKey\fPs with namespace \fCKEY_NS_SPEC\fP, \fCKEY_NS_PROC\fP, \fCKEY_NS_DIR\fP, \fCKEY_NS_USER\fP, \fCKEY_NS_SYSTEM\fP and \fCKEY_NS_DEFAULT\fP\&.
+.PP
+.PP
+Importantly, \fCKey\fPs with namespace \fCKEY_NS_CASCADING\fP can never be inserted into a \fCKeySet\fP\&. This is a restriction that simplifies the logic for cascading lookups\&. Instead, the \fCKEY_NS_MISC\fP namespace should be used\&.
+.PP
+Cascading lookups always try the namespaces allowed in the type of \fCKeySet\fP in order, but never try \fCKEY_NS_SPEC\fP\&. This means cascading lookups work for all types of \fCKeySet\fP the way a user would expect\&.
+.PP
+The special restriction for the \fCKeySet\fP returned by \fCkeyMeta\fP can be solved by adding a new flag to \fCstruct _KeySet\fP:
+.PP
+.PP
+.nf
+bool forceMeta : 1; 
+.fi
+.PP
+.SS "Different structs and APIs"
+Extract the implementation of \fCKeySet\fP into an internal API (and possibly data structure)\&. Expose a different type and API for each of the use cases\&.
+.PP
+This creates unnecessary overhead and at least some code duplication, even if it is minimized by extracting the implementation\&.
+.SS "KeySets also have Namespaces"
+Add a \fCksSetNamespace\fP API which allows to change the namespace of a KeySet\&. This requires an alias \fCKS_NS_CONFIG\fP to the namespaces \fCKEY_NS_SPEC\fP, \fCKEY_NS_PROC\fP, \fCKEY_NS_DIR\fP, \fCKEY_NS_USER\fP, \fCKEY_NS_SYSTEM\fP and \fCKEY_NS_DEFAULT\fP\&.
+.PP
+Only keys of the namespace set to \fCksSetNamespace\fP can be added\&. \fCksSetNamespace\fP fails if called after keys were added\&.
+.PP
+While the term 'namespace' (\fCNS\fP) is used here, it may be better to use 'type' to avoid confusion\&.
+.PP
+This alternative conflicts with the constraint of minimal API\&.
+.SH "Decision"
+.PP
+.SH "Rationale"
+.PP
+.SH "Implications"
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBNamespace for miscellaneous data\fP
+.PP
+.SH "Notes"
+.PP
+

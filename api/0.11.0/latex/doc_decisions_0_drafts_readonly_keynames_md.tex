@@ -1,0 +1,65 @@
+\label{doc_decisions_0_drafts_readonly_keynames_md_md_doc_decisions_0_drafts_readonly_keynames}%
+\Hypertarget{doc_decisions_0_drafts_readonly_keynames_md_md_doc_decisions_0_drafts_readonly_keynames}%
+ \hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1819}{}\doxysection{Problem}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1819}
+It might be a good idea to prevent changes to the keyname after creation. Currently, the name of a key is automatically made read-\/only, when it is currently part of or at some point in the past was part of at least one {\ttfamily Key\+Set}. There are discussions about making key names writable again, when the key is removed from all {\ttfamily Key\+Set}s.
+
+There may also be situations where changing the name of a key after its creation is required. In some situations, it may be wise to reuse a key instead of deleting it and creating a new one.\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1820}{}\doxysection{Constraints}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1820}
+
+\begin{DoxyEnumerate}
+\item {\ttfamily key\+Add\+Name} et al. still have to work up to a certain point 2. 3.
+\end{DoxyEnumerate}\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1821}{}\doxysection{Assumptions}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1821}
+1. 2. 3.\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1822}{}\doxysection{Considered Alternatives}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1822}
+\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1823}{}\doxysubsection{Separate API for keynames}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1823}
+Use the proposed {\ttfamily Elektra\+Buffer} struct to create a separate API for keynames independent of the {\ttfamily Key} API.\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1824}{}\doxysubsection{Read-\/only keynames}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1824}
+The key name should be permanently read-\/only after creation.
+
+TBD\+: How would we dynamically create keynames with this approach?\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1825}{}\doxysubsection{Re-\/entrant lock for the key name}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1825}
+Since we assume a single threaded context, this can be implemented as a simple counter.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{struct }\_Key \{}
+\DoxyCodeLine{    \textcolor{comment}{// [...] other stuff}}
+\DoxyCodeLine{   uint16\_t nameLock; \textcolor{comment}{// if zero, name is writable, otherwise name is readonly}}
+\DoxyCodeLine{\};}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void} keyLockName (Key * k) \{}
+\DoxyCodeLine{    k-\/>nameLock++;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void} keyUnlockName (Key * k) \{}
+\DoxyCodeLine{    \textcolor{keywordflow}{if} (k-\/>nameLock == 0) \textcolor{keywordflow}{return};}
+\DoxyCodeLine{    k-\/>nameLock-\/-\/;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void} \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (KeySet * ks, Key * k) \{}
+\DoxyCodeLine{    keyLockName (k);}
+\DoxyCodeLine{    \textcolor{comment}{// [...]}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void} ksRemove (KeySet * ks, elektraCursor cursor) \{}
+\DoxyCodeLine{    keyUnlockName (ks-\/>array[cursor]);}
+\DoxyCodeLine{    \textcolor{comment}{// [...]}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1826}{}\doxysubsection{Alternative C}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1826}
+\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1827}{}\doxysection{Decision}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1827}
+\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1828}{}\doxysection{Rationale}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1828}
+\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1829}{}\doxysection{Implications}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1829}
+
+\begin{DoxyItemize}
+\item 
+\item 
+\item 
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1830}{}\doxysection{Related Decisions}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1830}
+
+\begin{DoxyItemize}
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\item \mbox{[}\mbox{]}(doc\+\_\+decisions\+\_\+0\+\_\+drafts\+\_\+\+\_\+\+README\+\_\+md)
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1831}{}\doxysection{Notes}\label{doc_decisions_0_drafts_readonly_keynames_md_autotoc_md1831}
+
+\begin{DoxyItemize}
+\item \href{https://issues.libelektra.org/2202}{\texttt{ Issue 2202}} talks about how unexpected it is that keys will be readonly once in a keyset, but they don\textquotesingle{}t get unlocked when removing them from a keyset. 
+\end{DoxyItemize}

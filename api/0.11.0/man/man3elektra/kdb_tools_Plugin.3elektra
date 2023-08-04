@@ -1,0 +1,311 @@
+.TH "kdb::tools::Plugin" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+kdb::tools::Plugin \- This is a C++ representation of a plugin\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <plugin\&.hpp>\fP
+.SS "Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBPlugin\fP (\fBPluginSpec\fP const &spec, \fBkdb::KeySet\fP &modules)"
+.br
+.RI "Do not construct a plugin yourself, use \fBModules\&.load\fP\&. "
+.ti -1c
+.RI "void \fBloadInfo\fP ()"
+.br
+.RI "Gets the configuration for the plugin\&. "
+.ti -1c
+.RI "void \fBparse\fP ()"
+.br
+.RI "Creates symbol and info table\&. "
+.ti -1c
+.RI "void \fBcheck\fP (std::vector< std::string > &warnings)"
+.br
+.RI "Does various checks on the \fBPlugin\fP and throws exceptions if something is not ok\&. "
+.ti -1c
+.RI "std::string \fBlookupInfo\fP (std::string item, std::string section='infos')"
+.br
+.RI "Gets the whole string of an information item\&. "
+.ti -1c
+.RI "bool \fBfindInfo\fP (std::string \fBcheck\fP, std::string item, std::string section='infos')"
+.br
+.RI "Searches within a string of an information item\&. "
+.ti -1c
+.RI "\fBkdb::KeySet\fP \fBgetInfo\fP ()"
+.br
+.RI "Returns the whole keyset of information\&. "
+.ti -1c
+.RI "\fBkdb::KeySet\fP \fBgetNeededConfig\fP ()"
+.br
+.RI "In the plugin's contract there is a description of which config is needed in order to work together with a backend properly\&. "
+.ti -1c
+.RI "\fBkdb::KeySet\fP \fBgetConfig\fP ()"
+.br
+.RI "return the plugin config "
+.ti -1c
+.RI "func_t \fBgetSymbol\fP (std::string which)"
+.br
+.RI "Returns symbol to a function\&. "
+.ti -1c
+.RI "int \fBopen\fP (\fBkdb::Key\fP &errorKey)"
+.br
+.RI "Calls the open function of the plugin\&. "
+.ti -1c
+.RI "int \fBclose\fP (\fBkdb::Key\fP &errorKey)"
+.br
+.RI "Calls the close function of the plugin\&. "
+.ti -1c
+.RI "int \fBget\fP (\fBkdb::KeySet\fP &ks, \fBkdb::Key\fP &parentKey)"
+.br
+.RI "Calls the get function of the plugin\&. "
+.ti -1c
+.RI "int \fBset\fP (\fBkdb::KeySet\fP &ks, \fBkdb::Key\fP &parentKey)"
+.br
+.RI "Calls the set function of the plugin\&. "
+.ti -1c
+.RI "int \fBcommit\fP (\fBkdb::KeySet\fP &ks, \fBkdb::Key\fP &parentKey)"
+.br
+.RI "Calls the commit function of the plugin\&. "
+.ti -1c
+.RI "int \fBerror\fP (\fBkdb::KeySet\fP &ks, \fBkdb::Key\fP &parentKey)"
+.br
+.RI "Calls the error function of the plugin\&. "
+.ti -1c
+.RI "std::string \fBname\fP ()"
+.br
+.ti -1c
+.RI "std::string \fBgetFullName\fP ()"
+.br
+.in -1c
+.SS "Public Attributes"
+
+.in +1c
+.ti -1c
+.RI "bool \fBfirstRef\fP"
+.br
+.RI "Is toggled during serialization\&. "
+.in -1c
+.SH "Detailed Description"
+.PP 
+This is a C++ representation of a plugin\&. 
+
+It will load an Elektra plugin using the module loader from Elektra\&.
+.PP
+Then you can either check the plugins configuration using \fBloadInfo()\fP, \fBparse()\fP and check\&. Symbols can then be retrieved with \fBgetSymbol()\fP\&.
+.PP
+Or you can use the normal \fBopen()\fP, \fBclose()\fP, \fBget()\fP, \fBset()\fP and \fBerror()\fP API which every plugin exports\&. 
+.SH "Member Function Documentation"
+.PP 
+.SS "void kdb::tools::Plugin::check (std::vector< std::string > & warnings)"
+
+.PP
+Does various checks on the \fBPlugin\fP and throws exceptions if something is not ok\&. 
+.IP "\(bu" 2
+Check if \fBPlugin\fP is compatible to current Version of Backend-API\&.
+.PP
+.PP
+\fBExceptions\fP
+.RS 4
+\fIPluginCheckException\fP if there are errors 
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIwarnings\fP for warnings
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "int kdb::tools::Plugin::close (\fBkdb::Key\fP & errorKey)"
+
+.PP
+Calls the close function of the plugin\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "int kdb::tools::Plugin::commit (\fBkdb::KeySet\fP & ks, \fBkdb::Key\fP & parentKey)"
+
+.PP
+Calls the commit function of the plugin\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "int kdb::tools::Plugin::error (\fBkdb::KeySet\fP & ks, \fBkdb::Key\fP & parentKey)"
+
+.PP
+Calls the error function of the plugin\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "bool kdb::tools::Plugin::findInfo (std::string check, std::string item, std::string section = \fC'infos'\fP)"
+
+.PP
+Searches within a string of an information item\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBloadInfo()\fP 
+.RE
+.PP
+
+.SS "int kdb::tools::Plugin::get (\fBkdb::KeySet\fP & ks, \fBkdb::Key\fP & parentKey)"
+
+.PP
+Calls the get function of the plugin\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "\fBkdb::KeySet\fP kdb::tools::Plugin::getConfig ()"
+
+.PP
+return the plugin config 
+.PP
+\fBReturns\fP
+.RS 4
+the config supplied with constructor 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBgetNeededConfig()\fP 
+.RE
+.PP
+
+.SS "std::string kdb::tools::Plugin::getFullName ()"
+
+.PP
+\fBReturns\fP
+.RS 4
+the fullname of the plugin 
+.RE
+.PP
+
+.SS "\fBkdb::KeySet\fP kdb::tools::Plugin::getInfo ()\fC [inline]\fP"
+
+.PP
+Returns the whole keyset of information\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBloadInfo()\fP 
+.RE
+.PP
+
+.SS "\fBkdb::KeySet\fP kdb::tools::Plugin::getNeededConfig ()"
+
+.PP
+In the plugin's contract there is a description of which config is needed in order to work together with a backend properly\&. 
+.PP
+\fBReturns\fP
+.RS 4
+the keyset with the config needed for the backend\&. 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBgetConfig()\fP 
+.RE
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBloadInfo()\fP 
+.RE
+.PP
+
+.SS "func_t kdb::tools::Plugin::getSymbol (std::string which)\fC [inline]\fP"
+
+.PP
+Returns symbol to a function\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "void kdb::tools::Plugin::loadInfo ()"
+
+.PP
+Gets the configuration for the plugin\&. (will be done in \fBModules\&.load\fP) 
+.SS "std::string kdb::tools::Plugin::lookupInfo (std::string item, std::string section = \fC'infos'\fP)"
+
+.PP
+Gets the whole string of an information item\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBloadInfo()\fP 
+.RE
+.PP
+
+.SS "std::string kdb::tools::Plugin::name ()"
+
+.PP
+\fBReturns\fP
+.RS 4
+the name of the plugin (module) 
+.RE
+.PP
+
+.SS "int kdb::tools::Plugin::open (\fBkdb::Key\fP & errorKey)"
+
+.PP
+Calls the open function of the plugin\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SS "void kdb::tools::Plugin::parse ()"
+
+.PP
+Creates symbol and info table\&. (will be done in \fBModules\&.load\fP) 
+.SS "int kdb::tools::Plugin::set (\fBkdb::KeySet\fP & ks, \fBkdb::Key\fP & parentKey)"
+
+.PP
+Calls the set function of the plugin\&. 
+.PP
+\fBPrecondition\fP
+.RS 4
+\fBparse()\fP 
+.RE
+.PP
+
+.SH "Member Data Documentation"
+.PP 
+.SS "bool kdb::tools::Plugin::firstRef"
+
+.PP
+Is toggled during serialization\&. (is a hack, only allows a single serialization!) 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

@@ -1,0 +1,273 @@
+\label{doc_tutorials_profiling_md_md_doc_tutorials_profiling}%
+\Hypertarget{doc_tutorials_profiling_md_md_doc_tutorials_profiling}%
+ \hypertarget{doc_tutorials_profiling_md_autotoc_md4653}{}\doxysection{Execution Time}\label{doc_tutorials_profiling_md_autotoc_md4653}
+One of the primary resources in computing is execution time. To keep usage of this resource type low, it makes sense to profile code and check which code paths in a progamm take the longest time to execute. There exist various tools to handle this kind of profiling. For this tutorial we will use
+
+
+\begin{DoxyEnumerate}
+\item \href{https://valgrind.org/docs/manual/cl-manual.html}{\texttt{ Callgrind}} and the graphical frontend \href{https://kcachegrind.github.io/html/Home.html}{\texttt{ KCache\+Grind/\+QCache\+Grind}}, and
+\item \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} and \href{https://github.com/brendangregg/FlameGraph}{\texttt{ Flame\+Graph}} to visualize the data produced by \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}}
+\end{DoxyEnumerate}\hypertarget{doc_tutorials_profiling_md_autotoc_md4654}{}\doxysubsection{Callgrind}\label{doc_tutorials_profiling_md_autotoc_md4654}
+\hypertarget{doc_tutorials_profiling_md_autotoc_md4655}{}\doxysubsubsection{Choosing the Correct Build Type}\label{doc_tutorials_profiling_md_autotoc_md4655}
+Since we want to improve the readability of the Callgrind output we choose a build type that includes debug symbols. The two obvious choices for the build type are\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily Rel\+With\+Deb\+Info} (optimized build with debug symbols), and
+\item {\ttfamily Debug} (non-\/optimized build with debug symbols)
+\end{DoxyItemize}
+
+. We use {\ttfamily Debug} here, which should provide the most detailed profiling information.\hypertarget{doc_tutorials_profiling_md_autotoc_md4656}{}\doxysubsubsection{Disabling $<$tt$>$dlclose$<$/tt$>$ Calls}\label{doc_tutorials_profiling_md_autotoc_md4656}
+For this tutorial we decided to profile the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin. Since Elektra loads plugin code via {\ttfamily dlopen} and Callgrind \href{https://stackoverflow.com/questions/16719395}{\texttt{ does not support the function {\ttfamily dlclose} properly}} we remove the {\ttfamily dlclose} calls in the file \href{/home/jenkins/workspace/libelektra-release/src/libs/loader/dl.c}{\texttt{ {\ttfamily dl.\+c}}} temporarily. At the time of writing one option to do that is deleting
+
+
+\begin{DoxyItemize}
+\item a single line {\ttfamily dlclose} statement, and
+\item an {\ttfamily if}-\/statement that checks the return value of a {\ttfamily dlclose} call
+\end{DoxyItemize}
+
+. An unfortunate effect of this code update is that Elektra will now leak memory when it unloads a plugin. On the other hand, Callgrind will be able to add source code information about the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin to the profiling output.\hypertarget{doc_tutorials_profiling_md_autotoc_md4657}{}\doxysubsubsection{Building Elektra}\label{doc_tutorials_profiling_md_autotoc_md4657}
+As we already described before we use the {\ttfamily Debug} build type for the profiling run. To make sure we test the actual performance of the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} plugin we disable debug code and the logger. The following commands show one option to translate Elektra using this configuration, if we use \href{https://ninja-build.org}{\texttt{ Ninja}} as build tool\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir build}
+\DoxyCodeLine{cd build}
+\DoxyCodeLine{cmake -\/GNinja ..               \(\backslash\)}
+\DoxyCodeLine{      -\/DCMAKE\_BUILD\_TYPE=Debug \(\backslash\)}
+\DoxyCodeLine{      -\/DENABLE\_LOGGER=OFF      \(\backslash\)}
+\DoxyCodeLine{      -\/DENABLE\_DEBUG=OFF       \(\backslash\)}
+\DoxyCodeLine{      -\/DPLUGINS=ALL}
+\DoxyCodeLine{ninja}
+\DoxyCodeLine{cd .. \# Change working directory back to the root of repository}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_profiling_md_autotoc_md4658}{}\doxysubsubsection{Profiling the Code}\label{doc_tutorials_profiling_md_autotoc_md4658}
+We use the tool \`{}benchmark\+\_\+plugingetset\`{} to profile the execution time of \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}}. The file \`{}keyframes\+\_\+complex.json\`{} serves as input file for the plugin. Since {\ttfamily benchmark\+\_\+plugingetset} requires a data file called
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{test.\$plugin.in}
+
+\end{DoxyCode}
+
+
+, we save a copy of {\ttfamily keyframes\+\_\+complex.\+json} as {\ttfamily test.\+yajl.\+in} in the folder {\ttfamily benchmarks/data}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p benchmarks/data}
+\DoxyCodeLine{cp src/plugins/yajl/yajl/keyframes\_complex.json benchmarks/data/test.yajl.in}
+
+\end{DoxyCode}
+
+
+. After that we call {\ttfamily benchmark\+\_\+plugingetset} directly to make sure that everything works as expected\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{build/bin/benchmark\_plugingetset benchmarks/data user yajl get}
+
+\end{DoxyCode}
+
+
+. If the command above fails with a segmentation fault, then please check
+
+
+\begin{DoxyItemize}
+\item that the \mbox{\hyperlink{doc_COMPILE_md}{build system}} included \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}}, and
+\item that your OS is able to locate the plugin (e.\+g. append the {\ttfamily lib} directory in the build folder to {\ttfamily LD\+\_\+\+LIBRARY\+\_\+\+PATH} on Linux)
+\end{DoxyItemize}
+
+. If {\ttfamily benchmark\+\_\+plugingetset} executed successfully, then you can now use Callgrind to profile the command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{valgrind -\/-\/tool=callgrind -\/-\/callgrind-\/out-\/file=callgrind.out \(\backslash\)}
+\DoxyCodeLine{build/bin/benchmark\_plugingetset benchmarks/data user yajl get}
+
+\end{DoxyCode}
+
+
+. The command above will create a file called {\ttfamily callgrind.\+out} in the root of the repository. You can now remove the input data and the folder {\ttfamily benchmarks/data}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{rm benchmarks/data/test.yajl.in}
+\DoxyCodeLine{rmdir benchmarks/data}
+
+\end{DoxyCode}
+
+
+. If you use Docker to translate Elektra, then you might want to fix the paths in the file {\ttfamily callgrind.\+out} before you continue\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# The tool `sponge` is part of the `moreutils` package: https://joeyh.name/code/moreutils}
+\DoxyCodeLine{sed -\/E 's\string~/home/jenkins/workspace/(\(\backslash\).\(\backslash\)./)*\string~\string~g' callgrind.out | sponge callgrind.out}
+
+\end{DoxyCode}
+
+
+. Now we can analyze the file {\ttfamily callgrind.\+out} with a graphical tool such as QCache\+Grind\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{qcachegrind\&}
+
+\end{DoxyCode}
+
+
+. If everything worked as expected QCache\+Grind should open the file {\ttfamily callgrind.\+out} and display a window that look similar to the one below\+:
+
+
+
+. You can now select different parts of the call graph on the left to check which parts of the code take a long time to execute.\hypertarget{doc_tutorials_profiling_md_autotoc_md4659}{}\doxysubsection{XRay}\label{doc_tutorials_profiling_md_autotoc_md4659}
+\href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} is an extension for LLVM that adds profiling code to binaries. Profiling can be dynamically enabled and disabled via the environment variable {\ttfamily XRAY\+\_\+\+OPTIONS}.\hypertarget{doc_tutorials_profiling_md_autotoc_md4660}{}\doxysubsubsection{Choosing the Correct Build Type}\label{doc_tutorials_profiling_md_autotoc_md4660}
+Since \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} currently requires LLVM we need to set the compiler appropriately. We use Clang 8 in our example.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export CC=clang-\/8}
+\DoxyCodeLine{export CXX=clang++-\/8}
+
+\end{DoxyCode}
+
+
+. We enable the static build ({\ttfamily BUILD\+\_\+\+STATIC=ON}) and disable the dynamic build ({\ttfamily BUILD\+\_\+\+SHARED=OFF}), since \href{https://lists.llvm.org/pipermail/cfe-dev/2018-August/059147.html}{\texttt{ XRay currently does not support dynamic libraries}}. To enable Xray we use the compiler switch {\ttfamily -\/fxray-\/instrument}. To instrument every function we set the instruction threshold to {\ttfamily 1} with {\ttfamily -\/fxray-\/instruction-\/threshold=1}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export REPOSITORY\_DIRECTORY="{}\$PWD"{}}
+\DoxyCodeLine{export BUILD\_DIRECTORY="{}\$REPOSITORY\_DIRECTORY/build"{}}
+\DoxyCodeLine{mkdir -\/p "{}\$BUILD\_DIRECTORY"{}}
+\DoxyCodeLine{cd "{}\$BUILD\_DIRECTORY"{}}
+\DoxyCodeLine{cmake -\/GNinja "{}\$REPOSITORY\_DIRECTORY"{}                                   \(\backslash\)}
+\DoxyCodeLine{      -\/DCMAKE\_BUILD\_TYPE=Release                                        \(\backslash\)}
+\DoxyCodeLine{      -\/DBUILD\_SHARED=OFF                                                \(\backslash\)}
+\DoxyCodeLine{      -\/DBUILD\_STATIC=ON                                                 \(\backslash\)}
+\DoxyCodeLine{      -\/DCOMMON\_FLAGS='-\/fxray-\/instrument -\/fxray-\/instruction-\/threshold=1' \(\backslash\)}
+\DoxyCodeLine{      -\/DPLUGINS=ALL}
+
+\end{DoxyCode}
+
+
+We will analyze the \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL plugin}} below. Please make sure that the CMake command above includes the plugin\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{…}
+\DoxyCodeLine{-\/-\/ Include plugin yajl}
+\DoxyCodeLine{…}
+
+\end{DoxyCode}
+
+
+. Now we can translate the code with \href{https://ninja-build.org}{\texttt{ Ninja}} and change the current directory back to the root of the repository\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ninja}
+\DoxyCodeLine{cd "{}\$REPOSITORY\_DIRECTORY"{}}
+
+\end{DoxyCode}
+
+
+. In the next step we use \`{}benchmark\+\_\+plugingetset\`{} to execute \mbox{\hyperlink{md_src_plugins_yajl_README}{YAJL}} for the input file \href{../../src/plugins/yajl/yajl/keyframes_complex.json}{\texttt{ {\ttfamily keyframes\+\_\+complex.\+json}}}. To do that we
+
+
+\begin{DoxyEnumerate}
+\item create the folder {\ttfamily data} in the directory \`{}benchmarks\`{}, and
+\item save the file \href{../../src/plugins/yajl/yajl/keyframes_complex.json}{\texttt{ {\ttfamily keyframes\+\_\+complex.\+json}}} as {\ttfamily test.\+yajl.\+in}
+\end{DoxyEnumerate}
+
+. The following commands show you how to do that\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p benchmarks/data}
+\DoxyCodeLine{cp src/plugins/yajl/yajl/keyframes\_complex.json benchmarks/data/test.yajl.in}
+
+\end{DoxyCode}
+
+
+. Now we first check if running \mbox{[}{\ttfamily benchmark\+\_\+plugingetset}\mbox{]}\mbox{[}\mbox{]} works without instrumentation\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{"{}\$BUILD\_DIRECTORY/bin/benchmark\_plugingetset"{} benchmarks/data user yajl get}
+
+\end{DoxyCode}
+
+
+. If everything worked correctly, then the command above should finish successfully and not produce any output. To instrument the binary we set the environment variable {\ttfamily XRAY\+\_\+\+OPTIONS} to the value {\ttfamily xray\+\_\+mode=xray-\/basic verbosity=1}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{export XRAY\_OPTIONS='xray\_mode=xray-\/basic patch\_premain=true verbosity=1'}
+\DoxyCodeLine{"{}\$BUILD\_DIRECTORY/bin/benchmark\_plugingetset"{} benchmarks/data user yajl get}
+
+\end{DoxyCode}
+
+
+. The command above will print the location of the XRay log file to {\ttfamily stdterr}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{…}
+\DoxyCodeLine{…XRay: Log file in 'xray-\/log.benchmark\_plugingetset.gpcX3t'}
+\DoxyCodeLine{…}
+
+\end{DoxyCode}
+
+
+. Now we can use the log file to analyze the runtime of the execution paths of the binary. To do that we first save the name of the log file in the variable {\ttfamily LOGFILE}. This way we do not need to repeat the filename every time in the commands below.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{LOGFILE=\$("{}\$BUILD\_DIRECTORY/bin/benchmark\_plugingetset"{} benchmarks/data user yajl get 2>\&1 |}
+\DoxyCodeLine{          sed -\/nE "{}s/.*Log file in '(.*)'.*/\(\backslash\)1/p"{})}
+
+\end{DoxyCode}
+
+
+. To list the 10 functions with the longest runtime we use the command {\ttfamily llvm-\/xray account}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{llvm-\/xray account "{}\$LOGFILE"{} -\/top=10 -\/sort=sum -\/sortorder=dsc -\/instr\_map "{}\$BUILD\_DIRECTORY/bin/benchmark\_plugingetset"{}}
+\DoxyCodeLine{\#> Functions with latencies: 35}
+\DoxyCodeLine{\#>    funcid      count [      min,       med,       90p,       99p,       max]       sum  function}
+\DoxyCodeLine{\#>         1          1 [ 0.004791,  0.004791,  0.004791,  0.004791,  0.004791]  0.004791  <invalid>:0:0: main}
+\DoxyCodeLine{\#>      1333          1 [ 0.002007,  0.002007,  0.002007,  0.002007,  0.002007]  0.002007  <invalid>:0:0: elektraYajlGet}
+\DoxyCodeLine{\#> …}
+
+\end{DoxyCode}
+
+
+. We can also use the log file to create a \href{https://www.brendangregg.com/flamegraphs.html}{\texttt{ Flame Graph}}. To do that we use the {\ttfamily llvm-\/xray stack} to create an input file for the tool \href{https://github.com/brendangregg/FlameGraph}{\texttt{ {\ttfamily flamegraph.\+pl}}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{llvm-\/xray stack "{}\$LOGFILE"{} -\/stack-\/format=flame -\/aggregation-\/type=time -\/all-\/stacks \(\backslash\)}
+\DoxyCodeLine{                -\/instr\_map "{}\$BUILD\_DIRECTORY/bin/benchmark\_plugingetset"{} > flamegraph.txt}
+
+\end{DoxyCode}
+
+
+. We then create the Flame Graph with the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Depending on how you installed Flame Graph the executable}
+\DoxyCodeLine{\# might also be called `flamegraph.pl` instead of `flamegraph`.}
+\DoxyCodeLine{flamegraph flamegraph.txt > flamegraph.svg}
+
+\end{DoxyCode}
+
+
+. The image below shows one example how the picture could look like\+:
+
+
+
+. Additional information on how to use the data produced by \href{https://llvm.org/docs/XRay.html}{\texttt{ XRay}} is available \href{https://llvm.org/docs/XRayExample.html}{\texttt{ here}}. 

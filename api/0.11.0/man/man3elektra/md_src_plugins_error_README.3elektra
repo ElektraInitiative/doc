@@ -1,0 +1,137 @@
+.TH "md_src_plugins_error_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_error_README \- Plugin: error 
+
+.IP "\(bu" 2
+infos = Information about error plugin is in keys below
+.IP "\(bu" 2
+infos/author = Markus Raab elektra@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = error
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = presetstorage
+.IP "\(bu" 2
+infos/status = productive maintained conformant shelltest tested nodep libc configurable discouraged
+.IP "\(bu" 2
+infos/metadata = trigger/warnings trigger/error trigger/error/nofail
+.IP "\(bu" 2
+infos/description = Provokes errors for testing the plugin framework
+.PP
+.SH "Introduction"
+.PP
+Plugins (should) rarely return an error or warnings, e\&.g\&. writing the configuration basically only fails on file system problems\&. Such behavior is difficult to produce for tests\&.
+.PP
+This plugin tackles this issue by yielding error/warnings on request\&.
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-extra\fP\&.
+.SH "Usage"
+.PP
+.SS "By metadata"
+Mount this plugin additionally with a working resolver and a storage e\&.g\&.:
+.PP
+.PP
+.nf
+sudo kdb mount error\&.dump /error error dump
+.fi
+.PP
+.PP
+When following metakey is present during storing (\fC\fBkdbSet()\fP\fP) the keyset:
+.PP
+.PP
+.nf
+trigger/warnings
+.fi
+.PP
+.PP
+a warning will be added\&. The plugin will still return success, but when the following metakey is present:
+.PP
+.PP
+.nf
+trigger/error
+.fi
+.PP
+.PP
+the plugin will return with an error\&.
+.PP
+The value of the metadata needs to contain the number of the requested error or warning\&.
+.PP
+So an error and warnings can be injected directly with the kdb tool\&. E\&.g\&. the warning number C01330:
+.PP
+.PP
+.nf
+kdb meta-set system:/error/key trigger/warnings C01330
+.fi
+.PP
+.PP
+or the error number C01200 (will not modify the KDB because \fC\fBkdbSet()\fP\fP will fail for the error plugin then):
+.PP
+.PP
+.nf
+kdb meta-set user:/error/key trigger/error C01200
+# RET:5
+.fi
+.PP
+.PP
+When you are finished you can unmount it with:
+.PP
+.PP
+.nf
+sudo kdb umount /error
+.fi
+.PP
+.SS "By config"
+To yield an error in \fBkdbOpen()\fP the metadata approach does not work\&. So the plugin also can yield warning/errors using configuration\&.
+.PP
+To do that, configure the plugin using:
+.PP
+.PP
+.nf
+on_open/warnings
+on_open/error
+.fi
+.PP
+.PP
+E\&.g\&. you can use:
+.PP
+.PP
+.nf
+sudo kdb mount error\&.dump /error error on_open/error=C03100 dump
+.fi
+.PP
+.PP
+Then you get an error on any access, e\&.g\&.:
+.PP
+.PP
+.nf
+kdb ls system:/error
+.fi
+.PP
+.PP
+Will yield error C01200:
+.PP
+.PP
+.nf
+Description: Tried to get a key from a missing backend
+Mountpoint: system:/error
+.fi
+.PP
+.PP
+because the opening of the plugin failed (resulting to a missing backend)\&.
+.PP
+When you are finished you can unmount it with:
+.PP
+.PP
+.nf
+sudo kdb umount /error
+.fi
+.PP
+ 

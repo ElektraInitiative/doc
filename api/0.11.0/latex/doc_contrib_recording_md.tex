@@ -1,0 +1,90 @@
+\label{doc_contrib_recording_md_md_doc_contrib_recording}%
+\Hypertarget{doc_contrib_recording_md_md_doc_contrib_recording}%
+ A recording session is a period of time during which changes to the Key Database (KDB) are tracked and accumulated. It begins when recording starts and ends when recording stops. Throughout the recording session, all changes made to the KDB are recorded, including additions, modifications, and deletions of keys and their associated values. The recording session provides a complete audit trail of all changes made to the KDB during the specified period of time.
+
+After every {\ttfamily kdb\+Set}, changes are calculated using Elektra\textquotesingle{}s powerful changetracking API. The result of the calculation is an {\ttfamily Elektra\+Diff} instance we\textquotesingle{}ll call {\itshape part diff} throughout this document. The session recording plugin merges those {\itshape part diffs} together and creates and persists an overall {\itshape session diff}.
+
+Conceptually, this is depicted in the following image\+:
+
+
+
+Importantly, the {\itshape session diff} is shared across processes. The {\itshape session diff} persistently records all changes made to the whole KDB from any process between the start and end of the session. Because of the cross-\/process nature of a {\itshape session diff}, it is also susceptible to \char`\"{}simultaneous write\char`\"{} conflicts.
+
+We prevent inconsistent data by using locks. As long as recording is enabled, there is a global lock on write operations in Elektra. If a conflict occurs, it looks to the applications the same as if there was a conflict writing configuration data. The high-\/level Elektra bindings already resolve such conflicts transparently.
+
+All persistable namespaces are monitored for changes.
+
+An important concept for modified keys is the distinction between {\itshape old} and {\itshape new} keys. Old keys refer to the keys how they were (values, metadata) {\itshape before} the modifications. New keys, on the other hand, refer to how the keys are {\itshape after} the modifications. This concept does not apply to {\itshape added} or {\itshape removed} keys. You can think of added keys of only having new keys, and removed keys only having old keys.
+
+We currently have no way of recording changes done outside of Elektra, i.\+e. when the configuration files got edited manually.\hypertarget{doc_contrib_recording_md_autotoc_md1726}{}\doxysection{Storage of the Session Diff}\label{doc_contrib_recording_md_autotoc_md1726}
+The session diff is persisted in the respective namespace under {\ttfamily $<$namespace$>$\+:/elektra/record/session}. I.\+e. all keys in the diff of the {\ttfamily system} namespace are under {\ttfamily system\+:/elektra/record/session}.
+
+The recording plugin needs its own KDB instance to store the session diff within Elektra. We provide hard coded default mountpoints for the
+
+
+\begin{DoxyItemize}
+\item {\ttfamily dir\+:/elektra/record/session},
+\item {\ttfamily system\+:/elektra/record/session},
+\item {\ttfamily spec\+:/elektra/record/session} and
+\item {\ttfamily user\+:/elektra/record/session} keys.
+\end{DoxyItemize}
+
+These mountpoints store the keys in the same storage format as the default mountpoints like {\ttfamily system\+:/} and {\ttfamily user\+:/}. The session storage file called {\ttfamily record-\/session.\+cfg} is located in the respective standard directories for their namespace.
+
+The following list describes some important keys\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily /elektra/record/config/active}
+\begin{DoxyItemize}
+\item If the key is present, session recording is active.
+\item The keys value is the parent key of the session.
+\item We will only record changes made to keys same or below of this parent key.
+\end{DoxyItemize}
+\item {\ttfamily /elektra/record/session}
+\begin{DoxyItemize}
+\item Contains all the recorded data.
+\item Should be mounted into separate files in each namespace.
+\end{DoxyItemize}
+\item {\ttfamily /elektra/record/session/diff/added}
+\begin{DoxyItemize}
+\item Contains all added keys.
+\end{DoxyItemize}
+\item {\ttfamily /elektra/record/session/diff/modified/old}
+\begin{DoxyItemize}
+\item Contains the {\itshape old} values and metadata for the keys that have been modified.
+\end{DoxyItemize}
+\item {\ttfamily /elektra/record/session/diff/modified/new}
+\begin{DoxyItemize}
+\item Contains the {\itshape new} values and metadata for the keys that have been modified.
+\end{DoxyItemize}
+\item {\ttfamily /elektra/record/session/diff/removed}
+\begin{DoxyItemize}
+\item Contains all removed keys.
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_contrib_recording_md_autotoc_md1727}{}\doxysection{Calculating the Session Diff}\label{doc_contrib_recording_md_autotoc_md1727}
+Keys in a diff are divided into different categories\+:
+
+
+\begin{DoxyItemize}
+\item Added\+: the key is new and did not exist before
+\item Modified\+: the key existed before and still exists but its value or metadata has been modified
+\item Removed\+: the key has been removed
+\end{DoxyItemize}
+
+Keys that stayed the same and therefore are not represented in a diff are called {\itshape unchanged} keys in the following paragraphs. The diagram below visualizes the state transitions when merging diffs.
+
+The green ovals depict the state of a key in the session diff. The arrows depict the actions/state of a key in the new part diff.
+
+For example, if a key is in {\ttfamily Added} state in the session diff, and it is in {\ttfamily Removed} state in the new part diff, then the key will be unchanged in the new version of the session diff. The transitions from {\ttfamily unchanged} to {\ttfamily Added}, {\ttfamily Modified} or {\ttfamily Removed} are not depicted, as they are quite trivial.
+
+
+
+This functionality is quite generic and thus implemented as part of the normal diff API as {\ttfamily elektra\+Diff\+Append}.\hypertarget{doc_contrib_recording_md_autotoc_md1728}{}\doxysection{Architecture}\label{doc_contrib_recording_md_autotoc_md1728}
+The core recording feature has two main components\+:
+
+
+\begin{DoxyEnumerate}
+\item Recording C API ({\ttfamily libelektra-\/record})\+: Implements everything the tooling needs.
+\item Recording Plugin ({\ttfamily libelektra-\/recorder})\+: Gets loaded as a hook plugin and calls the appropriate functions in {\ttfamily libelektra-\/record}. 
+\end{DoxyEnumerate}

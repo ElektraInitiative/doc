@@ -1,0 +1,252 @@
+.TH "md_src_plugins_process_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_process_README \- Plugin: process 
+
+.IP "\(bu" 2
+infos = Information about the process plugin is in keys below
+.IP "\(bu" 2
+infos/author = Klemens Böswirth k.boeswirth+git@gmail.com
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides =
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = postgetstorage presetstorage
+.IP "\(bu" 2
+infos/status = maintained unittest shelltest nodep configurable
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = one-line description of process
+.PP
+.SH "Introduction"
+.PP
+This plugin spawns a new process with a user-defined executable and delegates all operations to the new process\&.
+.SH "Usage"
+.PP
+Set the config key \fCexecutable\fP and the arrays \fCargs/#\fP, \fCenv/#\fP to the path of an executable, the arguments that shall be passed and the environment variables to be set\&.
+.PP
+.PP
+.nf
+kdb mount test\&.dump /tests/process process 'executable=/usr/bin/pluginproc' 'args=#1' 'args/#0=--load-plugin' 'args/#1=myplugin'
+.fi
+.PP
+.PP
+During \fCelektraStdprocioOpen\fP the plugin will collect the \fCargs/#\fP and \fCenv/#\fP values into two arrays \fCargv\fP and \fCenvp\fP\&. Additionally, the array \fCcopyenv/#\fP is read as a list of environment variables\&. Each variable will be looked up via \fCgetenv\fP and then added to \fCenvp\fP\&.
+.PP
+The plugin then \fCfork\fPs a new process and the child calls \fCexecve\fP with the path from \fCapp\fP as well as \fCargv\fP and\fCenvp\fP\&. The child process is expected to listen to \fCstdin\fP and write to \fCstdout\fP according to the protocol described below\&.
+.PP
+If communication can be established, the child process will be kept running until \fCelektraStdprocioClose\fP\&.
+.SH "Protocol"
+.PP
+The entire protocol is text-based (apart from binary key values) and request-response-based, and happens over \fCstdin\fP/\fCstdout\fP\&. The parent process sends request to the child process\&. The child then processes the request and sends a response back\&.
+.PP
+To encode keysets and keys we use the format of the \fCdump\fP plugin\&. It is important to note that the \fCdump\fP plugin is instructed to write the full keynames (normally it removes the parent prefix)\&. There is, however, an exception during initialization, which is described in the appropriate section\&. The child process may also delegate directly to the \fCdump\fP plugin, or reimplement the encoding\&.
+.PP
+The communications protocol used by the plugin has 3 phases:
+.PP
+.IP "\(bu" 2
+Initialization: Initial handshake after first starting the child-process\&.
+.IP "\(bu" 2
+Operation: The main phase, which implements all the operations of an Elektra plugin (open, get, set, close, \&.\&.\&.)\&.
+.IP "\(bu" 2
+Termination: The plugin is being closed and the parent-process tells the child to shut down\&.
+.PP
+.PP
+.RS 4
+\fBNote:\fP In the sections below we use the following format to describe messages:
+.PP
+.PP
+.nf
+Parent > Child
+
+HELLO WORLD
+[users]
+(user)
+{ok|error}
+.fi
+.PP
+.PP
+This denotes a message sent from parent to child, containing
+.PP
+.IP "\(bu" 2
+the literal text \fCHELLO WORLD\fP
+.IP "\(bu" 2
+followed by a newline
+.IP "\(bu" 2
+followed by a keyset called \fCusers\fP
+.IP "\(bu" 2
+followed by a newline
+.IP "\(bu" 2
+followed by dynamic text called \fCuser\fP
+.IP "\(bu" 2
+followed by either the literal text \fCok\fP or the literal text \fCerror\fP
+.PP
+.PP
+The names \fCusers\fP and \fCuser\fP don't actually appear in the message\&. They are only used as a reference for the descriptions of the message\&.
+.PP
+The actual message sent could look like this:
+.PP
+.PP
+.nf
+HELLO WORLD
+kdbOpen 2
+$key string 3 5
+joe
+12345
+$end
+appleseed
+.fi
+.PP
+ 
+.RE
+.PP
+.SS "Initialization"
+The parent writes the protocol header to \fCstdin\fP of the child\&.
+.PP
+.PP
+.nf
+Parent > Child
+
+ELEKTRA_PROCESS INIT v1
+.fi
+.PP
+.PP
+The child must respond with an acknowledgement, followed by a \fCcontract\fP keyset\&.
+.PP
+.PP
+.nf
+Child > Parent
+
+ELEKTRA_PROCESS ACK v1
+(name)
+[contract]
+.fi
+.PP
+.PP
+Here \fC(name)\fP is the module name the child uses\&. This will be used to replace \fCprocess\fP in the contract of the plugin\&. The \fC[contract]\fP keyset must contain the \fCinfos\fP keys, which will be used replace the ones at the top of this README and the ones in \fCprocess\&.c\fP\&. It must also contain \fCexports/_\fP keys for every operation that is implemented by the child\&. All keys in \fC[contract]\fP should be below \fCsystem:/elektra/modules/process\fP\&. The parent will rename these keys appropriately\&.
+.PP
+A child that implements all operations should include these keys (in addition to the relevant \fCinfos\fP keys):
+.PP
+.PP
+.nf
+system:/elektra/modules/process/exports/open = 1
+system:/elektra/modules/process/exports/close = 1
+system:/elektra/modules/process/exports/get = 1
+system:/elektra/modules/process/exports/set = 1
+.fi
+.PP
+.PP
+After this initial handshake, the child should simply wait for further requests from the parent\&.
+.PP
+.RS 4
+\fBNote\fP: Under normal circumstances this handshake will always be followed by an \fCopen\fP request immediately\&. 
+.RE
+.PP
+.SS "Operation"
+When the parent needs the child to process an operation (open, get, \&.\&.\&.), it will send a request like this:
+.PP
+.PP
+.nf
+Parent > Child
+
+{open|get|set|close}
+[parent]
+[data]
+.fi
+.PP
+.PP
+First we send the \fCopname\fP (one of \fCopen\fP, \fCget\fP, \fCset\fP or \fCclose\fP) of the operation that shall be performed by the child\&. The keyset \fC[parent]\fP always consists of a single key, namely the \fCparentKey\fP (or \fCerrorKey\fP) that was passed to the plugin\&. Finally, \fC[data]\fP is the keyset that was passed to the plugin\&. The \fC[data]\fP keyset is not present in \fCopen\fP and \fCclose\fP operations, since those don't receive a \fCKeySet\fP in the C API\&. However, in the \fCopen\fP operation \fC[data]\fP is replaced \fC[config]\fP which is the \fCKeySet\fP returned by \fCelektraPluginGetConfig\fP in the C API\&. This is needed, because the child process cannot request the config keyset otherwise\&.
+.PP
+The child should then perform the requested operation and respond with
+.PP
+.PP
+.nf
+Child > Parent
+
+{success|noupdate|error}
+[parent]
+[returned]
+.fi
+.PP
+.PP
+Here \fC(result)\fP is one of \fCsuccess\fP, \fCnoupdate\fP and \fCerror\fP, which correspond to \fCELEKTRA_PLUGIN_STATUS_SUCCESS\fP, \fCELEKTRA_PLUGIN_STATUS_NO_UPDATE\fP and \fCELEKTRA_PLUGIN_STATUS_ERROR\fP respectively\&. The keysets \fC[parent]\fP and \fC[returned]\fP are the modified versions of the one sent by the parent\&.
+.SS "Termination"
+When the parent no longer needs the child process, it will send a final termination request\&.
+.PP
+.PP
+.nf
+Parent > Child
+
+ELEKTRA_PROCESS TERMINATE
+.fi
+.PP
+.PP
+The child process should now exit (and thereby close its ends of the \fCstdin\fP/\fCstdout\fP pipes)\&.
+.PP
+.RS 4
+\fBNote:\fP Under normal circumstances this only happens, when plugin is being closed, i\&.e\&. during a \fCelektraPluginClose\fP call for a \fCprocess\fP instance\&. 
+.RE
+.PP
+.SS "Errors"
+If an unexpected error occurs on either side of the protocol, the connection should be terminated and the child process shall exit\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# mount the Whitelist Java Plugin via process
+# NOTE: the copyenv and copyenv/#0 are normal not needed, but we need them to make this script work as an automated test
+sudo kdb mount config\&.file user:/tests/process dump process 'executable=/usr/bin/java' 'args=#3' 'args/#0=-cp' "args/#1=$BUILD_DIR/src/bindings/jna/plugins/whitelist/build/libs/whitelist-$(kdb --version | sed -nE 's/KDB_VERSION: (\&.+)/\1/gp')-all\&.jar" 'args/#2=org\&.libelektra\&.process\&.PluginProcess' 'args/#3=org\&.libelektra\&.plugin\&.WhitelistPlugin' 'copyenv=#0' "copyenv/#0=LD_LIBRARY_PATH"
+
+# Define whitelist
+kdb meta-set user:/tests/process/key "check/whitelist/#0" ""
+kdb meta-set user:/tests/process/key "check/whitelist/#1" allowed0
+kdb meta-set user:/tests/process/key "check/whitelist/#2" allowed1
+
+# Should be allowed
+kdb set user:/tests/process/key allowed0
+#> Set string to "allowed0"
+
+kdb set user:/tests/process/key allowed1
+#> Set string to "allowed1"
+
+# Should cause error
+kdb set user:/tests/process/key not_allowed
+# RET: 5
+# STDERR:\&.*Validation Semantic: \&.*'not_allowed' does not adhere to whitelist\&.*
+
+# cleanup
+kdb rm -r user:/tests/process
+sudo kdb umount user:/tests/process
+.fi
+.PP
+.PP
+.RS 4
+\fBNote:\fP The mount line of the snippet above can be simplified by using the \fCmount-java\fP helper:
+.PP
+.PP
+.nf
+sudo kdb mount-java config\&.file user:/tests/process dump java:org\&.libelektra\&.plugin\&.WhitelistPlugin
+.fi
+.PP
+ 
+.RE
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+The \fCerror\fP and \fCcommit\fP functions are currently not supported\&. Therefore, implementing a resolver is not supported\&.
+.IP "\(bu" 2
+Exporting additional functions (e\&.g\&. \fCcheckconf\fP) is currently not supported\&.
+.IP "\(bu" 2
+With the current backend system, \fCprocess\fP can only be used for plugins in the \fCpostgetstorage\fP or \fCpresetstorage\fP positions\&.
+.IP "\(bu" 2
+The executable must be defined as an absolute path during mounting\&. 
+.PP
+

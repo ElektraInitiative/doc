@@ -1,0 +1,85 @@
+\label{doc_help_kdb-ls_md_md_doc_help_kdb_ls}%
+\Hypertarget{doc_help_kdb-ls_md_md_doc_help_kdb_ls}%
+ \hypertarget{doc_help_kdb-ls_md_autotoc_md2970}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-ls_md_autotoc_md2970}
+{\ttfamily kdb ls $<$path$>$}
+
+Where {\ttfamily path} is the path in which the user would like to list keys below.\hypertarget{doc_help_kdb-ls_md_autotoc_md2971}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-ls_md_autotoc_md2971}
+This command will list the name of all keys below a given path.\hypertarget{doc_help_kdb-ls_md_autotoc_md2972}{}\doxysection{OPTIONS}\label{doc_help_kdb-ls_md_autotoc_md2972}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/m}, {\ttfamily -\/-\/min-\/depth $<$min-\/depth$>$}\+: Specify the minimum path depth of the output (0 by default), exclusive and relative to the name to list.
+\item {\ttfamily -\/M}, {\ttfamily -\/-\/max-\/depth $<$max-\/depth$>$}\+: Specify the maximum path depth of the output (unlimited by default, 1 to show only the next level), inclusive and relative to the name to list.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional debug information in case of errors/warnings.
+\item {\ttfamily -\/0}, {\ttfamily -\/-\/null}\+: Use binary 0 termination.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-ls_md_autotoc_md2973}{}\doxysection{EXAMPLES}\label{doc_help_kdb-ls_md_autotoc_md2973}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: user:/tests/examples}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# We use `dump` as storage format here, since storage plugins such as INI}
+\DoxyCodeLine{\# automatically add keys between levels (e.g. `user:/tests/examples/kdb-\/ls/test/foo`).}
+\DoxyCodeLine{sudo kdb mount ls.ecf user:/tests/examples dump}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Create the keys we use for the examples}
+\DoxyCodeLine{kdb set user:/tests/examples/kdb-\/ls/test val1}
+\DoxyCodeLine{kdb set user:/tests/examples/kdb-\/ls/test/foo/bar val2}
+\DoxyCodeLine{kdb set user:/tests/examples/kdb-\/ls/test/fizz/buzz fizzbuzz}
+\DoxyCodeLine{kdb set user:/tests/examples/kdb-\/ls/tost val3}
+\DoxyCodeLine{kdb set user:/tests/examples/kdb-\/ls/tost/level lvl}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# list all keys below /tests/examples/kdb-\/ls}
+\DoxyCodeLine{kdb ls /tests/examples/kdb-\/ls}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test/fizz/buzz}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test/foo/bar}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/tost}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/tost/level}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# list the next level of keys below /tests/examples/kdb-\/ls}
+\DoxyCodeLine{\# note that if the search key ends with a /, it lists the next level}
+\DoxyCodeLine{kdb ls /tests/examples/kdb-\/ls/ -\/-\/max-\/depth=1}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/tost}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# list the current level of keys below /tests/examples/kdb-\/ls}
+\DoxyCodeLine{\# note the difference to the previous example}
+\DoxyCodeLine{kdb ls /tests/examples/kdb-\/ls -\/-\/max-\/depth=1}
+\DoxyCodeLine{\# this yields no output as /tests/examples/kdb-\/ls is not a key}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# list all keys below /tests/examples/kdb-\/ls with are minimum 1 level (inclusive) away from that key}
+\DoxyCodeLine{\# and maximum 2 levels away (exclusive)}
+\DoxyCodeLine{kdb ls /tests/examples/kdb-\/ls -\/-\/min-\/depth=1 -\/-\/max-\/depth=2}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/tost}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# list all keys below /tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{kdb ls /tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test/fizz/buzz}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test/foo/bar}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# list all keys under /tests/examples/kdb-\/ls in verbose mode}
+\DoxyCodeLine{kdb ls /tests/examples/kdb-\/ls/ -\/v}
+\DoxyCodeLine{\#> size of all keys in mount point: 5}
+\DoxyCodeLine{\#> size of requested keys: 5}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test/fizz/buzz}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/test/foo/bar}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/tost}
+\DoxyCodeLine{\#> user:/tests/examples/kdb-\/ls/tost/level}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests/examples}
+\DoxyCodeLine{sudo kdb umount user:/tests/examples}
+
+\end{DoxyCode}
+\hypertarget{doc_help_kdb-ls_md_autotoc_md2974}{}\doxysection{SEE ALSO}\label{doc_help_kdb-ls_md_autotoc_md2974}
+
+\begin{DoxyItemize}
+\item If the user would also like to see the values of the keys below {\ttfamily path} then you should consider the \mbox{\hyperlink{doc_help_kdb-export_md}{kdb-\/export(1)}} command.
+\item \mbox{\hyperlink{doc_help_elektra-key-names_md}{elektra-\/key-\/names(7)}} for an explanation of key names. 
+\end{DoxyItemize}

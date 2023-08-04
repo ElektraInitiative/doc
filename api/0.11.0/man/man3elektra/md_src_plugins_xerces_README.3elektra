@@ -1,0 +1,142 @@
+.TH "md_src_plugins_xerces_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_xerces_README \- Plugin: xerces 
+
+.IP "\(bu" 2
+infos = Information about the xerces plugin is in keys below
+.IP "\(bu" 2
+infos/author = Armin Wurzinger e1528532@libelektra.org
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/provides = storage/xml
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = recommended maintained unittest memleak
+.IP "\(bu" 2
+infos/metadata = xerces/rootname
+.IP "\(bu" 2
+infos/description = Storage in the XML format\&.
+.PP
+.SH "Introduction"
+.PP
+This plugin is a storage plugin allowing Elektra to read and write XML formatted files\&. It uses a general format which:
+.PP
+.IP "\(bu" 2
+Maps key names to XML elements
+.IP "\(bu" 2
+Maps key values to textual content of XML elements
+.IP "\(bu" 2
+Maps metakeys to XML attributes\&. Metakey name = attribute name, Metakey value = attribute value
+.IP "\(bu" 2
+Ignores XML comments
+.PP
+.SH "Installation"
+.PP
+See \fBinstallation\fP\&. The package is called \fClibelektra5-xerces\fP\&.
+.PP
+To include this plugin in a homebrew installation run \fCbrew tap elektrainitiative/elektra\fP followed by \fCbrew install elektrainitiative/elektra/elektra --with-xerces\fP
+.SH "Usage"
+.PP
+To mount an XML file we use:
+.PP
+.PP
+.nf
+kdb mount file\&.xml user:/test/file xerces
+.fi
+.PP
+.PP
+The strength and usage of this plugin is that it supports arbitrary XML files and does not require a specific format\&. Given the following example of an XML file:
+.PP
+.PP
+.nf
+<?xml version="1\&.0" encoding="UTF-8" standalone="no" ?>
+<xerces>foo
+  <bar meta="da_ta">bar</bar>
+</xerces>
+.fi
+.PP
+.PP
+Please note that if the key name does not correspond to the root element of the xml file, the original name gets stored in a metakey called \fCxerces/rootname\fP\&. The content of the root element gets mapped to the mount point\&.
+.PP
+We can observe the following result after mounting:
+.PP
+.PP
+.nf
+kdb get user:/test/file
+#> foo
+kdb get user:/test/file/bar
+#> bar
+kdb meta-get user:/test/file/bar meta
+#> da_ta
+.fi
+.PP
+.PP
+To export an existing keyset to the XML format:
+.PP
+.PP
+.nf
+kdb export user:/test/xerces xerces > example\&.xml
+.fi
+.PP
+.PP
+The root element of the resulting XML file will be 'xerces' again, restored via the metadata\&. If you don't want this behavior, delete the metadata \fCxerces/rootname\fP on the mount point, then it uses the mount point's name instead\&.
+.SH "Dependencies"
+.PP
+.IP "\(bu" 2
+\fCXerces-C++ 3\&.0\&.0\fP or newer (\fCapt-get install libxerces-c-dev\fP or \fCbrew install xerces-c\fP on macOS)
+.IP "\(bu" 2
+CMake 3\&.6 or a copy of \fCFindXercesC\&.cmake\fP in \fC/usr/share/cmake-3\&.0/Modules/\fP
+.PP
+.SH "Limitations"
+.PP
+This plugin is not able to handle key names which contain characters that are not allowed to appear as an XML element name\&. Consider using the rename plugin to take care about proper escaping\&.
+.PP
+The main rules of an XML element name are:
+.PP
+.IP "\(bu" 2
+Element names must start with a letter or underscore
+.IP "\(bu" 2
+Element names cannot start with the letters xml (or XML, or Xml, etc\&.)
+.IP "\(bu" 2
+Element names can contain letters, digits, hyphens, underscores, and periods
+.IP "\(bu" 2
+Element names cannot contain spaces
+.PP
+.PP
+The root key is not allowed to be an array, as this would correspond to multiple root elements in XML (see the \fCGitHub issue\fP)\&.
+.PP
+XSD transformations, schemas or DTDs are not supported yet\&.
+.SH "Examples"
+.PP
+.SS "Mounting, setting a key and exporting"
+.PP
+.nf
+# Backup-and-Restore:user:/tests/xercesfile
+
+sudo kdb mount xerces\&.xml user:/tests/xercesfile xerces
+
+kdb set user:/tests/xercesfile foo
+kdb meta-set user:/tests/xercesfile xerces/rootname xerces
+kdb set user:/tests/xercesfile/bar bar
+kdb meta-set user:/tests/xercesfile/bar meta "da_ta"
+
+kdb meta-get user:/tests/xercesfile xerces/rootname
+#> xerces
+
+kdb get user:/tests/xercesfile/bar
+#> bar
+
+kdb export user:/tests/xercesfile xerces
+# STDOUT-REGEX: <bar meta="da_ta">bar</bar>
+
+sudo kdb rm -r user:/tests/xercesfile
+sudo kdb umount user:/tests/xercesfile
+.fi
+.PP
+ 

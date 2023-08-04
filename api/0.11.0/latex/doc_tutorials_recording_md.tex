@@ -1,0 +1,88 @@
+\label{doc_tutorials_recording_md_md_doc_tutorials_recording}%
+\Hypertarget{doc_tutorials_recording_md_md_doc_tutorials_recording}%
+ Elektra provides a powerful session recording feature. You can control it through the {\ttfamily kdb} command-\/line utility.
+
+Session recording will track all the changes done to the KDB while it is enabled. This includes changes done by elektrified applications themselves too, not only changes done through the {\ttfamily kdb} utility. The recorded changes can be exported, undone or used for auditing purposes.
+
+There are seven commands to interact with the session recording feature\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb record-\/start}\+: starts recording. If there are existing recorded changes, they will NOT be removed. New changes will be appended.
+\item {\ttfamily kdb record-\/stop}\+: stops recording.
+\item {\ttfamily kdb record-\/reset}\+: removes all recorded changes.
+\item {\ttfamily kdb record-\/export}\+: export the changes.
+\item {\ttfamily kdb record-\/undo}\+: undo everything that has been recorded.
+\item {\ttfamily kdb record-\/state}\+: show information about the state of session recording. This includes information about what keys will be recorded and which changes have already been made to the KDB.
+\item {\ttfamily kdb record-\/rm}\+: Remove specific keys from the recording.
+\end{DoxyItemize}
+
+For a more detailed description and options for each command, please take a look at their respective man pages.\hypertarget{doc_tutorials_recording_md_autotoc_md4674}{}\doxysection{A Simple Recording Session}\label{doc_tutorials_recording_md_autotoc_md4674}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Seed some data first}
+\DoxyCodeLine{kdb set user:/test/name Franz}
+\DoxyCodeLine{kdb set user:/test/color Red}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Enable session recording for all keys below user:/}
+\DoxyCodeLine{kdb record-\/start user:/}
+\DoxyCodeLine{\# RET:0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/test/name Hans}
+\DoxyCodeLine{kdb set user:/test/age 29}
+\DoxyCodeLine{kdb rm user:/test/color}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# View the current state of session recording}
+\DoxyCodeLine{kdb record-\/state}
+\DoxyCodeLine{\#> Recording is active for user:/⏎⏎Added 1 key(s)⏎Modified 1 key(s)⏎Removed 1 key(s)⏎⏎Added key user:/test/age⏎Modified key user:/test/name⏎Removed key user:/test/color}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Stop session recording again}
+\DoxyCodeLine{kdb record-\/stop}
+\DoxyCodeLine{\# RET:0}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_recording_md_autotoc_md4675}{}\doxysection{Exporting Recorded changes}\label{doc_tutorials_recording_md_autotoc_md4675}
+One of the most powerful features of session recording is the ability to export the recorded changes. This allows you to apply the specific modifications on other computers, without having to export and overwrite the complete configuration.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb record-\/export [<source>] [<format>]}
+
+\end{DoxyCode}
+
+
+Where {\ttfamily source} and {\ttfamily format} are optional parameters. The {\ttfamily source} parameter lets you specify which keys you want to export. By default, this is all keys, or {\ttfamily /}. The {\ttfamily format} parameter lets you specify which format you want to export the changes in. By default, we use the {\ttfamily ansible} format. Note that the format is just the name of the Elektra storage plugin you want to use.
+
+You can also use the {\ttfamily -\/c} option to specify a list of configuration parameters for the storage plugin. See the README of the plugin for more details about which parameters are supported.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Export recorded changes into an Ansible playbook}
+\DoxyCodeLine{kdb record-\/export / ansible -\/c playbook/name="{}Recording Tutorial"{}}
+\DoxyCodeLine{\# RET:0}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/-\/-\/}
+\DoxyCodeLine{-\/ name: Recording Tutorial}
+\DoxyCodeLine{  hosts: all}
+\DoxyCodeLine{  collections:}
+\DoxyCodeLine{    -\/ elektra\_initiative.libelektra}
+\DoxyCodeLine{  tasks:}
+\DoxyCodeLine{    -\/ name: Set Elektra Keys}
+\DoxyCodeLine{      elektra:}
+\DoxyCodeLine{        keys:}
+\DoxyCodeLine{          -\/ user:}
+\DoxyCodeLine{              test:}
+\DoxyCodeLine{                age:}
+\DoxyCodeLine{                  -\/ value: 29}
+\DoxyCodeLine{                color:}
+\DoxyCodeLine{                  -\/ remove: true}
+\DoxyCodeLine{                name:}
+\DoxyCodeLine{                  -\/ value: Hans}
+
+\end{DoxyCode}
+ 

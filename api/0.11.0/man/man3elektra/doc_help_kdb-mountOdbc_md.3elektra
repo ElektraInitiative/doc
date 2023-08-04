@@ -1,0 +1,96 @@
+.TH "doc_help_kdb-mountOdbc_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-mountOdbc_md \- kdb-mountOdbc(1) - Mount an ODBC data source to the key database 
+ 
+.SH "SYNOPSIS"
+.PP
+\fCkdb mountOdbc <data source name> <user name> <password> <table name> <key column name> <value column name> <meta table name> <mt key column name> <mt metakey column name> <mt metavalue column name> <timeout (s)> <mountpoint>\fP
+.br
+.PP
+.IP "\(bu" 2
+Where \fCdata source name\fP is the name of the ODBC data source as defined in \fCodbc\&.ini\fP (usually stored at \fC/etc/unixODBC/\fP)\&.
+.IP "  \(bu" 4
+Only ODBC drivers that support \fBouter joins\fP are suited for the Elektra ODBC backend\&.
+.PP
+
+.IP "\(bu" 2
+\fCuser name\fP: The username that should be used for connecting to the ODBC data source\&. If no username is needed, or it is already specified in the ini-file for the configuration of the datasource, \fC''\fP can be provided for this argument\&.
+.IP "\(bu" 2
+\fCpassword\fP: The same rules as for \fCuser name\fP also apply to this argument\&.
+.IP "\(bu" 2
+\fCtable name\fP: The name of the table in the data source where the keys and their values should be stored\&.
+.IP "\(bu" 2
+\fCkey column name\fP: The name of the column where the key-names should be stored\&. This should be the primary key of the table\&.
+.IP "\(bu" 2
+\fCvalue column name\fP: The name of the column where the key-values (strings) should be stored\&. This column should support NULL-values\&.
+.IP "\(bu" 2
+\fCmeta table name\fP: The name of the table where the metadata for the keys should be stored\&.
+.IP "\(bu" 2
+\fCmt key column name\fP: The name of the column in the meta table where the key-name should be stored\&. This should be a foreign key that refers to the column with the key-name of the other table\&.
+.IP "\(bu" 2
+\fCmt metakey column name\fP: The name of the column in the meta table where the name of the metakey should be stored\&. This column, together with the column for the key-name, should define the primary key of the meta table\&.
+.IP "\(bu" 2
+\fCmt metavalue column name\fP: The name of the column in the meta table where the value (string) of the metakey should be stored\&. This column should support NULL-values\&.
+.IP "\(bu" 2
+\fCtimeout (s)\fP: The timeout (in seconds) that should be used when connecting to the data source\&. When passing '0', the timeout gets disabled and the application could potentially wait forever\&. So use this option with care! If you want to use a default timeout, you can just pass \fC''\fP for this argument\&.
+.IP "\(bu" 2
+\fCmountpoint\fP: The place in the KDB where the ODBC data source should be mounted\&. The syntax is the same as with the file-based backend, but you can only use \fCuser:/\fP and \fCsystem:/\fP namespaces as mountpoints for ODBC data sources\&.
+.PP
+.PP
+.RS 4
+All columns in the data source that are specified via one of the described arguments, should be of type \fCTEXT\fP, \fCCHAR\fP or \fCVARCHAR\fP\&. The tables can have additional columns\&. These are not processed by the ODBC backend, but should support \fCNULL\fP or \fCDEFAULT\fP values\&. 
+.RE
+.PP
+.SH "DESCRIPTION"
+.PP
+This command allows a user to persistently mount a new \fIbackend\fP that refers to an ODBC data source\&. The concept is the same as for mounting with the file-based backend\&. So it is recommended to also read to man page for \fBkdb-mount(1)\fP\&. More about mounting is explained in \fBelektra-mounting(7)\fP\&.
+.SH "IMPORTANT"
+.PP
+This command modifies \fCsystem:/elektra/mountpoints\fP\&. Depending on the location of that part of the KDB, you may need root privileges to execute this command\&. Use \fCkdb file system:/elektra/mountpoints\fP to find out where exactly it will write to\&.
+.PP
+.RS 4
+There is no special command for unmounting ODBC data sources\&. You can just use the \fBkdb-umount(1)\fP command the same way as with mountpoints for files\&. 
+.RE
+.PP
+.SH "OPTIONS"
+.PP
+.IP "\(bu" 2
+\fC-H\fP, \fC--help\fP: Show the man page\&.
+.IP "\(bu" 2
+\fC-V\fP, \fC--version\fP: Print version info\&.
+.IP "\(bu" 2
+\fC-p\fP, \fC--profile <profile>\fP: Use a different kdb profile\&.
+.IP "\(bu" 2
+\fC-C\fP, \fC--color <when>\fP: Print never/auto(default)/always colored output\&.
+.IP "\(bu" 2
+\fC-v\fP, \fC--verbose\fP: Explain what is happening\&. Prints additional information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-d\fP, \fC--debug\fP: Give debug information\&. Prints additional information in case of errors/warnings\&.
+.IP "\(bu" 2
+\fC-f\fP, \fC--force\fP: Create the mountpoint even if the data source can not be reached at mount-time\&.
+.PP
+.SH "Examples"
+.PP
+To mount the sample SQLite data source which is available at /src/plugins/backend_odbc/sampleDb/elektraDB\&.db:
+.br
+ \fCkdb mountOdbc Selektra '' '' elektraKeys keyName keyValue metaKeys keyName metaKeyName metaKeyValue '' user:/odbcSqlite\fP
+.PP
+To specify all arguments:
+.br
+ \fCkdb mountOdbc Selektra myUser myPassword elektraKeys keyName keyValue metaKeys keyName metaKeyName metaKeyValue 12 user:/odbcSqlite\fP
+.SH "SEE ALSO"
+.PP
+.IP "\(bu" 2
+\fBkdb-mount(1)\fP\&.
+.IP "\(bu" 2
+\fBelektra-glossary(7)\fP\&.
+.IP "\(bu" 2
+\fBkdb-spec-mount(1)\fP\&.
+.IP "\(bu" 2
+\fBkdb-umount(1)\fP\&.
+.IP "\(bu" 2
+\fBelektra-mounting(7)\fP\&. 
+.PP
+

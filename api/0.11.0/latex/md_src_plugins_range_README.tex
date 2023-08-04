@@ -1,0 +1,82 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the range plugin is in keys below
+\item infos/author = Thomas Waser \href{mailto:thomas.waser@libelektra.org}{\texttt{ thomas.\+waser@libelektra.\+org}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = presetstorage postgetstorage
+\item infos/status = maintained conformant compatible coverage specific unittest tested libc preview unfinished
+\item infos/metadata = check/range check/type type
+\item infos/description = tests if a value is within a given range
+\end{DoxyItemize}\hypertarget{md_src_plugins_range_README_src_plugins_range_README_md}{}\doxysection{Introduction}\label{md_src_plugins_range_README_src_plugins_range_README_md}
+The range plugin checks if a {\ttfamily Key}\textquotesingle{}s value is within a given range.\hypertarget{md_src_plugins_range_README_autotoc_md452}{}\doxysection{Installation}\label{md_src_plugins_range_README_autotoc_md452}
+See \mbox{\hyperlink{doc_INSTALL_md}{installation}}. The package is called {\ttfamily libelektra5-\/experimental}.\hypertarget{md_src_plugins_range_README_autotoc_md453}{}\doxysection{Usage}\label{md_src_plugins_range_README_autotoc_md453}
+
+\begin{DoxyItemize}
+\item The plugin checks every {\ttfamily Key} in the {\ttfamily Key\+Set} having a metakey {\ttfamily check/range}.
+\item For these keys, it checks whether the key value is within the specified range.
+\item {\ttfamily check/range} can contain either\+:
+\begin{DoxyEnumerate}
+\item a single range with the syntax {\ttfamily \mbox{[}-\/\mbox{]}min-\/\mbox{[}-\/\mbox{]}max}
+\item or a list of ranges or values separated by {\ttfamily ,}
+\end{DoxyEnumerate}
+\item Metakey {\ttfamily check/type} can be used to specify the data type. If not specified, metakey {\ttfamily type} will be used as fallback. If both are unspecified or unsupported, the type is assumed to be {\ttfamily long long}.
+\end{DoxyItemize}
+
+Possible values\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily short}, {\ttfamily long}, {\ttfamily long long}
+
+for signed integer values
+\item {\ttfamily unsigned short}, {\ttfamily unsigned long}, {\ttfamily unsigned long long}
+
+for unsigned integer values
+\item {\ttfamily float}, {\ttfamily double}, {\ttfamily long double}
+
+for floating point values
+\item {\ttfamily HEX}
+
+for hexadecimal values
+\item {\ttfamily char}
+
+for characters
+\end{DoxyItemize}\hypertarget{md_src_plugins_range_README_autotoc_md454}{}\doxysection{Dependencies}\label{md_src_plugins_range_README_autotoc_md454}
+None.\hypertarget{md_src_plugins_range_README_autotoc_md455}{}\doxysection{Examples}\label{md_src_plugins_range_README_autotoc_md455}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore:/tests/range}
+\DoxyCodeLine{}
+\DoxyCodeLine{sudo kdb mount range.ecf /tests/range range dump}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should succeed}
+\DoxyCodeLine{kdb set user:/tests/range/value 5}
+\DoxyCodeLine{kdb meta-\/set spec:/tests/range/value check/range "{}1-\/10"{}}
+\DoxyCodeLine{\# RET: 0}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should fail}
+\DoxyCodeLine{kdb set user:/tests/range/value 11}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# should also fail}
+\DoxyCodeLine{kdb set user:/tests/range/value "{}\(\backslash\)-\/1"{}}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# we can also allow only individual values: (using the -\/-\/force flag, as the current value of 5 would not be allowed under the new policy)}
+\DoxyCodeLine{kdb meta-\/set -\/f spec:/tests/range/value check/range "{}1,2,4,8"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/range/value 7}
+\DoxyCodeLine{\# RET:5}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/range/value 2}
+\DoxyCodeLine{\# RET:0}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb rm -\/r user:/tests/range}
+\DoxyCodeLine{sudo kdb umount /tests/range}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_range_README_autotoc_md456}{}\doxysection{Limitations}\label{md_src_plugins_range_README_autotoc_md456}
+None. 

@@ -1,0 +1,189 @@
+.TH "doc_dev_mountpoints_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_mountpoints_md \- New mountpoint config structure 
+ A mountpoint is defined by adding keys below \fCsystem:/elekta/mountpoints/<mountpoint>\fP, where \fC<mountpoint>\fP is the key name for the parent key of the mountpoint with slashes properly escaped\&. For example for the mountpoint \fCuser:/mymountpoint\fP you have to add keys below \fCsystem:/elekta/mountpoints/user:\\/mymountpoint\fP\&.
+.PP
+Every mountpoint consists of four parts:
+.PP
+.IP "1." 4
+A set of plugins required for the mountpoint\&.
+.IP "2." 4
+A single \fIbackend plugin\fP within the set of plugins\&.
+.IP "3." 4
+The \fImountpoint definition\fP specific to the backend plugin\&.
+.IP "4." 4
+The \fImountpoint config\fP available to all plugins of this mountpoint\&.
+.PP
+.PP
+The set of plugins is defined below \fCsystem:/elektra/mountpoints/<mountpoint>/plugins\fP\&. The keys below \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/<ref>\fP define a single instance of a plugin\&. The part \fC<ref>\fP will be used as name by which this plugin instance will be referenced later\&. The name may be arbitrary, but it must not be \fCbackend\fP\&. The name \fCbackend\fP is reserved for the backend plugin (see below)\&.
+.PP
+To define a plugin instance, \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/<ref>/name\fP must be set to the name of the plugin, i\&.e\&., it must be possible to open the plugin with \fCelektraPluginOpen\fP via this value\&. Optionally, the configuration keyset can be defined by the keys below \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/<ref>/config\fP\&.
+.PP
+The single \fIbackend plugin\fP is the only one that the \fClibelektra-kdb\fP library communicates with\&. It is responsible for calling other plugins when needed\&. A \fIbackend contract\fP exists between this plugin and \fClibelektra-kdb\fP\&. The backend plugin alone is responsible for upholding this contract and enforcing it upon other plugins it calls\&.
+.PP
+The backend plugin is defined (like the other plugins) below \fCsystem:/elektra/mountpoints/<mountpoint>/plugins\fP\&. Specifically, it uses \fCbackend\fP as \fC<ref>\fP and is therefore defined by the keys below \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/backend\fP\&.
+.PP
+The \fImountpoint definition\fP for the backend plugin is defined by the keys below \fCsystem:/elektra/mountpoints/<mountpoint>/definition\fP\&.
+.PP
+The \fImountpoint config\fP is defined by the keys below \fCsystem:/elektra/mountpoints/<mountpoint>/config\fP\&. It is merged into the configuration keyset of every plugin of this mountpoint (including the backend plugin)\&. Specifically, the mountpoint config is put into the \fCuser:/\fP namespace, while the config from \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/<ref>/config\fP is put into the \fCdir:/\fP namespace of the keyset passed to a plugin\&.
+.PP
+Additionally, the \fCconfig/needs\fP config from plugins' contract is moved to \fCsystem:/\fP\&. This config is not stored in \fCsystem:/elektra/mountpoints\fP and instead loaded at runtime by \fClibelektra-kdb\fP during the \fCopen\fP operation\&.
+.PP
+This leaves the \fCdefault:/\fP namespace for plugins to add their own defaults before calling \fCksLookup\fP to access the config keyset\&.
+.PP
+.RS 4
+\fBNote\fP: This \fImountpoint definition\fP is separate from the normal configuration keyset passed to a plugin\&. The backend plugin may still have such a keyset below its \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/<ref>/config\fP key\&. The difference between these two keyset is that the configuration keyset should be used to define the general operation of the plugin, while the mountpoint definition should specify a mountpoint\&.
+.PP
+For example, a backend plugin could support a logging mode, in which it produces a log entry every time it calls another plugin\&. This should be configured in the configuration keyset not in the mountpoint definition, since it doesn't change how the mountpoint works\&.
+.PP
+Additionally, the config of a plugin is \fIalways\fP processed for \fIall\fP mountpoints, no matter if the mountpoint is actually accessed or the plugin actually used\&. This is because config is processed during the \fCopen\fP operation, which doesn't know what parts of the whole KDB are needed for the current application\&. The mountpoint definition meanwhile is only processed for the mountpoints that are actually accessed\&. In this case the processing happens during the first \fCget\fP operation (within an application) that uses this mountpoint\&. 
+.RE
+.PP
+All other keys below \fCsystem:/elektra/mountpoints/<mountpoint>\fP are ignored\&.
+.PP
+To illustrate this structure, here is an example configuration:
+.PP
+.PP
+.nf
+# List of plugins with their config
+system:/elektra/mountpoints/\/hosts/plugins/resolver/name (="resolver_fm_hpu_b")
+system:/elektra/mountpoints/\/hosts/plugins/myglob/name (="glob")
+system:/elektra/mountpoints/\/hosts/plugins/myglob/config/set/#0
+system:/elektra/mountpoints/\/hosts/plugins/myglob/config/set/#1
+system:/elektra/mountpoints/\/hosts/plugins/myglob/config/set/#2
+system:/elektra/mountpoints/\/hosts/plugins/myglob/config/set/#3
+system:/elektra/mountpoints/\/hosts/plugins/myglob/config/set/#4/flags
+system:/elektra/mountpoints/\/hosts/plugins/store/name (="hosts")
+system:/elektra/mountpoints/\/hosts/plugins/sync/name (="sync")
+system:/elektra/mountpoints/\/hosts/plugins/error/name (="error")
+system:/elektra/mountpoints/\/hosts/plugins/network/name (="network")
+
+## part of the list of plugins, but also defines backend plugin
+system:/elektra/mountpoints/\/hosts/plugins/backend/name (="backend")
+
+# Configuration for backend plugin
+system:/elektra/mountpoints/\/hosts/definition/path (="myhosts")
+
+system:/elektra/mountpoints/\/hosts/definition/positions/get/resolver (="resolver")
+system:/elektra/mountpoints/\/hosts/definition/positions/get/storage (="store")
+system:/elektra/mountpoints/\/hosts/definition/positions/get/poststorage/#0 (="myglob")
+
+system:/elektra/mountpoints/\/hosts/definition/positions/set/resolver (="resolver")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/prestorage/#0 (="myglob")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/prestorage/#1 (="error")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/prestorage/#2 (="network")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/storage (="store")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/precommit/#0 (="sync")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/commit (="resolver")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/rollback (="resolver")
+
+# Everything else below system:/elektra/mountpoints/\/hosts is ignored
+.fi
+.PP
+.PP
+Explanation:
+.PP
+.IP "\(bu" 2
+This configures a mountpoint \fC/hosts\fP that loads the plugins \fCresolver_fm_hpu_b\fP, \fCglob\fP, \fChosts\fP, \fCsync\fP, \fCerror\fP, \fCnetwork\fP and \fCbackend\fP\&. The plugin \fCglob\fP also has some configuration keys defined\&.
+.IP "\(bu" 2
+The \fCbackend\fP plugin is set as the backend plugin\&.
+.IP "\(bu" 2
+The rest is the mountpoint definition specific to the \fCbackend\fP plugin\&.
+.PP
+.PP
+As you can see from this example, the 'positions' are part of the plugin-specific mountpoint definition\&. This allows different backend plugins to use different 'positions'\&.
+.PP
+For example, there is the \fCversion\fP backend plugin that always just provides a few keys with version information for Elektra\&. It doesn't need to call any other plugins and requires no configuration at all\&. A mountpoint with this plugin could look like this:
+.PP
+.PP
+.nf
+system:/elektra/mountpoints/\/version/plugins/backend/name (="version")
+.fi
+.PP
+.PP
+.RS 4
+\fBNote\fP: The above example, is also the minimal setup for a mountpoint\&. The key \fCsystem:/elektra/mountpoints/<mountpoint>/plugins/backend/name\fP is the only one that must be defined\&. 
+.RE
+.PP
+.SH "Operations and Phases"
+.PP
+See \fBKDB Operations Documentation\fP for a description of operations and phases\&.
+.PP
+In each of the phases of a \fCget\fP or \fCset\fP operation, the corresponding function of the backend plugin is called\&. For a description of how this works exactly read the \fBBackend Plugins Documentation\fP\&.
+.PP
+In the first example above, the phases were mapped one-to-one to what the plugin \fCbackend\fP called 'positions'\&. The different terms are very much intentional, since this not a requirement\&.
+.SH "Further Examples"
+.PP
+We already had two examples above\&. Here we will look at a few more\&.
+.PP
+.PP
+.nf
+# List of plugins with their config
+system:/elektra/mountpoints/\/hosts/plugins/resolver/name (="resolver_fm_hpu_b")
+system:/elektra/mountpoints/\/hosts/plugins/glob/name (="glob")
+system:/elektra/mountpoints/\/hosts/plugins/glob/config/set/#0
+system:/elektra/mountpoints/\/hosts/plugins/glob/config/set/#1
+system:/elektra/mountpoints/\/hosts/plugins/glob/config/set/#2
+system:/elektra/mountpoints/\/hosts/plugins/glob/config/set/#3
+system:/elektra/mountpoints/\/hosts/plugins/glob/config/set/#4/flags
+system:/elektra/mountpoints/\/hosts/plugins/hosts/name (="hosts")
+system:/elektra/mountpoints/\/hosts/plugins/sync/name (="sync")
+system:/elektra/mountpoints/\/hosts/plugins/network/name (="network")
+
+# Define backend plugin
+system:/elektra/mountpoints/\/hosts/backend/name (="other_backend")
+
+# Configuration for backend plugin
+system:/elektra/mountpoints/\/hosts/definition/path (="myhosts")
+
+system:/elektra/mountpoints/\/hosts/definition/positions/get/resolver = (="resolver")
+system:/elektra/mountpoints/\/hosts/definition/positions/get/storage = (="hosts")
+system:/elektra/mountpoints/\/hosts/definition/positions/get/validation/#0 (="glob")
+
+system:/elektra/mountpoints/\/hosts/definition/positions/set/resolver = (="resolver")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/validation/#0 = (="glob")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/validation/#1 = (="network")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/storage = (="hosts")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/precommit/#0 = (="sync")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/commit = (="resolver")
+system:/elektra/mountpoints/\/hosts/definition/positions/set/rollback (="resolver")
+.fi
+.PP
+.PP
+This example is very similar to the first one, but the plugin \fCother_backend\fP doesn't use the \fCpostorage\fP and \fCprestorage\fP 'positions'\&. Instead, there is a \fCvalidation\fP position that is (presumably) called in the appropriate phase\&. The plugin \fCother_backend\fP may also impose its own restrictions on plugins configured for the \fCvalidation\fP position\&. For example, it may define that such plugins must not generate, remove or modify keys and provide a different position for plugins that do so\&.
+.PP
+.PP
+.nf
+system:/elektra/mountpoints/\/hosts/plugins/network/name (="network")
+
+system:/elektra/mountpoints/\/hosts/plugins/backend/name (="db_backend")
+
+system:/elektra/mountpoints/\/hosts/definition/db/driver (="postgres")
+system:/elektra/mountpoints/\/hosts/definition/db/server (="127\&.0\&.0\&.1")
+system:/elektra/mountpoints/\/hosts/definition/db/port (="5432")
+system:/elektra/mountpoints/\/hosts/definition/db/user (="admin")
+system:/elektra/mountpoints/\/hosts/definition/db/password (="supersecret")
+
+system:/elektra/mountpoints/\/hosts/definition/phases/set/prestorage/#0 (="network")
+.fi
+.PP
+.PP
+This example shows an entirely different type of backend\&. The hypothetical \fCdb_backend\fP is backed by a database\&. In this case it is configured for a PostgreSQL database running on \fC127\&.0\&.0\&.1:5432\fP to which we connect as user \fCadmin\fP\&.
+.PP
+We also configured the \fCnetwork\fP plugin to run in the \fCprestorage\fP phase of the \fCset\fP operation\&. Which phases can be used and how they must be configured of course depends on \fCdb_backend\fP\&.
+.PP
+.PP
+.nf
+system:/elektra/mountpoints/\/hosts/plugins/yajl/name (="yajl")
+
+system:/elektra/mountpoints/\/hosts/plugins/backend/name (="http_backend")
+
+system:/elektra/mountpoints/\/hosts/url (="https://api\&.ipify\&.org/?format=JSON")
+
+system:/elektra/mountpoints/\/hosts/decoder (="yajl")
+.fi
+.PP
+.PP
+The hypothetical \fChttp_backend\fP plugin is a read-only backend plugin\&. In the example above, it is configured to load the URL \fChttps://api.ipify.org/?format=JSON\fP and use the \fCyajl\fP plugin to parse the result into a keyset\&. Both the HTTP request and the decoding would likely happen in the \fCstorage\fP phase of the \fCget\fP operation\&. The \fCresolver\fP phase could perform an HTTP cache check, for example\&. 

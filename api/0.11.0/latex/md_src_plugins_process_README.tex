@@ -1,0 +1,221 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the process plugin is in keys below
+\item infos/author = Klemens Böswirth \href{mailto:k.boeswirth+git@gmail.com}{\texttt{ k.\+boeswirth+git@gmail.\+com}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides =
+\item infos/recommends =
+\item infos/placements = postgetstorage presetstorage
+\item infos/status = maintained unittest shelltest nodep configurable
+\item infos/metadata =
+\item infos/description = one-\/line description of process
+\end{DoxyItemize}\hypertarget{md_src_plugins_process_README_src_plugins_process_README_md}{}\doxysection{Introduction}\label{md_src_plugins_process_README_src_plugins_process_README_md}
+This plugin spawns a new process with a user-\/defined executable and delegates all operations to the new process.\hypertarget{md_src_plugins_process_README_autotoc_md408}{}\doxysection{Usage}\label{md_src_plugins_process_README_autotoc_md408}
+Set the config key {\ttfamily executable} and the arrays {\ttfamily args/\#}, {\ttfamily env/\#} to the path of an executable, the arguments that shall be passed and the environment variables to be set.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mount test.dump /tests/process process 'executable=/usr/bin/pluginproc' 'args=\#1' 'args/\#0=-\/-\/load-\/plugin' 'args/\#1=myplugin'}
+
+\end{DoxyCode}
+
+
+During {\ttfamily elektra\+Stdprocio\+Open} the plugin will collect the {\ttfamily args/\#} and {\ttfamily env/\#} values into two arrays {\ttfamily argv} and {\ttfamily envp}. Additionally, the array {\ttfamily copyenv/\#} is read as a list of environment variables. Each variable will be looked up via {\ttfamily getenv} and then added to {\ttfamily envp}.
+
+The plugin then {\ttfamily fork}s a new process and the child calls {\ttfamily execve} with the path from {\ttfamily app} as well as {\ttfamily argv} and{\ttfamily envp}. The child process is expected to listen to {\ttfamily stdin} and write to {\ttfamily stdout} according to the protocol described below.
+
+If communication can be established, the child process will be kept running until {\ttfamily elektra\+Stdprocio\+Close}.\hypertarget{md_src_plugins_process_README_autotoc_md409}{}\doxysection{Protocol}\label{md_src_plugins_process_README_autotoc_md409}
+The entire protocol is text-\/based (apart from binary key values) and request-\/response-\/based, and happens over {\ttfamily stdin}/{\ttfamily stdout}. The parent process sends request to the child process. The child then processes the request and sends a response back.
+
+To encode keysets and keys we use the format of the {\ttfamily dump} plugin. It is important to note that the {\ttfamily dump} plugin is instructed to write the full keynames (normally it removes the parent prefix). There is, however, an exception during initialization, which is described in the appropriate section. The child process may also delegate directly to the {\ttfamily dump} plugin, or reimplement the encoding.
+
+The communications protocol used by the plugin has 3 phases\+:
+
+
+\begin{DoxyItemize}
+\item Initialization\+: Initial handshake after first starting the child-\/process.
+\item Operation\+: The main phase, which implements all the operations of an Elektra plugin (open, get, set, close, ...).
+\item Termination\+: The plugin is being closed and the parent-\/process tells the child to shut down.
+\end{DoxyItemize}
+
+\begin{quote}
+{\bfseries{Note\+:}} In the sections below we use the following format to describe messages\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Parent > Child}
+\DoxyCodeLine{}
+\DoxyCodeLine{HELLO WORLD}
+\DoxyCodeLine{[users]}
+\DoxyCodeLine{(user)}
+\DoxyCodeLine{\{ok|error\}}
+
+\end{DoxyCode}
+
+
+This denotes a message sent from parent to child, containing
+
+
+\begin{DoxyItemize}
+\item the literal text {\ttfamily HELLO WORLD}
+\item followed by a newline
+\item followed by a keyset called {\ttfamily users}
+\item followed by a newline
+\item followed by dynamic text called {\ttfamily user}
+\item followed by either the literal text {\ttfamily ok} or the literal text {\ttfamily error}
+\end{DoxyItemize}
+
+The names {\ttfamily users} and {\ttfamily user} don\textquotesingle{}t actually appear in the message. They are only used as a reference for the descriptions of the message.
+
+The actual message sent could look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{HELLO WORLD}
+\DoxyCodeLine{kdbOpen 2}
+\DoxyCodeLine{\$key string 3 5}
+\DoxyCodeLine{joe}
+\DoxyCodeLine{12345}
+\DoxyCodeLine{\$end}
+\DoxyCodeLine{appleseed}
+
+\end{DoxyCode}
+ \end{quote}
+\hypertarget{md_src_plugins_process_README_autotoc_md410}{}\doxysubsection{Initialization}\label{md_src_plugins_process_README_autotoc_md410}
+The parent writes the protocol header to {\ttfamily stdin} of the child.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Parent > Child}
+\DoxyCodeLine{}
+\DoxyCodeLine{ELEKTRA\_PROCESS INIT v1}
+
+\end{DoxyCode}
+
+
+The child must respond with an acknowledgement, followed by a {\ttfamily contract} keyset.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Child > Parent}
+\DoxyCodeLine{}
+\DoxyCodeLine{ELEKTRA\_PROCESS ACK v1}
+\DoxyCodeLine{(name)}
+\DoxyCodeLine{[contract]}
+
+\end{DoxyCode}
+
+
+Here {\ttfamily (name)} is the module name the child uses. This will be used to replace {\ttfamily process} in the contract of the plugin. The {\ttfamily \mbox{[}contract\mbox{]}} keyset must contain the {\ttfamily infos} keys, which will be used replace the ones at the top of this README and the ones in {\ttfamily process.\+c}. It must also contain {\ttfamily exports/\+\_\+} keys for every operation that is implemented by the child. All keys in {\ttfamily \mbox{[}contract\mbox{]}} should be below {\ttfamily system\+:/elektra/modules/process}. The parent will rename these keys appropriately.
+
+A child that implements all operations should include these keys (in addition to the relevant {\ttfamily infos} keys)\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{system:/elektra/modules/process/exports/open = 1}
+\DoxyCodeLine{system:/elektra/modules/process/exports/close = 1}
+\DoxyCodeLine{system:/elektra/modules/process/exports/get = 1}
+\DoxyCodeLine{system:/elektra/modules/process/exports/set = 1}
+
+\end{DoxyCode}
+
+
+After this initial handshake, the child should simply wait for further requests from the parent.
+
+\begin{quote}
+{\bfseries{Note}}\+: Under normal circumstances this handshake will always be followed by an {\ttfamily open} request immediately. \end{quote}
+\hypertarget{md_src_plugins_process_README_autotoc_md411}{}\doxysubsection{Operation}\label{md_src_plugins_process_README_autotoc_md411}
+When the parent needs the child to process an operation (open, get, ...), it will send a request like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Parent > Child}
+\DoxyCodeLine{}
+\DoxyCodeLine{\{open|get|set|close\}}
+\DoxyCodeLine{[parent]}
+\DoxyCodeLine{[data]}
+
+\end{DoxyCode}
+
+
+First we send the {\ttfamily opname} (one of {\ttfamily open}, {\ttfamily get}, {\ttfamily set} or {\ttfamily close}) of the operation that shall be performed by the child. The keyset {\ttfamily \mbox{[}parent\mbox{]}} always consists of a single key, namely the {\ttfamily parent\+Key} (or {\ttfamily error\+Key}) that was passed to the plugin. Finally, {\ttfamily \mbox{[}data\mbox{]}} is the keyset that was passed to the plugin. The {\ttfamily \mbox{[}data\mbox{]}} keyset is not present in {\ttfamily open} and {\ttfamily close} operations, since those don\textquotesingle{}t receive a {\ttfamily Key\+Set} in the C API. However, in the {\ttfamily open} operation {\ttfamily \mbox{[}data\mbox{]}} is replaced {\ttfamily \mbox{[}config\mbox{]}} which is the {\ttfamily Key\+Set} returned by {\ttfamily elektra\+Plugin\+Get\+Config} in the C API. This is needed, because the child process cannot request the config keyset otherwise.
+
+The child should then perform the requested operation and respond with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Child > Parent}
+\DoxyCodeLine{}
+\DoxyCodeLine{\{success|noupdate|error\}}
+\DoxyCodeLine{[parent]}
+\DoxyCodeLine{[returned]}
+
+\end{DoxyCode}
+
+
+Here {\ttfamily (result)} is one of {\ttfamily success}, {\ttfamily noupdate} and {\ttfamily error}, which correspond to {\ttfamily ELEKTRA\+\_\+\+PLUGIN\+\_\+\+STATUS\+\_\+\+SUCCESS}, {\ttfamily ELEKTRA\+\_\+\+PLUGIN\+\_\+\+STATUS\+\_\+\+NO\+\_\+\+UPDATE} and {\ttfamily ELEKTRA\+\_\+\+PLUGIN\+\_\+\+STATUS\+\_\+\+ERROR} respectively. The keysets {\ttfamily \mbox{[}parent\mbox{]}} and {\ttfamily \mbox{[}returned\mbox{]}} are the modified versions of the one sent by the parent.\hypertarget{md_src_plugins_process_README_autotoc_md412}{}\doxysubsection{Termination}\label{md_src_plugins_process_README_autotoc_md412}
+When the parent no longer needs the child process, it will send a final termination request.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Parent > Child}
+\DoxyCodeLine{}
+\DoxyCodeLine{ELEKTRA\_PROCESS TERMINATE}
+
+\end{DoxyCode}
+
+
+The child process should now exit (and thereby close its ends of the {\ttfamily stdin}/{\ttfamily stdout} pipes).
+
+\begin{quote}
+{\bfseries{Note\+:}} Under normal circumstances this only happens, when plugin is being closed, i.\+e. during a {\ttfamily elektra\+Plugin\+Close} call for a {\ttfamily process} instance. \end{quote}
+\hypertarget{md_src_plugins_process_README_autotoc_md413}{}\doxysubsection{Errors}\label{md_src_plugins_process_README_autotoc_md413}
+If an unexpected error occurs on either side of the protocol, the connection should be terminated and the child process shall exit.\hypertarget{md_src_plugins_process_README_autotoc_md414}{}\doxysection{Examples}\label{md_src_plugins_process_README_autotoc_md414}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# mount the Whitelist Java Plugin via process}
+\DoxyCodeLine{\# NOTE: the copyenv and copyenv/\#0 are normal not needed, but we need them to make this script work as an automated test}
+\DoxyCodeLine{sudo kdb mount config.file user:/tests/process dump process 'executable=/usr/bin/java' 'args=\#3' 'args/\#0=-\/cp' "{}args/\#1=\$BUILD\_DIR/src/bindings/jna/plugins/whitelist/build/libs/whitelist-\/\$(kdb -\/-\/version | sed -\/nE 's/KDB\_VERSION: (.+)/\(\backslash\)1/gp')-\/all.jar"{} 'args/\#2=org.libelektra.process.PluginProcess' 'args/\#3=org.libelektra.plugin.WhitelistPlugin' 'copyenv=\#0' "{}copyenv/\#0=LD\_LIBRARY\_PATH"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Define whitelist}
+\DoxyCodeLine{kdb meta-\/set user:/tests/process/key "{}check/whitelist/\#0"{} "{}"{}}
+\DoxyCodeLine{kdb meta-\/set user:/tests/process/key "{}check/whitelist/\#1"{} allowed0}
+\DoxyCodeLine{kdb meta-\/set user:/tests/process/key "{}check/whitelist/\#2"{} allowed1}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Should be allowed}
+\DoxyCodeLine{kdb set user:/tests/process/key allowed0}
+\DoxyCodeLine{\#> Set string to "{}allowed0"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/process/key allowed1}
+\DoxyCodeLine{\#> Set string to "{}allowed1"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Should cause error}
+\DoxyCodeLine{kdb set user:/tests/process/key not\_allowed}
+\DoxyCodeLine{\# RET: 5}
+\DoxyCodeLine{\# STDERR:.*Validation Semantic: .*'not\_allowed' does not adhere to whitelist.*}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# cleanup}
+\DoxyCodeLine{kdb rm -\/r user:/tests/process}
+\DoxyCodeLine{sudo kdb umount user:/tests/process}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note\+:}} The mount line of the snippet above can be simplified by using the {\ttfamily mount-\/java} helper\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mount-\/java config.file user:/tests/process dump java:org.libelektra.plugin.WhitelistPlugin}
+
+\end{DoxyCode}
+ \end{quote}
+\hypertarget{md_src_plugins_process_README_autotoc_md415}{}\doxysection{Limitations}\label{md_src_plugins_process_README_autotoc_md415}
+
+\begin{DoxyItemize}
+\item The {\ttfamily error} and {\ttfamily commit} functions are currently not supported. Therefore, implementing a resolver is not supported.
+\item Exporting additional functions (e.\+g. {\ttfamily checkconf}) is currently not supported.
+\item With the current backend system, {\ttfamily process} can only be used for plugins in the {\ttfamily postgetstorage} or {\ttfamily presetstorage} positions.
+\item The executable must be defined as an absolute path during mounting. 
+\end{DoxyItemize}

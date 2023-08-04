@@ -1,0 +1,57 @@
+\label{doc_help_kdb-mountOdbc_md_md_doc_help_kdb_mountOdbc}%
+\Hypertarget{doc_help_kdb-mountOdbc_md_md_doc_help_kdb_mountOdbc}%
+ \hypertarget{doc_help_kdb-mountOdbc_md_autotoc_md3027}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-mountOdbc_md_autotoc_md3027}
+{\ttfamily kdb mount\+Odbc $<$data source name$>$ $<$user name$>$ $<$password$>$ $<$table name$>$ $<$key column name$>$ $<$value column name$>$ $<$meta table name$>$ $<$mt key column name$>$ $<$mt metakey column name$>$ $<$mt metavalue column name$>$ $<$timeout (s)$>$ $<$mountpoint$>$}~\newline
+
+
+
+\begin{DoxyItemize}
+\item Where {\ttfamily data source name} is the name of the ODBC data source as defined in {\ttfamily odbc.\+ini} (usually stored at {\ttfamily /etc/unix\+ODBC/}).
+\begin{DoxyItemize}
+\item Only ODBC drivers that support {\bfseries{outer joins}} are suited for the Elektra ODBC backend.
+\end{DoxyItemize}
+\item {\ttfamily user name}\+: The username that should be used for connecting to the ODBC data source. If no username is needed, or it is already specified in the ini-\/file for the configuration of the datasource, {\ttfamily \char`\"{}\char`\"{}} can be provided for this argument.
+\item {\ttfamily password}\+: The same rules as for {\ttfamily user name} also apply to this argument.
+\item {\ttfamily table name}\+: The name of the table in the data source where the keys and their values should be stored.
+\item {\ttfamily key column name}\+: The name of the column where the key-\/names should be stored. This should be the primary key of the table.
+\item {\ttfamily value column name}\+: The name of the column where the key-\/values (strings) should be stored. This column should support NULL-\/values.
+\item {\ttfamily meta table name}\+: The name of the table where the metadata for the keys should be stored.
+\item {\ttfamily mt key column name}\+: The name of the column in the meta table where the key-\/name should be stored. This should be a foreign key that refers to the column with the key-\/name of the other table.
+\item {\ttfamily mt metakey column name}\+: The name of the column in the meta table where the name of the metakey should be stored. This column, together with the column for the key-\/name, should define the primary key of the meta table.
+\item {\ttfamily mt metavalue column name}\+: The name of the column in the meta table where the value (string) of the metakey should be stored. This column should support NULL-\/values.
+\item {\ttfamily timeout (s)}\+: The timeout (in seconds) that should be used when connecting to the data source. When passing \textquotesingle{}0\textquotesingle{}, the timeout gets disabled and the application could potentially wait forever. So use this option with care! If you want to use a default timeout, you can just pass {\ttfamily \char`\"{}\char`\"{}} for this argument.
+\item {\ttfamily mountpoint}\+: The place in the KDB where the ODBC data source should be mounted. The syntax is the same as with the file-\/based backend, but you can only use {\ttfamily user\+:/} and {\ttfamily system\+:/} namespaces as mountpoints for ODBC data sources.
+\end{DoxyItemize}
+
+\begin{quote}
+All columns in the data source that are specified via one of the described arguments, should be of type {\ttfamily TEXT}, {\ttfamily CHAR} or {\ttfamily VARCHAR}. The tables can have additional columns. These are not processed by the ODBC backend, but should support {\ttfamily NULL} or {\ttfamily DEFAULT} values. \end{quote}
+\hypertarget{doc_help_kdb-mountOdbc_md_autotoc_md3028}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-mountOdbc_md_autotoc_md3028}
+This command allows a user to persistently mount a new {\itshape backend} that refers to an ODBC data source. The concept is the same as for mounting with the file-\/based backend. So it is recommended to also read to man page for \mbox{\hyperlink{doc_help_kdb-mount_md}{kdb-\/mount(1)}}. More about mounting is explained in \mbox{\hyperlink{doc_help_elektra-mounting_md}{elektra-\/mounting(7)}}.\hypertarget{doc_help_kdb-mountOdbc_md_autotoc_md3029}{}\doxysection{IMPORTANT}\label{doc_help_kdb-mountOdbc_md_autotoc_md3029}
+This command modifies {\ttfamily system\+:/elektra/mountpoints}. Depending on the location of that part of the KDB, you may need root privileges to execute this command. Use {\ttfamily kdb file system\+:/elektra/mountpoints} to find out where exactly it will write to.
+
+\begin{quote}
+There is no special command for unmounting ODBC data sources. You can just use the \mbox{\hyperlink{doc_help_kdb-umount_md}{kdb-\/umount(1)}} command the same way as with mountpoints for files. \end{quote}
+\hypertarget{doc_help_kdb-mountOdbc_md_autotoc_md3030}{}\doxysection{OPTIONS}\label{doc_help_kdb-mountOdbc_md_autotoc_md3030}
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/H}, {\ttfamily -\/-\/help}\+: Show the man page.
+\item {\ttfamily -\/V}, {\ttfamily -\/-\/version}\+: Print version info.
+\item {\ttfamily -\/p}, {\ttfamily -\/-\/profile $<$profile$>$}\+: Use a different kdb profile.
+\item {\ttfamily -\/C}, {\ttfamily -\/-\/color $<$when$>$}\+: Print never/auto(default)/always colored output.
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: Explain what is happening. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/d}, {\ttfamily -\/-\/debug}\+: Give debug information. Prints additional information in case of errors/warnings.
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: Create the mountpoint even if the data source can not be reached at mount-\/time.
+\end{DoxyItemize}\hypertarget{doc_help_kdb-mountOdbc_md_autotoc_md3031}{}\doxysection{Examples}\label{doc_help_kdb-mountOdbc_md_autotoc_md3031}
+To mount the sample SQLite data source which is available at /src/plugins/backend\+\_\+odbc/sample\+Db/elektra\+DB.db\+:~\newline
+ {\ttfamily kdb mount\+Odbc Selektra \char`\"{}\char`\"{} \char`\"{}\char`\"{} elektra\+Keys key\+Name key\+Value meta\+Keys key\+Name meta\+Key\+Name meta\+Key\+Value \char`\"{}\char`\"{} user\+:/odbc\+Sqlite}
+
+To specify all arguments\+:~\newline
+ {\ttfamily kdb mount\+Odbc Selektra my\+User my\+Password elektra\+Keys key\+Name key\+Value meta\+Keys key\+Name meta\+Key\+Name meta\+Key\+Value 12 user\+:/odbc\+Sqlite}\hypertarget{doc_help_kdb-mountOdbc_md_autotoc_md3032}{}\doxysection{SEE ALSO}\label{doc_help_kdb-mountOdbc_md_autotoc_md3032}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_kdb-mount_md}{kdb-\/mount(1)}}.
+\item \mbox{\hyperlink{doc_help_elektra-glossary_md}{elektra-\/glossary(7)}}.
+\item \mbox{\hyperlink{doc_help_kdb-spec-mount_md}{kdb-\/spec-\/mount(1)}}.
+\item \mbox{\hyperlink{doc_help_kdb-umount_md}{kdb-\/umount(1)}}.
+\item \mbox{\hyperlink{doc_help_elektra-mounting_md}{elektra-\/mounting(7)}}. 
+\end{DoxyItemize}

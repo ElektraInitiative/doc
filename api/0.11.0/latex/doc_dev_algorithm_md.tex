@@ -1,0 +1,155 @@
+\label{doc_dev_algorithm_md_md_doc_dev_algorithm}%
+\Hypertarget{doc_dev_algorithm_md_md_doc_dev_algorithm}%
+ You might want to read \mbox{\hyperlink{doc_dev_architecture_md}{about architecture}} and \mbox{\hyperlink{doc_dev_data-structures_md}{data structures}} first.\hypertarget{doc_dev_algorithm_md_autotoc_md2586}{}\doxysection{Outdated}\label{doc_dev_algorithm_md_autotoc_md2586}
+\begin{quote}
+{\bfseries{Warning}} Many of the things described below (especially about {\ttfamily KDB} and the {\ttfamily kdb$\ast$} functions) are outdated. See \mbox{\hyperlink{doc_dev_kdb-operations_md}{\`{}kdb-\/operations.md\`{}}} and \mbox{\hyperlink{doc_dev_kdb-contracts_md}{\`{}kdb-\/contracts.md\`{}}} for up-\/to-\/date information. \end{quote}
+\hypertarget{doc_dev_algorithm_md_autotoc_md2587}{}\doxysection{Introduction}\label{doc_dev_algorithm_md_autotoc_md2587}
+In this section, we will explain the heart of Elektra. {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} is responsible for the setup and the construction of the data structures needed later. {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} does, together with the plugins, all actions necessary to read in the configuration. {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} orchestrates the plugins to write out the configuration correctly. {\ttfamily \mbox{\hyperlink{group__kdb_gadb54dc9fda17ee07deb9444df745c96f}{kdb\+Close()}}} finally frees all previously allocated data structures.\hypertarget{doc_dev_algorithm_md_autotoc_md2588}{}\doxysubsection{kdb\+Open}\label{doc_dev_algorithm_md_autotoc_md2588}
+{\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} retrieves the {\itshape mount point configuration} with {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} using the {\itshape default backend}. During this process, the function sets up the data structures which are needed for later invocations of {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} or {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. All backends are opened and mounted in the appropriate parts of the key hierarchy. The resulting backends are added both to the {\ttfamily Split} and the {\ttfamily Trie} object. {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} finally returns a {\ttfamily KDB} object that contains all this information.
+
+The reading of the mount point configuration and the consequential self configuring of the system is called {\itshape bootstrapping}. Elektra builds itself up with a default backend (consisting of {\ttfamily libelektra-\/plugin-\/resolver} and {\ttfamily libelektra-\/plugin-\/storage}). \mbox{\hyperlink{doc_help_elektra-bootstrapping_md}{Read more about bootstrapping here}}
+
+{\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} creates a {\ttfamily Split} object. It adds all backend handles and {\ttfamily parent\+Keys} during bootstrapping. So the buildup of the {\ttfamily Split} object takes place once. The resulting object is then used for both {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} and {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. This approach is much better testable because the {\ttfamily Split} object is first initialised using the mount point configuration -- separated from the filtering of the backends for every specific {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} and {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} request.
+
+Afterwards the key hierarchy is static. Every application using Elektra will build up the same key database. Application-\/specific mount points are prohibited because changes of mount points would destroy the global key database. Elektra could not guarantee that every application retrieves the same configuration with the same key names any longer.
+
+In {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}}, nearly no checks are done regarding the expected behavior of the backend. The contract checker guarantees that only appropriate mount points are written into the mount point configuration. {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} checks only if the opening of plugin was successful. If not, the backend enclosing the plugin is not mounted at all.\hypertarget{doc_dev_algorithm_md_autotoc_md2589}{}\doxysubsection{Removing Keys}\label{doc_dev_algorithm_md_autotoc_md2589}
+In Elektra version 0.\+6, removing keys was an explicit request. Only a single {\ttfamily Key} object could be removed from the database. For configuration files this method is inapplicable. For {\ttfamily filesys}, however, it was easy to implement.
+
+In Elektra version 0.\+7, the behavior changed. Removing keys was integrated into {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. The user tagged keys that should be removed. After the next {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}, these keys were removed from the key database. On the one hand, backends writing configuration files simply ignored the keys marked for removal. On the other hand, {\ttfamily filesys} needed that information to remove the files. To make this approach work for {\ttfamily filesys}, the marked keys were located at the very end of the {\ttfamily Key\+Set} and sorted in reverse. With this trick, recursive removing worked well. But this approach had major defects in the usage of {\ttfamily Key\+Set}. Because marking a key to be removed changed the sort order of the key set {\ttfamily \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ks\+Lookup\+By\+Name()}}} did not find this key anymore.
+
+So in the present version removing keys is consistent again. A {\ttfamily Key\+Set} describes the current configuration. The user can reduce the {\ttfamily Key\+Set} object by {\itshape popping} keys out. The {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} function applies exactly this configuration as specified by the key set to the key database. Contrary to the previous versions, the popped keys of the key set will be permanently removed.
+
+The new circumstance yields {\bfseries{idempotent}} properties for {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. The same {\ttfamily Key\+Set} can be applied multiple times, but after the first time, the key database will not be changed anymore. Note that {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} actually detects that there are no changes and will do nothing. To actually show the idempotent behavior the Key\+Set has to be regenerated or the key database needs to be reopened.
+
+It is, however, not known if keys should be removed permanently only by investigating the {\ttfamily Key\+Set}. But only if this knowledge is present, the core can decide if the key set needs to be written out or if the configuration is unchanged. So we decided to track how many keys are delivered in {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}. If the size of the {\ttfamily Key\+Set} is lower than this number determined at the previous {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}, Elektra’s core knows that some keys were popped. Hence, the next {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} invocation needs to change the concerned key database.
+
+The situation is now much clearer. The semantics of popping a key will result in removing the key from the key database. And the intuitive idea that a {\ttfamily Key\+Set} will be applied to the key database is correct again.\hypertarget{doc_dev_algorithm_md_autotoc_md2590}{}\doxysection{kdb\+Get}\label{doc_dev_algorithm_md_autotoc_md2590}
+It is critical for application startup-\/time to retrieve the configuration as fast as possible. Hence, the design goal of the {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} algorithm is to be efficient while still enabling plugins to have relaxed postconditions. To achieve this, the sequence of {\itshape syscalls} must be optimal. On the other hand, it is not tolerable to waste time or memory inside Elektra’s core, especially during an initial request or when no update is available.
+
+The synopsis of the function is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdbGet}}(KDB *handle, KeySet *returned, Key * parentKey);}
+
+\end{DoxyCode}
+
+
+The user passes a key set, called {\ttfamily returned}. If the user invokes {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} the first time, he or she will usually pass an empty key set. If the user wants to update the application\textquotesingle{}s settings, {\ttfamily returned} will typically contain the configuration of the previous {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} request. The {\ttfamily parent\+Key} holds the information below which key the configuration should be retrieved. The {\ttfamily handle} contains the data structures needed for the algorithm, like the {\ttfamily Split} and the {\ttfamily Trie} objects.
+
+{\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} does a rather easy job, because {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} already guarantees that only well formatted, non-\/corrupted and well-\/typed configuration is written out in the key database. The task is to query all backends in question for their configuration and then merge everything.\hypertarget{doc_dev_algorithm_md_autotoc_md2591}{}\doxysubsection{Responsibility}\label{doc_dev_algorithm_md_autotoc_md2591}
+A backend may yield keys that it is not responsible for. It is not possible for a backend to know that another backend has been mounted below and the other backend is now responsible for some of the keys that are still in the storage. Additionally, plugins are not able to determine if they are responsible for a key or not. Consequently, it can happen that more than one backend delivers a key with the same name.
+
+{\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} ensures that a key is uniquely identified by its name. Elektra’s core will \mbox{\hyperlink{doc_help_elektra-glossary_md}{pop}} keys that are outside of the backend\textquotesingle{}s responsibility. Hence, these keys will not be passed to the user and we get the desired behavior\+: The nearest mounted backend to the key is responsible.
+
+For example, a generator plugin in the backend (A) always emits following keys. (A) and (B) indicate from which backend the key comes from.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/sw/generator/akey (A)}
+\DoxyCodeLine{user:/sw/generator/dir (A)}
+\DoxyCodeLine{user:/sw/generator/dir/outside1 (A)}
+\DoxyCodeLine{user:/sw/generator/dir/outside2 (A)}
+
+\end{DoxyCode}
+
+
+It will still return these keys even if the plugin is not responsible for some of them anymore. This can happen if another backend B is mounted to {\ttfamily user\+:/sw/generator/dir}. In the example it yields the following keys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/sw/generator/dir (B)}
+\DoxyCodeLine{user:/sw/generator/dir/new (B)}
+\DoxyCodeLine{user:/sw/generator/dir/outside1 (B)}
+\DoxyCodeLine{user:/sw/generator/outside (B)}
+
+\end{DoxyCode}
+
+
+In this situation {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} is responsible to pop all three keys at, and below, {\ttfamily user\+:/sw/generator/dir} of backend (A) and the key {\ttfamily user\+:/sw/generator/outside} of backend (B). The user will get the resulting key set\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{user:/sw/generator/akey (A)}
+\DoxyCodeLine{user:/sw/generator/dir (B)}
+\DoxyCodeLine{user:/sw/generator/dir/new (B)}
+\DoxyCodeLine{user:/sw/generator/dir/outside1 (B)}
+
+\end{DoxyCode}
+
+
+Note that the key exactly at the mount point comes from the backend mounted at {\ttfamily user\+:/sw/generator/dir}.\hypertarget{doc_dev_algorithm_md_autotoc_md2592}{}\doxysubsection{Sequence}\label{doc_dev_algorithm_md_autotoc_md2592}
+{\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} already creates a {\ttfamily Split} object for the whole configuration tree. In this object, {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} will append a list of all backends available. A specific {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} request usually includes only a part of the configuration. For example, the user is only interested in keys below {\ttfamily user\+:/sw/apps/userapp}. All backends that cannot contribute to configuration below {\ttfamily user\+:/sw/apps/userapp} will be omitted for that request. To achieve this, parts of the {\ttfamily Split} object are filtered out. After this step we know the list of backends involved. The {\ttfamily Split} object allocates a key set for each of these backends.
+
+Afterwards the first plugin of each backend is called to determine if an update is needed. If no update is needed, the algorithm has finished and returns zero.
+
+Now we know which backends do not need an update. For these backends, the previous configuration from {\ttfamily returned} is appointed from to the key sets of the {\ttfamily Split} object. The algorithm will not set the {\itshape syncbits} of the {\ttfamily Split} object for these backends because the storage of the backends already contains up-\/to-\/date configuration.
+
+The other backends will be requested to {\itshape retrieve} their configuration. The initial empty {\ttfamily Key\+Set} from the {\ttfamily Split} object and the relevant file name in the key value of {\ttfamily parent\+Key} are passed to each remaining plugin. The plugins extend, validate and process the key set. When an error has occurred, the algorithm can stop immediately because the user\textquotesingle{}s {\ttfamily Key\+Set} {\ttfamily returned} is not changed at this point. When this part finishes, the {\ttfamily Split} object contains the whole requested configuration separated in various key sets.
+
+Subsequently the freshly received keys need some {\itshape post-\/processing}\+:
+
+
+\begin{DoxyItemize}
+\item Newly allocated keys in Elektra always have the {\itshape sync flag} set. Because the plugins allocate and modify keys with the same functions as the user, the returned keys will also have their sync flag set. But from the user\textquotesingle{}s point of view the configuration is unmodified. So some code needs to remove this sync flag. To relax the post conditions of the plugins, {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} removes it.
+\item To detect removed keys in subsequent {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} calls, {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} needs to store the number of received keys of each backend.
+\item Additionally, for every key it is checked if it belongs to this backend. This makes sure that every key comes from a single source only as designated by the {\ttfamily Trie}. In this process, Elektra pops all duplicated and overlapping keys in favor of the responsible backend.
+\end{DoxyItemize}
+
+The last step is to {\itshape merge} all these key sets together. This step changes the configuration visible to the user. After some cleanup the algorithm finally finishes.\hypertarget{doc_dev_algorithm_md_autotoc_md2593}{}\doxysubsection{Updating Configuration}\label{doc_dev_algorithm_md_autotoc_md2593}
+The user can call {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} often even if the configuration or parts of it are already up-\/to-\/date. This can happen when applications reread configuration in some events. Examples are signals (SIGHUP is the signal used for that on Unix systems. It is sent when the program\textquotesingle{}s controlling terminal is closed. Daemons do not have a terminal so the signal is reused for reloading configuration.), notifications, user requests and in the worst case periodical attempts to reread configuration.
+
+The given goal is to keep the sequence of needed syscalls low. If no update is needed, it is sufficient to request the timestamp (On POSIX systems using {\ttfamily stat()}) of every file. No other syscall is needed. Elektra’s core alone cannot check that because getting a timestamp is not defined within the standard C99. So instead the resolver plugin handles this problem. The resolver plugin returns 0 if nothing has changed.
+
+This decision yields some advantages. Both the storage plugins and Elektra’s core can conform to C99. Because the resolver plugin is the very first in the chain of plugins, it is guaranteed that no useless work is done.\hypertarget{doc_dev_algorithm_md_autotoc_md2594}{}\doxysubsection{Initial kdb\+Get Problem}\label{doc_dev_algorithm_md_autotoc_md2594}
+Because Elektra provides self-\/contained configuration, {\ttfamily \mbox{\hyperlink{group__kdb_ga844e1299a84c3fbf1d3a905c5c893ba5}{kdb\+Open()}}} has to retrieve settings in the {\itshape bootstrapping} process below {\ttfamily system\+:/elektra} as explained in {\ttfamily bootstrapping}. Because of the new way to keep track of removed keys, the internally executed {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} creates a problem. Without countermeasures even the first {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} of a user requesting the configuration below {\ttfamily system\+:/elektra} fails, because the resolver finds out that the configuration is already up-\/to-\/date. The configuration delivered by the user is empty at this point. As a result, the empty configuration will be appointed and returned to the user.
+
+A simple way to resolve this issue is to reload the default backend after the internal configuration was fetched. Reloading resets the timestamps and {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} works as expected.\hypertarget{doc_dev_algorithm_md_autotoc_md2595}{}\doxysection{kdb\+Set}\label{doc_dev_algorithm_md_autotoc_md2595}
+Not performance, but robust and reliable behavior is the most important issue for {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. The design was chosen so that some additional in-\/memory comparisons are preferred to a suboptimal sequence of {\ttfamily syscalls}. The algorithm makes sure that keys are written out only if it is necessary, because applications can call {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} with an unchanged {\ttfamily Key\+Set}. For the code to decide this, performance is important.\hypertarget{doc_dev_algorithm_md_autotoc_md2596}{}\doxysubsection{Properties}\label{doc_dev_algorithm_md_autotoc_md2596}
+{\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} guarantees the following properties\+:
+
+
+\begin{DoxyItemize}
+\item Modifications to permanent storage are only made when the configuration was changed.
+\item When errors occur, every plugin gets a chance to rollback its changes as described in {\bfseries{exception safety}}.
+\item If every plugin does this correctly, the whole {\ttfamily Key\+Set} is propagated to permanent storage. Otherwise nothing is changed in the key database. Plugins delivered with Elektra meet this requirement.
+\end{DoxyItemize}
+
+The synopsis of the function is\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdbSet}}(KDB *handle, KeySet *returned, Key * parentKey);}
+
+\end{DoxyCode}
+
+
+The user passes the configuration using the {\ttfamily Key\+Set} {\ttfamily returned}. The key set will not be changed by {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}. The {\ttfamily parent\+Key} provides a way to limit which part of the configuration is written out. For example, the {\ttfamily parent\+Key} {\ttfamily user\+:/sw/org/app/\#0/current} will induce {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} to only modify the key databases below {\ttfamily user\+:/sw/org/app} even if the {\ttfamily Key\+Set} {\ttfamily returned} also contains more configuration. Note that all backends with no keys in {\ttfamily returned} but that are below {\ttfamily parent\+Key} will completely wipe out their key database. The {\ttfamily KDB} handle contains the necessary data structures.\hypertarget{doc_dev_algorithm_md_autotoc_md2597}{}\doxysubsection{Search for Changes}\label{doc_dev_algorithm_md_autotoc_md2597}
+As a first step, {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} {\itshape divides} the configuration passed in by the user to the key sets in the {\ttfamily Split} object. {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} searches for every key if the {\itshape sync flag} is checked. Then {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} decides if a key was removed from a backend by comparing the actual size of the key set with the size stored from the last {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} call. We see that it is necessary to call {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} first before invocations of {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} are allowed.
+
+We know that data of a backend has to be written out if at least one key was changed or removed. If no backend has any changes, the algorithm will terminate at this point. The careful reader notices that the process involves no file operations.\hypertarget{doc_dev_algorithm_md_autotoc_md2598}{}\doxysubsection{Duplicated Key Sets}\label{doc_dev_algorithm_md_autotoc_md2598}
+If some backends need synchronization, the algorithm continues by filtering out all backends in the {\ttfamily Split} object that do not have changes. At this point, the {\ttfamily Split} object has a list of backends with their respective key sets.
+
+Plugins in {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} can change values. Other than in {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}}, the user is not interested in these changes. Instead, the values are transformed to be suitable for the storage. To make sure that the changed values are not passed to the user, the algorithm continues with a {\itshape deep duplication} of all key sets in the {\ttfamily Split} object.\hypertarget{doc_dev_algorithm_md_autotoc_md2599}{}\doxysubsection{Resolver}\label{doc_dev_algorithm_md_autotoc_md2599}
+All plugins of each included backend are executed one by one up to the resolver plugin. If this succeeds, the resolver plugin is responsible for committing these changes. After the successful commit, {\itshape error codes} of plugins are ignored. Only logging and notification plugins are affected.\hypertarget{doc_dev_algorithm_md_autotoc_md2600}{}\doxysubsection{Atomic Replacement}\label{doc_dev_algorithm_md_autotoc_md2600}
+Up to now only file-\/based storages with atomic properties were developed. The replacement of a file with another file that has not yet been written is not trivial. The straightforward way is to lock a file and start writing to it. But this approach can result in broken or partially finished files in events like “out of disc space”, signals or other asynchronous aborts of the program.
+
+A temporary file solves most of this problem, because in problematic events the original file stays untouched. When the temporary file is written out properly, it is renamed and the original configuration file is overwritten. But another concurrent invocation of {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} can try to do the same with the result that one of the newly written files is lost.
+
+To avoid this problem, locks are needed and protect cooperating processes (such as other processes using Elektra).
+
+Additionally modification time is used to detect if a file was modified. Unfortunately the modification time on some file systems has a resolution of one second. So any changes within that time slot might not be recognized.\hypertarget{doc_dev_algorithm_md_autotoc_md2601}{}\doxysubsection{Errors}\label{doc_dev_algorithm_md_autotoc_md2601}
+The plugins within {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} can fail for a variety of reasons. Conflicts occur most frequently. A conflict means that during executions of {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} and {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} another program has changed the key database. In order not to lose any data, {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} fails without doing anything. In conflict situations Elektra leaves the programmer no choice. The programmer has to retrieve the configuration using {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} again to be up-\/to-\/date with the key database. Afterwards it is up to the application to decide which configuration to use. In this situation it is the best to ask the user, by showing him the description and reason of the error, how to continue\+:
+
+
+\begin{DoxyEnumerate}
+\item Save the configuration again. The changes of the other program will be lost in this case.
+\item The key database can also be left unchanged as the other program wrote it. After using {\ttfamily \mbox{\hyperlink{group__kdb_ga28e385fd9cb7ccfe0b2f1ed2f62453a1}{kdb\+Get()}}} the application is already up-\/to-\/date with the new configuration. All configuration changes the user made before will be lost.
+\item The application can try to merge the key sets to get the best result. If no key is changed on both sides the result is clear, otherwise the application has to decide if the own or the other configuration should be favored. The result of the merged key sets has to be written out with {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}}.
+\item Merging the key sets can be done with {\ttfamily \mbox{\hyperlink{group__keyset_ga21eb9c3a14a604ee3a8bdc779232e7b7}{ks\+Append()}}}. The source parameter is the preferred configuration. Note that the downside of the third option is that the merged configuration might not be valid.
+\end{DoxyEnumerate}
+
+Sometimes a concrete key causes the problem that the whole key set cannot be stored. That can happen on validation or because of type errors. Such errors are usually caused by a mistake made by the user. So the user is responsible for changing the settings to make it valid again. In such situations, the {\itshape internal cursor} of the {\ttfamily Key\+Set} {\ttfamily returned} will point to the problematic key.
+
+A completely different approach is to export the configuration when {\ttfamily \mbox{\hyperlink{group__kdb_ga11436b058408f83d303ca5e996832bcf}{kdb\+Set()}}} returned an error code. The user can then edit, change or merge this configuration with more powerful tools. Finally, the user can import the configuration into the global key database. The export and import mechanism is called \char`\"{}streaming\char`\"{} and will be explained in {\itshape streaming}. 

@@ -1,0 +1,73 @@
+
+\begin{DoxyItemize}
+\item infos = Information about the ansible plugin is in keys below
+\item infos/author = Maximilian Irlinger \href{mailto:max@maxirlinger.at}{\texttt{ max@maxirlinger.\+at}}
+\item infos/licence = BSD
+\item infos/needs =
+\item infos/provides = storage/ansible
+\item infos/recommends =
+\item infos/placements = setstorage
+\item infos/status = recommended productive maintained conformant unittest writeonly
+\item infos/metadata =
+\item infos/description = export Ansible playbooks
+\end{DoxyItemize}\hypertarget{md_src_plugins_ansible_README_src_plugins_ansible_README_md}{}\doxysection{Introduction}\label{md_src_plugins_ansible_README_src_plugins_ansible_README_md}
+Provides a write-\/only storage plugin for use with {\ttfamily kdb export} and {\ttfamily kdb record-\/export}. The output format is an Ansible playbook that utilized the \href{https://github.com/ElektraInitiative/ansible-libelektra}{\texttt{ ansible-\/libelektra}} module.
+
+Keys that possess the metakey {\ttfamily meta\+:/elektra/removed} will be removed using the {\ttfamily remove} option in ansible-\/libelektra.\hypertarget{md_src_plugins_ansible_README_autotoc_md52}{}\doxysection{Plugin Configuration}\label{md_src_plugins_ansible_README_autotoc_md52}
+You can use the following configuration keys to modify the behavior and output of the plugin\+:
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{3}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Key   }&\cellcolor{\tableheadbgcolor}\textbf{ Default Value   }&\cellcolor{\tableheadbgcolor}\textbf{ Description    }\\\cline{1-3}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Key   }&\cellcolor{\tableheadbgcolor}\textbf{ Default Value   }&\cellcolor{\tableheadbgcolor}\textbf{ Description    }\\\cline{1-3}
+\endhead
+{\ttfamily playbook}   &{\ttfamily 1}   &Whether to generate a whole playbook or just a (list of) task(s) ({\ttfamily 0})    \\\cline{1-3}
+{\ttfamily playbook/name}   &My Elektra Playbook   &The {\ttfamily name} property of the playbook    \\\cline{1-3}
+{\ttfamily playbook/hosts}   &all   &The {\ttfamily hosts} property of the playbook    \\\cline{1-3}
+{\ttfamily task/main/name}   &Set Elektra Keys   &The name of the \textquotesingle{}main\textquotesingle{} task of the playbook   \\\cline{1-3}
+\end{longtabu}
+\hypertarget{md_src_plugins_ansible_README_autotoc_md53}{}\doxysection{Dependencies}\label{md_src_plugins_ansible_README_autotoc_md53}
+This plugin requires \href{https://github.com/jbeder/yaml-cpp}{\texttt{ yaml-\/cpp}}. On a Debian based OS the package for the library is called \href{https://packages.debian.org/libyaml-cpp-dev}{\texttt{ {\ttfamily libyaml-\/cpp-\/dev}}}. On mac\+OS you can install the package \href{https://repology.org/project/yaml-cpp}{\texttt{ {\ttfamily yaml-\/cpp}}} via \href{https://brew.sh}{\texttt{ Home\+Brew}}.\hypertarget{md_src_plugins_ansible_README_autotoc_md54}{}\doxysection{Examples}\label{md_src_plugins_ansible_README_autotoc_md54}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Backup-\/and-\/Restore: user:/tests}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set user:/tests/company/roles/ceo Hans}
+\DoxyCodeLine{\#> Create a new key user:/tests/company/roles/ceo with string "{}Hans"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb export user:/tests/company ansible -\/c playbook/name="{}Company Roles"{},task/main/name="{}I can customize this too"{}}
+\DoxyCodeLine{\# RET:0}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/-\/-\/}
+\DoxyCodeLine{-\/ name: Company Roles}
+\DoxyCodeLine{  hosts: all}
+\DoxyCodeLine{  collections:}
+\DoxyCodeLine{    -\/ elektra\_initiative.libelektra}
+\DoxyCodeLine{  tasks:}
+\DoxyCodeLine{    -\/ name: I can customize this too}
+\DoxyCodeLine{      elektra:}
+\DoxyCodeLine{        keys:}
+\DoxyCodeLine{          -\/ user:}
+\DoxyCodeLine{              tests:}
+\DoxyCodeLine{                company:}
+\DoxyCodeLine{                  roles:}
+\DoxyCodeLine{                    ceo:}
+\DoxyCodeLine{                      -\/ value: Hans}
+
+\end{DoxyCode}
+\hypertarget{md_src_plugins_ansible_README_autotoc_md55}{}\doxysection{Limitations}\label{md_src_plugins_ansible_README_autotoc_md55}
+
+\begin{DoxyItemize}
+\item This plugin only supports writing of Ansible Playbooks. It is currently not possible to read them with this plugin. Do not use this plugin as a general-\/purpose storage plugin.
+\item If keys below {\ttfamily system\+:/elektra/mountpoints} are included, we will always create a second task for them instead of using the {\ttfamily mount} operation of the ansible-\/libelektra module. This task will be created first. Keys created during the \textquotesingle{}main\textquotesingle{} task will then already be able to use the correctly mounted files. 
+\end{DoxyItemize}

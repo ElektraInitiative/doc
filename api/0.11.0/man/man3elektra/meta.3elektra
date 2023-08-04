@@ -1,0 +1,351 @@
+.TH "meta" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+meta \- Meta Data proposal+compatibility
+.PP
+ \- Meta data proposal+compatibility methods\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBkeyComment\fP (const Key *key)"
+.br
+.RI "Return a pointer to the real internal \fCkey\fP comment\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetCommentSize\fP (const Key *key)"
+.br
+.RI "Calculates number of bytes needed to store a key comment, including final NULL\&. "
+.ti -1c
+.RI "ssize_t \fBkeyGetComment\fP (const Key *key, char *returnedComment, size_t maxSize)"
+.br
+.RI "Get the key comment\&. "
+.ti -1c
+.RI "ssize_t \fBkeySetComment\fP (Key *key, const char *newComment)"
+.br
+.RI "Set a comment for a key\&. "
+.ti -1c
+.RI "int \fBelektraKeyCmpOrder\fP (const Key *ka, const Key *kb)"
+.br
+.RI "Compare the order metadata of two keys\&. "
+.ti -1c
+.RI "void \fBelektraMetaArrayAdd\fP (Key *key, const char *metaName, const char *value)"
+.br
+.RI "creates an metadata array or appends another element to an existing metadata array e\&.g\&. "
+.ti -1c
+.RI "KeySet * \fBelektraMetaArrayToKS\fP (Key *key, const char *metaName)"
+.br
+.RI "Create a \fCKeySet\fP from a metakey array\&. "
+.ti -1c
+.RI "int \fBelektraSortTopology\fP (KeySet *ks, Key **array)"
+.br
+.RI "topological sorting "
+.ti -1c
+.RI "char * \fBelektraMetaArrayToString\fP (const Key *key, const char *metaName, const char *delim)"
+.br
+.RI "returns the metakey array as a string separated by delim "
+.in -1c
+.SH "Detailed Description"
+.PP 
+Meta data proposal+compatibility methods\&. 
+
+In versions before Elektra 0\&.8 only limited metadata was available\&. Now any metadata can be added\&. These API methods are implementations of the 0\&.7 API using 0\&.8 metadata\&.
+.PP
+Additionally, new suggestions can be made here\&.
+.PP
+It is planned that these methods will be generated from doc/METADATA\&.ini and moved to a separate library\&. Currently, you should better avoid the methods and directly use \fBmetainfo \fP instead\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int elektraKeyCmpOrder (const Key * ka, const Key * kb)"
+
+.PP
+Compare the order metadata of two keys\&. 
+.PP
+\fBReturns\fP
+.RS 4
+a number less than, equal to or greater than zero if the order of k1 is found, respectively, to be less than, to match, or be greater than the order of k2\&. If one key is NULL, but the other isn't, the key which is not NULL is considered to be greater\&. If both keys are NULL, they are considered to be equal\&. If one key does have an order metadata but the other has not, the key with the metadata is considered greater\&. If no key has metadata, they are considered to be equal\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIka\fP key to compare with 
+.br
+\fIkb\fP other key to compare with 
+.RE
+.PP
+
+.SS "void elektraMetaArrayAdd (Key * key, const char * metaName, const char * value)"
+
+.PP
+creates an metadata array or appends another element to an existing metadata array e\&.g\&. 
+.PP
+.nf
+Key *key = keyNew("user:/test", KEY_END);
+elektraMetaArrayAdd(key, "test", "val0");
+// key now has "test/#0" with value "val0" as metadata
+elektraMetaArrayAdd(key, "test", "val1");
+// appends "test/#1" with value "val1" to key
+
+.fi
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key the metadata should be added to 
+.br
+\fImetaName\fP the name of the metakey array parent 
+.br
+\fIvalue\fP the value of the newly appended metakey 
+.RE
+.PP
+
+.SS "KeySet* elektraMetaArrayToKS (Key * key, const char * metaName)"
+
+.PP
+Create a \fCKeySet\fP from a metakey array\&. For example, the following function call
+.PP
+.PP
+.nf
+elektraMetaArrayToKS(
+        keyNew ("/a", KEY_VALUE, "b, c",
+                KEY_META, "dep",    "#1",
+                KEY_META, "dep/#0", "/b",
+                KEY_META, "dep/#1", "/c", KEY_END),
+        "dep");
+.fi
+.PP
+.PP
+returns a \fCKeySet\fP containing the keys \fCdep\fP with value \fC#1\fP, \fC'dep/#0'\fP with value \fC'/b'\fP and \fC'dep/#1'\fP with value \fC'/c'\fP\&.
+.PP
+If no metakey array is found, null is returned\&. The returned \fCKeySet\fP must be freed with \fCksDel\fP
+.PP
+\fBReturns\fP
+.RS 4
+a keyset containing all the metakeys of the metakey array or null if no metakey array is found 
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key containing the metakey array 
+.br
+\fImetaName\fP the name of the metakey array parent 
+.RE
+.PP
+
+.SS "char* elektraMetaArrayToString (const Key * key, const char * metaName, const char * delim)"
+
+.PP
+returns the metakey array as a string separated by delim 
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key containing the metakey array 
+.br
+\fImetaName\fP the name of the metakey array parent 
+.br
+\fIdelim\fP delimiter for the records in the returned string
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a string containing all metakey values separated by 'delim' 
+.RE
+.PP
+
+.SS "int elektraSortTopology (KeySet * ks, Key ** array)"
+
+.PP
+topological sorting 
+.PP
+\fBParameters\fP
+.RS 4
+\fIarray\fP the array where the sorted keys will be stored in topological order\&. Nothing will be written into an array if 
+.br
+\fIks\fP is the keyset that should be sorted\&. Dependencies and order is defined by metakeys\&.
+.RE
+.PP
+.IP "\(bu" 2
+the 'dep/#' metakeys e\&.g\&. the Key *k = keyNew ('/a', KEY_VALUE, 'b, c', KEY_META, 'dep', '#1', KEY_META, 'dep/#0', '/b', KEY_META, 'dep/#1', '/c', KEY_END), 'dep'); depends on Key '/b' and Key '/c'\&.
+.IP "\(bu" 2
+if 'order' metakeys are defined for the keys the algorithm tries to resolves them by that order using lexical comparison\&. You should prefer \fC#0\fP array syntax\&.
+.PP
+.PP
+Duplicated and reflexive dep entries are ignored\&.
+.PP
+The algorithm used is a mixture of Kahn and BFS\&. Furthermore the algorithm does not use recursion\&.
+.PP
+First a BFS with the keys sorted by 'order' is used\&. Then all dependencies (recursively) of every key is collected\&.
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP on success 
+.br
+\fI0\fP for cycles 
+.br
+\fI-1\fP for invalid dependencies 
+.RE
+.PP
+
+.SS "const char* keyComment (const Key * key)"
+
+.PP
+Return a pointer to the real internal \fCkey\fP comment\&. This is a much more efficient version of \fBkeyGetComment()\fP and you should use it if you are responsible enough to not mess up things\&. You are not allowed to change anything in the memory region the returned pointer points to\&.
+.PP
+\fBkeyComment()\fP returns '' when there is no keyComment\&. The reason is 
+.PP
+.nf
+key=keyNew(0);
+keySetComment(key,"");
+keyComment(key); // you would expect "" here
+keyDel(key);
+
+.fi
+.PP
+.PP
+See \fBkeySetComment()\fP for more information on comments\&.
+.PP
+\fBNote\fP
+.RS 4
+Note that the Key structure keeps its own size field that is calculated by library internal calls, so to avoid inconsistencies, you must never use the pointer returned by \fBkeyComment()\fP method to set a new value\&. Use \fBkeySetComment()\fP instead\&.
+.RE
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+a pointer to the internal managed comment 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI''\fP when there is no comment 
+.br
+\fI0\fP on NULL pointer 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetCommentSize()\fP for size and \fBkeyGetComment()\fP as alternative 
+.RE
+.PP
+
+.SS "ssize_t keyGetComment (const Key * key, char * returnedComment, size_t maxSize)"
+
+.PP
+Get the key comment\&. 
+.SH "Comments"
+.PP
+A Key comment is description for humans what this key is for\&. It may be a textual explanation of valid values, when and why a user or administrator changed the key or any other text that helps the user or administrator related to that key\&.
+.PP
+Don't depend on a comment in your program\&. A user is always allowed to remove or change it in any way they want to\&. But you are allowed or even encouraged to always show the content of the comment to the user and allow him to change it\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fIreturnedComment\fP pre-allocated memory to copy the comments to 
+.br
+\fImaxSize\fP number of bytes that will fit returnedComment 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes actually copied to \fCreturnedString\fP, including final NULL 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if the string is empty 
+.br
+\fI-1\fP on NULL pointer 
+.br
+\fI-1\fP if maxSize is 0, not enough to store the comment or when larger then SSIZE_MAX 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetCommentSize()\fP, \fBkeySetComment()\fP 
+.RE
+.PP
+
+.SS "ssize_t keyGetCommentSize (const Key * key)"
+
+.PP
+Calculates number of bytes needed to store a key comment, including final NULL\&. Use this method to know to size for allocated memory to retrieve a key comment\&.
+.PP
+See \fBkeySetComment()\fP for more information on comments\&.
+.PP
+For an empty key name you need one byte to store the ending NULL\&. For that reason 1 is returned\&.
+.PP
+.PP
+.nf
+ char *buffer;
+ buffer = elektraMalloc (keyGetCommentSize (key));
+// use this buffer to store the comment
+// pass keyGetCommentSize (key) for maxSize
+.fi
+.PP
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+number of bytes needed 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI1\fP if there is no comment 
+.br
+\fI-1\fP on NULL pointer 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetComment()\fP, \fBkeySetComment()\fP 
+.RE
+.PP
+
+.SS "ssize_t keySetComment (Key * key, const char * newComment)"
+
+.PP
+Set a comment for a key\&. A key comment is like a configuration file comment\&. See \fBkeySetComment()\fP for more information\&.
+.PP
+\fBParameters\fP
+.RS 4
+\fIkey\fP the key object to work with 
+.br
+\fInewComment\fP the comment, that can be freed after this call\&. 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+the number of bytes actually saved including final NULL 
+.RE
+.PP
+\fBReturn values\fP
+.RS 4
+\fI0\fP when the comment was freed (newComment NULL or empty string) 
+.br
+\fI-1\fP on NULL pointer or memory problems 
+.RE
+.PP
+\fBSee also\fP
+.RS 4
+\fBkeyGetComment()\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Elektra from the source code\&.

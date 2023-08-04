@@ -1,0 +1,164 @@
+\label{doc_decisions_3_in_review_change_tracking_md_md_doc_decisions_3_in_review_change_tracking}%
+\Hypertarget{doc_decisions_3_in_review_change_tracking_md_md_doc_decisions_3_in_review_change_tracking}%
+ \hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2038}{}\doxysection{Problem}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2038}
+Currently, a range of Elektra plugins are implementing some sort of change tracking for configuration data. This includes, but is not limited to, the \mbox{\hyperlink{md_src_plugins_internalnotification_README_src_plugins_internalnotification_README_md}{internalnotification}} and \mbox{\hyperlink{md_src_plugins_dbus_README_src_plugins_dbus_README_md}{dbus}} plugins. In the near future, Elektra shall also be extended with session recording.
+
+KDB itself also has some rudimentary change tracking (via the {\ttfamily key\+Needs\+Sync} flag) to determine whether {\ttfamily kdb\+Set} needs to actually do something.
+
+These competing change tracking implementations create multiple problems\+:
+
+
+\begin{DoxyEnumerate}
+\item pointless waste of resources, as data is duplicated in each plugin,
+\item multiplication of code, generating a maintenance burden.
+\item various subtle differences in change tracking behavior, e.\+g., {\ttfamily kdb\+Set} might write a config file but notification is not sent out
+\item the current approach to change tracking in plugins is fragile, which is outlined in \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{a separate decision about valid kdb\+Get/kdb\+Set sequences}}.
+\end{DoxyEnumerate}
+
+For {\ttfamily Key\+Set} we need to track which of the keys\+:
+
+
+\begin{DoxyItemize}
+\item have been removed
+\item have been added
+\end{DoxyItemize}
+
+For {\ttfamily Key} we need to track\+:
+
+
+\begin{DoxyItemize}
+\item original value of the key
+\item size of the original value (for binary keys)
+\item metadata, which is a combination of the tracking of keysets and keys
+\item tracking should only be done on the following namespaces\+:
+\begin{DoxyItemize}
+\item {\ttfamily system\+:/}
+\item {\ttfamily user\+:/}
+\item {\ttfamily dir\+:/}
+\item {\ttfamily meta\+:/}
+\item {\ttfamily spec\+:/}
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2039}{}\doxysection{Constraints}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2039}
+Change tracking must\+:
+
+
+\begin{DoxyItemize}
+\item be transparent for applications using the public Elektra API
+\item be transparent to users changing configuration data
+\item if overhead is not negligible\+: only do tracking as required, i.\+e., a plugin specifically requests it
+\item have negligible overhead if disabled
+\item not duplicate data for each plugin that wants change tracking
+\item work with all allowed sequences of {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} as \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{per this decision}}
+\end{DoxyItemize}
+
+We only want to track changes that are done by the user, not changes that are done by plugins. I.\+e. the scope of change tracking is on what happens {\itshape outside} of {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set}.
+
+The library {\ttfamily libelektra-\/core} must be kept minimal.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2040}{}\doxysection{Assumptions}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2040}
+
+\begin{DoxyItemize}
+\item It is possible to do change tracking with reasonable memory and computation overhead
+\item It is possible to design a single change tracking API that is useful for all existing and future plugins
+\item False positives are okay
+\begin{DoxyItemize}
+\item this may happen when some keys have been changed by the user, but have subsequentially been \char`\"{}unchanged\char`\"{} by a transformation plugin Scenario\+: plugin that converts {\ttfamily false}$<$-\/$>${\ttfamily 0} and {\ttfamily true}$<$-\/$>${\ttfamily 1}
+\begin{DoxyItemize}
+\item {\ttfamily system\+:/background} is stored with value {\ttfamily false}
+\item user gets key {\ttfamily system\+:/background} with value {\ttfamily 0} (after conversion by plugin)
+\item user changes it to {\ttfamily false}
+\item changetracking detects that value has been changed, because {\ttfamily false} != {\ttfamily 0}
+\item plugin changes value from {\ttfamily false} to {\ttfamily 0}
+\item consumers of the changetracking API will now get a false positive if they query whether {\ttfamily system\+:/background} has been changed
+\item We assume consumers of the changetracking API have access to both the previous and the new value of a changed key. Therefore, they could detect these false positive cases, if they need to.
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item False negatives (missed changes) are not okay
+\end{DoxyItemize}\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2041}{}\doxysection{Solutions -\/ Storage}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2041}
+\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2042}{}\doxysubsection{Utilize already existing $<$tt$>$backend\+Data-\/$>$keys$<$/tt$>$}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2042}
+We already store which keys have been returned by {\ttfamily kdb\+Get} for each backend within KDB. Currently, those are shallow copies. To be useful for changetracking, we need to perform deep copies instead. As keys and keysets are already utilizing copy-\/on-\/write, this would not add too much memory overhead.
+
+A problem with this approach is that the internally stored keys are recreated as new instances every time {\ttfamily kdb\+Get} is called.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2043}{}\doxysubsection{Combine with internal cache}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2043}
+We already decided that we want to have an internal deep-\/duped keyset of all the keys we returned. See \mbox{\hyperlink{doc_decisions_4_decided_internal_cache_md}{internal cache decision}}.
+
+The difference to {\ttfamily backend\+Data-\/$>$keys} is that this cache is not recreated each time {\ttfamily kdb\+Get} is called.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2044}{}\doxysubsection{Have a seperate storage for changetracking}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2044}
+Have a global keyset with deep-\/duped keys that is purely used for changetracking and nothing else.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2045}{}\doxysubsection{Store changes as meta keys}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2045}
+When something changes for the first time, store the original value as a metakey to every key. Not yet clear how we handle changes to metadata then. Also not really possible for keysets.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2046}{}\doxysubsection{Implement changetracking as a mechanismn on the $<$tt$>$\+Key$<$/tt$>$ and $<$tt$>$\+Key\+Set$<$/tt$>$ datastructures}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2046}
+The idea here is that we extend the {\ttfamily Key\+Set} and {\ttfamily Key} structs with additional fields.
+
+The tracking itself would be done within the {\ttfamily ks$\ast$} and {\ttfamily key$\ast$} methods, after checking if it is enabled. It would also transparently work for metadata, as metadata itself is implemented as a keyset with keys.
+
+Downsides of this approach\+:
+
+
+\begin{DoxyItemize}
+\item It adds functionality to {\ttfamily libelektra-\/core} which may violate the constraint above. It may, however, be debatable whatever \textquotesingle{}minimal\textquotesingle{} means in this context.
+\item Adding fields to the structs causes a slight memory overhead, even with tracking turned off. While negligible for {\ttfamily Key\+Set} due to the low amount of keysets in typical applications, it may be noticable for {\ttfamily Key}. On a 64-\/bit system we\textquotesingle{}d add 16 bytes to it. 8 bytes for the pointer to the original value, 8 bytes for the size of the original value. To put this in perspective, the current size of the {\ttfamily Key} struct is 64 bytes, so we\textquotesingle{}d add 25\% overhead to an empty key. However, this percentage will be much lower in a real-\/world application, as the usefulness of an empty key is very low.
+\item Another downside here is that it is not so easy to determine what the \char`\"{}original\char`\"{} value is. Some part of {\ttfamily libelektra-\/kdb} would need to mark the keys as original (after transformations etc.)
+\end{DoxyItemize}\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2047}{}\doxysection{Solutions -\/ Implementation}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2047}
+\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2048}{}\doxysubsection{Implement directly within $<$tt$>$libelektra-\/kdb$<$/tt$>$}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2048}
+Implement all the logic for changetracking directly within {\ttfamily libelektra-\/kdb}.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2049}{}\doxysubsection{Implement as a seperate plugin}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2049}
+Implement changetracking as a hooks plugin that will be called within {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} accordingly.
+
+The following hooks will be needed\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily tracking/get}\+: will be called at the end of {\ttfamily kdb\+Get}, directly before the result is returned.
+\item {\ttfamily tracking/set}\+: will be called at the beginning of {\ttfamily kdb\+Set}.
+\item {\ttfamily tracking/changeset}\+: compute the changeset for the requested parent key and return it.
+\end{DoxyItemize}
+
+As every hook plugin can define its own contract, in theory all storage forms mentioned in the previous chapter should be possible to implement. We could just point the plugin to {\ttfamily backends\+Data-\/$>$keys} or the internal cache if we go down that route.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2050}{}\doxysection{Solutions -\/ Query}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2050}
+\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2051}{}\doxysubsection{Provide an API within $<$tt$>$libelektra-\/kdb$<$/tt$>$}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2051}
+The API should be usable by plugins and by applications utilizing Elektra. It does not matter whether the changetracking is implemented as part of {\ttfamily libelektra-\/kdb} or as a separate plugin. The API may look something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} elektraChangeTrackingIsEnabled (KDB * \mbox{\hyperlink{namespacekdb}{kdb}});}
+\DoxyCodeLine{ChangeTrackingContext * elektraChangeTrackingGetContext (KDB * \mbox{\hyperlink{namespacekdb}{kdb}}, Key * parentKey);}
+\DoxyCodeLine{}
+\DoxyCodeLine{KeySet * elektraChangeTrackingGetAddedKeys (ChangeTrackingContext * context);}
+\DoxyCodeLine{KeySet * elektraChangeTrackingGetRemovedKeys (ChangeTrackingContext * context);}
+\DoxyCodeLine{KeySet * elektraChangeTrackingGetModifiedKeys (ChangeTrackingContext * context); \textcolor{comment}{// Returns old keys (pre-\/modification)}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} elektraChangeTrackingValueChanged (ChangeTrackingContext * context, Key * key);}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} elektraChangeTrackingMetaChanged (ChangeTrackingContext * context, Key * key);}
+\DoxyCodeLine{}
+\DoxyCodeLine{KeySet * elektraChangeTrackingGetAddedMetaKeys (ChangeTrackingContext * context, Key * key);}
+\DoxyCodeLine{KeySet * elektraChangeTrackingGetRemovedMetaKeys (ChangeTrackingContext * context, Key * key);}
+\DoxyCodeLine{KeySet * elektraChangeTrackingGetModifiedMetaKeys (ChangeTrackingContext * context, Key * key); \textcolor{comment}{// Returns old meta keys (pre-\/modification)}}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2052}{}\doxysubsection{Provide query methods as part of a separate plugin}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2052}
+This solution only makes sense if changetrackig is implemented as part of a seperate plugin. It will be a bit challenging to use for applications, as it would require that applications have access to the plugin contracts.
+
+The changetracking plugin needs to export at least functions for the following things in its contract\+:
+
+
+\begin{DoxyItemize}
+\item Get added keys
+\item Get removed keys
+\item Get modified keys
+\item Get added meta keys for a key
+\item Get removed meta keys for a key
+\item Get modified meta keys for a key
+\end{DoxyItemize}\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2053}{}\doxysection{Decision}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2053}
+Plugin and application developers can declare that changetracking is required via a contract. Store deep-\/duped copy-\/on-\/write returned keys in a separate keyset, which we might also use as \mbox{\hyperlink{doc_decisions_4_decided_internal_cache_md}{internal cache}}. The whole changetracking logic lives within {\ttfamily libelektra-\/kdb}. We provide an API for developers with {\ttfamily libelektra-\/kdb}.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2054}{}\doxysection{Rationale}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2054}
+This decision meets all the constraints.
+
+We are not altering the behavior of already existing functions, so everything is transparent for applications using the public Elektra API. As changetracking is an opt-\/in feature, it will create zero runtime overhead and negligible memory overhead in usecases where it is not needed. There is only a single implementation and storage, so no duplication for each plugin that wants change tracking. As we are storing our own tracking data, all sequences of {\ttfamily kdb\+Get} and {\ttfamily kdb\+Set} should work.\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2055}{}\doxysection{Implications}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2055}
+
+\begin{DoxyItemize}
+\item Documentation for changetracking APIs needs to be written
+\item {\ttfamily struct \+\_\+\+KDB} needs to be extended to contain the keyset for changetracking
+\item Replace all custom changetracking code within Elektra with this unified implementation. This should also include the {\ttfamily key\+Needs\+Sync} flag. It also includes switching all notification plugins to use the new API.
+\end{DoxyItemize}\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2056}{}\doxysection{Related Decisions}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2056}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{Valid kdb\+Get/kdb\+Set sequences}} from \href{https://github.com/ElektraInitiative/libelektra/pull/4574}{\texttt{ \#4574}}.
+\item \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{Copy On Write}}
+\end{DoxyItemize}\hypertarget{doc_decisions_3_in_review_change_tracking_md_autotoc_md2057}{}\doxysection{Notes}\label{doc_decisions_3_in_review_change_tracking_md_autotoc_md2057}
+
+\begin{DoxyItemize}
+\item Issue \href{https://issues.libelektra.org/4514}{\texttt{ \#4514}} uncovered a problem in the current change tracking approach
+\item Issue \href{https://issues.libelektra.org/4520}{\texttt{ \#4520}} already explored some of the considered alternatives 
+\end{DoxyItemize}

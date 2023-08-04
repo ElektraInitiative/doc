@@ -1,0 +1,377 @@
+.TH "doc_news_2022-03-10_0_9_9_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_news_2022-03-10_0_9_9_md \- 0\&.9\&.9 Release 
+
+.IP "\(bu" 2
+guid: 3177C958-9473-41BA-9918-A56A18CF20E8
+.IP "\(bu" 2
+author: Mihael Pranjić
+.IP "\(bu" 2
+pubDate: Thu, 10 Mar 2022 07:40:35 +0100
+.IP "\(bu" 2
+shortDesc: Bug Fixes, Java Plugins, Elektra 1\&.0 Decisions
+.PP
+.PP
+We are proud to release Elektra 0\&.9\&.9\&.
+.SH "What is Elektra?"
+.PP
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database\&. For more information, visit \fChttps://libelektra\&.org\fP\&.
+.PP
+You can also read the news \fCon our website\fP\&.
+.PP
+You can try out the latest Elektra release using our docker image \fCelektra/elektra\fP\&. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run:
+.PP
+.PP
+.nf
+docker pull elektra/elektra
+docker run -it elektra/elektra
+.fi
+.PP
+.SH "Highlights"
+.PP
+.IP "\(bu" 2
+Bug fixing in FLOSS course
+.IP "\(bu" 2
+Java plugins
+.IP "\(bu" 2
+1\&.0 decisions
+.PP
+.SS "Bug Fixing in FLOSS Course"
+As you will read in this release notes, a massive amount of bugs were fixed within this release\&. Many of them were resolved from students participating in a \fCuniversity course about FLOSS\fP This demonstrates that homework of students can be very useful and in public service\&.
+.PP
+In the upcoming term there will be a course about \fCconfiguration management\fP in which Elektra will also be used and improved upon\&.
+.SS "Java Plugins"
+The version of the \fCprocess\fP plugin, makes it much easier to implement plugins in Java\&. You can now call an implementation \fC\fBorg\&.libelektra\&.Plugin\fP\fP via \fCprocess\fP and the \fCorg\&.libelektra\&.process\&.PluginProcess\fP class\&. To mount Java plugins the new helper script \fCkdb mount-java\fP can be used\&.
+.PP
+For more information take a look at \fCthe updated tutorial\fP and the new \fBman page for `kdb mount-java`\fP\&.
+.SS "1\&.0 Decisions"
+With this release we greatly updated our \fBdecisions\fP for the 1\&.0 release\&. This brings us one big step closer to 1\&.0\&.
+.SH "Plugins"
+.PP
+The following section lists news about the \fCplugins\fP we updated in this release\&.
+.SS "filecheck"
+.IP "\(bu" 2
+Removed unused variable that threw an error in filecheck\&.c\&. _(Vaibhav Ganesh @flackojr)_
+.PP
+.SS "mmapstorage"
+.IP "\(bu" 2
+Removed unused variable that threw an error in mmapstorage\&.c\&. _(Vaibhav Ganesh @flackojr)_
+.PP
+.SS "csvstorage"
+.IP "\(bu" 2
+Add \fCarray\fP metakey to the parentKey of imported Keys _(@muskater)_ _(@4ydan)_ _(@lawli3t)_
+.PP
+.SS "specload"
+.IP "\(bu" 2
+Change and move \fCkeyCompareMeta (const Key * k1, const Key * k2)\fP from \fC\fBsrc/libs/elektra/keytest\&.c\fP\fP to \fCsrc/plugins/specload/specload\&.c\fP and integrate functionality of keyCompare (const Key _ key1, const Key _ key2) into \fCisChangeAllowed (Key * oldKey, Key * newKey)\fP, because that is the only place where it was used\&. _(@flo91)_
+.PP
+.SS "uname"
+.IP "\(bu" 2
+Minor improvement of source code readability in uname\&.c _(@lawli3t)_
+.PP
+.SS "quickdump"
+.IP "\(bu" 2
+Fixed an issue with type-limits on ARM32 (see issue #4217)\&. _(Klemens Böswirth @kodebach)_
+.PP
+.SS "dump"
+.IP "\(bu" 2
+The exported functions \fCserialize\fP and \fCunserialize\fP have been renamed to \fCserialize\fP and \fCunserialize\fP\&. _(Klemens Böswirth @kodebach)_
+.IP "\(bu" 2
+New exported functions \fCint fserialize(KeySet * ks, FILE * file, Key * errorKey)\fP and \fCint funserialize(KeySet * ks, FILE * file, Key * errorKey)\fP have been added\&. These are wrappers around \fCserialize\fP and \fCunserialize\fP that allow calling from C with a standard \fCFILE *\fP\&. _(Klemens Böswirth @kodebach)_
+.PP
+.SS "process"
+.IP "\(bu" 2
+The plugin was completely rewritten\&. The new version is incompatible with the old version\&. The new plugin that uses a simple protocol to allow an external application to act as a plugin\&. This can for example be used to write plugins in Java without going through JNI\&. _(Klemens Böswirth @kodebach)_
+.PP
+.SH "Libraries"
+.PP
+The text below summarizes updates to the \fCC (and C++)-based libraries\fP of Elektra\&.
+.SS "Compatibility"
+.IP "\(bu" 2
+Remove the deprecated flags \fCKEY_NAME\fP and \fCKEY_COMMENT\fP (closes issue #3152) _(Florian Lindner @flo91)_
+.PP
+.SS "Core"
+.IP "\(bu" 2
+\fCKeySet\fP now also has a reference counter like \fCKey\fP\&. The new functions \fCksIncRef\fP and \fCksDecRef\fP behave like their counterparts \fCkeyIncRef\fP and \fCkeyDecRef\fP\&. \fCksDel\fP also behaves like \fCkeyDel\fP in regard to reference counting, i\&.e\&. it does nothing unless the reference count is 0\&. The reference counting is very useful for bindings (especially with automatic garbage collection)\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Clarified that our reference counting mechanism is more related to a shared lock than to the concept of shared ownership\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Both the reference count for \fCKey\fP and for \fCKeySet\fP now use \fCuint16_t\fP to reduce memory usage\&. \fCKey\fP previously used \fCsize_t\fP\&. _(Klemens Böswirth)_
+.IP "\(bu" 2
+Reorder \fCKey\fP and \fCKeySet\fP struct members to aviod padding and make space for a new \fCuint16_t\fP member, reserved for future use\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Improve \fCkeyReplacePrefix\fP by using new \fCkeyCopy\fP function instead of manually copying the name of the \fCKey\fP _(@lawli3t)_
+.IP "\(bu" 2
+Added else error to core for elektraGetCheckUpdateNeeded _(Aydan Ghazani @4ydan)_
+.IP "\(bu" 2
+Include NULL terminators in hashing to avoid collisions _(@lawli3t)_
+.IP "\(bu" 2
+Fix check for valid namespace in keyname creation _(@JakobWonisch)_
+.IP "\(bu" 2
+Fix \fCkeyCopyMeta\fP not deleting non existant keys in destination (see #3981) _(@JakobWonisch)_
+.IP "\(bu" 2
+The \fCELEKTRA_ERROR_*_NAME\fP and \fCELEKTRA_WARNING_*_NAME\fP constants have been removed from the public API\&. Use \fCELEKTRA_ERROR_*\fP and \fCELEKTRA_WARNING_*\fP instead\&. _(Klemens Böswirth @kodebach)_
+.IP "\(bu" 2
+Fixed a bug that prevented the creation of cascading keys whose name contains a colon (\fC:\fP)\&. _(Klemens Böswirth @kodebach)_
+.PP
+.SH "Bindings"
+.PP
+Bindings allow you to utilize Elektra using \fCvarious programming languages\fP\&. This section keeps you up-to-date with the multi-language support provided by Elektra\&.
+.SS "Java binding"
+.IP "\(bu" 2
+Integrated the \fCHelloElektra\fP example as Gradle subproject to allow it to directly depend on the current binding _(Michael Tucek)_
+.IP "\(bu" 2
+Extend \fCHelloElektra\fP example with cutpoint and value setting example _(@JakobWonisch)_
+.IP "\(bu" 2
+Updated Gradle to 7\&.4\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Added integration with the new \fCprocess\fP plugin\&. _(Klemens Böswirth @kodebach)_
+.IP "\(bu" 2
+Integrated the \fCHelloElektra\fP example as gradle subproject to allow it to directly depend on the current binding _(Michael Tucek)_
+.IP "\(bu" 2
+Add \fCLinkChecker\fP Java Plugin\&. _(@aaronabebe)_
+.PP
+.SS "FUSE Binding"
+.IP "\(bu" 2
+Added check for existence of accessed path before opening new file descriptor _(@lawli3t)_
+.PP
+.SS "Python Binding"
+.IP "\(bu" 2
+Added examples for append, extend and remove keysets in python\&. _(@4ydan)_
+.PP
+.SH "Tools"
+.PP
+.IP "\(bu" 2
+Implement \fCkdb validate <key>\fP, collect warnings and errors while kdb\&.get() and kdb\&.set(), see #3674 _(@flo91)_, _(@JakobWonisch)_
+.IP "\(bu" 2
+Remove names from kdb mount _(@JakobWonisch)_
+.IP "\(bu" 2
+Add \fCkdb mount-java\fP helper script for mounting Java plugins _(Klemens Böswirth @kodebach)_
+.PP
+.SH "Scripts"
+.PP
+.IP "\(bu" 2
+Updated \fCreformat-c\fP script to use clang-format version 13\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Fix bug where the PATH environment variable would get overwritten in some of the Docker images\&. Reduce image size _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Allow JSON to be also written as json\&. _(@muskater)_
+.PP
+.SH "Documentation"
+.PP
+.IP "\(bu" 2
+Integrate missing pages to website _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Improved compilation documentation _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Fix Links in \fBREADME\&.md\fP and add small clarifications\&. _(Markus Raab)_
+.IP "\(bu" 2
+Remove previous authors\&. _(Markus Raab)_
+.IP "\(bu" 2
+Add pre/postconditions and invariants to module keytest _(@lawli3t)_
+.IP "\(bu" 2
+Updated the news template\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Update and improve tutorial and in-code comments for high-level API _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Improve documentation of opts library _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Update tutorial 'High-level API (with code-generation)' to reflect change of \fCloadConfiguration()\fP's signature in release 0\&.9\&.5 _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Add pre/postconditions and invariants to module keyvalue _(@lawli3t)_
+.IP "\(bu" 2
+Update and improve inline documentation of \fCkdb gen\fP\&. _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Fix broken links\&. _(Robert Sowula)_
+.IP "\(bu" 2
+Emphasize that \fCtype\fP is required when the HL API is used\&. _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Add debugging tutorial\&. _(Tobias Schubert @qwepoizt)_
+.IP "\(bu" 2
+Improve wording and formatting of DESIGN\&.md _(@lawli3t)_
+.IP "\(bu" 2
+Correct various typing-, spelling- and grammar-errors in the \&.md-files in the directory doc and its subdirectories\&. _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Make version description in key names man page consistent _(@JakobWonisch)_
+.IP "\(bu" 2
+Fix typo in elektra-backends man page _(@JakobWonisch)_
+.IP "\(bu" 2
+Fix readability in bootstrapping man page _(JakobWonisch)_
+.IP "\(bu" 2
+Explained in the docker test tutorial how to run the container with podman instead of docker\&. _(@muskater)_
+.IP "\(bu" 2
+Add a new example on how to use keyCopy\&. _(@muskater)_
+.IP "\(bu" 2
+Fix small error in the 'Get Started' guide: the build and test command used a wrong directory and would not work if they were copy and pasted\&. _(@muskater)_
+.IP "\(bu" 2
+Added verification to the 'Arrays' tutorial _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Remove deprecated \fCtype=int\fP from \fC\&.ini\fP files _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Added verification to the 'Validation' tutorial _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Fix some typos in the 'Getting Started' page _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Added debian buster tutorial to python bindings tutorial _(@4ydan)_
+.IP "\(bu" 2
+Made the debian tutorial a bit more precise and removed sudo command _(@4ydan)_
+.IP "\(bu" 2
+Fixed some typos in the 'namespaces\&.md' documentation _(@muskater)_
+.IP "\(bu" 2
+Fix an error and some overmatching problems in scripts/spelling\&.sed and fix errors in documentation (by running the scripts/dev/fix-spelling script) _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Added some improvements to the core API documentation _(@muskater)_
+.IP "\(bu" 2
+Update and improve the CLion tutorial (doc/tutorials/contributing-clion\&.md), add screenshots _(@flo91)_
+.IP "\(bu" 2
+Improve documentation for storage plugins _(@lawli3t)_
+.IP "\(bu" 2
+Add list of sources mentioning or linking to Elektra _(@JakobWonisch)_
+.IP "\(bu" 2
+Linked to the installation instruction of the webui in its README file and added references to Docker in the get-started-guide\&. _(@muskater)_ _(@lawli3t)_ _(Aydan Ghazani @4ydan)_
+.IP "\(bu" 2
+Added screenshots and a quick walk through in the Qt-GUI README\&. _(@muskater)_ _(@lawli3t)_ _(Aydan Ghazani @4ydan)_
+.IP "\(bu" 2
+Improve example for kdb-restore man page and fix typos _(@JakobWonisch)_
+.IP "\(bu" 2
+Fix some typos in the 'Getting Started' page _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Add screenshots with hints to CLion PR tutorial _(@JakobWonisch)_
+.IP "\(bu" 2
+Fix typo in elektra-backends man page _(@JakobWonisch)_
+.IP "\(bu" 2
+Expanded the webside guide for easier understanding and linked to cmake\&.org\&. _(Philipp Nirnberger @nirnberger)_
+.IP "\(bu" 2
+Fix small error in CLion tutorial: CMake options would create a directory named \fC~\fP in home directory _(Maximilian Irlinger @atmaxinger)_
+.PP
+.SH "Tests"
+.PP
+.IP "\(bu" 2
+Cleanup tests/linkchecker\&.whitelist and fix off-by-1 bug of the counter in the scripts/link-checker script (increase counter before printf) _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Add tests for the intercept/env binding _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+add and improve checks in scripts/sed _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Change the cpp Key-class (\fBkey\&.hpp\fP) to check the return values of the called c-functions and throw exceptions if values that indicate an error are returned + add tests that check for this exceptions _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Added more test cases for the keyCopy function _(@muskater)_
+.IP "\(bu" 2
+Add exception tests for key C++ bindings _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Added a shell script and a task that checks whether the filenames of newly added files are compliant with the convention\&. It is executed by the cirrus CI as well as the Jenkins CI _(@muskater)_
+.IP "\(bu" 2
+Add a new shellrecoder test to \fCdoc/tutorials/merge\&.md\fP _(Florian Lindner @flo91)_
+.IP "\(bu" 2
+Added the possibility to enable all the shell recorder test cases for all plugins and fixed some plugin README files in process _(@muskater)_
+.IP "\(bu" 2
+Convert example in doc/help/kdb-test\&.md to shell recorder test _(@JakobWonisch)_
+.PP
+.SH "Packaging"
+.PP
+.IP "\(bu" 2
+Add initial flatpak package\&. See \fCscripts/flatpak/README\&.md\fP and \fCscripts/flatpak/org\&.libelektra\&.kdb\&.yaml\fPfor more info _(Ivaylo Ivanov)_
+.IP "\(bu" 2
+Remove hard coded SWIG 3\&.0 paths\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Build"
+.PP
+.SS "CMake"
+.IP "\(bu" 2
+Marked certain variables as advanced and separate user-modifiable and unaccessible variables\&. _(Vaibhav Ganesh @flackojr)_
+.PP
+.SS "Docker"
+.IP "\(bu" 2
+Add Fedora 35 images\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Infrastructure"
+.PP
+.SS "Jenkins"
+.IP "\(bu" 2
+Replace Fedora 33 builds with Fedora 34, and Fedora 34 builds with Fedora 35\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Website"
+.PP
+The website is generated from the repository, so all information about plugins, bindings and tools are always up-to-date\&. Furthermore, we changed:
+.PP
+.IP "\(bu" 2
+Update npm dependencies, add forked and update angular-marked module\&. _(Mihael Pranjić @mpranj)_
+.IP "\(bu" 2
+Remove links to Travis CI and replace them with GitHub Actions (with badge)\&. _(Mihael Pranjić @mpranj)_
+.PP
+.SH "Other"
+.PP
+.IP "\(bu" 2
+Make Elektra \fCreuse\fP reuse compliant _(Ivaylo Ivanov)_
+.PP
+.SH "Outlook"
+.PP
+We are working on following new topics since the last release:
+.PP
+.IP "\(bu" 2
+Ansible-Elektra _(Lukas Hartl)_
+.IP "\(bu" 2
+Recording Configuration _(Maximilian Irlinger)_
+.PP
+.PP
+Furthermore, we are still working on following topics:
+.PP
+.IP "\(bu" 2
+1\&.0 API _(Stefan Hanreich)_ and _(Klemens Böswirth)_
+.IP "\(bu" 2
+Improve Java Development Experience _(Michael Tucek)_
+.IP "\(bu" 2
+KDB access using FUSE _(Alexander Firbas)_
+.IP "\(bu" 2
+Shell completion _(Ulrike Schäfer)_
+.IP "\(bu" 2
+Elektrify KDE and GNOME _(Mihael Pranjić)_
+.PP
+.SH "Statistics"
+.PP
+We closed \fC90 issues\fP for this release\&.
+.PP
+About 29 authors changed 491 files with 17997 insertions(+) and 6089 deletions(-) in 648 commits\&.
+.PP
+Thanks to all authors for making this release possible!
+.SH "Join the Initiative!"
+.PP
+We welcome new contributors! Read \fChere\fP about how to get started\&.
+.PP
+As first step, you could give us feedback about these release notes\&. Contact us via our \fCissue tracker\fP\&.
+.SH "Get the Release!"
+.PP
+You can download the release from \fChere\fP or \fCGitHub\fP
+.PP
+The \fChashsums are:\fP
+.PP
+.IP "\(bu" 2
+name: elektra-0\&.9\&.9\&.tar\&.gz
+.IP "\(bu" 2
+size: 8878567
+.IP "\(bu" 2
+md5sum: f5109eb0c96fb4164a5437bdebc3bf79
+.IP "\(bu" 2
+sha1: a08df79301d56dd8f3711efa1b78b5a4d003d42f
+.IP "\(bu" 2
+sha256: 834da360170daa632bbb46dd2e819271327dce1c51be1d7bb2ec22311ded54cb
+.PP
+.PP
+The release tarball is also available signed using GnuPG from \fChere\fP or on \fCGitHub\fP
+.PP
+The following GPG Key was used to sign this release: 12CC44541E1B8AD9B66AFAD55262E7353324914A
+.PP
+Already built API documentation can be found \fChere\fP or on \fCGitHub\fP\&.
+.SH "Stay tuned!"
+.PP
+Subscribe to the \fCRSS feed\fP to always get the release notifications\&.
+.PP
+If you also want to participate, or for any questions and comments please contact us via our issue tracker \fCon GitHub\fP\&.
+.PP
+\fCPermalink to this NEWS entry\fP
+.PP
+For more information, see \fChttps://libelektra\&.org\fP\&.
+.PP
+Best regards, \fCElektra Initiative\fP 

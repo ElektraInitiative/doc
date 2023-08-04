@@ -1,0 +1,199 @@
+\label{doc_tutorials_namespaces_md_md_doc_tutorials_namespaces}%
+\Hypertarget{doc_tutorials_namespaces_md_md_doc_tutorials_namespaces}%
+ \hypertarget{doc_tutorials_namespaces_md_autotoc_md4600}{}\doxysection{Structure of the Key Database}\label{doc_tutorials_namespaces_md_autotoc_md4600}
+The {\itshape key database} of Elektra is {\itshape hierarchically structured}. This means that keys are organized similar to directories in a file system.
+
+Let us add some keys to the database. To add a key we can use {\ttfamily kdb}, the {\itshape key database access tool}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set <key> <value>}
+
+\end{DoxyCode}
+
+
+Now add the key {\bfseries{user\+:/tests/a}} with the Value {\bfseries{Value 1}} and the key {\bfseries{user\+:/tests/b/c}} with the Value {\bfseries{Value 2}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set user:/tests/a 'Value 1'}
+\DoxyCodeLine{\#> Create a new key user:/tests/a with string "{}Value 1"{}}
+\DoxyCodeLine{kdb set user:/tests/b/c 'Value 2'}
+\DoxyCodeLine{\#> Create a new key user:/tests/b/c with string "{}Value 2"{}}
+
+\end{DoxyCode}
+
+
+The database has an hierarchical structure. For instance the key {\bfseries{user\+:/tests/b/c}} has the path {\bfseries{user\+:/}} -\/$>$ {\bfseries{user\+:/tests}} -\/$>$ {\bfseries{user\+:/tests/b}} -\/$>$ {\bfseries{user\+:/tests/b/c}}.
+
+Note how the name of the key determines the path to its value.
+
+You can use the file system analogy as a mnemonic to remember these commands (like the file system commands in your favorite operating system)\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily kdb ls $<$path$>$} lists keys below {\itshape path}
+\item {\ttfamily kdb rm $<$key$>$} removes a {\itshape key}
+\item {\ttfamily kdb cp $<$source$>$ $<$dest$>$} copies a key to another path
+\item {\ttfamily kdb get $<$key$>$} gets the value of {\itshape key}
+\end{DoxyItemize}
+
+For example {\ttfamily kdb get user\+:/tests/b/c} should return {\ttfamily Value 2} now, if you set the values before.\hypertarget{doc_tutorials_namespaces_md_autotoc_md4601}{}\doxysection{Namespaces}\label{doc_tutorials_namespaces_md_autotoc_md4601}
+Now we abandon the file system analogy and introduce the concept of {\itshape namespaces}.
+
+Above all of the keys have been prefixed with {\ttfamily user\+:/}. The user namespace is one of several in Elektra.
+
+Every key in Elektra belongs to one of these namespaces\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{spec}} for specification of other keys
+\item {\bfseries{proc}} for in-\/memory keys (e.\+g. command-\/line)
+\item {\bfseries{dir}} for dir keys in current working directory
+\item {\bfseries{user}} for user keys in home directory
+\item {\bfseries{system}} for system keys in {\ttfamily /etc} or {\ttfamily /}
+\item {\bfseries{default}} for keys which are created with default value (if specification requires the key to exist, has default and key was missing)
+\end{DoxyItemize}
+
+All namespaces save their keys in a {\itshape separate hierarchical structure} from the other namespaces.
+
+But when we set the keys $\ast$$\ast$/a$\ast$$\ast$ and $\ast$$\ast$/b/c$\ast$$\ast$ before we didn\textquotesingle{}t provide a namespace. So I hear you asking, \char`\"{}if every key has to belong to a namespace, where are the keys?\char`\"{} They are in the {\itshape user} namespace, as you can verify with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls user:/ | grep -\/E '(tests/a|tests/b/c)'}
+\DoxyCodeLine{\#> user:/tests/a}
+\DoxyCodeLine{\#> user:/tests/b/c}
+
+\end{DoxyCode}
+
+
+At this point the key database should have this structure\+: \hypertarget{doc_tutorials_namespaces_md_autotoc_md4602}{}\doxysubsection{Cascading Keys}\label{doc_tutorials_namespaces_md_autotoc_md4602}
+Another question you may ask yourself now is, what happens if we look up a key without providing a namespace. So let us retrieve the key $\ast$$\ast$/b/c$\ast$$\ast$ with the -\/v flag in order to make {\itshape kdb} more talkative.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get -\/v /tests/b/c}
+\DoxyCodeLine{\# STDOUT-\/REGEX: got [[:digit:]]+ keys⏎searching spec:/tests/b/c, found: <nothing>, options: KDB\_O\_CALLBACK⏎    searching proc:/tests/b/c, found: <nothing>⏎    searching dir:/tests/b/c, found: <nothing>⏎    searching user:/tests/b/c, found: user:/tests/b/c⏎The resulting keyname is user:/tests/b/c⏎The resulting value size is 8⏎Value 2}
+
+\end{DoxyCode}
+
+
+Here you see how Elektra searches all namespaces for matching keys in this order\+: {\bfseries{spec}}, {\bfseries{proc}}, {\bfseries{dir}}, {\bfseries{user}} and finally {\bfseries{system}}
+
+If a key is found in a namespace, it masks the key in all subsequent namespaces, which is the reason why the system namespace isn\textquotesingle{}t searched. Finally, the virtual key $\ast$$\ast$/b/c$\ast$$\ast$ gets resolved to the real key {\bfseries{user\+:/b/c}}. Because of the way a key without a namespace is retrieved, we call keys, that start with \textquotesingle{}$\ast$$\ast$/$\ast$$\ast$\textquotesingle{}, {\bfseries{cascading keys}}. You can find out more about cascading lookups in the \mbox{\hyperlink{doc_tutorials_cascading_md}{cascading tutorial}}.
+
+Having namespaces enables both admins and users to set specific parts of the application\textquotesingle{}s configuration, as you will see in the following example.\hypertarget{doc_tutorials_namespaces_md_autotoc_md4603}{}\doxysection{How it Works on the Command Line (kdb)}\label{doc_tutorials_namespaces_md_autotoc_md4603}
+We will provide an example of how you can configure \mbox{\hyperlink{doc_help_elektra-glossary_md}{elektrified}} applications.
+
+Our exemplary application will be the key database access tool {\ttfamily kdb} as this should already be installed on your system.
+
+{\ttfamily kdb} can be configured by the following configuration data\+:
+
+
+\begin{DoxyItemize}
+\item \+\_\+/sw/elektra/kdb/\#$\ast$$\ast$\+X$\ast$$\ast$/$\ast$$\ast$\+PROFILE$\ast$$\ast$/verbose\+\_\+ -\/ sets the verbosity of kdb
+\item \+\_\+/sw/elektra/kdb/\#$\ast$$\ast$\+X$\ast$$\ast$/$\ast$$\ast$\+PROFILE$\ast$$\ast$/quiet\+\_\+ -\/ if kdb should suppress non-\/error messages
+\item \+\_\+/sw/elektra/kdb/\#$\ast$$\ast$\+X$\ast$$\ast$/$\ast$$\ast$\+PROFILE$\ast$$\ast$/namespace\+\_\+ -\/ specifies the default namespace used, when setting a cascading name
+\end{DoxyItemize}
+
+{\bfseries{X}} is a placeholder for the {\itshape major version number} and {\bfseries{PROFILE}} stands for the name of a {\itshape profile} to which this configuration applies. If we want to set configuration for the default profile we can set {\bfseries{PROFILE}} to \%. The name of the key follows the convention described \mbox{\hyperlink{doc_help_elektra-key-names_md}{here}}.
+
+Say we want to set {\ttfamily kdb} to be more verbose when it is used in the current directory. In this case we have to set {\itshape verbose} to 1 in the {\itshape dir} namespace of the current directory.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set "{}dir:/sw/elektra/kdb/\#0/\%/verbose"{} 1}
+\DoxyCodeLine{\#> Create a new key dir:/sw/elektra/kdb/\#0/\%/verbose with string "{}1"{}}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+The configuration for a directory is actually stored in this directory. By default the configuration is contained in a folder named {\ttfamily .dir}, as you can verify with {\ttfamily kdb file dir\+:/} ({\itshape kdb file} tells you the file where a key is stored in).
+
+For the purpose of demonstration we chose to only manipulate the verbosity of kdb. Note that setting {\ttfamily dir\+:/sw/elektra/kdb/\#0/\%/namespace} to {\ttfamily dir} can be handy if you want to work with configuration of an application in a certain directory. \end{quote}
+If we now search for some key, {\ttfamily kdb} will behave just as if we have called it with the {\ttfamily -\/v} option.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get /some/key}
+\DoxyCodeLine{\# RET: 10}
+\DoxyCodeLine{\#> got 4 keys}
+\DoxyCodeLine{\#> searching spec:/some/key, found: <nothing>, options: KDB\_O\_CALLBACK}
+\DoxyCodeLine{\#>     searching proc:/some/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching dir:/some/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching user:/some/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching system:/some/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching default:/some/key, found: <nothing>}
+\DoxyCodeLine{\#>     searching default of spec/some/key, found: <nothing>, options: KDB\_O\_NOCASCADING}
+\DoxyCodeLine{\# STDERR: Did not find key '/some/key'}
+
+\end{DoxyCode}
+
+
+Verbosity is not always useful because it distracts from the essential. So we may decide that we want {\ttfamily kdb} to be only verbose if we are debugging it. So let us move the default configuration to another profile\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mv -\/r "{}dir:/sw/elektra/kdb/\#0/\%"{} "{}dir:/sw/elektra/kdb/\#0/debug"{}}
+\DoxyCodeLine{\#> using common basename: dir:/sw/elektra/kdb/\#0}
+\DoxyCodeLine{\#> key: dir:/sw/elektra/kdb/\#0/\%/verbose will be renamed to: dir:/sw/elektra/kdb/\#0/debug/verbose}
+\DoxyCodeLine{\#> Will write out:}
+\DoxyCodeLine{\#> dir:/sw/elektra/kdb/\#0/debug/verbose}
+
+\end{DoxyCode}
+
+
+If we now call {\ttfamily kdb get /some/key} it will behave non-\/verbose, but if we call it with the {\itshape debug} profile {\ttfamily kdb get -\/p debug /some/key} the configuration under $\ast$$\ast$/sw/elektra/kdb/\#0/debug$\ast$$\ast$ applies.
+
+We configured kdb only for the current directory. If we like this configuration we could move it to the system namespace, so that every user can enjoy a preconfigured {\itshape debug} profile.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo kdb mv -\/r "{}dir:/sw/elektra/kdb"{} "{}system:/sw/elektra/kdb"{}}
+\DoxyCodeLine{\#> using common basename: /sw/elektra/kdb}
+\DoxyCodeLine{\#> key: dir:/sw/elektra/kdb/\#0/\%/verbose will be renamed to: system:/sw/elektra/kdb/\#0/\%/verbose}
+\DoxyCodeLine{\#> Will write out:}
+\DoxyCodeLine{\#> system:/sw/elektra/kdb/\#0/\%/verbose}
+
+\end{DoxyCode}
+
+
+Now every user could use the {\itshape debug} profile with kdb.
+
+{\itshape Cascading keys} are keys that start with $\ast$$\ast$/$\ast$$\ast$ and are a way of making key lookups much easier. Let\textquotesingle{}s say you want to see the configuration from the example above. You do not need to search every namespace by yourself. Just make a lookup for $\ast$$\ast$/sw/elektra/kdb/\#0/debug/verbose$\ast$$\ast$, like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get "{}/sw/elektra/kdb/\#0/debug/verbose"{}}
+\DoxyCodeLine{\#> 1}
+
+\end{DoxyCode}
+
+
+When using cascading key the best key will be searched at run-\/time. If you are only interested in the system key, you would use\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get "{}system:/sw/elektra/kdb/\#0/debug/verbose"{}}
+\DoxyCodeLine{\#> 0}
+
+\end{DoxyCode}
+
+
+Because of {\itshape cascading keys} a user can override the behavior of the {\itshape debug} profile by setting the corresponding keys in their {\itshape user} namespace (as we discussed \href{\#cascading-keys}{\texttt{ before}}). If a user sets {\itshape verbose} in their user namespace to 0 they override the default behavior from the {\itshape system} namespace.
+
+Assuming that {\bfseries{sytem\+:/sw/elektra/kdb/\#0/debug/verbose}} is set to {\bfseries{1}}, a user could override this by setting
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb set "{}user:/sw/elektra/kdb/\#0/debug/verbose"{} 0}
+\DoxyCodeLine{\#> Create a new key user:/sw/elektra/kdb/\#0/debug/verbose with string "{}0"{}}
+\DoxyCodeLine{kdb get "{}/sw/elektra/kdb/\#0/debug/verbose"{}}
+\DoxyCodeLine{\#> 0}
+
+\end{DoxyCode}
+
+
+Now {\ttfamily kdb get -\/p debug /some/key} is not verbose anymore for this user. 

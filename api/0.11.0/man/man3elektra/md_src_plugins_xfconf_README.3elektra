@@ -1,0 +1,88 @@
+.TH "md_src_plugins_xfconf_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_xfconf_README \- Plugin: xfconf 
+
+.IP "\(bu" 2
+infos = Information about the xfconf plugin is in keys below
+.IP "\(bu" 2
+infos/author = Richard Stöckl e11908080@student.tuwien.ac.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/xml
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = getstorage setstorage
+.IP "\(bu" 2
+infos/status = maintained unittest libc configurable memleak experimental limited unfinished concept
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = storage plugin for xfconf
+.PP
+.SH "Introduction"
+.PP
+The xfconf plugin is a storage plugin to mount the xfconf configuration settings\&. This allows to operate on the XFCE configuration with libelektra\&. As usual, this allows the plugin to read and write to the XFCE configuration\&.
+.PP
+For further understanding how xfconf is structured, please refer to the Xfconf binding\&.
+.PP
+The list of all channels is stored in the \fCsystem:/elektra/modules/xfconf/channels\fP which is an array of all channel names\&. Channels cannot be created manually with libelektra\&. Instead, when mounting a channel (see \fCPlugin Configuration\fP how to specify a channel) and setting a key value below the mount, it will be automatically created\&.
+.PP
+You may also refer to the \fCofficial XFCE documentation of xfconf\fP to learn more about it\&.
+.SH "Dependencies"
+.PP
+The xfconf library from the XFCE project is the main dependency of this plugin\&. Usually, this library is called something such as \fCxfconf\fP (Arch, Fedora, \fCxfconf-devel\fP for compiling), \fClibxfconf-0\fP (Debian, \fClibxfconf-0-dev\fP for compmiling) or \fCxfce4-conf\fP (FreeBSD) in the package manager\&. As xfconf itself depends on dbus and glib, these are dependecies too but should be installed with the package manager automatically\&. This plugin is tested with the xfconf versions \fC4\&.16\fP and above\&.
+.PP
+Before you can start working with the plugin, you have to make sure dbus is running\&. If you use a common desktop environment this should already be fulfilled\&. Otherwise, \fCexport $(dbus-launch)\fP can be used to start it\&. You may also need to use \fCsystemd-machine-id-setup\fP to create \fC/etc/machine-id\fP\&.
+.PP
+Note that this plugin does not support macOS since Xfce is not commonly used there, Mac Ports only provides a very old version (\fC4\&.12\fP) and Brew does not provide Xfce at all\&.
+.SH "Usage"
+.PP
+The usage is identical to most storage plugins except that the channel option during mount must be defined in order to tell xfconf which channel to mount\&.
+.SH "Plugin Configuration"
+.PP
+The required \fCchannel\fP configuration option is used to tell xfconf which channel to mount\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# Backup-and-Restore: user:/tests/xfconf
+
+# mount the xfwm channel
+kdb mount -R noresolver none /test/xfwm xfconf "channel=xfwm4"
+
+# store old button layout
+set "OLD_LAYOUT=$(kdb get /test/xfwm/general/button_layout)"
+
+# set only a close button
+kdb set system:/test/xfwm/general/button_layout "C|"
+
+# read the new layout
+kdb get /test/xfwm/general/button_layout
+#> C|
+
+# restore old layout
+kdb set /test/xfwm/general/button_layout "$OLD_LAYOUT"
+
+# umount the channel
+kdb umount /test/xfwm
+.fi
+.PP
+.SH "Locks"
+.PP
+Xfconf uses so-called locks to prevent users or applications to set properties to a new value\&. They can be referred as a type of constant\&. As of now, locks cannot be set or unset in xfconf which makes locked properties read-only forever\&.
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+xfconf locks can only be read but not set as this is not possible in xfconf
+.IP "\(bu" 2
+comments and sorting are not implemented due the lack of both in xfconf
+.IP "\(bu" 2
+due to memory leaks in xfconf upstream, valgrind reports errors when running the tests 
+.PP
+

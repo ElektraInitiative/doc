@@ -1,0 +1,272 @@
+\label{doc_tutorials_odbc-backend_md_md_doc_tutorials_odbc_backend}%
+\Hypertarget{doc_tutorials_odbc-backend_md_md_doc_tutorials_odbc_backend}%
+ This tutorial describes how to set up unix\+ODBC on Linux and use Elektra to retrieve configuration data from an {\itshape SQLite} or {\itshape Postgre\+SQL} database.
+
+\begin{quote}
+Currently, the {\itshape backend\+\_\+odbc} plugin is marked as EXPERIMENTAL and only data sources that define a table for {\itshape metadata} are supported. In the future, we plan to also support data sources without metadata tables.
+
+Please be aware that for using metadata, {\itshape outer joins} have to be supported by the ODBC driver. \end{quote}
+\begin{quote}
+The ODBC backend plugin was tested with unix\+ODBC, but should also work with i\+ODBC and Microsoft ODBC (on Windows). If you are using such an environment, feel free to share you experiences at \href{https://issues.libelektra.org}{\texttt{ https\+://issues.\+libelektra.\+org}} or extend this tutorial. \end{quote}
+\begin{quote}
+This tutorial uses SQLite-\/ and Postgre\+SQL databases as data sources, but ODBC drivers for other data sources are also supported. \end{quote}
+\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4621}{}\doxysection{Overview}\label{doc_tutorials_odbc-backend_md_autotoc_md4621}
+The tutorial covers the following steps\+:
+
+
+\begin{DoxyEnumerate}
+\item Introduction
+\item Setting up the Databases for Configuration Data
+\item Installing unix\+ODBC
+\item Installing the SQLite and Postgre\+SQL ODBC Drivers
+\item Creating the ODBC data sources for the Databases
+\item Compiling Elektra with support for the ODBC Backend
+\item Mounting the data sources into the global Key Database (KDB) of Elektra
+\end{DoxyEnumerate}\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4622}{}\doxysection{1. Introduction}\label{doc_tutorials_odbc-backend_md_autotoc_md4622}
+\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4623}{}\doxysubsection{Database scheme}\label{doc_tutorials_odbc-backend_md_autotoc_md4623}
+The basic database scheme is quite simple. You just need a table that contains two columns which can store a text value. Usually, the SQL data types {\ttfamily TEXT}, {\ttfamily CHAR} and {\ttfamily VARCHAR} are used for that purpose. They must contain valid UTF-\/8 sequences. One column is used for storing the {\bfseries{names}} of the keys, the other one for storing their {\bfseries{values}}. The column where the key-\/names are stored should be defined as the {\itshape primary key} (PK) for that table.
+
+Next, we have to create a table for storing metadata. The table for the metadata needs at least three columns\+:
+
+
+\begin{DoxyItemize}
+\item A column with the {\itshape key-\/name} which should be defined as a {\itshape foreign key} (FK) to the PK of the table where the keys are stored.
+\item A column for the {\itshape name} of the metakeys.
+\item A column for the {\itshape value} of the metakeys.
+\end{DoxyItemize}
+
+\begin{quote}
+The column for the {\bfseries{key-\/name}} and the column for the {\bfseries{metakey-\/name}} together should form the PK of that table. \end{quote}
+Again, all these columns must be defined to store an UTF-\/8 compatible text. It is allowed that the tables contain more columns, these additional columns are not processed by Elektra, {\itshape must not} be part of a PK and {\itshape must} support NULL-\/ or DEFAULT-\/values (if you want to add new keys via Elektra).
+
+The following ER-\/diagram shows the described scheme\+:
+
+
+\begin{DoxyInlineImage}
+\includegraphics[height=\baselineskip,keepaspectratio=true]{unixODBC.png}%ER-\/diagram
+\end{DoxyInlineImage}
+\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4624}{}\doxysection{2. Setting up the Databases for Configuration Data}\label{doc_tutorials_odbc-backend_md_autotoc_md4624}
+Before we are getting started with setting up unix\+ODBC, we create the databases and store some configuration data in them.
+
+\begin{quote}
+This tutorial is neither an introduction to SQL nor to SQLite or Postgre\+SQL. If you need more information about these topics, there are plenty of resources available.
+
+For downloads and documentation, please visit the respective websites\+:
+
+
+\begin{DoxyItemize}
+\item \href{https://www.sqlite.org}{\texttt{ https\+://www.\+sqlite.\+org}}
+\item \href{https://www.postgresql.org}{\texttt{ https\+://www.\+postgresql.\+org}}
+\end{DoxyItemize}
+
+Usually, both database management systems (DBMS) can be installed by the package manager of your operating system. \end{quote}
+\begin{quote}
+A pre-\/configured example SQLite database and the SQL-\/script that was used to create the tables and fill them with some test data is available at /src/plugins/backend\+\_\+odbc/sample\+Db. \end{quote}
+\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4625}{}\doxysubsection{Preparing the SQLite Database}\label{doc_tutorials_odbc-backend_md_autotoc_md4625}
+As SQLite as a file-\/based DBMS, we first create a file for the new database. Afterward, we execute the SQL statements to create the tables and insert some tuples. Please note that the command {\ttfamily sqlite3} may be named differently on your system, especially if you use another version of SQLite.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sqlite3 \string~/elektraOdbc.db}
+
+\end{DoxyCode}
+
+
+Then, the SQLite command prompt is started, where you can enter your SQL statements. We use the statements as defined in /src/plugins/backend\+\_\+odbc/sample\+Db/prepare\+DB.sql.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{CREATE} \textcolor{keyword}{TABLE} elektraKeys (}
+\DoxyCodeLine{    keyName TEXT \textcolor{keyword}{PRIMARY} KEY \textcolor{keyword}{NOT} \textcolor{stringliteral}{NULL},}
+\DoxyCodeLine{    keyValue TEXT \textcolor{keyword}{DEFAULT} \textcolor{stringliteral}{NULL}}
+\DoxyCodeLine{);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{CREATE} \textcolor{keyword}{TABLE} metaKeys (}
+\DoxyCodeLine{    keyName TEXT \textcolor{keyword}{NOT} \textcolor{stringliteral}{NULL},}
+\DoxyCodeLine{    metaKeyName TEXT \textcolor{keyword}{NOT} \textcolor{stringliteral}{NULL},}
+\DoxyCodeLine{    metaKeyValue TEXT \textcolor{keyword}{DEFAULT} \textcolor{stringliteral}{NULL},}
+\DoxyCodeLine{    \textcolor{keyword}{CONSTRAINT} fk\_metakeys \textcolor{keyword}{FOREIGN} KEY (keyName) \textcolor{keyword}{REFERENCES} elektraKeys (keyName),}
+\DoxyCodeLine{    \textcolor{keyword}{CONSTRAINT} pk\_metaKeys \textcolor{keyword}{PRIMARY} KEY (keyName, metaKeyName)}
+\DoxyCodeLine{);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} elektraKeys (keyName, keyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp1/key1'}, \textcolor{stringliteral}{'sqlite val 1.1'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} elektraKeys (keyName, keyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp1/key2'}, \textcolor{stringliteral}{'sqlite val 1.2'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} elektraKeys (keyName, keyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp2/key1'}, \textcolor{stringliteral}{'sqlite val 2.1'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} elektraKeys (keyName, keyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp2/key2'}, \textcolor{stringliteral}{'sqlite val 2.2'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} elektraKeys (keyName, keyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp2/key3'}, \textcolor{stringliteral}{'sqlite val 2.3'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} elektraKeys (keyName, keyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp3/key1'}, \textcolor{stringliteral}{'sqlite val 3.1'});}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp1/key1'}, \textcolor{stringliteral}{'metakey 1.1.1'}, \textcolor{stringliteral}{'metaval 1.1.1'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp1/key1'}, \textcolor{stringliteral}{'metakey 1.1.2'}, \textcolor{stringliteral}{'metaval 1.1.2'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp1/key1'}, \textcolor{stringliteral}{'metakey 1.1.3'}, \textcolor{stringliteral}{'metaval 1.1.3'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp1/key1'}, \textcolor{stringliteral}{'metakey 1.1.4'}, \textcolor{stringliteral}{'metaval 1.1.4'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp2/key2'}, \textcolor{stringliteral}{'metakey 2.2.1'}, \textcolor{stringliteral}{'metaval 2.2.1'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp2/key2'}, \textcolor{stringliteral}{'metakey 2.2.2'}, \textcolor{stringliteral}{'metaval 2.2.2'});}
+\DoxyCodeLine{\textcolor{keyword}{INSERT} \textcolor{keyword}{INTO} metaKeys (keyName, metaKeyName, metaKeyValue) \textcolor{keyword}{VALUES} (\textcolor{stringliteral}{'sqliteapp2/key3'}, \textcolor{stringliteral}{'metakey 2.3.1'}, \textcolor{stringliteral}{'metaval 2.3.1'});}
+
+\end{DoxyCode}
+
+
+With typing {\ttfamily .exit}, you can leave the SQLite command prompt and return to your shell.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4626}{}\doxysubsection{Preparing the Postgre\+SQL Database}\label{doc_tutorials_odbc-backend_md_autotoc_md4626}
+If you want to use Postgre\+SQL, a bit more initial work is necessary. It is recommended to set up a user account, create a database and then create the tables using similar SQL statements as given above. You can run the Postgre\+SQL instance locally on the same computer where you use Elektra, but also on another node in the network. With this approach, it is possible to provide a centralized configuration storage for a whole network. As Postgre\+SQL natively supports transactions and multiple clients, it is also possible to share the same tables between multiple Elektra clients. Another option is to save the configurations for different users in separate tables. When a user logs in on any client PC in the network, the table with the matching configuration data can then, with some scripting, be mounted via Elektra.
+
+If you need detailed information about how to set up and use a Postgre\+SQL DBMS instance, there is excellent documentation, including tutorials for beginners, available at the \href{https://www.postgresql.org/docs/current/tutorial.html}{\texttt{ Postgre\+SQL website}}.
+
+However, for this tutorial, we present a single-\/user scenario on a local PC.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4627}{}\doxysection{3. Installing unix\+ODBC}\label{doc_tutorials_odbc-backend_md_autotoc_md4627}
+The easiest way to install unix\+ODBC, is to use the package manager of your operating system. For example, in Debian and Ubuntu you can install the package with the following command\+:
+
+{\ttfamily sudo apt-\/get install unixodbc}
+
+Alternatively, you can also compile the unix\+ODBC package from source. The download is available at \href{https://www.unixodbc.org}{\texttt{ https\+://www.\+unixodbc.\+org}}. The website also offers some other useful information, like various manuals and a list of supported ODBC drivers. Using drivers not mentioned in that list is in many cases also possible.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4628}{}\doxysection{4. Installing the SQLite and Postgre\+SQL ODBC Drivers}\label{doc_tutorials_odbc-backend_md_autotoc_md4628}
+The ODBC backend was tested with the following ODBC drivers for unix\+ODBC\+:
+
+
+\begin{DoxyItemize}
+\item SQLite\+: \href{http://www.ch-werner.de/sqliteodbc}{\texttt{ http\+://www.\+ch-\/werner.\+de/sqliteodbc}}
+\item Postgre\+SQL\+: \href{https://odbc.postgresql.org}{\texttt{ https\+://odbc.\+postgresql.\+org}}
+\end{DoxyItemize}
+
+The installation of the drivers should be straightforward. Please refer to the instructions on the websites and the downloaded drivers for how to install these ODBC drivers on your system. Maybe the drivers are also offered as packages by the package manager of your OS.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4629}{}\doxysection{5. Creating the ODBC data sources for the Databases}\label{doc_tutorials_odbc-backend_md_autotoc_md4629}
+Now we have to create or edit two configuration files for unix\+ODBC\+:
+
+
+\begin{DoxyItemize}
+\item {\bfseries{odbcinst.\+ini\+:}} for letting unix\+ODBC know about the drivers and where it can find them
+\item {\bfseries{odbc.\+ini\+:}} for configuring the actual data sources, which can then be mounted into Elektra\textquotesingle{}s KDB
+\end{DoxyItemize}
+
+On most systems, these files should be stored at {\ttfamily /etc/unix\+ODBC/}. The content of the {\ttfamily /etc/unix\+ODBC/odbcinst.ini} file should look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[SQLite]}
+\DoxyCodeLine{Description=SQLite ODBC Driver}
+\DoxyCodeLine{Driver=/usr/local/lib/libsqlite3odbc.so}
+\DoxyCodeLine{Setup=/usr/local/lib/libsqlite3odbc.so}
+\DoxyCodeLine{FileUsage=1}
+\DoxyCodeLine{Threading=2}
+\DoxyCodeLine{}
+\DoxyCodeLine{[Postgresql]}
+\DoxyCodeLine{Description=General ODBC for PostgreSQL}
+\DoxyCodeLine{Driver=/usr/local/lib/psqlodbca.so}
+\DoxyCodeLine{Setup=/usr/lib/libodbcpsqlS.so}
+\DoxyCodeLine{Setup64=/usr/lib64/libodbcpsqlS.so}
+
+\end{DoxyCode}
+
+
+Please check these paths and adjust them so that they match the place where the drivers and setup libraries are stored on your system. At first, the name of the entry is defined, in our example {\ttfamily SQLite} and {\ttfamily Postgresql}, then the configuration for the driver is given.
+
+The {\ttfamily Threading=2} option enables multithreading support for the SQLite driver. If you don\textquotesingle{}t need to use multiple threads/instances accessing the SQLite ODBC data source in parallel, you can gain a bit of performance by activating the single-\/threaded mode. In this case you can set {\ttfamily Threading=0}.
+
+\begin{quote}
+You have to make sure for yourself that only single-\/threaded use is present. This setting just disables mutexes in the driver. So if you are not really sure what you are doing, it\textquotesingle{}s safer to enable the multi-\/thread support!
+
+More information about this setting is available at \href{https://www.sqlite.org/threadsafe.html}{\texttt{ https\+://www.\+sqlite.\+org/threadsafe.\+html}}. \end{quote}
+The setting {\ttfamily File\+Usage=1} indicates to unix\+ODBC that the driver is file-\/based.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4630}{}\doxysubsection{odbc.\+ini}\label{doc_tutorials_odbc-backend_md_autotoc_md4630}
+After the driver settings, we have to define the actual ODBC data sources in {\ttfamily /etc/unix\+ODBC/odbc.ini}. This content of the file should look like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{[Selektra]}
+\DoxyCodeLine{Description=SQLite Database for Elektra}
+\DoxyCodeLine{Driver=SQLite}
+\DoxyCodeLine{Database=/home/user/elektraOdbc.db}
+\DoxyCodeLine{Timeout=3500}
+\DoxyCodeLine{}
+\DoxyCodeLine{[Pelektra]}
+\DoxyCodeLine{Description=Postgresql}
+\DoxyCodeLine{Driver=Postgresql}
+\DoxyCodeLine{Trace=No}
+\DoxyCodeLine{Database=elektraDB}
+\DoxyCodeLine{Servername=localhost}
+\DoxyCodeLine{Username=elektraUser}
+\DoxyCodeLine{Password=elektra}
+\DoxyCodeLine{Port=5432}
+\DoxyCodeLine{Protocol=6.4}
+\DoxyCodeLine{ReadOnly=No}
+\DoxyCodeLine{RowVersioning=No}
+\DoxyCodeLine{ShowSystemTables=No}
+\DoxyCodeLine{ShowOidColumn=No}
+\DoxyCodeLine{FakeOidIndex=No}
+
+\end{DoxyCode}
+
+
+At first, the data source name is chosen, in our example {\ttfamily Selektra} and {\ttfamily Pelektra}, then the configuration values for the data source are defined. The value for the key {\ttfamily Driver} must match the corresponding name of the entry that is defined in {\ttfamily odbcinst.\+ini}.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4631}{}\doxysection{6. Compiling Elektra with support for the ODBC Backend}\label{doc_tutorials_odbc-backend_md_autotoc_md4631}
+The plugin for the ODBC backend is currently marked as {\bfseries{EXPERIMENTAL}} and therefore not built by default.
+
+You must use the correct cmake-\/parameters for the plugin to be built. If you want to build all plugins, you can just use
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DPLUGINS="{}ALL"{} <path to elektra root dir>}
+
+\end{DoxyCode}
+
+
+If you want the default behavior and just additionally include the ODBC backend plugin, you can use the following command\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake -\/DPLUGINS="{}ALL;backend\_odbc;-\/EXPERIMENTAL"{} <path to elektra root dir>}
+
+\end{DoxyCode}
+
+
+Alternatively, you can also use the ncurses-\/based {\ttfamily ccmake} tool to define the option. For more information about how to build Elektra, please see \mbox{\hyperlink{doc_COMPILE_md}{/doc/\+COMPILE.md}}.
+
+Check the cmake output to be sure that the build system finds the ODBC libraries. Otherwise, the {\ttfamily backend\+\_\+odbc} plugin gets automatically excluded.\hypertarget{doc_tutorials_odbc-backend_md_autotoc_md4632}{}\doxysection{7. Mounting the data sources into the global Key Database (\+KDB) of Elektra}\label{doc_tutorials_odbc-backend_md_autotoc_md4632}
+Now, we can finally mount our ODBC data sources into the global Key Database (KDB) of Elektra. Currently, a separate command {\ttfamily kdb mount\+Odbc} exists for this purpose. Unfortunately, in contrast to the well-\/known {\ttfamily kdb mount} for the file-\/based backend, currently no additional plugins are supported.
+
+However, for now we use the {\ttfamily kdb mount\+Odbc} command. If you just type the command without additional arguments, you get some information about how the command works and which arguments are expected.
+
+\begin{quote}
+Only {\ttfamily system\+:/} and {\ttfamily user\+:/} namespaces are supported for ODBC mountpoints. \end{quote}
+Finally, we can create the mountpoint for our SQLite database using the {\ttfamily kdb mount\+Odbc} command. Further details about the arguments of the command are available in its \mbox{\hyperlink{doc_help_kdb-mountOdbc_md}{man page}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb mountOdbc Selektra "{}"{} "{}"{} elektraKeys keyName keyValue metaKeys keyName metaKeyName metaKeyValue "{}"{} user:/odbcSqlite}
+\DoxyCodeLine{\# The new mountpoint for the ODBC data source was successfully created!}
+
+\end{DoxyCode}
+
+
+Now we can just access the data like with any other mountpoint.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb ls user:/odbcSqlite/}
+\DoxyCodeLine{\# user:/odbcSqlite/sqliteapp1/key1}
+\DoxyCodeLine{\# user:/odbcSqlite/sqliteapp1/key2}
+\DoxyCodeLine{\# user:/odbcSqlite/sqliteapp2/key1}
+\DoxyCodeLine{\# user:/odbcSqlite/sqliteapp2/key2}
+\DoxyCodeLine{\# user:/odbcSqlite/sqliteapp2/key3}
+\DoxyCodeLine{\# user:/odbcSqlite/sqliteapp3/key1}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get /odbcSqlite/sqliteapp1/key1}
+\DoxyCodeLine{\# sqlite val 1.1}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb set /odbcSqlite/sqliteapp1/key1 newVal}
+\DoxyCodeLine{kdb get /odbcSqlite/sqliteapp1/key1}
+\DoxyCodeLine{\# sqlite newVal}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb meta-\/show user:/odbcSqlite/sqliteapp1/key1}
+\DoxyCodeLine{\# metakey 1.1.1: metaval 1.1.1}
+\DoxyCodeLine{\# metakey 1.1.2: metaval 1.1.2}
+\DoxyCodeLine{\# metakey 1.1.3: metaval 1.1.3}
+\DoxyCodeLine{\# metakey 1.1.4: metaval 1.1.4}
+
+\end{DoxyCode}
+
+
+For unmounting, there is not an extra command for ODBC data sources. You can unmount the ODBC backend, exactly like mounted files\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb umount user:/odbcSqlite}
+
+\end{DoxyCode}
+ 

@@ -1,0 +1,252 @@
+\label{doc_decisions_0_drafts_metakey_semantics_md_md_doc_decisions_0_drafts_metakey_semantics}%
+\Hypertarget{doc_decisions_0_drafts_metakey_semantics_md_md_doc_decisions_0_drafts_metakey_semantics}%
+ \hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1775}{}\doxysection{Problem}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1775}
+Metakeys (i.\+e., keys with namespace {\ttfamily KEY\+\_\+\+NS\+\_\+\+META}) have special requirements beyond what other namespaces want. This is because metakeys are used for specifications.
+
+These extra requirements are\+:
+
+
+\begin{DoxyEnumerate}
+\item Copying metadata from {\ttfamily spec\+:/} keys to other namespaces must share as much memory as possible. Without sharing memory there would be massive unnecessary duplication of data.
+\item It must be possible to identify whether a metakey was copied from {\ttfamily spec\+:/} key, or was set directly. Additionally, it must be possible to detect if the value of a copied metakey has changed.
+\item Changing the value of a copied metakey must not affect the original {\ttfamily spec\+:/} key (and its metadata).
+\end{DoxyEnumerate}
+
+Unrelated to the specification use case (see also \mbox{\hyperlink{doc_usecases_kdb_UC_validate_config_md}{Use Case\+: Validating Configuration with Specification}}Validating Configuration with Specification\char`\"{}\char`\"{}), metakeys must also be prevented from having metadata of their own. As {\ttfamily key\+Meta} now \char`\"{}leaks\char`\"{} (compared with the previous API) the {\ttfamily Key\+Set} of metadata is unprotected and the requirements above are not fulfilled anymore. For example, changes of metadata values could confuse the spec plugin and lead to invalid configuration passed to applications.\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1776}{}\doxysection{Constraints}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1776}
+
+\begin{DoxyItemize}
+\item The API should be hard to misuse.
+\item Elektra should protect against incorrect operations, that would lead to undefined behavior.
+\item As a specialized hook plugin {\ttfamily spec} could make use of specialized APIs. However, the need for such internal APIs should be limited as much as possible.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1777}{}\doxysection{Assumptions}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1777}
+
+\begin{DoxyItemize}
+\item Not allowing metadata on metakeys, can also be ignored here, because it can be dealt with in {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}} and {\ttfamily \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{key\+Meta()}}}. {\ttfamily \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{key\+Meta()}}} can just return {\ttfamily NULL} and {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}} can either ignore metadata arguments or fail if metadata is given.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1778}{}\doxysection{Considered Alternatives}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1778}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1779}{}\doxysubsection{Completely Read-\/only}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1779}
+One option to enforce all requirements is to just make any {\ttfamily Key} that is created with the {\ttfamily KEY\+\_\+\+NS\+\_\+\+META} namespace entirely read-\/only after {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}}.
+
+Because the {\ttfamily Key} is entirely read-\/only, it\textquotesingle{}s value cannot change. Therefore, we can find out, if it was copied from a given {\ttfamily spec\+:/} key by doing a pointer comparison\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * specMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (specKey);}
+\DoxyCodeLine{KeySet * otherMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (otherMeta);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor it = 0; it < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (otherMeta); it++)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{   Key * metaKey = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (otherMeta, it);}
+\DoxyCodeLine{   \textcolor{keywordflow}{if} (metaKey == \mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{ksLookup}} (specMeta, metaKey, 0))}
+\DoxyCodeLine{   \{}
+\DoxyCodeLine{      \textcolor{comment}{// copied from spec}}
+\DoxyCodeLine{   \}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+To update metadata you would have to create a new {\ttfamily Key} to replace the existing one\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/type"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}string"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{comment}{// would always fail, because metakeys are read-\/only}}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (\mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \textcolor{stringliteral}{"{}meta:/type"{}}, 0), \textcolor{stringliteral}{"{}string"{}});}
+
+\end{DoxyCode}
+
+
+Safely copying metadata would be very simple with this solution.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga21eb9c3a14a604ee3a8bdc779232e7b7}{ksAppend}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (dest), \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (source))}
+
+\end{DoxyCode}
+
+
+This copies metadata while sharing the memory for the individual {\ttfamily Key}s. Because the {\ttfamily Key}s are read-\/only they cannot be changed at all, so we don\textquotesingle{}t have to worry about changes to {\ttfamily dest} affecting {\ttfamily source}. If we want to change the metadata of {\ttfamily dest} we have to create a new {\ttfamily Key}, which will not be used by {\ttfamily source}.\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1780}{}\doxysubsection{Read-\/only while in $<$tt$>$\+Key\+Set$<$/tt$>$}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1780}
+A relaxation of the above solution would be to only make the {\ttfamily Key} read-\/only, while it is part of a {\ttfamily Key\+Set}.
+
+The snippets from above would still work and changing the value of metakey directly as above would still fail. But now you don\textquotesingle{}t have to create the {\ttfamily Key} directly with the right name and value.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * metaKey = \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}});}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyname_gaa942091fc4bd5c2699e49ddc50829524}{keyAddBaseName}} (metaKey, somePart);}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (metaKey, someValue);}
+
+\end{DoxyCode}
+
+
+The snippet above would not work, if the key is returned as read-\/only directly from {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}}.
+
+Copying metadata works the same as above. Since the {\ttfamily Key}s are still read-\/only as long as {\ttfamily source} uses them, we again cannot affect {\ttfamily source} by changing {\ttfamily dest}.\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1781}{}\doxysubsection{Utilize COW implementation}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1781}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1782}{}\doxysubsubsection{Issues with Read-\/only Solutions}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1782}
+An issue with the solutions above is that you always have to create a new {\ttfamily Key} to change metadata. This means we need to allocate all the memory for a new metakey. This new metakey will replace the existing one in {\ttfamily key\+Meta(key)}. But that means, if the existing metakey was not shared with other keys, it will be deleted, when we could have just reused that memory.
+
+Some of that problem is mitigated by {\ttfamily key\+Dup} using copy-\/on-\/write (COW). However, let\textquotesingle{}s look at what is needed to change the value of {\ttfamily meta\+:/type} with a read-\/only solution.
+
+The straightforward option doesn\textquotesingle{}t work, because of the read-\/only nature of metakeys\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// FAILS, metakey is read-\/only}}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (\mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \textcolor{stringliteral}{"{}meta:/type"{}}, 0), \textcolor{stringliteral}{"{}string"{}});}
+
+\end{DoxyCode}
+
+
+To make proper use of COW you need to write something like this to change the value of {\ttfamily meta\+:/type}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// Note: snippet could be even more complex, if you want to avoid the `keyDup`, in case meta is not in another KeySet}}
+\DoxyCodeLine{Key * meta = \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \textcolor{stringliteral}{"{}meta:/type"{}}, 0);}
+\DoxyCodeLine{meta = meta == NULL ? \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/type"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}) : keyDup (meta, \mbox{\hyperlink{group__key_gga9ff42b1e9a97222562bfda3dd1f8c735ab41d70eb97ae5480333e85759318b5a9}{KEY\_CP\_NAME}});}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (meta, \textcolor{stringliteral}{"{}long"{}});}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), meta);}
+
+\end{DoxyCode}
+
+
+However, most people would probably opt for the much simpler\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/type"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}long"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+
+\end{DoxyCode}
+
+
+For a one-\/time operation the difference might not be big, but if a metakey (probably not {\ttfamily meta\+:/type}), changes many times it will become significant. Every time the simpler solution is used, an entirely new {\ttfamily Key} is created instead of utilizing the COW approach.\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1783}{}\doxysubsubsection{Possible Fix}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1783}
+One option to solve that read-\/only problems, in \char`\"{}\+Read-\/only while in \`{}\+Key\+Set\`{}\char`\"{} is something like this\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * metaKey = \mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \textcolor{stringliteral}{"{}meta:/type"{}}, \mbox{\hyperlink{group__keyset_ggada05f4bbf46fde81d0d57df86e73d914a52fb5f2cc86773d393da62bebebf7984}{KDB\_O\_POP}});}
+\DoxyCodeLine{\textcolor{keywordflow}{if} (isInKeySet (metaKey)) \textcolor{comment}{// <-\/ hypothetical API}}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{   \textcolor{comment}{// still used, can't modify -\/> use new key}}
+\DoxyCodeLine{   \mbox{\hyperlink{group__key_ga3df95bbc2494e3e6703ece5639be5bb1}{keyDel}} (metaKey);}
+\DoxyCodeLine{   \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{stringliteral}{"{}meta:/type"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, \textcolor{stringliteral}{"{}string"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8aa8adb6fcb92dec58fb19410eacfdd403}{KEY\_END}}));}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{\textcolor{keywordflow}{else}}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{   \mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (metaKey);}
+\DoxyCodeLine{   \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), metaKey);}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note}}\+: Where the code above would live doesn\textquotesingle{}t matter. It may be part of some Elektra library, or it may be user code. The code is clearly not ideal and that\textquotesingle{}s why the solution here actually is to avoid the need for a {\ttfamily is\+In\+Key\+Set} function entirely. \end{quote}
+However, that still has some obvious issues\+:
+
+
+\begin{DoxyItemize}
+\item It needs a public API {\ttfamily is\+In\+Key\+Set} to check whether a metakey is used by some metadata {\ttfamily Key\+Set}.
+\item We still need to take the metakey out of the metadata {\ttfamily Key\+Set} and reinsert it. That means shuffling around the array in the {\ttfamily Key\+Set}, which may be worse than the duplicate memory for the new metakey.
+\end{DoxyItemize}
+
+Clearly this is {\bfseries{not}} a viable solution to the problem. But the good thing is we can solve these issues, because of the \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{COW implementation}}.
+
+To solve the issues mentioned above, {\ttfamily spec} needs to do a few things differently\+:\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1784}{}\doxysubsubsection{Copying Metakeys in $<$tt$>$spec$<$/tt$>$}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1784}
+Instead of copying metadata with
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyset_ga21eb9c3a14a604ee3a8bdc779232e7b7}{ksAppend}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (dest), \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (source))}
+
+\end{DoxyCode}
+
+
+we need to make a copy of all metakeys
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * sourceMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (source);}
+\DoxyCodeLine{KeySet * destMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (dest);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor i = 0; i < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (sourceMeta); i++)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{   \mbox{\hyperlink{group__keyset_gaa5a1d467a4d71041edce68ea7748ce45}{ksAppendKey}} (destMeta, keyDup (\mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (sourceMeta, i), \mbox{\hyperlink{group__key_gga9ff42b1e9a97222562bfda3dd1f8c735a3e04e17514f102f1e9217308d44e7612}{KEY\_CP\_ALL}}));}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+This seems like a bad change, but because of the COW implementation it\textquotesingle{}s not as bad as it looks. Only the {\ttfamily struct Key} will be duplicated, both the name and value data of the metakeys will still be shared between {\ttfamily source} and {\ttfamily dest}. Still worse than reusing everything and just adding a few new pointers, but not too bad.
+
+This change means that modifying metadata in {\ttfamily dest} cannot possibly affect {\ttfamily source}, because they do not share any {\ttfamily Key $\ast$}s. At first, they do share all the name and value data, but through COW that stops as soon as either {\ttfamily Key} is modified. Therefore, we don\textquotesingle{}t need to make the value read-\/only and anybody (including user code) can just do\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\mbox{\hyperlink{group__keyvalue_ga622bde1eb0e0c4994728331326340ef2}{keySetString}} (\mbox{\hyperlink{group__keyset_gad65d2cdcbb5381194a1688e169af8a83}{ksLookupByName}} (\mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key), \textcolor{stringliteral}{"{}meta:/type"{}}, 0), \textcolor{stringliteral}{"{}string"{}});}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1785}{}\doxysubsubsection{Detecting \& Removing Copied Metakeys in $<$tt$>$spec$<$/tt$>$}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1785}
+The issue with not sharing {\ttfamily Key $\ast$}s of course is that a pointer comparison will no longer detect copied metakeys. That means we need a new way of detecting what {\ttfamily spec} needs to remove.
+
+First we\textquotesingle{}d add a new {\ttfamily key\+Get\+COWValue} function\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeyData * keyGetCOWValue (Key * key)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{   \textcolor{keywordflow}{return} key-\/>keyData;}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note}}\+: This function wouldn\textquotesingle{}t be part of {\ttfamily libelektra-\/core}. It would be in {\ttfamily libelektra-\/extra} or some other library on which {\ttfamily spec} would depend. \end{quote}
+With this function, the check to detect copied metakeys becomes this straightforward snippet\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * specMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (specKey);}
+\DoxyCodeLine{KeySet * otherMeta = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (otherMeta);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{for} (elektraCursor it = 0; it < \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (otherMeta); it++)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{   Key * otherMetaKey = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (otherMeta, it);}
+\DoxyCodeLine{   \textcolor{keywordflow}{if} (keyGetCOWValue (otherMetaKey) == keyGetCOWValue(\mbox{\hyperlink{group__keyset_ga60f1ddcf23272f2b29b90e92ebe9b56f}{ksLookup}} (specMeta, metaKey, 0)))}
+\DoxyCodeLine{   \{}
+\DoxyCodeLine{      \textcolor{comment}{// copied from spec}}
+\DoxyCodeLine{   \}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+The check above works, because changing the value of a {\ttfamily Key} will allocate a new {\ttfamily key-\/$>$key\+Data}, if it is shared with another key. Therefore, the {\ttfamily key\+Data} pointers will only be the same if the value was not modified and was copied from the {\ttfamily spec\+:/} key.
+
+\begin{quote}
+{\bfseries{Note}}\+: Adding {\ttfamily key\+Get\+COWValue} (anywhere) might cause problem with some of the current guarantees related to COW. A quick solution for this would be to instead only provide {\ttfamily key\+Has\+Same\+COWValue}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{bool} keyHasSameCOWValue (Key * key, Key * other)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  \textcolor{keywordflow}{if} (key == NULL \&\& other == NULL) \textcolor{keywordflow}{return} \textcolor{keyword}{true};}
+\DoxyCodeLine{  \textcolor{keywordflow}{if} (key == NULL || other == NULL) \textcolor{keywordflow}{return} \textcolor{keyword}{false};}
+\DoxyCodeLine{  \textcolor{keywordflow}{return} key-\/>keyData == other-\/>keyData;}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+This would still allow making the comparison needed by {\ttfamily spec}, but doesn\textquotesingle{}t actually provide any access to {\ttfamily key-\/$>$key\+Data}, so nothing no guarantees can be broken. \end{quote}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1786}{}\doxysection{Decision}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1786}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1787}{}\doxysection{Rationale}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1787}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1788}{}\doxysection{Implications}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1788}
+\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1789}{}\doxysection{Related Decisions}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1789}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{Copy On Write}}
+\item \mbox{\hyperlink{doc_decisions_2_solutions_clear_keyset_types_md}{Types of \`{}\+Key\+Set\`{}s}}
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1790}{}\doxysection{Notes}\label{doc_decisions_0_drafts_metakey_semantics_md_autotoc_md1790}

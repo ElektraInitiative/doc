@@ -1,0 +1,364 @@
+.TH "md_doc_tutorials_install_webui" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_doc_tutorials_install_webui \- install-webui 
+
+.IP "\(bu" 2
+infos/maintainer = Tomislav Makar tmakar23@gmail.com
+.PP
+.SH "elektra-web"
+.PP
+\fIan API and web user interface to remotely manage Elektra instances\fP
+.PP
+The configuration view of elektra-web is similar to the tree view of the \fCqt-gui\fP, but with dynamic fields rendered via key metadata\&.
+.SS "Dependencies"
+Elektra-web requires:
+.PP
+.IP "\(bu" 2
+\fCElektra\fP with the \fC\fCyajl\fP plugin\fP installed
+.IP "\(bu" 2
+A recent \fCnode\&.js\fP installation (at least 6\&.x)
+.IP "\(bu" 2
+\fCGo\fP with version > 1\&.13
+.PP
+.SS "Building with elektra-web Tool"
+To build Elektra with the elektra-web tool:
+.PP
+.IP "\(bu" 2
+Install Node\&.js, Go and dependencies for \fCyajl\fP plugin (see links above)
+.IP "\(bu" 2
+Configure libelektra build with the elektra-web tool, e\&.g\&. \fCcmake \&.\&. -DTOOLS='kdb;web'\fP
+.IP "\(bu" 2
+Build libelektra: \fCmake\fP
+.IP "\(bu" 2
+Install libelektra: \fCsudo make install\fP
+.PP
+.SS "Getting Started (docker)"
+.IP "\(bu" 2
+Create and run a new docker container: \fCdocker run -d -it -p 33333:33333 -p 33334:33334 elektra/web\fP
+.IP "\(bu" 2
+You can now access the client on: \fChttp://localhost:33334\fP
+.IP "\(bu" 2
+You can also build it yourself in \fCscripts/docker/webui/\fP (see \fCBuilding Docker Image\fP)
+.PP
+.SS "Running from source"
+.IP "\(bu" 2
+Install dependencies (see above)
+.IP "\(bu" 2
+Clone libelektra repo and \fCcd libelektra/src/tools/web\fP
+.IP "\(bu" 2
+Install and start an elektrad instance:
+.IP "  \(bu" 4
+\fCcd elektrad\fP
+.IP "  \(bu" 4
+\fCgo build\fP
+.IP "  \(bu" 4
+\fC\&./elektrad\fP (replaces \fCkdb run-elektrad\fP)
+.PP
+
+.IP "\(bu" 2
+Install and start the client (connects to the elektrad instance):
+.IP "  \(bu" 4
+\fCcd webui\fP
+.IP "  \(bu" 4
+\fCnpm install\fP
+.IP "  \(bu" 4
+\fCnpm start\fP (replaces \fCkdb run-webd\fP)
+.PP
+
+.IP "\(bu" 2
+You can now access the client on: \fChttp://localhost:33334\fP
+.PP
+.SS "Use-cases"
+.SS "Running elektra-web on a Single Instance"
+If you do not want to configure multiple instances, you can set the \fCINSTANCE\fP environment variable to the server you want to configure\&. You can also set \fCuser:/sw/elektra/web/#0/current/instance\fP to the host\&. Make sure to enter a full HTTP URL, e\&.g\&. \fChttp://localhost:33333\fP\&.
+.PP
+If this configuration option is set, elektra-web will load the configuration page for that instance instead of the main overview page\&.
+.PP
+If you want to host elektra-web with the client and elektrad on the same instance, you must first start elektrad via \fCkdb run-elektrad\fP\&. Afterwards, you can run the client with:
+.PP
+.PP
+.nf
+export INSTANCE="http://localhost:33333" && npm start
+.fi
+.PP
+.PP
+It is also possible to set visibility by prefixing the host with \fCVISIBILITY@\fP\&.
+.PP
+For example (\fCadvanced\fP visibility, \fCuser\fP is default):
+.PP
+.PP
+.nf
+export INSTANCE="advanced@http://localhost:33333" && npm start
+.fi
+.PP
+.PP
+Now, when you open \fChttp://localhost:33334\fP in your browser, the configuration page for the instance will be opened immediately\&.
+.SS "Overview"
+Elektra web consists of multiple components:
+.PP
+.IP "\(bu" 2
+(multiple) servers running an elektra daemon (\fB`elektrad`\fP)
+.IP "\(bu" 2
+a single server to communicate with the elektra daemons and serve the client (\fB`webd`\fP)
+.IP "\(bu" 2
+a web browser that accesses the client (Web UI) on the \fB`webd`\fP server (\fB`client`\fP)
+.PP
+.PP
+.SS "API"
+.PP
+\fCAPI blueprints\fP are available for both APIs:
+.PP
+.IP "\(bu" 2
+\fCelektrad\fP, documentation: https://elektrad.docs.apiary.io/
+.IP "\(bu" 2
+\fCwebd\fP, documentation: https://elektrawebd.docs.apiary.io/
+.PP
+.SS "Test REST API on localhost"
+In order to test the API on localhost, you have to start an elektrad instance\&. This is possible in two ways:
+.PP
+.IP "\(bu" 2
+manually (recommended if you would like to control elektrad manually or the eletrad-web tool is not installed)
+.PP
+.PP
+.PP
+.nf
+cd libelektra/src/tools/web
+cd elektrad
+go build
+\&./elektrad
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+by installing elektrad tool together with Elektra (see section \fCBuilding with elektra-web Tool\fP)
+.PP
+.PP
+Now the server is running on \fChttp://localhost:33333\fP\&. After that you can test the API with help of Postman or similar tools that allow sending REST API requests\&.
+.PP
+\fBAdditional note\fP: It is recommended to install the elektrad tool rather than starting the server manually\&. When Elektra is installed, the \fCkdb\fP command together with its tools is installed globally\&. For instance, whenever you would like to write a shell script which has to start a REST API server, you can just add \fCkdb run-elektrad\fP and execute it locally\&.
+.PP
+Examples:
+.PP
+First create a new key-value pair \fCuser:/test\fP and set its value to 5\&. This can be done
+.PP
+.IP "\(bu" 2
+using the command line 
+.PP
+.nf
+kdb set user:/test 5
+
+.fi
+.PP
+
+.IP "\(bu" 2
+through the rest API using curl 
+.PP
+.nf
+curl -X PUT -H "Content-Type: text/plain" --data "5" http://localhost:33333/kdb/user:/test
+
+.fi
+.PP
+
+.PP
+.PP
+The output of the commandline tool will be \fCSet string to '5'\fP if the key did not exist before\&. If the specified key didn't exist before, then the output will be \fCCreate a new key user:/test with string '5'\fP\&. Elektrad will respond with code \fC200\fP\&.
+.PP
+The command
+.PP
+.PP
+.nf
+curl http://localhost:33333/kdb/user:/test
+#> {"exists":true,"name":"test","path":"user:/test","ls":["user:/test"],"value":"5","meta":""}
+.fi
+.PP
+.PP
+will now return the value of the specified key \fCuser:/test\fP, which is stored in the database\&.
+.PP
+.PP
+.nf
+{
+    "exists": true,
+    "name": "test",
+    "path": "user:/test",
+    "ls": [
+        "user:/test"
+    ],
+    "value": "5",
+    "meta": ""
+}
+.fi
+.PP
+.PP
+The command
+.PP
+.PP
+.nf
+curl -X POST -H "Content-Type: application/json" -d '{"meta": [{"key": "metakey1", "value": "value1"},{"key": "metakey2", "value": "value2"}]}' http://localhost:33333/kdbMetaBulk/user:/test
+.fi
+.PP
+.PP
+will now create multiple metakeys at once\&. In this case, it will create two (\fCmetakey1\fP and \fCmetakey2\fP)\&.
+.PP
+The command
+.PP
+.PP
+.nf
+curl http://localhost:33333/kdb/user:/test
+#> {"exists":true,"name":"test","path":"user:/test","ls":["user:/test"],"value":"1","meta":{"metakey1":"value1","metakey2":"value2"}}
+.fi
+.PP
+.PP
+will now also return the two metakeys\&.
+.PP
+.PP
+.nf
+{
+    "exists": true,
+    "name": "test",
+    "path": "user:/test",
+    "ls": [
+        "user:/test"
+    ],
+    "value": "5",
+    "meta": {
+        "metakey1": "value1",
+        "metakey2": "value2"
+    }
+}
+.fi
+.PP
+.SS "Auth"
+Currently, webd does not support authentication\&. The best way to work around this is to use a reverse proxy (e\&.g\&. \fCnginx reverse proxy\fP)\&.
+.PP
+Once you set up a reverse proxy on your web server, you can use it to authenticate users, e\&.g\&. by \fCusername/password auth\fP
+.SS "Code Structure"
+\fCelektrad/\fP - contains the daemon to interact with a single elektra instance 
+.br
+ \fCwebd/\fP - contains a daemon to serve the client and interact with multiple elektra instances
+.PP
+\fCwebui/\fP - contains the elektra-web client (Web UI)
+.PP
+.IP "\(bu" 2
+\fCsrc/actions/\fP - Redux actions to access the KDB or display notifications in the UI
+.IP "\(bu" 2
+\fCsrc/components/\fP - React components
+.IP "  \(bu" 4
+\fCpages/\fP - pages in the app
+.IP "    \(bu" 6
+\fCHome\&.jsx\fP - the main page (overview of all instances)
+.IP "    \(bu" 6
+\fCConfiguration\&.jsx\fP - configuration page (single instance)
+.PP
+
+.IP "  \(bu" 4
+\fCTreeItem/\fP - contains all UI components related to a single item in the tree view
+.IP "    \(bu" 6
+\fCdialogs/\fP - these dialogs are opened when certain actions are pressed (icons next to the tree items)
+.IP "      \(bu" 8
+\fCAddDialog\&.jsx\fP - dialog to create a new (sub-)key
+.IP "      \(bu" 8
+\fCDuplicateDialog\&.jsx\fP - dialog to duplicate a key
+.IP "      \(bu" 8
+\fCEditDialog\&.jsx\fP - dialog to edit a key value
+.IP "      \(bu" 8
+\fCRemoveDialog\&.jsx\fP - dialog to confirm the removal of a key
+.IP "      \(bu" 8
+\fCSettingsDialog\&.jsx\fP - dialog to edit metadata (new metadata can be implemented here)
+.IP "      \(bu" 8
+\fC*SubDialog\&.jsx\fP - sub-dialogs of the SettingsDialog
+.PP
+
+.IP "    \(bu" 6
+\fCfields/\fP - special input fields to display various values
+.PP
+
+.IP "  \(bu" 4
+\fCApp\&.jsx\fP - defines app structure and routes
+.PP
+
+.IP "\(bu" 2
+\fCsrc/index\&.js\fP - main entry point of the app (fetches instances and renders UI)
+.IP "\(bu" 2
+\fCsrc/containers/\fP - contains components that are connected to Redux
+.IP "\(bu" 2
+\fCsrc/css/\fP - contains CSS styles
+.IP "\(bu" 2
+\fCsrc/reducers/\fP - contains Redux reducers (used to process actions)
+.PP
+.SS "Development Guides"
+.SS "Updating Dependencies"
+Lockfiles (\fCpackage-lock\&.json\fP) can be updated by simply deleting the current lock file and running \fCnpm install\fP, which creates a new lock file\&.
+.PP
+Check for outdated dependencies via \fCnpm outdated\fP\&. Dependencies can then be updated by running \fCnpm update\fP\&.
+.SS "Building Docker Image"
+Run the following command in the \fCscripts/docker/web/\fP directory, replacing \fC1\&.5\&.0\fP with the latest version:
+.PP
+.PP
+.nf
+docker build -t elektra/web:1\&.5\&.0 -t elektra/web:latest \&.
+.fi
+.PP
+.PP
+Test the image:
+.PP
+.PP
+.nf
+docker run -d -it -p 33333:33333 -p 33334:33334 elektra/web:1\&.5\&.0
+.fi
+.PP
+.PP
+Publish it to the docker registry:
+.PP
+.PP
+.nf
+docker push elektra/web:1\&.5\&.0
+.fi
+.PP
+.SS "Adding Support for New Metadata"
+.IP "\(bu" 2
+Create a new sub dialog by, for example, copying the \fCNumberSubDialog\&.jsx\fP file (or similar) to a new file in the \fCwebui/src/components/TreeItem/dialogs\fP folder\&.
+.IP "\(bu" 2
+Include the sub dialog by adding it to the \fCSettingsDialog\&.jsx\fP file in the same folder\&. For example, it could be added before the AdditionalMetakeysSubDialog at the end of the file:
+.PP
+.PP
+.PP
+.nf
++     <NewSubDialog
++       onChange={this\&.handleEdit('check/something')}
++       value={this\&.getMeta('check/something', '')}
++       saved={this\&.getSaved('check/something')}
++     />
+      <AdditionalMetakeysSubDialog
+        handleEdit={this\&.handleEdit\&.bind(this)}
+        getMeta={this\&.getMeta\&.bind(this)}
+        getSaved={this\&.getSaved\&.bind(this)}
+        meta={this\&.props\&.meta}
+        deleteMeta={this\&.props\&.deleteMeta}
+      />
+    </FocusTrapDialog>
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+Mark the meta keys as handled by adding them to the \fCHANDLED_METADATA\fP array in \fCwebui/src/components/TreeItem/dialogs/utils\&.js\fP:
+.PP
+.PP
+.PP
+.nf
+export const HANDLED_METADATA = [
+  \&.\&.\&.,
+  'visibility',
+  'binary',
++ 'check/something',
+]
+.fi
+.PP
+.PP
+.IP "\(bu" 2
+Validation can then be added by handling metadata in the \fCwebui/src/components/TreeItem/fields/validateType\&.js\fP file to the \fCvalidateType\fP function\&.
+.IP "\(bu" 2
+Rendering fields in a special way when certain metakeys are present can be done by adjusting the \fCrenderSpecialValue\fP function in the \fCwebui/src/components/TreeItem/index\&.js\fP file\&. 
+.PP
+

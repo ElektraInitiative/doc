@@ -1,0 +1,76 @@
+\label{doc_help_kdb-cmerge_md_md_doc_help_kdb_cmerge}%
+\Hypertarget{doc_help_kdb-cmerge_md_md_doc_help_kdb_cmerge}%
+ \hypertarget{doc_help_kdb-cmerge_md_autotoc_md2866}{}\doxysection{NAME}\label{doc_help_kdb-cmerge_md_autotoc_md2866}
+kdb-\/cmerge -\/ Join three key sets together\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2867}{}\doxysection{SYNOPSIS}\label{doc_help_kdb-cmerge_md_autotoc_md2867}
+{\ttfamily kdb cmerge \mbox{[}OPTIONS\mbox{]} our their base result}
+
+
+\begin{DoxyItemize}
+\item ourpath\+: Path to the keyset to serve as {\ttfamily our}~\newline
+
+\item theirpath\+: path to the keyset to serve as {\ttfamily their}~\newline
+
+\item basepath\+: path to the {\ttfamily base} keyset~\newline
+
+\item resultpath\+: path without keys where the merged keyset will be saved~\newline
+
+\end{DoxyItemize}\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2868}{}\doxysection{DESCRIPTION}\label{doc_help_kdb-cmerge_md_autotoc_md2868}
+{\ttfamily kdb cmerge} can incorporate changes from two modified versions (our and their) into a common preceding version (base) of a key set. This lets you merge the sets of changes represented by the two newer key sets. This is called a three-\/way merge between key sets.~\newline
+ On success the resulting keyset will be saved to mergepath.~\newline
+ On unresolved conflicts nothing will be changed.~\newline
+ This tool currently exists alongside {\ttfamily kdb merge} until it is completely ready to supersede it. At this moment, cmerge will be renamed to merge.\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2869}{}\doxysection{OPTIONS}\label{doc_help_kdb-cmerge_md_autotoc_md2869}
+The options of {\ttfamily kdb cmerge} are\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/f}, {\ttfamily -\/-\/force}\+: overwrite existing keys in {\ttfamily result}
+\item {\ttfamily -\/v}, {\ttfamily -\/-\/verbose}\+: give additional information
+\end{DoxyItemize}
+
+Strategies offer fine grained control over conflict handling. The option is\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/s $<$name$>$}, {\ttfamily -\/-\/strategy $<$name$>$}\+: which is used to specify a strategy to use in case of a conflict
+\end{DoxyItemize}
+
+Strategies have their own \mbox{\hyperlink{doc_help_elektra-cmerge-strategy_md}{man page}} which can be accessed with {\ttfamily man elektra-\/cmerge-\/strategies}.\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2870}{}\doxysection{RETURN VALUE}\label{doc_help_kdb-cmerge_md_autotoc_md2870}
+
+\begin{DoxyItemize}
+\item 0\+: Successful.
+\item 11\+: An error happened.
+\item 12\+: A merge conflict occurred and merge strategy abort was set.
+\end{DoxyItemize}
+
+The result of the merge is stored in {\ttfamily result}.\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2871}{}\doxysection{THREE-\/\+WAY MERGE}\label{doc_help_kdb-cmerge_md_autotoc_md2871}
+You can think of the three-\/way merge as subtracting base from their and adding the result to our, or as merging into our the changes that would turn base into their. Thus, it behaves exactly as the GNU diff3 tool. These three versions of the Key\+Set are\+:~\newline
+
+
+
+\begin{DoxyItemize}
+\item {\ttfamily base}\+: The {\ttfamily base} Key\+Set is the original version of the key set.~\newline
+
+\item {\ttfamily our}\+: The {\ttfamily our} Key\+Set represents the user\textquotesingle{}s current version of the Key\+Set.~\newline
+ This Key\+Set differs from {\ttfamily base} for every key you changed.~\newline
+
+\item {\ttfamily their}\+: The {\ttfamily their} Key\+Set usually represents the default version of a Key\+Set (usually the package maintainer\textquotesingle{}s version).~\newline
+ This Key\+Set differs from {\ttfamily base} for every key someone has changed.~\newline
+
+\end{DoxyItemize}
+
+The three-\/way merge works by comparing the {\ttfamily our} Key\+Set and the {\ttfamily their} Key\+Set to the {\ttfamily base} Key\+Set. By looking for differences in these Key\+Sets, a new Key\+Set called {\ttfamily result} is created that represents a merge of these Key\+Sets.~\newline
+\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2872}{}\doxysection{CONFLICTS}\label{doc_help_kdb-cmerge_md_autotoc_md2872}
+Conflicts occur when a key has a different value in all three key sets or when only base differs. When all three values for a key differ, we call this an overlap. Different \mbox{\hyperlink{doc_help_elektra-cmerge-strategy_md}{merge strategies}} exist to resolve those conflicts.~\newline
+\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2873}{}\doxysection{EXAMPLES}\label{doc_help_kdb-cmerge_md_autotoc_md2873}
+To complete a simple merge of three Key\+Sets\+:~\newline
+
+
+\`{}\`{}\`{}\`{}ssh kdb set user\+:/base \char`\"{}\+A\char`\"{} \#$>$ Create a new key user\+:/base with string \char`\"{}\+A\char`\"{} kdb set user\+:/their \char`\"{}\+A\char`\"{} \#$>$ Create a new key user\+:/their with string \char`\"{}\+A\char`\"{} kdb set user\+:/our \char`\"{}\+B\char`\"{} \#$>$ Create a new key user\+:/our with string \char`\"{}\+B\char`\"{} kdb cmerge user\+:/our user\+:/their user\+:/base user\+:/result kdb get user\+:/result \#$>$B
+
+\`{}\`{}\`{}~\newline
+\hypertarget{doc_help_kdb-cmerge_md_autotoc_md2874}{}\doxysection{SEE ALSO}\label{doc_help_kdb-cmerge_md_autotoc_md2874}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_help_elektra-cmerge-strategy_md}{elektra-\/cmerge-\/strategy(7)}}
+\item \mbox{\hyperlink{doc_help_elektra-key-names_md}{elektra-\/key-\/names(7)}} for an explanation of key names. \`{}\`{}\`{}\`{}s 
+\end{DoxyItemize}

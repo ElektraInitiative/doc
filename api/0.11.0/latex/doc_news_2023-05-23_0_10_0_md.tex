@@ -1,0 +1,370 @@
+\label{doc_news_2023-05-23_0_10_0_md_md_doc_news_2023_05_23_0_10_0}%
+\Hypertarget{doc_news_2023-05-23_0_10_0_md_md_doc_news_2023_05_23_0_10_0}%
+
+\begin{DoxyItemize}
+\item guid\+: e0a2b6f4-\/b18d-\/47d8-\/b642-\/e27907255666
+\item author\+: Tomislav Makar
+\item pub\+Date\+: Tue, 23 May 2023 13\+:33\+:52 +0200
+\item short\+Desc\+: New Changetracking API, New spec plugin, Go into repo
+\end{DoxyItemize}
+
+We are proud to release Elektra 0.\+10.\+0.\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4242}{}\doxysection{What is Elektra?}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4242}
+Elektra serves as a universal and secure framework to access configuration settings in a global, hierarchical key database. For more information, visit \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}.
+
+You can also read the news \href{https://www.libelektra.org/news/0.10.0-release}{\texttt{ on our website}}.
+
+You can try out the latest Elektra release using our docker image \href{https://hub.docker.com/r/elektra/elektra}{\texttt{ elektra/elektra}}. This is the quickest way to get started with Elektra without compiling and other obstacles, simply run\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{docker pull elektra/elektra}
+\DoxyCodeLine{docker run -\/it elektra/elektra}
+
+\end{DoxyCode}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4243}{}\doxysection{Highlights}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4243}
+
+\begin{DoxyItemize}
+\item New Changetracking API
+\item New spec plugin
+\item Go into repo
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4244}{}\doxysubsection{New Changetracking API}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4244}
+We\textquotesingle{}ve created a new Key\+Set diffing and changetracking API for both internal and external use. Several plugins already had their own implementations to detect changes made to the key database. Every implementation did something different and results varied. With this new release every plugin now uses the same shared implementation, with identical results!
+
+To try the amazing new API yourself, take a look at \mbox{\hyperlink{doc_tutorials_changetracking_md}{the tutorial}}.
+
+Elektra\textquotesingle{}s internal code now also uses this new API to detect which backends to execute. This can lead to better performance in I/O bound cases, where previously certain keys would have been detected as changed when they weren\textquotesingle{}t.
+
+We ran some memory benchmarks and found a slightly increased memory usage on a stock instance of Elektra. If you\textquotesingle{}re using many plugins that do changetracking, the overhead will decrease.
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Number of Keys   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation (bytes)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ New Implementation (bytes)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Memory Increase (\%)    }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Number of Keys   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation (bytes)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ New Implementation (bytes)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Memory Increase (\%)    }\\\cline{1-4}
+\endhead
+\PBS\raggedleft 50   &\PBS\raggedleft 225792 bytes   &\PBS\raggedleft 229580 bytes   &\PBS\raggedleft 1,68 \%    \\\cline{1-4}
+\PBS\raggedleft 500   &\PBS\raggedleft 383180 bytes   &\PBS\raggedleft 411238 bytes   &\PBS\raggedleft 7,32 \%    \\\cline{1-4}
+\PBS\raggedleft 5000   &\PBS\raggedleft 1992294 bytes   &\PBS\raggedleft 2306867 bytes   &\PBS\raggedleft 15,79 \%    \\\cline{1-4}
+\PBS\raggedleft 50000   &\PBS\raggedleft 18245222 bytes   &\PBS\raggedleft 21181235 bytes   &\PBS\raggedleft 16,09 \%    \\\cline{1-4}
+\PBS\raggedleft 500000   &\PBS\raggedleft 178782208 bytes   &\PBS\raggedleft 207827763 bytes   &\PBS\raggedleft 16,25 \%   \\\cline{1-4}
+\end{longtabu}
+
+
+Apart from memory benchmark, we also ran some performance benchmarks. As the benchmark is heavily I/O bound, the biggest bottleneck is the I/O performance of the system. We could not reliably detect a real, reliably reproducible performance impact measured in seconds. Alternatively, we have measured executed instructions. There seems to be about 10 \% overhead, but we don\textquotesingle{}t expect it to be noticeable in real-\/world workloads.
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Number of Keys   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation (Instructions)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ New Implementation (Instructions)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Performance Overhead (\%)    }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Number of Keys   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Old Implementation (Instructions)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ New Implementation (Instructions)   }&\PBS\raggedleft \cellcolor{\tableheadbgcolor}\textbf{ Performance Overhead (\%)    }\\\cline{1-4}
+\endhead
+\PBS\raggedleft 50   &\PBS\raggedleft 18910449   &\PBS\raggedleft 19583227   &\PBS\raggedleft 3,56 \%    \\\cline{1-4}
+\PBS\raggedleft 500   &\PBS\raggedleft 63001911   &\PBS\raggedleft 68948096   &\PBS\raggedleft 9,44 \%    \\\cline{1-4}
+\PBS\raggedleft 5000   &\PBS\raggedleft 526801917   &\PBS\raggedleft 586344210   &\PBS\raggedleft 11,30 \%    \\\cline{1-4}
+\PBS\raggedleft 50000   &\PBS\raggedleft 5730261920   &\PBS\raggedleft 6340292587   &\PBS\raggedleft 10,65 \%    \\\cline{1-4}
+\PBS\raggedleft 500000   &\PBS\raggedleft 104614374974   &\PBS\raggedleft 110702166761   &\PBS\raggedleft 5,82 \%   \\\cline{1-4}
+\end{longtabu}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4245}{}\doxysubsection{New spec plugin}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4245}
+The spec plugin was rewritten to use the standardized error handling in Elektra. It is now strictly defined that the {\ttfamily spec} plugin throws a warning on {\ttfamily kdb\+Get} and on any other call an error.
+
+Default values are now created in the {\ttfamily default} namespace. The instantiated array specifications are now also created in the {\ttfamily default} namespace.
+
+Keys with a require metakey and no default metakey do throw an error now.
+
+Known limitations\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \#} and {\ttfamily \+\_\+} keys do not work on MINGW
+\item No defaults for {\ttfamily \+\_\+} globbing character
+\end{DoxyItemize}
+
+For more information see \mbox{\hyperlink{md_src_plugins_spec_README_src_plugins_spec_README_md}{Spec Plugin}}.\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4246}{}\doxysubsection{Go into repo}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4246}
+The go binding is now inside of {\ttfamily libelektra} repository. It is now also included into our build pipeline. For more information on how to use it see go readme.
+
+\begin{quote}
+NOTE\+: On information how to publish new versions of {\ttfamily go-\/elektra} to go packages see \href{https://go.dev/doc/modules/publishing}{\texttt{ go-\/publishing}}. \end{quote}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4247}{}\doxysection{Plugins}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4247}
+The following text lists news about the \href{https://www.libelektra.org/plugins/readme}{\texttt{ plugins}} we updated in this release.\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4248}{}\doxysubsection{General}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4248}
+
+\begin{DoxyItemize}
+\item Updated target name of shared object files according to \href{https://issues.libelektra.org/3486}{\texttt{ \#3486}}
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4249}{}\doxysubsection{spec}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4249}
+
+\begin{DoxyItemize}
+\item Rewrite spec plugin, fix bugs and use correct error handling \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Remove info metakey from spec plugin \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4250}{}\doxysubsection{counter}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4250}
+
+\begin{DoxyItemize}
+\item Move {\ttfamily static} variables into functions to avoid global variables \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4251}{}\doxysubsection{logchange}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4251}
+
+\begin{DoxyItemize}
+\item Utilize new changetracking API \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Add Maximilian Irlinger as maintainer \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4252}{}\doxysubsection{yajl}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4252}
+
+\begin{DoxyItemize}
+\item The {\ttfamily it\+Ks} global variable workaround, which was used to replace the now removed internal {\ttfamily Key\+Set} cursor, was replaced with a custom context struct. \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4253}{}\doxysubsection{toml}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4253}
+
+\begin{DoxyItemize}
+\item The {\ttfamily flex} lexer and {\ttfamily bison} parser are now fully reentrant and therefore thread-\/safe. \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4254}{}\doxysubsection{multifile}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4254}
+
+\begin{DoxyItemize}
+\item Remove multifile plugin as it is unmaintained and conflicts with the new backend architecture \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4255}{}\doxysubsection{c}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4255}
+
+\begin{DoxyItemize}
+\item Add Florian Lindner as maintainer \+\_\+(Florian Lindner @flo91)\+\_\+
+\item Use separate symbols for {\ttfamily set} and {\ttfamily commit} functions to satisfy {\ttfamily kdb plugin-\/check} \+\_\+(@kodebach)\+\_\+
+\item Use new {\ttfamily \mbox{\hyperlink{plugin_2plugin_8c_a106648a1b249c4fd7bedded220b4f928}{elektra\+Plugin\+Get\+Phase()}}} instead of counting executions \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4256}{}\doxysubsection{mmapstorage}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4256}
+\begin{quote}
+{\bfseries{Note}}\+: The plugin is currently disabled, because it is not yet compatible with the COW data structures. \end{quote}
+TODO\+: remove above note, when COW support is added.
+
+
+\begin{DoxyItemize}
+\item The magic data structures are now fully compile-\/time constants. The magic number to detect endianness is generated in CMake instead of at runtime. \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4257}{}\doxysubsection{syslog}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4257}
+
+\begin{DoxyItemize}
+\item Convert to hook plugin \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Utilize new changetracking API \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4258}{}\doxysubsection{lineendings}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4258}
+
+\begin{DoxyItemize}
+\item Add Florian Lindner as maintainer \+\_\+(Florian Lindner @flo91)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4259}{}\doxysubsection{length}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4259}
+
+\begin{DoxyItemize}
+\item Add Florian Lindner as maintainer \+\_\+(Florian Lindner @flo91)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4260}{}\doxysubsection{missing}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4260}
+
+\begin{DoxyItemize}
+\item Add Florian Lindner as maintainer \+\_\+(Florian Lindner @flo91)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4261}{}\doxysubsection{unit}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4261}
+
+\begin{DoxyItemize}
+\item Add Florian Lindner as maintainer \+\_\+(Florian Lindner @flo91)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4262}{}\doxysubsection{dbus}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4262}
+
+\begin{DoxyItemize}
+\item Utilize new changetracking API \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Add Maximilian Irlinger as maintainer \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4263}{}\doxysubsection{internalnotifications}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4263}
+
+\begin{DoxyItemize}
+\item Utilize new changetracking API \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Add Maximilian Irlinger as maintainer \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4264}{}\doxysection{Libraries}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4264}
+The text below summarizes updates to the \href{https://www.libelektra.org/libraries/readme}{\texttt{ C (and C++)-\/based libraries}} of Elektra.\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4265}{}\doxysubsection{Compatibility}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4265}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4266}{}\doxysubsection{Core}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4266}
+
+\begin{DoxyItemize}
+\item The {\ttfamily syslog} logging code now calls {\ttfamily openlog} before every {\ttfamily syslog} to avoid the use of a global variable. \+\_\+(@kodebach)\+\_\+
+\item Fix memleak in \mbox{\hyperlink{kdb_8c}{kdb.\+c}}, \#4925 \+\_\+(@hannes99)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4267}{}\doxysubsection{loader}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4267}
+
+\begin{DoxyItemize}
+\item Adapt target rename with {\ttfamily -\/plugin-\/} in {\ttfamily \mbox{\hyperlink{dl_8c}{dl.\+c}}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4268}{}\doxysubsection{go}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4268}
+
+\begin{DoxyItemize}
+\item Golang is now included to build {\ttfamily go binding} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item From now on we use tags which are prefixed with {\ttfamily v} so go package versioning works \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4269}{}\doxysubsection{kdb}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4269}
+
+\begin{DoxyItemize}
+\item Add new changetracking API \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Fix unwanted removal of subkeys when using mv \+\_\+(Hannes Laimer @hannes99)\+\_\+
+\item Fix inconsistent return values in code, tests and man pages \+\_\+(Hannes Laimer @hannes99)\+\_\+
+\item Remove {\ttfamily smount} alias \+\_\+(Hannes Laimer @hannes99)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4270}{}\doxysection{Bindings}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4270}
+Bindings allow you to utilize Elektra using \href{https://www.libelektra.org/bindings/readme}{\texttt{ various programming languages}}. This section keeps you up-\/to-\/date with the multi-\/language support provided by Elektra.\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4271}{}\doxysubsection{jna}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4271}
+
+\begin{DoxyItemize}
+\item Updated Java binding related dependencies. \+\_\+(Michael Tucek @tucek)\+\_\+
+\item Updated {\ttfamily KDBException} to only access error key at construction time. \+\_\+(Michael Tucek @tucek)\+\_\+
+\item Removed public naive resource release API. To migrate just remove calls to the affected methods {\ttfamily Key\#release()}, {\ttfamily Key\+Set\#release()} and {\ttfamily KDBException\#release\+Error\+Key()} \+\_\+(Michael Tucek @tucek)\+\_\+
+\item Enabled strict javadoc checking for Gradle build \+\_\+(Michael Tucek @tucek)\+\_\+
+\item add merging based on elektra\+Merge \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Added support for {\ttfamily ks\+Inc\+Ref} for {\ttfamily Key\+Set} \+\_\+(Michael Tucek @tucek)\+\_\+
+\item Enabled {\ttfamily Reference\+Cleaner} \+\_\+(Michael Tucek @tucek)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4272}{}\doxysubsection{go-\/elektra}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4272}
+
+\begin{DoxyItemize}
+\item Move {\ttfamily go-\/elektra} binding from repository into bindings folder of {\ttfamily libelektra} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Change module for {\ttfamily go-\/elektra} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Rename {\ttfamily go-\/elektra} module \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Adapt README for {\ttfamily go-\/elektra} and change module name to match {\ttfamily github.\+com} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4273}{}\doxysection{Tools}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4273}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4274}{}\doxysubsection{elektrad}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4274}
+
+\begin{DoxyItemize}
+\item Implemented new request to add multiple metakeys for one key \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Adding bulk creation request for configuration keys \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4275}{}\doxysubsection{webd}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4275}
+
+\begin{DoxyItemize}
+\item Implemented new request to add multiple metakeys for one key \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Adding bulk creation request for configuration keys \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4276}{}\doxysection{Scripts}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4276}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4277}{}\doxysubsection{Jenkins}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4277}
+
+\begin{DoxyItemize}
+\item Use only v prefix for tags not in real version \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4278}{}\doxysubsection{Release}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4278}
+
+\begin{DoxyItemize}
+\item Exclude v prefix from {\ttfamily populate-\/release-\/notes.\+sh} script \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Handle tag prefix {\ttfamily v} correctly in {\ttfamily release.\+sh} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Check for {\ttfamily v} prefix in {\ttfamily make-\/source-\/package} script and {\ttfamily Jenkinsfile.\+release} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Use correct tags for {\ttfamily git-\/release-\/stats} script \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4279}{}\doxysection{Documentation}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4279}
+
+\begin{DoxyItemize}
+\item Adapt and remove outdated docs \href{https://issues.libelektra.org/4882}{\texttt{ https\+://issues.\+libelektra.\+org/4882}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Added missing dependencies in COMPILE.\+md for APT-\/based systems \+\_\+(Michael Tucek @tucek)\+\_\+
+\item Add {\ttfamily default} namespace to \mbox{\hyperlink{doc_tutorials_namespaces_md}{namespaces documentation}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Added Tomislav Makar to {\ttfamily AUTHORS.\+md} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Added Florian Lindner to {\ttfamily AUTHORS.\+md} \+\_\+(Florian Lindner @flo91)\+\_\+
+\item .github rework \+\_\+(\+Markus Raab)\+\_\+
+\item Added {\ttfamily hook} to {\ttfamily placements} contract in \href{/home/jenkins/workspace/libelektra-release/doc/CONTRACT.ini}{\texttt{ CONTRACT.\+ini}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Added {\ttfamily hook} information to \mbox{\hyperlink{doc_dev_hooks_md}{hooks.md}}
+\item Added Hannes Laimer to {\ttfamily AUTHORS.\+md} \+\_\+(Hannes Laimer @hannes99)\+\_\+
+\item Add README to tools/kdb \+\_\+(Hannes Laimer @hannes99)\+\_\+
+\item Fixed shell-\/recorder test in \mbox{\hyperlink{md_doc_tutorials_install_webui_doc_tutorials_install-webui_md}{\`{}install-\/webui.md\`{}}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Add new shell-\/recorder test in \mbox{\hyperlink{md_doc_tutorials_install_webui_doc_tutorials_install-webui_md}{\`{}install-\/webui.md\`{}}} for newly implemented request for adding multiple metakeys for one key \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Small fixes in decisions. \+\_\+(\+Markus Raab)\+\_\+
+\item Remove wikipedia from release todos in RELEASE.md \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Update AUTHORS.\+md info \+\_\+(@kodebach)\+\_\+
+\item Add Stefan Hanreich to AUTHORS.\+md \+\_\+(Stefan Hanreich @lawli3t)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4280}{}\doxysubsection{Use Cases}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4280}
+
+\begin{DoxyItemize}
+\item Add specification use case for \mbox{\hyperlink{doc_usecases_specification_array-specification_md}{array-\/specification}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Add specification use case for \mbox{\hyperlink{doc_usecases_specification_underline-specification_md}{underline-\/specification}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Add specification use case for \mbox{\hyperlink{doc_usecases_specification_simple-specification_md}{simple-\/specification}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Add specification use case for \mbox{\hyperlink{doc_usecases_specification_enum-specification_md}{enum-\/specification}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Add complete specification for {\ttfamily dockerd} configuration file ({\ttfamily daemon.\+json}) \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4281}{}\doxysubsection{Decisions}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4281}
+
+\begin{DoxyItemize}
+\item Decide and implement \mbox{\hyperlink{doc_decisions_5_partially_implemented_decision_process_md}{decision process}} \+\_\+(\+Markus Raab)\+\_\+
+\item Decided future \mbox{\hyperlink{doc_decisions_4_decided_library_split_md}{library split}} \+\_\+(@kodebach)\+\_\+
+\item Decided \href{https://www.libelektra.org/decisions/decision-process}{\texttt{ decision process}} \+\_\+(\+Markus Raab)\+\_\+
+\item Draft for \mbox{\hyperlink{doc_decisions_0_drafts_man_pages_md}{man pages}} \+\_\+(\+Markus Raab)\+\_\+
+\item Add decision for \mbox{\hyperlink{doc_decisions_3_in_review_change_tracking_md}{change tracking}} \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Create \mbox{\hyperlink{doc_decisions_0_drafts_operation_sequences_md}{decision}} for allowed and prohibited operation seqences \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Add decisions about \mbox{\hyperlink{doc_decisions_4_decided_header_file_structure_md}{location of headers}} and \mbox{\hyperlink{doc_decisions_4_decided_header_include_md}{use of \`{}\#include\`{}}} in the repo \+\_\+(@kodebach)\+\_\+
+\item Add decision about \mbox{\hyperlink{doc_decisions_0_drafts_metakey_semantics_md}{metadata semantics}} \+\_\+(@kodebach)\+\_\+
+\item Many small fixes to adapt to documentation guidelines and new decision process. \+\_\+(\+Markus Raab)\+\_\+
+\item Add decision for \mbox{\hyperlink{doc_decisions_0_drafts_readonly_keynames_md}{read-\/only keynames}} \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Revive \mbox{\hyperlink{doc_decisions_4_decided_keyname_md}{keyname decision}} \+\_\+(@kodebach)\+\_\+
+\item Add decision for \mbox{\hyperlink{doc_decisions_6_implemented_copy_on_write_md}{copy-\/on-\/write}} and provide implementation suggestions. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\item Added explanation on why we wanted to migrate from Maven to \mbox{\hyperlink{doc_decisions_6_implemented_gradle_md}{Gradle}} for Java-\/related build facilities. \+\_\+(Michael Tucek @tucek)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4282}{}\doxysubsection{Tutorials}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4282}
+
+\begin{DoxyItemize}
+\item Add basic tutorial about changetracking \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4283}{}\doxysubsection{Man Pages}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4283}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4284}{}\doxysection{Tests}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4284}
+
+\begin{DoxyItemize}
+\item Add shell test to verify correct behavior for \href{https://github.com/ElektraInitiative/libelektra/issues/4061}{\texttt{ https\+://github.\+com/\+Elektra\+Initiative/libelektra/issues/4061}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Add link to {\ttfamily linkchecker.\+whitelist} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4285}{}\doxysection{Build}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4285}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4286}{}\doxysubsection{Docker}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4286}
+
+\begin{DoxyItemize}
+\item Cent\+OS 8 Stream\+: manually install {\ttfamily config-\/manager} DNF plugin. \+\_\+(Maximilian Irlinger @atmaxinger)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4287}{}\doxysection{Infrastructure}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4287}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4288}{}\doxysubsection{Cirrus}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4288}
+
+\begin{DoxyItemize}
+\item Rename deprecated {\ttfamily d-\/bus} to {\ttfamily dbus} in {\ttfamily mac\+OS.\+yml} and {\ttfamily .cirrus.\+yml} \href{https://github.com/ElektraInitiative/libelektra/issues/4900}{\texttt{ Issue-\/\#4900}} \+\_\+(Tomislav Makar @tmakar)\+\_\+
+\item Push Free\+BSD 12.\+3 to 12.\+4 since 12.\+3 is end of life. \+\_\+(Richard Stöckl @eiskasten)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4289}{}\doxysubsection{Git\+Hub Actions}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4289}
+\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4290}{}\doxysection{Website}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4290}
+The website is generated from the repository, so all information about plugins, bindings and tools are always up-\/to-\/date. Furthermore, we changed\+:\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4291}{}\doxysection{Miscellaneous}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4291}
+
+\begin{DoxyItemize}
+\item Many global variables that where used as constants have been made fully {\ttfamily const} \+\_\+(@kodebach)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4292}{}\doxysection{Outlook}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4292}
+We are currently working on following topics\+:
+
+
+\begin{DoxyItemize}
+\item Rewriting tools in C \+\_\+(@hannes99)\+\_\+
+\item Elektrify KDE and GNOME \+\_\+(Mihael Pranjić @mpranj)\+\_\+
+\item Elektrify XFCE \+\_\+(Richard Stöckl @\+Eiskasten)\+\_\+
+\item Mounting SQL databases \+\_\+(Florian Lindner @flo91)\+\_\+
+\item Recording Configuration \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Ansible-\/\+Elektra \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Configure Olimex Base Images \+\_\+(\+Maximilian Irlinger)\+\_\+
+\item Improving Build Server Infrastructure \+\_\+(\+Lukas Hartl)\+\_\+
+\item Improve Java Development Experience \+\_\+(\+Michael Tucek)\+\_\+
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4293}{}\doxysection{Statistics}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4293}
+About 9 authors changed 309 files with 10024 insertions(+) and 4025 deletions(-\/) in 402 commits.
+
+Thanks to all authors for making this release possible!\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4294}{}\doxysection{Join the Initiative!}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4294}
+We welcome new contributors! Read \href{https://www.libelektra.org/devgettingstarted/ideas}{\texttt{ here}} about how to get started.
+
+As first step, you could give us feedback about these release notes. Contact us via our \href{https://issues.libelektra.org}{\texttt{ issue tracker}}.\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4295}{}\doxysection{Get the Release!}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4295}
+You can download the release from
+
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.10.0.tar.gz}{\texttt{ here}} or
+\item \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.10.0.tar.gz?raw=true}{\texttt{ Git\+Hub}}
+\end{DoxyItemize}
+
+The \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.10.0.tar.gz.hashsum?raw=true}{\texttt{ hashsums are\+:}}
+
+
+\begin{DoxyItemize}
+\item name\+: elektra-\/0.\+10.\+0.\+tar.\+gz
+\item size\+: 9230228
+\item md5sum\+: 39ac04c8a0b07061bea781fd73cb13aa
+\item sha1\+: 846dcfa22410403b575a4d4d87970aa4841aafdd
+\item sha256\+: cb56e40b37c42e1e235cf9e76c9250024f912cbb61cca1a2888f9305f5228dcd
+\end{DoxyItemize}
+
+The release tarball is also available signed using Gnu\+PG from
+
+
+\begin{DoxyItemize}
+\item \href{https://www.libelektra.org/ftp/elektra/releases/elektra-0.10.0.tar.gz.gpg}{\texttt{ here}} or
+\item \href{https://github.com/ElektraInitiative/ftp/blob/master/releases/elektra-0.10.0.tar.gz.gpg?raw=true}{\texttt{ Git\+Hub}}
+\end{DoxyItemize}
+
+The following GPG Key was used to sign this release\+: 12CC44541\+E1\+B8\+AD9\+B66\+AFAD55262\+E7353324914A
+
+Already built API documentation can be found
+
+
+\begin{DoxyItemize}
+\item \href{https://doc.libelektra.org/api/0.10.0/html/}{\texttt{ here}} or
+\item \href{https://github.com/ElektraInitiative/doc/tree/master/api/0.10.0}{\texttt{ Git\+Hub}}.
+\end{DoxyItemize}\hypertarget{doc_news_2023-05-23_0_10_0_md_autotoc_md4296}{}\doxysection{Stay tuned!}\label{doc_news_2023-05-23_0_10_0_md_autotoc_md4296}
+Subscribe to the \href{https://www.libelektra.org/news/feed.rss}{\texttt{ RSS feed}} to always get the release notifications.
+
+If you also want to participate, or for any questions and comments, please contact us via our issue tracker \href{http://issues.libelektra.org}{\texttt{ on Git\+Hub}}.
+
+\href{https://www.libelektra.org/news/0.10.0-release}{\texttt{ Permalink to this NEWS entry}}
+
+For more information, see \href{https://libelektra.org}{\texttt{ https\+://libelektra.\+org}}.
+
+Best regards, \href{https://www.libelektra.org/developers/authors}{\texttt{ Elektra Initiative}} 

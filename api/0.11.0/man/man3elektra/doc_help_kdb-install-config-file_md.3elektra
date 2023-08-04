@@ -1,0 +1,39 @@
+.TH "doc_help_kdb-install-config-file_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_help_kdb-install-config-file_md \- kdb-install-config-file(1) -- Install configuration files in Elektra 
+ 
+.SH "SYNOPSIS"
+.PP
+\fCkdb install-config-file <elektra path> <config file> [<format>]\fP
+.PP
+.IP "\(bu" 2
+\fC<elektra path>\fP is a path in Elektra
+.IP "\(bu" 2
+\fC<config file>\fP is some file on the filesystem
+.PP
+.PP
+\fCline\fP will be used as \fC<format>\fP if \fC<format>\fP is unspecified\&.
+.PP
+The script has to be called as administrator (e\&.g\&. with \fCsudo\fP)\&.
+.SH "DESCRIPTION"
+.PP
+This script installs or merges configuration files from the file system into Elektra\&. There are two possible scenarios:
+.PP
+.IP "1." 4
+You use the script for the first time for a file\&. Then \fC<elektra path>\fP is empty\&. The script
+.IP "  1." 6
+copies \fC<config file>\fP into a special path to preserve origin version\&.
+.IP "  2." 6
+mounts \fC<config file>\fP into \fC<elektra path>\fP as our version\&. This version can then be safely modified\&.
+.PP
+
+.IP "2." 4
+You have already used the script for a previous version of the file\&. In this case \fC<elektra path>\fP already contains data the script performs a three-way merge (using \fCkdb cmerge\fP) between the file at \fC<config file>\fP (their), the \fC<elektra path>\fP (our) and the preserved key set (base) from step 1 in scenario 1\&.
+.PP
+.SH "EXAMPLES"
+.PP
+To install the config file at \fC~/\&.config/installing\&.ini\fP we can use the following command
+.PP
+\fCkdb install-config-file user:/tests/installing installing\&.ini ini\fP 

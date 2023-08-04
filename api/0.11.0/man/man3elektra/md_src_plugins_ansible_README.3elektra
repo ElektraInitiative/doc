@@ -1,0 +1,81 @@
+.TH "md_src_plugins_ansible_README" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+md_src_plugins_ansible_README \- Plugin: ansible 
+
+.IP "\(bu" 2
+infos = Information about the ansible plugin is in keys below
+.IP "\(bu" 2
+infos/author = Maximilian Irlinger max@maxirlinger.at
+.IP "\(bu" 2
+infos/licence = BSD
+.IP "\(bu" 2
+infos/needs =
+.IP "\(bu" 2
+infos/provides = storage/ansible
+.IP "\(bu" 2
+infos/recommends =
+.IP "\(bu" 2
+infos/placements = setstorage
+.IP "\(bu" 2
+infos/status = recommended productive maintained conformant unittest writeonly
+.IP "\(bu" 2
+infos/metadata =
+.IP "\(bu" 2
+infos/description = export Ansible playbooks
+.PP
+.SH "Introduction"
+.PP
+Provides a write-only storage plugin for use with \fCkdb export\fP and \fCkdb record-export\fP\&. The output format is an Ansible playbook that utilized the \fCansible-libelektra\fP module\&.
+.PP
+Keys that possess the metakey \fCmeta:/elektra/removed\fP will be removed using the \fCremove\fP option in ansible-libelektra\&.
+.SH "Plugin Configuration"
+.PP
+You can use the following configuration keys to modify the behavior and output of the plugin:
+.PP
+Key   Default Value   Description    \fCplaybook\fP   \fC1\fP   Whether to generate a whole playbook or just a (list of) task(s) (\fC0\fP)    \fCplaybook/name\fP   My Elektra Playbook   The \fCname\fP property of the playbook    \fCplaybook/hosts\fP   all   The \fChosts\fP property of the playbook    \fCtask/main/name\fP   Set Elektra Keys   The name of the 'main' task of the playbook   
+.SH "Dependencies"
+.PP
+This plugin requires \fCyaml-cpp\fP\&. On a Debian based OS the package for the library is called \fC\fClibyaml-cpp-dev\fP\fP\&. On macOS you can install the package \fC\fCyaml-cpp\fP\fP via \fCHomeBrew\fP\&.
+.SH "Examples"
+.PP
+.PP
+.nf
+# Backup-and-Restore: user:/tests
+
+kdb set user:/tests/company/roles/ceo Hans
+#> Create a new key user:/tests/company/roles/ceo with string "Hans"
+
+kdb export user:/tests/company ansible -c playbook/name="Company Roles",task/main/name="I can customize this too"
+# RET:0
+.fi
+.PP
+.PP
+.PP
+.nf
+---
+- name: Company Roles
+  hosts: all
+  collections:
+    - elektra_initiative\&.libelektra
+  tasks:
+    - name: I can customize this too
+      elektra:
+        keys:
+          - user:
+              tests:
+                company:
+                  roles:
+                    ceo:
+                      - value: Hans
+.fi
+.PP
+.SH "Limitations"
+.PP
+.IP "\(bu" 2
+This plugin only supports writing of Ansible Playbooks\&. It is currently not possible to read them with this plugin\&. Do not use this plugin as a general-purpose storage plugin\&.
+.IP "\(bu" 2
+If keys below \fCsystem:/elektra/mountpoints\fP are included, we will always create a second task for them instead of using the \fCmount\fP operation of the ansible-libelektra module\&. This task will be created first\&. Keys created during the 'main' task will then already be able to use the correctly mounted files\&. 
+.PP
+

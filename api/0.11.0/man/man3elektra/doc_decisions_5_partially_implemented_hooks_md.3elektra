@@ -1,0 +1,91 @@
+.TH "doc_decisions_5_partially_implemented_hooks_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_decisions_5_partially_implemented_hooks_md \- Hooks in KDB 
+ 
+.SH "Problem"
+.PP
+Some components of \fCkdbGet\fP/\fCkdbSet\fP should be optional\&. We use the plugin system for that\&. However, some of these cases cannot be tied to a mountpoint\&. This was the idea of global plugins, but that idea proved problematic\&. In the old global plugins implementation:
+.PP
+.IP "\(bu" 2
+Notification does not happen once after final commit, but for every plugin\&.
+.IP "\(bu" 2
+Problems in spec plugin
+.PP
+.PP
+These problems can be traced back to the placement of the plugins\&. We need to clean up and simplify the placement\&.
+.SH "Constraints"
+.PP
+.IP "\(bu" 2
+Plugin interface should be the same\&. Many plugins, where appropriate, e\&.g\&. dbus, should work as global plugins w/o any change in code (i\&.e\&. only changes in contract)
+.IP "\(bu" 2
+Global plugins might depend on specific applications or specific mount points (it should be possible to enforce global plugins for specific applications)\&.
+.PP
+.SH "Assumptions"
+.PP
+.IP "\(bu" 2
+Only following plugins need hook functionality:
+.IP "  \(bu" 4
+mmap
+.IP "  \(bu" 4
+spec
+.IP "  \(bu" 4
+gopts
+.IP "  \(bu" 4
+receiving of notifications (internalnotification)
+.IP "  \(bu" 4
+sending of notifications (dbus, \&.\&.\&.)
+.IP "  \(bu" 4
+recording of changes
+.PP
+
+.PP
+.SH "Considered Alternatives"
+.PP
+.IP "\(bu" 2
+generic placements like /prerollback /rollback /postrollback /getresolver /pregetcache /pregetstorage /getstorage /postgetstorage /postgetcache /setresolver /presetstorage /setstorage /precommit /commit /postcommit which can be executed at: /init /deinit /foreach proved to be too complicated and difficult to test\&.
+.PP
+.SH "Decision"
+.PP
+Have hooks and APIs specific for plugins listed in assumptions\&. These hooks are not shared, so no \fClist\fP plugin is needed\&.
+.PP
+Installed plugins will be used\&.
+.PP
+We'll hard code the names of the plugins\&. For changing those plugins symlinks will have to be used\&.
+.SH "Rationale"
+.PP
+.IP "\(bu" 2
+allows adding more types of plugins later, also post-1\&.0
+.IP "\(bu" 2
+much clearer semantics for each type, no need to compromise
+.IP "\(bu" 2
+easier to implement
+.PP
+.SH "Implications"
+.PP
+.IP "\(bu" 2
+remove \fCglobal-mount\fP command
+.IP "\(bu" 2
+command for mmap/notification/\&.\&.\&. enable disable (like current \fCkdb cache\fP tool)
+.IP "\(bu" 2
+remove \fClist\fP plugin
+.IP "\(bu" 2
+remove plugins that stop working or disallow global positioning for them
+.IP "\(bu" 2
+call \fCspec\fP as needed several times
+.IP "\(bu" 2
+remove current global plugins mechanism
+.IP "\(bu" 2
+rename \fCglobal\fP to \fChook\fP in contract
+.PP
+.SH "Related Decisions"
+.PP
+.IP "\(bu" 2
+\fBArray\fP
+.IP "\(bu" 2
+\fBEnsure\fP
+.PP
+.SH "Notes"
+.PP
+

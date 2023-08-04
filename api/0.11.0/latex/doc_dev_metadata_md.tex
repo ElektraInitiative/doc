@@ -1,0 +1,70 @@
+\label{doc_dev_metadata_md_md_doc_dev_metadata}%
+\Hypertarget{doc_dev_metadata_md_md_doc_dev_metadata}%
+ Make sure to first read \mbox{\hyperlink{doc_help_elektra-metadata_md}{elektra-\/metadata(7)}} to familiarize yourself with the {\itshape metadata} concept.
+
+In Elektra, {\itshape metakeys} represent metadata. They can be stored in a key database, often within the representation of the {\ttfamily Key}. Metakey is a {\ttfamily Key} that is part of the data structure {\ttfamily Key}. It can be looked up using a {\bfseries{metaname}}. Metanames are unique within a {\ttfamily Key}. Metakeys can also carry a value, called {\bfseries{metavalue}}. It is possible to iterate over all metakeys of a {\ttfamily Key}, but it is impossible for a metakey to hold other metakeys recursively. The purpose of metakeys next to keys is to distinguish between configuration and information about settings.\hypertarget{doc_dev_metadata_md_autotoc_md2701}{}\doxysection{Implementation}\label{doc_dev_metadata_md_autotoc_md2701}
+In this document, we discuss the implementation of metadata. Metakey is implemented directly in a {\ttfamily Key}\+: Every metakey belongs to a key {\bfseries{inseparable}}. Unlike normal key names there is no absolute path for it in the hierarchy, but a relative one only valid within the key.
+
+The advantage of embedding metadata into a key is that functions can operate on a key\textquotesingle{}s metadata if a key is passed as a parameter. Because of this, {\ttfamily \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{key\+New()}}} directly supports adding metadata. A key with metadata is self-\/contained. When the key is passed to a function, the metadata is always passed with it. Because of the tight integration into a {\ttfamily Key}, the metadata does not disturb the user.
+
+A disadvantage of this approach is that storage plugins are more likely to ignore metadata because metakeys are distinct from keys and have to be handled separately. It is not possible to iterate over all keys and their metadata in a single loop. Instead only a nested loop provides full iteration over all keys and metakeys.
+
+The metakey itself is also represented by a {\ttfamily Key}. So the data structure {\ttfamily Key} is nested directly into a {\ttfamily Key}. The reason for this is to make the concept easier for the user who already knows how to work with a {\ttfamily Key}. But even new users need to learn only one interface. During iteration the metakeys, represented through a {\ttfamily Key} object, contain both the metaname and the metavalue. The metaname is shorter than a key name because the name is unique only in the {\ttfamily Key} and not for the whole global configuration.
+
+The implementation adds no significant memory overhead per {\ttfamily Key} if no metadata is used. For embedded systems it is useful to have keys without metadata. Special plugins can help for systems that have very limited memory capacity. Also for systems with enough memory we should consider that adding the first metadata to a key has some additional overhead. In the current implementation a new {\ttfamily Key\+Set} is allocated in this situation.\hypertarget{doc_dev_metadata_md_autotoc_md2702}{}\doxysubsection{Interface}\label{doc_dev_metadata_md_autotoc_md2702}
+The interface to access metadata consists of the following functions\+:
+
+Interface of metadata\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{const} Key * \mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{keyGetMeta}} (\textcolor{keyword}{const} Key * key, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * metaName);}
+\DoxyCodeLine{ssize\_t \mbox{\hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{keySetMeta}} (Key * key, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * metaName, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *newMetaString);}
+\DoxyCodeLine{KeySet * \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (Key * key);}
+
+\end{DoxyCode}
+
+
+Inside a {\ttfamily Key}, metadata with a given metaname and a metavalue can be set using {\ttfamily \mbox{\hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()}}} and retrieved using {\ttfamily \mbox{\hyperlink{group__keymeta_ga9ed3875495ddb3d8a8d29158a60a147c}{key\+Get\+Meta()}}}.
+
+With {\ttfamily \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{key\+Meta()}}} you can get a {\ttfamily Key\+Set} with all metakeys of a given {\ttfamily Key}. It\textquotesingle{}s possible to iterate the returned metadata {\ttfamily Key\+Set} like any other {\ttfamily Key\+Set}.
+
+Example for iterating metadata\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{void} printMetaData (Key * key)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{    Key * curMeta;}
+\DoxyCodeLine{    KeySet metaKeys = \mbox{\hyperlink{group__keymeta_ga11706f1753e67933f7cffc5c0345cd29}{keyMeta}} (key);}
+\DoxyCodeLine{    ssize\_t ksSize = \mbox{\hyperlink{group__keyset_ga7474ad6b0a0fa969dbdf267ba5770eee}{ksGetSize}} (metaKeys);}
+\DoxyCodeLine{}
+\DoxyCodeLine{    \textcolor{keywordflow}{for} (elektraCursor it = 0; it < ksSize; ++it)}
+\DoxyCodeLine{    \{}
+\DoxyCodeLine{        curMeta = \mbox{\hyperlink{group__keyset_gab3fb5e067c672d9fd60a4022b2ae9dd1}{ksAtCursor}} (metaKeys, it);}
+\DoxyCodeLine{        printf (\textcolor{stringliteral}{"{}metaname: \%s, metavalue: \%s\(\backslash\)n"{}}, \mbox{\hyperlink{group__keyname_ga8e805c726a60da921d3736cda7813513}{keyName}} (curMeta), \mbox{\hyperlink{group__keyvalue_ga880936f2481d28e6e2acbe7486a21d05}{keyString}} (curMeta));}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Developers used to Elektra will immediately be familiar with the interface. Tiny wrapper functions still support the old metadata interface.\hypertarget{doc_dev_metadata_md_autotoc_md2703}{}\doxysubsection{Sharing of Metakey}\label{doc_dev_metadata_md_autotoc_md2703}
+Usually substantial amounts of metadata are shared between keys. For example, many keys have the type {\ttfamily int}. To avoid the problem that every key with this metadata occupies additional space, {\ttfamily \mbox{\hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{key\+Copy\+Meta()}}} was invented. It copies metadata from one key to another. Only one metakey resides in memory as long as the metadata is not changed with {\ttfamily \mbox{\hyperlink{group__keymeta_gae1f15546b234ffb6007d8a31178652b9}{key\+Set\+Meta()}}}. To copy metadata, the following functions can be used\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__keymeta_ga9a22b992478e613c8788bd460b4a1f0c}{keyCopyMeta}}(Key *dest, \textcolor{keyword}{const} Key *source, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *metaName);}
+\DoxyCodeLine{\textcolor{keywordtype}{int} \mbox{\hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{keyCopyAllMeta}}(Key *dest, \textcolor{keyword}{const} Key *source);}
+
+\end{DoxyCode}
+
+
+The name {\ttfamily copy} is used because the information is copied from one key to another. It has the same meaning as in {\ttfamily \mbox{\hyperlink{group__keyset_gaba1f1dbea191f4d7e7eb3e4296ae7d5e}{ks\+Copy()}}}. In both cases it is a flat copy. {\ttfamily \mbox{\hyperlink{group__keymeta_ga8e63720a65610a29597494d0671f9401}{key\+Copy\+All\+Meta()}}} copies all metadata from one key to another. It is more efficient than a loop with the same effect.
+
+{\ttfamily key\+Dup()} copies all metadata as expected. Sharing metadata makes no difference from the user\textquotesingle{}s point of view. Whenever a metavalue is changed a new metakey is generated. It does not matter if the old metakey was shared or not. This is the reason why a const pointer is always passed back. The metakey must not be changed because it can be used within another key.\hypertarget{doc_dev_metadata_md_autotoc_md2704}{}\doxysection{See also}\label{doc_dev_metadata_md_autotoc_md2704}
+
+\begin{DoxyItemize}
+\item \href{/home/jenkins/workspace/libelektra-release/doc/METADATA.ini}{\texttt{ all available metadata}} in Elektra (defines Spec\+Elektra)
+\item \mbox{\hyperlink{doc_help_elektra-glossary_md}{glossary}} 
+\end{DoxyItemize}

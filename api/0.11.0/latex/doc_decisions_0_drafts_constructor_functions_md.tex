@@ -1,0 +1,206 @@
+\label{doc_decisions_0_drafts_constructor_functions_md_md_doc_decisions_0_drafts_constructor_functions}%
+\Hypertarget{doc_decisions_0_drafts_constructor_functions_md_md_doc_decisions_0_drafts_constructor_functions}%
+ \hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1750}{}\doxysection{Problem}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1750}
+The structs for {\ttfamily Key} and {\ttfamily Key\+Set} are opaque, i.\+e., only the {\ttfamily typedef}s are part of the public headers, the actual {\ttfamily struct} definitions are in a private header. Because of that, {\ttfamily libelektra-\/core} must provide a way to construct a new {\ttfamily Key} or {\ttfamily Key\+Set}.
+
+However, since both {\ttfamily Key} and {\ttfamily Key\+Set} are rather complex structures consisting of multiple parts (name, value, metadata, and collection of {\ttfamily Key}s respectively), it is not straightforward to create the best API for these functions.\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1751}{}\doxysection{Constraints}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1751}
+
+\begin{DoxyItemize}
+\item Elektra has many bindings. The constructor functions must be callable from all these bindings, with no additional effort. In particular, that means the constructors must not use macros.
+\item Constructor functions should use as little resources as feasible. {\ttfamily malloc} and {\ttfamily memcpy} calls should be kept to a minimum and temporary allocations should be avoided.
+\item In accordance with the \mbox{\hyperlink{doc_decisions_4_decided_keyname_md}{Namespace and Name of Keys}}Namespace and Name of Keys\char`\"{} decision\char`\"{}, the constructor functions must not use the escaped name. Only the unescaped name may be used, but the namespace may be passed as a separate parameter, if this has benefits.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1752}{}\doxysection{Assumptions}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1752}
+
+\begin{DoxyItemize}
+\item There will be additional \mbox{\hyperlink{doc_decisions_0_drafts_builder_functions_md}{builder functions}} built on top of the constructor functions. These builder functions will live outside {\ttfamily libelektra-\/core}, but user code is expected to use builders rather than calling constructors directly.
+\item Sometimes, it may be desirable to have a function that can construct a {\ttfamily Key}, including name, value and metadata, or even whole {\ttfamily Key\+Set} in a single call. We assume these cases overlap almost entirely, with the cases where we expect builder functions to be used. Therefore, it doesn\textquotesingle{}t matter much, if the constructor functions don\textquotesingle{}t allow this can of {\ttfamily Key}/{\ttfamily Key\+Set} construction and extra calls to e.\+g., {\ttfamily key\+Set\+Value} are needed.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1753}{}\doxysection{Considered Alternatives}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1753}
+\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1754}{}\doxysubsection{No Arguments}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1754}
+The constructor functions are just specialized allocators\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{keywordtype}{void});}
+\DoxyCodeLine{KeySet * \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (\textcolor{keywordtype}{void});}
+
+\end{DoxyCode}
+
+
+While this would work decently well for {\ttfamily ks\+New} (don\textquotesingle{}t allocate array, only allocate array on first {\ttfamily Key} insertion), there is an issue for {\ttfamily key\+New}. A {\ttfamily Key} must have a name. Therefore, {\ttfamily key\+New} must set some default name in the {\ttfamily Key} it returns.
+
+Even if there was a suitable default name, it would still be wasteful, since in many (almost all) cases, the name will soon be replaced via a {\ttfamily key\+Set\+Name} call.
+
+A clear advantage of this option is that the very simple API means the functions are callable without issue from basically any language.\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1755}{}\doxysubsection{Minimal Arguments}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1755}
+Instead of taking no arguments at all, the constructor functions take the minimal number of arguments\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// ns is separate to allow usage of ELEKTRA\_NS\_* constants}}
+\DoxyCodeLine{\textcolor{comment}{// size is needed because name can contain \(\backslash\)0}}
+\DoxyCodeLine{Key * \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ElektraNamespace ns, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name, \textcolor{keywordtype}{size\_t} size);}
+\DoxyCodeLine{KeySet * \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (\textcolor{keywordtype}{size\_t} alloc);}
+
+\end{DoxyCode}
+
+
+This solves the default name issue for {\ttfamily key\+New}. For {\ttfamily ks\+New} there was no issue and the {\ttfamily alloc} parameter isn\textquotesingle{}t strictly speaking needed, but it can still be helpful. For example, if the caller knows they will insert 100 keys, the can call {\ttfamily ks\+New (100)} to avoid later allocations to resize the array in the {\ttfamily Key\+Set}.
+
+The API is also still simple enough that it can be called from any binding.\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1756}{}\doxysubsubsection{Sidenote\+: Bundle struct}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1756}
+Depending on the rest of the {\ttfamily libelektra-\/core} API, it may make sense to use a public struct to bundle the arguments of {\ttfamily key\+New}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
+\DoxyCodeLine{  ElektraNamespace ns;}
+\DoxyCodeLine{  \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name;}
+\DoxyCodeLine{  \textcolor{keywordtype}{size\_t} size;}
+\DoxyCodeLine{\} KeyName;}
+\DoxyCodeLine{}
+\DoxyCodeLine{Key * keyNewStruct (KeyName name);}
+\DoxyCodeLine{\textcolor{comment}{// called as e.g.: keyNew ((KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = "{}foo\(\backslash\)0bar"{}, .size = 7 \})}}
+\DoxyCodeLine{Key * keyNewStructAlt (\textcolor{keyword}{const} KeyName * name);}
+\DoxyCodeLine{\textcolor{comment}{// called as e.g.: keyNew (\&(KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = "{}foo\(\backslash\)0bar"{}, .size = 7 \})}}
+
+\end{DoxyCode}
+
+
+Whether the struct would be passed by value or as a pointer also depends on the rest of the API.
+
+An important distinction between {\ttfamily Key} and {\ttfamily Key\+Name} in this solution is that {\ttfamily Key} can be seen as more of class, while {\ttfamily Key\+Name} is just a bundle of fields. That is why {\ttfamily Key} is opaque and {\ttfamily Key\+Name} would be public. The fields of a {\ttfamily Key} are implementation details, but {\ttfamily Key\+Name} is just a kind of alias for its fields.\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1757}{}\doxysubsection{Common Arguments}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1757}
+Lots of {\ttfamily Key}s will have a value from the moment they are created, e.\+g., {\ttfamily meta\+:/} keys are rarely created without a value. Therefore, it might make sense if {\ttfamily key\+New} took an optional (=nullable) argument for the value of the key\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
+\DoxyCodeLine{  \textcolor{keyword}{const} \textcolor{keywordtype}{void} * value;}
+\DoxyCodeLine{  \textcolor{keywordtype}{size\_t} size;}
+\DoxyCodeLine{\} KeyValue;}
+\DoxyCodeLine{}
+\DoxyCodeLine{Key * \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{keyword}{const} KeyName * name, \textcolor{keyword}{const} KeyValue * value);}
+\DoxyCodeLine{\textcolor{comment}{// called as e.g.:}}
+\DoxyCodeLine{\textcolor{comment}{// keyNew ((KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = "{}foo\(\backslash\)0bar"{}, .size = 7 \}, NULL)}}
+\DoxyCodeLine{\textcolor{comment}{// keyNew ((KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = "{}foo\(\backslash\)0bar"{}, .size = 7 \}, (KeyValue)\{.value = "{}1234"{}, .size = 5\})}}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Note}}\+: Because this solution is much easier with the bundle structs, we use them here. It would work without them as well, but we\textquotesingle{}d need two optional arguments (pointer and size) for the value. Similarly, passing the bundle struct by value would mean you have to pass {\ttfamily (Key\+Value)\{ .value = NULL, .size = 0 \}} instead of just {\ttfamily NULL}. \end{quote}
+For {\ttfamily Key\+Set}, we can pass a list of {\ttfamily Key $\ast$} to initialize the {\ttfamily Key\+Set} with\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// every variadic argument must be a Key *, the last argument must be NULL}}
+\DoxyCodeLine{KeySet * \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (\textcolor{keywordtype}{size\_t} alloc, ...);}
+
+\end{DoxyCode}
+
+
+This API is easy to call in C\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * ks = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (3, key1, key2, key3, NULL);}
+
+\end{DoxyCode}
+
+
+However, many languages for which we provide bindings can\textquotesingle{}t use variadic arguments. So it would make more sense to have a function like this only in a C-\/specific library ({\ttfamily libelektra-\/lowlevel-\/c}), and have the version from above in {\ttfamily libelektra-\/core}.
+
+An alternative would be to use an array argument\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// last element of `keys` must be NULL}}
+\DoxyCodeLine{KeySet * \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (\textcolor{keywordtype}{size\_t} alloc, Key * keys[]);}
+
+\end{DoxyCode}
+
+
+This is easier to call from other languages, but it\textquotesingle{}s slightly more cumbersome in C\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{KeySet * ks = \mbox{\hyperlink{group__keyset_ga671e1aaee3ae9dc13b4834a4ddbd2c3c}{ksNew}} (3, (Key*[])\{key1, key2, key3, NULL\});}
+
+\end{DoxyCode}
+
+
+The array parameter also has some other advantages. We could copy it with a single {\ttfamily memcpy} and use something like {\ttfamily qsort}, instead of copying the {\ttfamily Key $\ast$} one by one from the variadic arguments. Also, a {\ttfamily Key $\ast$\mbox{[}\mbox{]}} provides more type safety compared to a variadic arguments.\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1758}{}\doxysubsection{Full Arguments}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1758}
+For {\ttfamily ks\+New} the above solution already uses the full set of arguments to initialize a {\ttfamily Key\+Set} fully.
+
+For {\ttfamily Key} we\textquotesingle{}d also need to take metadata.
+
+\begin{quote}
+{\bfseries{Note}}\+: This solution is described only for completeness\textquotesingle{}s sake. We assume that \mbox{\hyperlink{doc_decisions_0_drafts_builder_functions_md}{Builder Functions for {\ttfamily Key} and {\ttfamily Key\+Set}}}builder functions\char`\"{}\char`\"{} exist outside of {\ttfamily libelektra-\/core}. With this solution those builders would be superfluous. \end{quote}
+\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1759}{}\doxysubsubsection{Variadic Arguments}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1759}
+This could be done by using a system of variadic arguments, called like so\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with value 1234 and metadata: meta:/type=long, meta:/length/min=4}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}, \textcolor{stringliteral}{"{}bar"{}}, NULL, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, 5, \textcolor{stringliteral}{"{}1234"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8a040582834bb2d90049947d7ef74e87e2}{KEY\_META}}, \textcolor{stringliteral}{"{}type"{}}, NULL, \textcolor{stringliteral}{"{}long"{}}, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8a040582834bb2d90049947d7ef74e87e2}{KEY\_META}}, \textcolor{stringliteral}{"{}length"{}}, \textcolor{stringliteral}{"{}min"{}}, NULL, 4, NULL);}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with value 1234 and no metadata}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}, \textcolor{stringliteral}{"{}bar"{}}, NULL, \mbox{\hyperlink{group__key_gga9b703ca49f48b482def322b77d3e6bc8ac66e4a49d09212b79f5754ca6db5bd2e}{KEY\_VALUE}}, 5, \textcolor{stringliteral}{"{}1234"{}}, NULL);}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with no value and no metadata}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ELEKTRA\_NS\_SYSTEM, \textcolor{stringliteral}{"{}foo"{}}, \textcolor{stringliteral}{"{}bar"{}}, NULL, NULL);}
+
+\end{DoxyCode}
+
+
+However, as discussed above, such functions are hard to call from many other languages. You also loose type safety in C and the function is not particularly intuitive to use. To emphasize this last point, consider that the signature for the above {\ttfamily key\+New} would likely be\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Key * \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (ElektraNamespace ns, ...);}
+
+\end{DoxyCode}
+
+
+Things can be slightly improved, by passing the keynames as a single string, but it still a bad API, with lost of potential for misuse.\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1760}{}\doxysubsubsection{Metadata Array}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1760}
+A better option would be to build on the bundle structs option from above, by adding an new struct for metadata\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
+\DoxyCodeLine{  \textcolor{comment}{// no namespace, because that is always ELEKTRA\_NS\_META}}
+\DoxyCodeLine{  \textcolor{keyword}{const} \textcolor{keywordtype}{char} * name;}
+\DoxyCodeLine{  \textcolor{keywordtype}{size\_t} nameSize;}
+\DoxyCodeLine{  KeyValue value;}
+\DoxyCodeLine{\} KeyMeta;}
+\DoxyCodeLine{}
+\DoxyCodeLine{Key * \mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (\textcolor{keyword}{const} KeyName * name, \textcolor{keyword}{const} KeyValue * value, \textcolor{keyword}{const} KeyMeta metadata[]);}
+
+\end{DoxyCode}
+
+
+This could be called as\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{comment}{// system:/foo/bar with value 1234 and metadata: meta:/type=long, meta:/length/min=4}}
+\DoxyCodeLine{\mbox{\hyperlink{group__key_gad23c65b44bf48d773759e1f9a4d43b89}{keyNew}} (}
+\DoxyCodeLine{  \&(KeyName)\{.ns = ELEKTRA\_NS\_SYSTEM, .name = \textcolor{stringliteral}{"{}foo\(\backslash\)0bar"{}}, .size = 8 \},}
+\DoxyCodeLine{  \&(KeyValue)\{.value = \textcolor{stringliteral}{"{}1234"{}}, .size = 5\},}
+\DoxyCodeLine{  (KeyMeta[])\{}
+\DoxyCodeLine{    \{.name = \textcolor{stringliteral}{"{}type"{}}, .nameSize = 5, .value = \{.value = \textcolor{stringliteral}{"{}long"{}}, .size = 5\}\},}
+\DoxyCodeLine{    \{.name = \textcolor{stringliteral}{"{}length\(\backslash\)0min"{}}, .nameSize = 11, .value = \{.value = \textcolor{stringliteral}{"{}4"{}}, .size = 2\}\},}
+\DoxyCodeLine{  \});}
+
+\end{DoxyCode}
+\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1761}{}\doxysection{Decision}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1761}
+{\bfseries{Suggestion\+:}} Minimal Arguments\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1762}{}\doxysection{Rationale}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1762}
+
+\begin{DoxyItemize}
+\item The \char`\"{}\+Minimal Arguments\char`\"{} solution can still be considered minimal, while the more complex solutions are not really minimal anymore.
+\item For {\ttfamily libelektra-\/core} \char`\"{}\+Minimal Arguments\char`\"{} is enough. The more complex APIs can be provided as \mbox{\hyperlink{doc_decisions_0_drafts_builder_functions_md}{builder functions}} in other libraries.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1763}{}\doxysection{Implications}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1763}
+
+\begin{DoxyItemize}
+\item You need an extra library beyond {\ttfamily libelektra-\/core} to construct {\ttfamily Key}s and {\ttfamily Key\+Set}s in a single call.
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1764}{}\doxysection{Related Decisions}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1764}
+
+\begin{DoxyItemize}
+\item \mbox{\hyperlink{doc_decisions_4_decided_keyname_md}{Namespace and Name of Keys}}
+\item \mbox{\hyperlink{doc_decisions_0_drafts_builder_functions_md}{Builder Functions for \`{}\+Key\`{} and \`{}\+Key\+Set\`{}}}
+\end{DoxyItemize}\hypertarget{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1765}{}\doxysection{Notes}\label{doc_decisions_0_drafts_constructor_functions_md_autotoc_md1765}

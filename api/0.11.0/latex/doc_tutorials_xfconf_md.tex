@@ -1,0 +1,163 @@
+\label{doc_tutorials_xfconf_md_md_doc_tutorials_xfconf}%
+\Hypertarget{doc_tutorials_xfconf_md_md_doc_tutorials_xfconf}%
+ Elektra provides the ability to work hand in hand with Xfconf. Depending on what you want, you can use Elektra in different ways.\hypertarget{doc_tutorials_xfconf_md_autotoc_md4732}{}\doxysection{Altering Existing Xfconf Settings}\label{doc_tutorials_xfconf_md_autotoc_md4732}
+Elektra provides an Xfconf storage plugin that allows you to change all the configuration settings made by Xfconf.
+
+To access the properties which are owned by Xfconf, the appropriate channel must be mounted. Some known channel names are
+
+
+\begin{DoxyItemize}
+\item {\bfseries{Thunar}}\+: thunar
+\item {\bfseries{Xfwm}}\+: xfwm4
+\item {\bfseries{Xfce Panel}}\+: xfce4-\/panel
+\end{DoxyItemize}
+
+Assuming that the properties of Thunar anf Xfwm are to be changed, the following command can be used to mount the channels. If you are operating in a headless console session (e.\+g. docker), make sure that dbus is running. If it is not, {\ttfamily export \$(dbus-\/launch)} can be used for that.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{touch none}
+\DoxyCodeLine{kdb mount -\/R noresolver none /sw/xfce4/thunar xfconf channel=thunar}
+\DoxyCodeLine{kdb mount -\/R noresolver none /sw/xfce4/xfwm4 xfconf channel=xfwm4}
+
+\end{DoxyCode}
+
+
+{\bfseries{Warning}}\+: The following operations will cause permanent changes to your system, please handle with care.
+
+Thunar should now be ready to be configured by Elektra. The following commands can be used to configure some selected options of Xfce.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Use the details view instead of the grid view in Thunar}
+\DoxyCodeLine{kdb set system:/sw/xfce4/thunar/last-\/view ThunarDetailsView}
+\DoxyCodeLine{\#> Create a new key system:/sw/xfce4/thunar/last-\/view with string "{}ThunarDetailsView"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Do not perform a recursive search on network directories}
+\DoxyCodeLine{kdb set system:/sw/xfce4/thunar/misc-\/recursive-\/search THUNAR\_RECURSIVE\_SEARCH\_LOCAL}
+\DoxyCodeLine{\#> Create a new key system:/sw/xfce4/thunar/misc-\/recursive-\/search with string "{}THUNAR\_RECURSIVE\_SEARCH\_LOCAL"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Move the window buttons to the left}
+\DoxyCodeLine{kdb set system:/sw/xfce4/xfwm4/general/button\_layout "{}CM|O"{}}
+\DoxyCodeLine{\#> Create a new key system:/sw/xfce4/xfwm4/general/button\_layout with string "{}CM|O"{}}
+
+\end{DoxyCode}
+
+
+The result can then be verified using both Elektra and {\ttfamily xfconf-\/query}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb get /sw/xfce4/thunar/last-\/view}
+\DoxyCodeLine{\#> ThunarDetailsView}
+\DoxyCodeLine{}
+\DoxyCodeLine{xfconf-\/query -\/c thunar -\/p /last-\/view}
+\DoxyCodeLine{\#> ThunarDetailsView}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get /sw/xfce4/thunar/misc-\/recursive-\/search}
+\DoxyCodeLine{\#> THUNAR\_RECURSIVE\_SEARCH\_LOCAL}
+\DoxyCodeLine{}
+\DoxyCodeLine{xfconf-\/query -\/c thunar -\/p /misc-\/recursive-\/search}
+\DoxyCodeLine{\#> THUNAR\_RECURSIVE\_SEARCH\_LOCAL}
+\DoxyCodeLine{}
+\DoxyCodeLine{kdb get /sw/xfce4/xfwm4/general/button\_layout}
+\DoxyCodeLine{\#> CM|O}
+\DoxyCodeLine{}
+\DoxyCodeLine{xfconf-\/query -\/c thunar -\/p /xfwm4/general/button\_layout}
+\DoxyCodeLine{\#> CM|O}
+
+\end{DoxyCode}
+
+
+Using a text editor, you can also view the changes in the file {\ttfamily \$\{XDG\+\_\+\+CONFIG\+\_\+\+HOME\+:-\/\$\+HOME/.config\}/xfce4/xfconf/xfce-\/perchannel-\/xml/thunar.xml}. However, this file may not be up-\/to-\/date since the Xfconf daemon has a caching mechanism.
+
+When you are finished configuring the Xfce component, you should unmount the corresponding channel with the following command.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb umount /sw/xfce4/thunar/}
+\DoxyCodeLine{kdb umount /sw/xfce4/xfwm4/}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_xfconf_md_autotoc_md4733}{}\doxysection{Replacing Xfconf with Elektra}\label{doc_tutorials_xfconf_md_autotoc_md4733}
+It is also possible to replace Xfconf entirely with Elektra. The Xfconf binding in Elektra implements the Xfconf API in such a way that it can be used as a drop-\/in replacement.\hypertarget{doc_tutorials_xfconf_md_autotoc_md4734}{}\doxysubsection{Setup}\label{doc_tutorials_xfconf_md_autotoc_md4734}
+To start, the Xfconf library must be replaced with the Xfconf binding. Replacing the system libraries may require root privileges.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Use Elektra instead of Xfconf system-\/wide}
+\DoxyCodeLine{kdb xfconf-\/system-\/lib-\/replace}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Use Elektra instead of Xfconf only for the current user}
+\DoxyCodeLine{kdb xfconf-\/user-\/lib-\/replace \&\& source \string~/.xprofile}
+
+\end{DoxyCode}
+
+
+Note that a system upgrade may reset the system library replacement.
+
+All applications that normally use Xfconf will now use Elektra instead. This can be verified using both {\ttfamily xfconf-\/query} and {\ttfamily kdb}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\# Set an Xfconf property with Elektra}
+\DoxyCodeLine{kdb set system:/sw/org/xfce/xfconf/test/hello world}
+\DoxyCodeLine{\#> Create a new key system:/sw/org/xfce/xfconf/test/hello with string "{}world"{}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\# Verify it with Xfconf}
+\DoxyCodeLine{xfconf-\/query -\/c test -\/p /hello}
+\DoxyCodeLine{\#> world}
+
+\end{DoxyCode}
+\hypertarget{doc_tutorials_xfconf_md_autotoc_md4735}{}\doxysubsection{Run Xfce Using Elektra}\label{doc_tutorials_xfconf_md_autotoc_md4735}
+The Xfce desktop provides some default settings which are loaded on first login. However, if you are using Elektra instead of Xfconf, you will need to load these defaults manually. This can be done entirely using {\ttfamily kdb}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb xfconf-\/populate}
+
+\end{DoxyCode}
+
+
+Once this is done, an Xfce session can be started either from the login manager or manually. From this point on, the Xfce desktop will read and write to the Elektra database. However, Xfce also uses some properties that are not stored in Xfconf. These properties will not work properly. An example of such a property is the Gtk theme.\hypertarget{doc_tutorials_xfconf_md_autotoc_md4736}{}\doxysubsection{Reverting the Libraries}\label{doc_tutorials_xfconf_md_autotoc_md4736}
+If you want to stop using Elektra instead of Xfconf, you have to choose the right option depending on how you did the setup.
+
+If you did the setup using the system libraries, it is sufficient to run it\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kdb xfconf-\/system-\/lib-\/restore}
+
+\end{DoxyCode}
+
+
+If you have chosen the user only way, you will need to edit your {\ttfamily $\sim$/.xprofile} file and remove the statements where the {\ttfamily LD\+\_\+$\ast$} variables contain anything related to Xfconf.\hypertarget{doc_tutorials_xfconf_md_autotoc_md4737}{}\doxysection{Data-\/\+Types Used in Xfconf}\label{doc_tutorials_xfconf_md_autotoc_md4737}
+Xfconf uses the glib2 type system. This system is not fully compatible with Elektra. However, all values are stored in Elektra in their string representation when used as a drop-\/in replacement. In addition, the name of the glib2 type is stored in Elektra as a metakey. This makes Xfconf\textquotesingle{}s type system completely independent of Elektra, at the cost of memory and computational resources.
+
+The following table shows a comparison between the different type systems.
+
+\tabulinesep=1mm
+\begin{longtabu}spread 0pt [c]{*{4}{|X[-1]}|}
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Xfconf   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Elektra   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Xfce Property Example (Channel, Property)   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Note    }\\\cline{1-4}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\cellcolor{\tableheadbgcolor}\textbf{ Xfconf   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Elektra   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Xfce Property Example (Channel, Property)   }&\PBS\centering \cellcolor{\tableheadbgcolor}\textbf{ Note    }\\\cline{1-4}
+\endhead
+{\ttfamily string}   &{\ttfamily char$\ast$}   &{\ttfamily xfce4-\/panel}, {\ttfamily /panels/panel-\/1/position}   &\\\cline{1-4}
+{\ttfamily uchar}   &{\ttfamily kdb\+\_\+octet\+\_\+t}   &&Not implemented in the Xfconf binding.    \\\cline{1-4}
+{\ttfamily char}   &{\ttfamily kdb\+\_\+char\+\_\+t}   &&Not implemented in the Xfconf binding.    \\\cline{1-4}
+{\ttfamily uint16}   &{\ttfamily kdb\+\_\+unsigned\+\_\+short\+\_\+t}   &&Not implemented in the Xfconf binding.    \\\cline{1-4}
+{\ttfamily int16}   &{\ttfamily kdb\+\_\+short\+\_\+t}   &&Not implemented in the Xfconf binding.    \\\cline{1-4}
+{\ttfamily uint}   &{\ttfamily kdb\+\_\+unsigned\+\_\+long\+\_\+t}   &{\ttfamily xfce4-\/panel}, {\ttfamily /panels/panel-\/1/length}   &\\\cline{1-4}
+{\ttfamily int}   &{\ttfamily kdb\+\_\+long\+\_\+t}   &{\ttfamily xfce4-\/session}, {\ttfamily /sessions/\+Count}   &\\\cline{1-4}
+{\ttfamily uint64}   &{\ttfamily kdb\+\_\+unsigned\+\_\+long\+\_\+long\+\_\+t}   &&\\\cline{1-4}
+{\ttfamily int64}   &{\ttfamily kdb\+\_\+long\+\_\+long\+\_\+t}   &&\\\cline{1-4}
+{\ttfamily float}   &{\ttfamily kdb\+\_\+float\+\_\+t}   &&\\\cline{1-4}
+{\ttfamily double}   &{\ttfamily kdb\+\_\+double\+\_\+t}   &&\\\cline{1-4}
+{\ttfamily bool}   &{\ttfamily kdb\+\_\+boolean\+\_\+t}   &{\ttfamily xfce4-\/panel}, {\ttfamily /panels/panel-\/1/position-\/locked}   &\\\cline{1-4}
+{\ttfamily array}   &&{\ttfamily xfce4-\/panel}, {\ttfamily /panels}   &No direct type in Elektra. The key name structure determines whether it is an array or not.    \\\cline{1-4}
+{\ttfamily empty}   &&{\ttfamily xfce4-\/panel}, {\ttfamily /panels/panel-\/1}   &Does not exist in Elektra. Paths in Elektra which are no leaf nodes will be equally handled.   \\\cline{1-4}
+\end{longtabu}

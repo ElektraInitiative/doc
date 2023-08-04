@@ -1,0 +1,84 @@
+\label{doc_decisions_4_decided_library_split_md_md_doc_decisions_4_decided_library_split}%
+\Hypertarget{doc_decisions_4_decided_library_split_md_md_doc_decisions_4_decided_library_split}%
+ \hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2169}{}\doxysection{Problem}\label{doc_decisions_4_decided_library_split_md_autotoc_md2169}
+Only {\ttfamily libelektra-\/core} is supposed to access private data, but this contradicts the goal to keep the library minimal. {\ttfamily \mbox{\hyperlink{kdbprivate_8h}{kdbprivate.\+h}}} was too generic, it contained many other parts next to the struct definitions of Key/\+Key\+Set.\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2170}{}\doxysection{Constraints}\label{doc_decisions_4_decided_library_split_md_autotoc_md2170}
+
+\begin{DoxyItemize}
+\item The \href{https://www.open-std.org/jtc1/sc22/wg14/}{\texttt{ C99 standard, section 5.\+2.\+4.\+1}} gives following limit\+: 4095 external identifiers in one translation unit
+\item Some parts of Elektra, like {\ttfamily mmapstorage} need access to private data structure.
+\item Elektra does not support several different struct definitions of Key/\+Key\+Set. Alternative implementations that want to coexist (e.\+g. {\ttfamily mmapstorage} should still work) must use the same struct definitions of Key/\+Key\+Set.
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2171}{}\doxysection{Assumptions}\label{doc_decisions_4_decided_library_split_md_autotoc_md2171}
+\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2172}{}\doxysection{Considered Alternatives}\label{doc_decisions_4_decided_library_split_md_autotoc_md2172}
+
+\begin{DoxyItemize}
+\item keep current situation
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2173}{}\doxysection{Decision}\label{doc_decisions_4_decided_library_split_md_autotoc_md2173}
+Also allow {\ttfamily libelektra-\/extra} (and maybe other explicitly documented libraries) to access private Key/\+Key\+Set. Put struct definitions of Key/\+Key\+Set in a separate header file, which gets included by parts that need it.
+
+All currently planned libraries and their respective API prefixes are listed in the \href{\#notes}{\texttt{ Notes}} below.\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2174}{}\doxysection{Rationale}\label{doc_decisions_4_decided_library_split_md_autotoc_md2174}
+
+\begin{DoxyItemize}
+\item allows various users (plugins, applications) to link to (more or less) exactly what they need
+\item allows symbol versioning on different levels (for different evolving libraries)
+\item allows alternative implementation of parts of Elektra, e.\+g. a libcore written in Rust
+\item facilitates code reuse between plugins
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2175}{}\doxysection{Implications}\label{doc_decisions_4_decided_library_split_md_autotoc_md2175}
+
+\begin{DoxyItemize}
+\item we need to clearly communicate which plugins must be exactly in the version of the {\ttfamily libelektra-\/core}
+\item all libraries will share a versioning scheme and are only supported if used in the same version
+\end{DoxyItemize}\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2176}{}\doxysection{Related Decisions}\label{doc_decisions_4_decided_library_split_md_autotoc_md2176}
+\hypertarget{doc_decisions_4_decided_library_split_md_autotoc_md2177}{}\doxysection{Notes}\label{doc_decisions_4_decided_library_split_md_autotoc_md2177}
+
+\begin{DoxyItemize}
+\item {\ttfamily libelektra-\/core}\+: The core minimal API of Elektra. Defines what {\ttfamily Elektra\+Key} and {\ttfamily Elektra\+Keyset} are, and contains the minimal API for manipulating them.
+
+{\bfseries{Prefixes\+:}} {\ttfamily elektra\+Key$\ast$} and {\ttfamily elektra\+Keyset$\ast$}
+\item {\ttfamily libelektra-\/kdb}\+: The main API for interfacing with the KDB.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Kdb$\ast$}
+\item {\ttfamily libelektra-\/lowlevel-\/c}\+: Additional C APIs that are useful when working with {\ttfamily Elektra\+Key} and {\ttfamily Elektra\+Keyset}, but not are not minimal API. Specifically targets C and not intended for use via bindings.
+
+{\bfseries{Prefixes\+:}} {\ttfamily elektra\+CKey$\ast$}, {\ttfamily elektra\+CKeyset$\ast$}
+\item {\ttfamily libelektra-\/highlevel-\/c}\+: The C high-\/level API for reading/writing configuration with Elektra. Intended for use by applications. Partially intended for use with code-\/generation. Specifically targets C and not intended for use via bindings.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Hlc$\ast$} (Note\+: Even though there isn\textquotesingle{}t any other {\ttfamily highlevel} implementation, {\ttfamily c} suffix to show this lib is only for C)
+\item {\ttfamily libelektra-\/opts}\+: The API for parsing command-\/line arguments according to Elektra\textquotesingle{}s spec.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Opts$\ast$}
+\item {\ttfamily libelektra-\/notification}\+: The API for setting up callbacks and automatically updated variables linked to changes in the KDB.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Notification$\ast$}
+\item {\ttfamily libelektra-\/io}\+: Elektra\textquotesingle{}s API for asynchronous operations.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Io$\ast$}
+\item {\ttfamily libelektra-\/merge}\+: The API for merging and/or detecting conflicts between two keysets.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Merge$\ast$}
+\item {\ttfamily libelektra-\/plugin}\+: The plugin API. It forms the base for all plugins and contains the functions required to implement a plugin. It also contains the API for interacting with (other) plugins. This includes loading plugins and calling exported functions.
+
+Note\+: This library comes with two separate headers. One for implementing a plugin and another for loading/calling plugins.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Plugin$\ast$} (Note\+: previously {\ttfamily libelektra-\/plugin} merged with {\ttfamily libelektra-\/invoke})
+\item {\ttfamily libelektra-\/pluginload}\+: Internal static library, linked into {\ttfamily libelektra-\/plugin} (re-\/exported) and {\ttfamily libelektra-\/kdb} (not exported). Contains the code for loading plugins.
+
+{\bfseries{Prefix\+:}}\+: {\ttfamily elektra\+Plugin$\ast$} (shared with {\ttfamily libelektra-\/plugin} because exported there)
+\item {\ttfamily libelektra-\/mount}\+: The API for manipulating mountpoints.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Mount$\ast$}
+\item {\ttfamily libelektra-\/type}\+: The API that defines Elektra\textquotesingle{}s type system.
+
+{\bfseries{Names\+:}} {\ttfamily elektra$<$TYPE$>$To\+String} and {\ttfamily elektra\+Key\+To$<$TYPE$>$} (Note\+: extracted from {\ttfamily libelektra-\/ease})
+\item {\ttfamily libelektra-\/extra}\+: Contains extra APIs for {\ttfamily Elektra\+Key} and {\ttfamily Elektra\+Keyset} beyond the minimal API of {\ttfamily libelektra-\/core}. These APIs are things that could be considered part of the classes for {\ttfamily Elektra\+Key} and {\ttfamily Elektra\+Keyset}, but which we do not consider minimal. The APIs should not specifically target C (see {\ttfamily libelektra-\/lowlevel-\/c} for that) and should be usable via bindings (if appropriate for the other language).
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Extra$\ast$} (Note\+: includes {\ttfamily elektra\+Extra\+Keyset\+Cut}, etc.; may also include stuff from old {\ttfamily libelektra-\/ease} or {\ttfamily libelektra-\/meta})
+\item {\ttfamily libelektra-\/ease}\+: A collection of various other APIs that help when interacting with {\ttfamily Elektra\+Key} and {\ttfamily Elektra\+Keyset}. These APIs go beyond what could be considered part of the \char`\"{}classes\char`\"{} for {\ttfamily Elektra\+Key} and {\ttfamily Elektra\+Keyset} (e.\+g., SHA256 hashes). The APIs should not specifically target C (see {\ttfamily libelektra-\/lowlevel-\/c} for that) and should be usable via bindings (if appropriate for the other language).
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Ease$\ast$} (Note\+: rest of old {\ttfamily libelektra-\/ease}, merged with {\ttfamily libelektra-\/meta}; cleanup needed)
+\item {\ttfamily libelektra-\/utility}\+: Standalone helper functions that don\textquotesingle{}t depend on {\ttfamily libelektra-\/core}
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra\+Util$\ast$}
+\item {\ttfamily libelektra-\/base}\+: Internal static library, linked into {\ttfamily libelektra-\/core} (not exported) and {\ttfamily libelektra-\/utility} (partially re-\/exported). Contains helper functions for e.\+g., memory allocations, string formatting, etc.
+
+{\bfseries{Prefix\+:}} {\ttfamily elektra$\ast$} (for internal), {\ttfamily elektra\+Util$\ast$} (for exported) 
+\end{DoxyItemize}

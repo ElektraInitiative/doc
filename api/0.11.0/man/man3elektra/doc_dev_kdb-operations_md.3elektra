@@ -1,0 +1,240 @@
+.TH "doc_dev_kdb-operations_md" 3elektra "Fri Aug 4 2023" "Version 0.11.0" "Elektra" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+doc_dev_kdb-operations_md \- KDB Operations 
+ There are four main \fIoperations\fP in \fClibelektra-kdb\fP: \fCopen\fP, \fCget\fP, \fCset\fP and \fCclose\fP\&. For each of these there is a \fCkdb*\fP function the user calls to trigger the operation and plugins export a function for each of the operations they support (at least \fCget\fP)\&.
+.PP
+Additionally, plugins may implement \fCcommit\fP and \fCerror\fP\&. These are part of the \fCset\fP operation and there is no corresponding \fCkdbCommit\fP or \fCkdbError\fP function available in \fClibelektra-kdb\fP\&.
+.PP
+The operations \fCget\fP and \fCset\fP also have different \fIphases\fP:
+.PP
+.IP "\(bu" 2
+The \fCget\fP operation has: \fCinit\fP, \fCresolver\fP, \fCcachecheck\fP, \fCprestorage\fP, \fCstorage\fP and \fCpoststorage\fP\&.
+.IP "\(bu" 2
+The \fCset\fP operation has: \fCresolver\fP, \fCprestorage\fP, \fCstorage\fP and \fCpoststorage\fP followed by \fCprecommit\fP, \fCcommit\fP and \fCpostcommit\fP if the previous phases where successful or by \fCprerollback\fP, \fCrollback\fP and \fCpostrollback\fP if the previous phases failed\&.
+.PP
+.PP
+These phases are implemented by a backend plugin\&. Read the \fBDocumentation on Backend Plugins\fP for more information on what backend plugins do\&.
+.PP
+.RS 4
+\fBNote\fP The steps of the operations described below, are referenced in the source code with \fC// Step X\fP comments\&. 
+.RE
+.PP
+.SH "<tt>open</tt> Operation"
+.PP
+The \fCopen\fP operation implemented in \fCkdbOpen\fP is the first thing that happens to all \fCKDB\fP instances\&.
+.PP
+The basic flow of this operation is:
+.PP
+.IP "1." 4
+Create empty \fCKDB\fP instance
+.IP "2." 4
+Configure \fCKDB\fP instance for bootstrap
+.IP "3." 4
+Run bootstrap \fCget\fP operation: This loads the contents of \fCsystem:/elektra/mountpoints\fP so that the mountpoints can be configured\&.
+.IP "4." 4
+Process contract and set up plugins for hooks (see \fBHooks\fP)
+.IP "5." 4
+Parse mountpoints: This transforms the contents of \fCsystem:/elektra/mountpoints\fP into the internal state stored in a \fCKDB\fP instance\&.
+.IP "6." 4
+Reconfigure \fCKDB\fP with real mountpoints: This switches the \fCKDB\fP instance from bootstrap mode to use the real mountpoint state created above\&.
+.IP "7." 4
+Add hard coded mountpoints to \fCKDB\fP instance: There are a few hard coded mountpoints (root mountpoints, \fCsystem:/elektra/modules\fP, \fCsystem:/elektra/version\fP, etc\&.) that are always present\&. They are added in this step\&.
+.PP
+.PP
+Namespaces in mountpoint configs:
+.PP
+.IP "\(bu" 2
+\fCdir:/\fP, \fCuser:/\fP and \fCsystem:/\fP mountpoints can be created without restrictions, except for the reserved sections listed below\&.
+.IP "\(bu" 2
+\fCspec:/\fP mountpoints can be created with the same restrictions, but they are also treated specially during \fCget\fP and \fCset\fP\&.
+.IP "\(bu" 2
+\fCproc:/\fP mountpoints are always read-only and receive special treatment during \fCget\fP
+.IP "\(bu" 2
+\fCdefault:/\fP mountpoints are read-only and receive special treatment during \fCget\fP, specifically they only go through the \fCpoststorage\fP phase
+.IP "\(bu" 2
+mountpoints in all other namespaces are entirely illegal
+.PP
+.PP
+.RS 4
+\fBNote\fP The special treatments of the various namespaces are explained below in the sections for the \fCget\fP and \fCset\fP operation\&. 
+.RE
+.PP
+Reserved sections:
+.PP
+.IP "\(bu" 2
+Creating a mountpoint for \fC/elektra\fP or below in \fIany namespace\fP is forbidden\&. This section of the KDB is reserved for Elektra's own config\&.
+.IP "\(bu" 2
+\fCsystem:/elektra/mountpoints\fP, \fCuser:/elektra/mountpoints\fP and \fCdir:/elektra/mountpoints\fP are all required for the bootstrap process and use a hard coded backend\&. The backends are implemented by a standard file-based backend plugin that is defined at compile-time of \fClibelektra-kdb\fP\&.
+.IP "\(bu" 2
+\fCsystem:/elektra/version\fP and \fCsystem:/elektra/modules\fP will always use hard coded read-only backends containing information about this Elektra installation\&. The backends are implemented by special purpose backend plugins\&.
+.PP
+.SH "<tt>get</tt> Operation"
+.PP
+The purpose of the \fCget\fP operation is to read data stored in backends into a \fCKDB\fP instance\&.
+.PP
+.RS 4
+\fBNote:\fP Some details of a \fCget\fP operation are defined in the \fBcontract with backend plugins\fP\&. 
+.RE
+.PP
+Properties of \fC\fBkdbGet()\fP\fP:
+.PP
+.IP "\(bu" 2
+After calling \fCkdbGet (kdb, ks, parentKey)\fP, the KeySet \fCks\fP will contain \fIall keys\fP (including their values) that are stored in \fIany backend\fP with a mountpoint that is \fIbelow \fCparentKey\fP\fP\&.
+.IP "\(bu" 2
+After calling \fCkdbGet (kdb, ks, parentKey)\fP, below \fCparentKey\fP the KeySet \fCks\fP will \fImostly\fP contain keys that are stored in a backend\&. The exception here are \fCproc:/\fP and \fCspec:/\fP keys\&. For other namespaces, all keys below \fCparentKey\fP will be removed from \fCks\fP\&. For \fCproc:/\fP and \fCspec:/\fP only keys that overlap with a backend that was loaded will be removed from \fCks\fP\&.
+.IP "\(bu" 2
+The KeySet \fCks\fP \fImay\fP contain other keys not below \fCparentKey\fP:
+.IP "  1." 6
+Keys that are not below \fCparentKey\fP, but are stored in a backend that contains other keys which are below \fCparentKey\fP\&. These keys are returned, because backends are treated as one atomic unit\&. Either all keys within a backend are read, or none of them are\&.
+.IP "  2." 6
+Keys that were already present in \fCks\fP when \fC\fBkdbGet()\fP\fP was called and do not conflict with the goal of representing the current state of the KDB below \fCparentKey\fP\&.
+.PP
+
+.IP "\(bu" 2
+After calling \fCkdbGet (kdb, ks, parentKey)\fP, the Key \fCparentKey\fP will only have the \fCmeta:/error/*\fP or \fCmeta:/warnings/#/*\fP metakeys, if the errors/warnings originate from this \fC\fBkdbGet()\fP\fP call\&. In other words, \fCkdbGet ()\fP first clears any existing errors/warnings and only then starts doing the actual work\&.
+.IP "\(bu" 2
+It is an error to use a \fCparentKey\fP with a namespace other than: \fCdefault:/\fP, \fCproc:/\fP, \fCspec:\fP, \fCdir:/\fP, \fCuser:/\fP, \fCsystem:/\fP or cascading
+.PP
+.PP
+To the caller it looks as if \fC\fBkdbGet()\fP\fP had removed all keys below \fCparentKey\fP, as well as some others, from \fCks\fP and then loaded the data from the backends\&. Which backends are actually read is an implementation detail\&. Which keys are removed from \fCks\fP depends on the backends that are read\&.
+.PP
+\fC\fBkdbGet()\fP\fP will always try to be efficient in achieving its goal of reading the keys below \fCparentKey\fP\&. It is only guaranteed that below \fCparentKey\fP the KeySet \fCks\fP correctly represents the state of the KDB\&. For the rest of \fCks\fP there are no such guarantees\&.
+.PP
+.RS 4
+\fBNote:\fP In the list below 'phase' always refers to a phase of the \fCget\fP operation as described in \fBthe backend plugin contract\fP\&. 
+.RE
+.PP
+The flow of this operation is:
+.PP
+.IP "1." 4
+Determine the backends needed to read all keys below \fCparentKey\fP
+.IP "2." 4
+Run the \fCopen\fP operation for all required backends that haven't been opened
+.IP "3." 4
+Run the \fCinit\fP phase on all the backends that haven't been initialized
+.IP "4." 4
+Run the \fCresolver\fP phase on all backends
+.IP "5." 4
+From now on ignore all backends, which indicated that there is no update\&.
+.IP "6." 4
+If all backends are now ignored, \fBreturn\fP\&.
+.IP "7." 4
+If a global cache plugin is enabled: Ask the global cache plugin for the cache handles (normally modification times) for all backends\&.
+.IP "8." 4
+If all backends have an existing cache entry: Run the \fCcachecheck\fP phase on all backends
+.IP "9." 4
+If all backends indicated the cache is still valid: Ask the global cache plugin for the cached data and \fBreturn\fP\&.
+.IP "10." 4
+Run the \fCprestorage\fP and \fCstorage\fP phase on all backends\&.
+.IP "11." 4
+Run the \fCpoststorage\fP phase of all \fCspec:/\fP backends\&.
+.IP "12." 4
+Merge the data from all backends
+.IP "13." 4
+If enabled, run the \fCgopts/get\fP hook\&.
+.IP "14." 4
+Run the \fCspec/copy\fP hook\&.
+.IP "15." 4
+Split data back into individual backends\&.
+.IP "16." 4
+Run the \fCpoststorage\fP phase for all non-\fCspec:/\fP backends\&.
+.IP "17." 4
+Remove all keys which are below the parent key of any backend that has been read from \fCks\fP\&.
+.IP "18." 4
+Merge the data from all backends into \fCks\fP\&.
+.IP "19." 4
+If a global cache plugin is enabled, update cache\&.
+.IP "20." 4
+Run the \fCnotification/send\fP hook\&. Then \fBreturn\fP\&.
+.PP
+.PP
+.RS 4
+\fBNote:\fP In case of error, we abort immediately, restore \fCks\fP to its original state and return\&. 
+.RE
+.PP
+Influence of namespaces:
+.PP
+.IP "\(bu" 2
+\fCspec:/\fP backends go through \fCinit\fP, \fCresolver\fP, \fCcache\fP, \fCpresetstorage\fP and \fCstorage\fP phases as normal, but their \fCpoststorage\fP phase is called earlier\&. This is required, because any validation and post-processing of \fCspec:/\fP keys needs to happen, before they are used as the specification for other keys in the actual \fCpoststorage\fP phase\&.
+.IP "\(bu" 2
+\fCdir:/\fP, \fCuser:/\fP and \fCsystem:/\fP go through all phases as described above\&.
+.IP "\(bu" 2
+\fCproc:/\fP mountpoints go through all the phases as described above, but they are not stored in the cache\&.
+.IP "\(bu" 2
+\fCdefault:/\fP backends only go through the \fCpoststorage\fP phase\&. This is because \fCdefault:/\fP keys are generated from the specification (stored as \fCspec:/\fP keys)\&. Therefore, no \fCdefault:/\fP keys can exist before the specification is processed by the \fCspec/copy\fP hook\&.
+.IP "\(bu" 2
+keys with other namespaces are always illegal in \fCks\fP
+.PP
+.SH "<tt>set</tt> Operation"
+.PP
+The purpose of the \fCset\fP operation is to write data from a \fCKDB\fP instance into backends\&.
+.PP
+.RS 4
+\fBNote:\fP Some details of a \fCset\fP operation are defined in the \fBcontract with backend plugins\fP\&. 
+.RE
+.PP
+Properties of \fC\fBkdbSet()\fP\fP:
+.PP
+.IP "\(bu" 2
+When calling \fCkdbSet (kdb, ks, parentKey)\fP the contents (key names, values and metadata) of \fCks\fP will \fImostly\fP not be modified\&. The only modifications that are made to \fCks\fP are those that originate from the \fCspec/copy\fP hook\&.
+.IP "\(bu" 2
+\fIAll keys\fP in \fCks\fP that are below \fCparentKey\fP will be persisted in the KDB, when a \fCkdbSet (kdb, ks, parentKey)\fP call returns successfully\&. Additionally, any key in \fCks\fP that shares a backend with another key which is below \fCparentKey\fP will also be persisted\&.
+.IP "\(bu" 2
+Calling \fCkdbSet\fP may result in an error, if \fCkdbGet\fP wasn't called on this \fCKDB\fP instance with the same \fCparentKey\fP at least once\&.
+.IP "\(bu" 2
+After calling \fCkdbSet (kdb, ks, parentKey)\fP, the Key \fCparentKey\fP will only have the \fCmeta:/error/*\fP or \fCmeta:/warnings/#/*\fP metakeys, if the errors/warnings originate from this \fC\fBkdbSet()\fP\fP call\&. In other words, \fCkdbSet ()\fP first clears any existing errors/warnings and only then starts doing the actual work\&.
+.IP "\(bu" 2
+It is an error to use a \fCparentKey\fP with a namespace other than: \fCdefault:/\fP, \fCproc:/\fP, \fCspec:\fP, \fCdir:/\fP, \fCuser:/\fP, \fCsystem:/\fP or cascading
+.PP
+.PP
+The flow of this operation is:
+.PP
+.IP "1." 4
+Determine the backends needed to write all keys below \fCparentKey\fP\&.
+.IP "2." 4
+Check that all backends are opened and initialized (i\&.e\&. \fC\fBkdbGet()\fP\fP was called)\&.
+.IP "3." 4
+Run the \fCspec/copy\fP hook on \fCks\fP (to add metakeys to newly created keys)\&.
+.IP "4." 4
+Deep-Copy \fCks\fP (below \fCparentKey\fP) into a new KeySet \fCset_ks\fP
+.IP "5." 4
+Split \fCset_ks\fP into individual backends
+.IP "6." 4
+Determine which backends contain changed data\&. Any backend that contains a key that needs sync (via \fCKEY_FLAG_SYNC\fP) could contain changed data\&. From now on ignore all backends that have not changed\&. From now on also ignore all backends that were initialized as read-only\&. Issue a warning, if a change was detected (via \fCKEY_FLAG_SYNC\fP) in a read-only backend\&. 
+.PP
+.RS 4
+\fBNote\fP: Steps 4-6 might be combined into a single procedure that deep-copies only keys from changed backends into separate KeySets per backend 
+.RE
+.PP
+7\&. Run the \fCresolver\fP and \fCprestorage\fP on all backends (abort immediately on error and go to e)\&.
+.IP "8." 4
+Merge the results into a new version of \fCset_ks\fP\&.
+.IP "9." 4
+Run the \fCspec/remove\fP hook on \fCset_ks\fP (to remove copied metakeys)\&.
+.IP "10." 4
+Split \fCset_ks\fP into individual backends again\&.
+.IP "11." 4
+Run the \fCstorage\fP and \fCpoststorage\fP phases on all backends (abort immediately on error and go to e)\&.
+.IP "12." 4
+If everything was successful: Run the \fCprecommit\fP and \fCcommit\fP phases on all backends (abort immediately on error and go to e), then run the \fCpostcommit\fP phase on all backends (record all errors as warnings and ignore them) and \fBreturn\fP\&.
+.PP
+.PP
+.PD 0
+.IP "1." 4
+If there was an error: Run the \fCprerollback\fP, \fCrollback\fP and \fCpostrollback\fP phases on all backends and \fBreturn\fP\&.  
+.PP
+.PP
+Influence of namespaces:
+.PP
+.IP "\(bu" 2
+\fCdefault:/\fP and \fCproc:/\fP keys are completely ignored by \fC\fBkdbSet()\fP\fP
+.IP "\(bu" 2
+\fCspec:/\fP, \fCdir:/\fP, \fCuser:/\fP and \fCsystem:/\fP go through all phases as described above\&.
+.IP "\(bu" 2
+keys with other namespaces are always illegal in \fCks\fP
+.PP
+.SH "<tt>close</tt> Operation"
+.PP
+The \fCclose\fP operation is very simple\&. It simply frees up all resources used by a \fCKDB\fP instance\&. 
